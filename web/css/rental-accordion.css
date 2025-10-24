@@ -1,0 +1,395 @@
+/* ========================================
+   ACORDEÓN RESPONSIVO PARA ALQUILERES
+   MATERIAL DESIGN 3
+   ======================================== */
+
+/* Contenedor principal del acordeón */
+.rental-accordion {
+    display: none; /* Oculto por defecto, se muestra en móviles */
+}
+
+.rental-accordion-item {
+    background: #FFFFFF;
+    border-radius: 16px;
+    margin-bottom: 16px;
+    box-shadow: 
+        0 1px 3px rgba(0, 0, 0, 0.12),
+        0 1px 2px rgba(0, 0, 0, 0.24);
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.rental-accordion-item:hover {
+    box-shadow: 
+        0 4px 12px rgba(0, 0, 0, 0.15),
+        0 2px 4px rgba(0, 0, 0, 0.12);
+    transform: translateY(-2px);
+}
+
+/* Header del acordeón */
+.accordion-header {
+    padding: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(135deg, #6750A4 0%, #7C4DFF 100%);
+    color: white;
+    border: none;
+    width: 100%;
+    transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.accordion-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.1);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.accordion-header:hover::before {
+    transform: scaleX(1);
+}
+
+.accordion-header-info {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex: 1;
+}
+
+.accordion-rental-id {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 8px 12px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 14px;
+    backdrop-filter: blur(10px);
+}
+
+.accordion-client-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.accordion-client-name {
+    font-weight: 600;
+    font-size: 16px;
+}
+
+.accordion-car-info {
+    font-size: 14px;
+    opacity: 0.9;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.accordion-status-badge {
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.accordion-status-pendiente {
+    background: rgba(255, 193, 7, 0.2);
+    color: #B8860B;
+    border: 1px solid rgba(255, 193, 7, 0.3);
+}
+
+.accordion-status-pagado {
+    background: rgba(40, 167, 69, 0.2);
+    color: #28A745;
+    border: 1px solid rgba(40, 167, 69, 0.3);
+}
+
+.accordion-status-reservado {
+    background: rgba(0, 123, 255, 0.2);
+    color: #007BFF;
+    border: 1px solid rgba(0, 123, 255, 0.3);
+}
+
+.accordion-status-cancelado {
+    background: rgba(220, 53, 69, 0.2);
+    color: #DC3545;
+    border: 1px solid rgba(220, 53, 69, 0.3);
+}
+
+.accordion-toggle-icon {
+    font-size: 24px;
+    transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1);
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(10px);
+}
+
+.accordion-item.active .accordion-toggle-icon {
+    transform: rotate(180deg);
+}
+
+/* Contenido del acordeón */
+.accordion-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s cubic-bezier(0.2, 0, 0, 1);
+    background: #FAFAFA;
+}
+
+.accordion-item.active .accordion-content {
+    max-height: 1000px;
+}
+
+.accordion-body {
+    padding: 24px;
+}
+
+/* Grid de información */
+.accordion-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 24px;
+}
+
+.accordion-info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.accordion-info-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #6C757D;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.accordion-info-value {
+    font-size: 16px;
+    font-weight: 500;
+    color: #212529;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.accordion-fecha {
+    padding: 8px 12px;
+    background: rgba(103, 80, 164, 0.1);
+    border-radius: 12px;
+    border-left: 4px solid #6750A4;
+}
+
+.accordion-fecha.vencida {
+    background: rgba(220, 53, 69, 0.1);
+    border-left-color: #DC3545;
+    color: #DC3545;
+}
+
+.accordion-fecha.por-vencer {
+    background: rgba(255, 193, 7, 0.1);
+    border-left-color: #FFC107;
+    color: #B8860B;
+}
+
+.accordion-precio {
+    font-size: 20px;
+    font-weight: 700;
+    color: #28A745;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Acciones del acordeón */
+.accordion-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding-top: 20px;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.accordion-action-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border-radius: 24px;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 14px;
+    transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
+    border: none;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.accordion-action-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 24px;
+    transform: scale(0);
+    transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.accordion-action-btn:hover::before {
+    transform: scale(1);
+}
+
+.accordion-action-view {
+    background: #006A6B;
+    color: white;
+}
+
+.accordion-action-edit {
+    background: #6750A4;
+    color: white;
+}
+
+.accordion-action-delete {
+    background: #BA1A1A;
+    color: white;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .rental-accordion {
+        display: block;
+    }
+    
+    .rental-table-container {
+        display: none;
+    }
+    
+    .accordion-header {
+        padding: 16px;
+    }
+    
+    .accordion-header-info {
+        gap: 12px;
+    }
+    
+    .accordion-client-name {
+        font-size: 15px;
+    }
+    
+    .accordion-car-info {
+        font-size: 13px;
+    }
+    
+    .accordion-info-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    
+    .accordion-actions {
+        flex-direction: column;
+    }
+    
+    .accordion-action-btn {
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .accordion-header {
+        padding: 12px;
+    }
+    
+    .accordion-rental-id {
+        font-size: 12px;
+        padding: 6px 10px;
+    }
+    
+    .accordion-client-name {
+        font-size: 14px;
+    }
+    
+    .accordion-car-info {
+        font-size: 12px;
+    }
+    
+    .accordion-body {
+        padding: 16px;
+    }
+    
+    .accordion-info-grid {
+        gap: 12px;
+    }
+}
+
+/* Estados especiales */
+.accordion-item.vencido .accordion-header {
+    background: linear-gradient(135deg, #DC3545 0%, #C82333 100%);
+}
+
+.accordion-item.por-vencer .accordion-header {
+    background: linear-gradient(135deg, #FFC107 0%, #E0A800 100%);
+    color: #212529;
+}
+
+.accordion-item.por-vencer .accordion-status-badge {
+    background: rgba(33, 37, 41, 0.2);
+    color: #212529;
+    border-color: rgba(33, 37, 41, 0.3);
+}
+
+/* Animaciones */
+@keyframes slideDown {
+    from {
+        max-height: 0;
+        opacity: 0;
+    }
+    to {
+        max-height: 1000px;
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        max-height: 1000px;
+        opacity: 1;
+    }
+    to {
+        max-height: 0;
+        opacity: 0;
+    }
+}
+
+.accordion-content.opening {
+    animation: slideDown 0.3s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.accordion-content.closing {
+    animation: slideUp 0.3s cubic-bezier(0.2, 0, 0, 1);
+}

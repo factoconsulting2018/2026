@@ -1,0 +1,522 @@
+/* ========================================
+   MENÚ DE ACCIONES MATERIAL DESIGN 3
+   ======================================== */
+
+/* Contenedor del menú de acciones */
+.actions-menu {
+    position: relative;
+    display: inline-block;
+    z-index: 10;
+    vertical-align: middle;
+}
+
+.actions-menu.active {
+    z-index: 100000 !important;
+}
+
+/* Botón activador del menú - Material Design 3 */
+.actions-menu-toggle {
+    background: #6750A4;
+    border: none;
+    color: white;
+    padding: 12px 16px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+    position: relative;
+    z-index: 1;
+    min-height: 40px;
+    overflow: hidden;
+}
+
+.actions-menu-toggle::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    transform: scale(0);
+    transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.actions-menu-toggle:hover {
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23);
+    background: #7C4DFF;
+}
+
+.actions-menu-toggle:hover::before {
+    transform: scale(1);
+}
+
+.actions-menu-toggle:active {
+    transform: scale(0.98);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.actions-menu-toggle .material-symbols-outlined {
+    font-size: 18px;
+}
+
+/* Menú flotante Material Design 3 */
+.actions-dropdown {
+    position: fixed;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 28px;
+    box-shadow: 
+        0 8px 32px rgba(103, 80, 164, 0.15),
+        0 4px 16px rgba(0, 0, 0, 0.1),
+        0 1px 4px rgba(0, 0, 0, 0.1);
+    min-width: 200px;
+    opacity: 0;
+    visibility: hidden;
+    transform: scale(0.8) translateY(-10px);
+    transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
+    z-index: 999999 !important;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 8px 0;
+}
+
+.actions-menu.active .actions-dropdown {
+    opacity: 1;
+    visibility: visible;
+    transform: scale(1) translateY(0);
+    z-index: 999999 !important;
+}
+
+/* Items del menú Material Design 3 */
+.actions-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 20px;
+    color: #1C1B1F;
+    text-decoration: none;
+    transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 400;
+    position: relative;
+    margin: 0 8px;
+    border-radius: 20px;
+    min-height: 40px;
+}
+
+.actions-dropdown-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(103, 80, 164, 0.08);
+    border-radius: 20px;
+    opacity: 0;
+    transition: opacity 0.2s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.actions-dropdown-item:hover {
+    background: rgba(103, 80, 164, 0.04);
+    transform: none;
+}
+
+.actions-dropdown-item:hover::before {
+    opacity: 1;
+}
+
+.actions-dropdown-item .material-symbols-outlined {
+    font-size: 18px;
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+}
+
+.actions-dropdown-item:hover .material-symbols-outlined {
+    transform: scale(1.1);
+}
+
+/* Colores específicos Material Design 3 */
+.actions-dropdown-item.action-view {
+    color: #006A6B;
+}
+
+.actions-dropdown-item.action-view .material-symbols-outlined {
+    color: #006A6B;
+}
+
+.actions-dropdown-item.action-view:hover::before {
+    background: rgba(0, 106, 107, 0.08);
+}
+
+.actions-dropdown-item.action-edit {
+    color: #6750A4;
+}
+
+.actions-dropdown-item.action-edit .material-symbols-outlined {
+    color: #6750A4;
+}
+
+.actions-dropdown-item.action-edit:hover::before {
+    background: rgba(103, 80, 164, 0.08);
+}
+
+.actions-dropdown-item.action-delete {
+    color: #BA1A1A;
+}
+
+.actions-dropdown-item.action-delete .material-symbols-outlined {
+    color: #BA1A1A;
+}
+
+.actions-dropdown-item.action-delete:hover::before {
+    background: rgba(186, 26, 26, 0.08);
+}
+
+.actions-dropdown-item.action-reactivate {
+    color: #006C4C;
+}
+
+.actions-dropdown-item.action-reactivate .material-symbols-outlined {
+    color: #006C4C;
+}
+
+.actions-dropdown-item.action-reactivate:hover::before {
+    background: rgba(0, 108, 76, 0.08);
+}
+
+.actions-dropdown-item.action-export {
+    color: #8C5000;
+}
+
+.actions-dropdown-item.action-export .material-symbols-outlined {
+    color: #8C5000;
+}
+
+.actions-dropdown-item.action-export:hover::before {
+    background: rgba(140, 80, 0, 0.08);
+}
+
+/* Separador Material Design 3 */
+.actions-dropdown-divider {
+    height: 1px;
+    background-color: rgba(28, 27, 31, 0.12);
+    margin: 8px 16px;
+    border-radius: 1px;
+}
+
+/* Overlay para cerrar el menú al hacer clic fuera */
+.actions-menu-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1050;
+    display: none;
+}
+
+.actions-menu.active .actions-menu-overlay {
+    display: block;
+}
+
+/* Forzar overflow visible en contenedores padres */
+.table-responsive {
+    overflow: visible !important;
+}
+
+.card-body:has(.actions-menu) {
+    overflow: visible !important;
+}
+
+/* Estilos específicos para la tabla de rentals */
+.rental-table tbody tr td {
+    overflow: visible !important;
+}
+
+.rental-table tbody tr td:last-child {
+    overflow: visible !important;
+}
+
+/* Estilos para todas las tablas con menús de acciones */
+table:has(.actions-menu) {
+    overflow: visible !important;
+}
+
+table tbody tr:has(.actions-menu) {
+    overflow: visible !important;
+}
+
+table tbody tr td:has(.actions-menu) {
+    overflow: visible !important;
+}
+
+/* Animación de entrada */
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Contador de acciones (badge) */
+.actions-badge {
+    background-color: #3fa9f5;
+    color: white;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    margin-left: 4px;
+}
+
+/* Estilos para GridView */
+.grid-view .actions-menu {
+    margin: 0;
+    position: static;
+}
+
+.grid-view td {
+    vertical-align: middle !important;
+    position: relative;
+    overflow: visible !important;
+}
+
+.grid-view tbody tr {
+    position: relative;
+    overflow: visible !important;
+}
+
+.grid-view tbody tr td:last-child {
+    overflow: visible !important;
+    position: relative;
+}
+
+/* Asegurar que el menú se muestre por encima de otros elementos */
+.table {
+    position: relative;
+}
+
+.table tbody {
+    position: relative;
+}
+
+.table tbody tr {
+    position: relative;
+}
+
+.table tbody tr td {
+    position: relative;
+}
+
+/* Forzar que el menú flotante aparezca sobre todo */
+.actions-menu.active {
+    position: relative;
+    z-index: 100000 !important;
+}
+
+.actions-menu.active .actions-dropdown {
+    position: fixed !important;
+    z-index: 100001 !important;
+    transform: none !important;
+}
+
+/* Para tarjetas */
+.material-card {
+    position: relative;
+    overflow: visible !important;
+}
+
+.material-card-footer {
+    position: relative;
+    overflow: visible !important;
+}
+
+.card-actions {
+    position: relative;
+    overflow: visible !important;
+    z-index: 1;
+}
+
+/* Para items de lista */
+.list-view .card {
+    position: relative;
+    overflow: visible !important;
+}
+
+.list-view .card-body {
+    position: relative;
+    overflow: visible !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .actions-dropdown {
+        right: auto;
+        left: 50%;
+        transform: translateX(-50%);
+        min-width: 160px;
+        top: calc(100% + 8px);
+    }
+    
+    .actions-dropdown-item {
+        padding: 10px 14px;
+        font-size: 14px;
+    }
+    
+    .actions-dropdown-item .material-symbols-outlined {
+        font-size: 18px;
+    }
+}
+
+/* Estilos para el menú en modo oscuro (opcional) */
+@media (prefers-color-scheme: dark) {
+    .actions-dropdown {
+        background: #2d2d2d;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    }
+    
+    .actions-dropdown-item {
+        color: #e0e0e0;
+        border-bottom-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    .actions-dropdown-item:hover {
+        background-color: rgba(255, 255, 255, 0.05);
+    }
+}
+
+/* Estilos adicionales para mejorar la experiencia */
+.actions-menu-toggle .toggle-arrow {
+    transition: transform 0.3s ease;
+}
+
+.actions-menu.active .actions-menu-toggle .toggle-arrow {
+    transform: rotate(180deg);
+}
+
+/* Asegurar que el menú aparezca sobre todos los elementos */
+.actions-dropdown {
+    z-index: 100001 !important;
+    position: fixed !important;
+}
+
+.actions-menu.active .actions-dropdown {
+    z-index: 100001 !important;
+    position: fixed !important;
+}
+
+/* Forzar que aparezca sobre modales, dropdowns, tooltips, etc. */
+.actions-dropdown,
+.actions-menu.active .actions-dropdown {
+    z-index: 999999 !important;
+}
+
+/* Estilo específico para alquileres */
+.rental-table .actions-menu.active .actions-dropdown {
+    z-index: 999999 !important;
+    position: fixed !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* Forzar que aparezca sobre todo en la tabla de alquileres */
+.table .actions-menu.active .actions-dropdown {
+    z-index: 999999 !important;
+    position: fixed !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* Indicador de carga */
+.actions-dropdown-item.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.actions-dropdown-item.loading::after {
+    content: '';
+    width: 12px;
+    height: 12px;
+    border: 2px solid #ccc;
+    border-top-color: #3fa9f5;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    margin-left: auto;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Texto del item */
+.action-text {
+    flex: 1;
+    font-weight: 400;
+    white-space: nowrap;
+    position: relative;
+    z-index: 1;
+}
+
+/* Efecto ripple Material Design 3 */
+.actions-dropdown-item::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(103, 80, 164, 0.12);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s ease, height 0.6s ease;
+}
+
+.actions-dropdown-item:active::after {
+    width: 300px;
+    height: 300px;
+}
+
+/* Animación de entrada del menú */
+@keyframes materialMenuIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.8) translateY(-10px);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+@keyframes materialMenuOut {
+    0% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(0.8) translateY(-10px);
+    }
+}
+
+/* Estado deshabilitado */
+.actions-dropdown-item.disabled {
+    opacity: 0.5;
+    pointer-events: none;
+    cursor: not-allowed;
+}

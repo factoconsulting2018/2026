@@ -1,0 +1,852 @@
+/* ===========================================
+   SISTEMA DE NOTAS ADHESIVAS (STICKERS)
+   =========================================== */
+
+/* Panel de notas */
+.notes-board {
+    min-height: 600px;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    border-radius: 15px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+}
+
+.notes-container {
+    position: relative;
+    min-height: 560px;
+    width: 100%;
+}
+
+/* Estado vacío */
+.empty-state {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+}
+
+/* ===========================================
+   DISEÑO DE STICKERS
+   =========================================== */
+
+.note-sticker {
+    position: absolute;
+    width: 280px;
+    min-height: 200px;
+    max-height: 400px;
+    background: #ffeb3b;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+    cursor: move;
+    transition: all 0.3s ease;
+    overflow: hidden;
+    z-index: 10;
+}
+
+.note-sticker:hover {
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+    transform: translateY(-2px);
+    z-index: 100;
+}
+
+.note-sticker:active {
+    transform: translateY(0) scale(1.02);
+}
+
+/* ===========================================
+   COLORES DE STICKERS
+   =========================================== */
+
+.sticker-yellow {
+    background: linear-gradient(135deg, #ffeb3b 0%, #ffc107 100%);
+    color: #333;
+    border-left: 4px solid #f57f17;
+}
+
+.sticker-blue {
+    background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+    color: white;
+    border-left: 4px solid #0d47a1;
+}
+
+.sticker-green {
+    background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);
+    color: white;
+    border-left: 4px solid #1b5e20;
+}
+
+/* Asegurar que todos los elementos de texto en notas verdes regulares sean blancos */
+.sticker-green * {
+    color: white !important;
+}
+
+.sticker-green .note-title,
+.sticker-green .note-content,
+.sticker-green .note-date,
+.sticker-green .note-footer {
+    color: white !important;
+}
+
+.sticker-green .btn {
+    color: white !important;
+    border-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.sticker-green .btn:hover {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+    border-color: white !important;
+}
+
+.sticker-red {
+    background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+    color: white;
+    border-left: 4px solid #b71c1c;
+}
+
+.sticker-orange {
+    background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+    color: white;
+    border-left: 4px solid #e65100;
+}
+
+.sticker-purple {
+    background: linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%);
+    color: white;
+    border-left: 4px solid #4a148c;
+}
+
+.sticker-pink {
+    background: linear-gradient(135deg, #e91e63 0%, #c2185b 100%);
+    color: white;
+    border-left: 4px solid #880e4f;
+}
+
+.sticker-gray {
+    background: linear-gradient(135deg, #607d8b 0%, #455a64 100%);
+    color: white;
+    border-left: 4px solid #263238;
+}
+
+.sticker-lightblue {
+    background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+    color: white;
+    border-left: 4px solid #0d47a1;
+}
+
+.sticker-lightgreen {
+    background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);
+    color: white;
+    border-left: 4px solid #1b5e20;
+}
+
+/* Asegurar que todos los elementos de texto en notas verdes sean blancos */
+.sticker-lightgreen * {
+    color: white !important;
+}
+
+.sticker-lightgreen .note-title,
+.sticker-lightgreen .note-content,
+.sticker-lightgreen .note-date,
+.sticker-lightgreen .note-footer {
+    color: white !important;
+}
+
+.sticker-lightgreen .btn {
+    color: white !important;
+    border-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.sticker-lightgreen .btn:hover {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+    border-color: white !important;
+}
+
+/* ===========================================
+   ESTADOS DE STICKERS
+   =========================================== */
+
+.status-pending {
+    border-right: 4px solid #ff9800;
+}
+
+.status-processing {
+    border-right: 4px solid #2196f3;
+}
+
+.status-completed {
+    border-right: 4px solid #4caf50;
+    opacity: 0.8;
+}
+
+.status-completed .note-title {
+    text-decoration: line-through;
+}
+
+/* ===========================================
+   COMPONENTES DEL STICKER
+   =========================================== */
+
+.note-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 18px 18px 12px 18px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.note-title {
+    font-weight: 600;
+    font-size: 17px;
+    line-height: 1.4;
+    flex: 1;
+    margin-right: 12px;
+    word-wrap: break-word;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    color: #2d3748;
+}
+
+/* Optimización de títulos para pantallas grandes */
+@media (min-width: 1400px) {
+    .note-header {
+        padding: 20px 20px 14px 20px;
+    }
+    
+    .note-title {
+        font-size: 18px;
+        margin-right: 15px;
+    }
+}
+
+.note-actions {
+    flex-shrink: 0;
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.note-actions .btn {
+    padding: 6px 8px;
+    font-size: 0.85em;
+    border-radius: 6px;
+    border-width: 1px;
+    transition: all 0.2s ease;
+    opacity: 0.8;
+    font-weight: 500;
+}
+
+/* Optimización de botones para pantallas grandes */
+@media (min-width: 1400px) {
+    .note-actions {
+        gap: 5px;
+    }
+    
+    .note-actions .btn {
+        padding: 7px 10px;
+        font-size: 0.9em;
+        border-radius: 8px;
+    }
+}
+
+.note-actions .btn:hover {
+    opacity: 1;
+    transform: scale(1.05);
+}
+
+.note-actions .btn-outline-primary:hover {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+    color: white;
+}
+
+.note-actions .btn-outline-success:hover {
+    background-color: #198754;
+    border-color: #198754;
+    color: white;
+}
+
+.note-actions .btn-outline-danger:hover {
+    background-color: #dc3545;
+    border-color: #dc3545;
+    color: white;
+}
+
+.note-actions .btn-link {
+    padding: 2px 6px;
+    color: inherit;
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+}
+
+.note-actions .btn-link:hover {
+    opacity: 1;
+}
+
+.note-content {
+    padding: 18px;
+    font-size: 15px;
+    line-height: 1.5;
+    word-wrap: break-word;
+    max-height: 220px;
+    overflow-y: auto;
+    color: #4a5568;
+}
+
+/* Optimización de contenido para pantallas grandes */
+@media (min-width: 1400px) {
+    .note-content {
+        padding: 20px;
+        font-size: 16px;
+        max-height: 240px;
+    }
+}
+
+.note-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 18px;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    background: rgba(0, 0, 0, 0.05);
+    font-size: 13px;
+}
+
+/* Optimización de footer para pantallas grandes */
+@media (min-width: 1400px) {
+    .note-footer {
+        padding: 14px 20px;
+        font-size: 14px;
+    }
+}
+
+.note-status {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.status-icon {
+    font-size: 14px;
+}
+
+.status-text {
+    font-weight: 500;
+}
+
+.note-date {
+    opacity: 0.8;
+}
+
+/* ===========================================
+   ANIMACIONES
+   =========================================== */
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeOutDown {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+}
+
+.note-sticker.animate-in {
+    animation: fadeInUp 0.5s ease-out;
+}
+
+.note-sticker.animate-out {
+    animation: fadeOutDown 0.3s ease-in;
+}
+
+/* ===========================================
+   EFECTOS HOVER Y FOCUS
+   =========================================== */
+
+.note-sticker:hover .note-actions .btn-link {
+    opacity: 1;
+}
+
+.note-sticker:hover .note-title {
+    overflow: visible;
+    -webkit-line-clamp: unset;
+}
+
+/* ===========================================
+   RESPONSIVE DESIGN
+   =========================================== */
+
+@media (max-width: 768px) {
+    .note-sticker {
+        width: 100%;
+        max-width: 300px;
+        position: relative !important;
+        left: auto !important;
+        top: auto !important;
+        margin-bottom: 15px;
+    }
+    
+    .notes-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .notes-board {
+        padding: 15px;
+    }
+}
+
+@media (max-width: 576px) {
+    .note-sticker {
+        width: 100%;
+        max-width: 100%;
+    }
+    
+    .note-title {
+        font-size: 15px;
+    }
+    
+    .note-content {
+        font-size: 13px;
+    }
+}
+
+/* ===========================================
+   ESTILOS PARA MODALES
+   =========================================== */
+
+.modal-content {
+    border-radius: 15px;
+    border: none;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px 15px 0 0;
+    border-bottom: none;
+}
+
+.modal-header .btn-close {
+    filter: invert(1);
+}
+
+.form-select:focus,
+.form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+/* ===========================================
+   ESTADÍSTICAS
+   =========================================== */
+
+.card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+
+/* ===========================================
+   UTILIDADES
+   =========================================== */
+
+.text-shadow {
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.dropdown-menu {
+    border-radius: 10px;
+    border: none;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+}
+
+.dropdown-item {
+    padding: 0.5rem 1rem;
+    transition: background-color 0.2s ease;
+}
+
+.dropdown-item:hover {
+    background-color: #f8f9fa;
+}
+
+.dropdown-item.text-danger:hover {
+    background-color: #f8d7da;
+    color: #721c24 !important;
+}
+
+/* ===========================================
+   SCROLLBAR PERSONALIZADO
+   =========================================== */
+
+.note-content::-webkit-scrollbar {
+    width: 4px;
+}
+
+.note-content::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 2px;
+}
+
+.note-content::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 2px;
+}
+
+.note-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.5);
+}
+
+/* ===========================================
+   ESTILOS PARA COLUMNAS POR ESTADO
+   =========================================== */
+
+/* Contenedor de columnas - Layout horizontal optimizado para escritorio */
+.notes-columns-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 30px;
+    padding: 30px;
+    min-height: calc(100vh - 120px);
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    align-items: start;
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+/* Optimización para pantallas grandes de escritorio */
+@media (min-width: 1400px) {
+    .notes-columns-container {
+        gap: 40px;
+        padding: 40px;
+        max-width: 1800px;
+    }
+}
+
+@media (min-width: 1920px) {
+    .notes-columns-container {
+        gap: 50px;
+        padding: 50px;
+        max-width: 2000px;
+    }
+}
+
+/* Estilos de columnas - Organización horizontal optimizada para escritorio */
+.notes-column {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.98);
+    border-radius: 18px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    transition: all 0.3s ease;
+    height: fit-content;
+    max-height: calc(100vh - 200px);
+    border: 2px solid transparent;
+    position: relative;
+    backdrop-filter: blur(10px);
+}
+
+/* Optimización de columnas para pantallas grandes */
+@media (min-width: 1400px) {
+    .notes-column {
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+    }
+}
+
+.notes-column:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* Encabezados de columna - Organización clara optimizada para escritorio */
+.column-header {
+    padding: 22px 28px;
+    border-bottom: 3px solid rgba(0, 0, 0, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.9));
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(5px);
+}
+
+.column-header h3 {
+    margin: 0;
+    font-size: 1.3em;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #2d3748;
+    letter-spacing: -0.025em;
+}
+
+/* Optimización de encabezados para pantallas grandes */
+@media (min-width: 1400px) {
+    .column-header {
+        padding: 25px 32px;
+    }
+    
+    .column-header h3 {
+        font-size: 1.4em;
+        gap: 12px;
+    }
+}
+
+.note-count {
+    background: rgba(0, 0, 0, 0.1);
+    color: #333;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.9em;
+    font-weight: bold;
+}
+
+/* Contenido de columna optimizado para escritorio */
+.column-content {
+    padding: 20px;
+    min-height: 250px;
+    max-height: calc(100vh - 320px);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+/* Optimización de contenido para pantallas grandes */
+@media (min-width: 1400px) {
+    .column-content {
+        padding: 25px;
+        min-height: 300px;
+        gap: 20px;
+    }
+}
+
+/* Estado vacío de columna */
+.empty-column-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 150px;
+    background: rgba(0, 0, 0, 0.02);
+    border-radius: 8px;
+    border: 2px dashed rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.empty-column-state:hover {
+    background: rgba(0, 0, 0, 0.05);
+    border-color: rgba(0, 0, 0, 0.2);
+}
+
+.empty-column-state i {
+    opacity: 0.5;
+    transition: opacity 0.3s ease;
+}
+
+.empty-column-state:hover i {
+    opacity: 0.8;
+}
+
+/* Colores específicos por columna - Organización visual clara */
+.pending-column {
+    border-color: #ffeb3b;
+}
+
+.pending-column .column-header {
+    background: linear-gradient(135deg, #fff9c4 0%, #fff176 100%);
+    border-bottom-color: #ffeb3b;
+}
+
+.pending-column .column-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #ffeb3b, #ffc107);
+}
+
+.processing-column {
+    border-color: #2196f3;
+}
+
+.processing-column .column-header {
+    background: linear-gradient(135deg, #bbdefb 0%, #64b5f6 100%);
+    border-bottom-color: #2196f3;
+}
+
+.processing-column .column-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #2196f3, #1976d2);
+}
+
+.completed-column {
+    border-color: #4caf50;
+}
+
+.completed-column .column-header {
+    background: linear-gradient(135deg, #c8e6c9 0%, #81c784 100%);
+    border-bottom-color: #4caf50;
+}
+
+.completed-column .column-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #4caf50, #388e3c);
+}
+
+/* Número de orden en las notas */
+.note-order {
+    position: absolute;
+    top: -10px;
+    left: -10px;
+    background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+    color: white;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85em;
+    font-weight: bold;
+    z-index: 10;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Optimización del número de orden para pantallas grandes */
+@media (min-width: 1400px) {
+    .note-order {
+        width: 32px;
+        height: 32px;
+        font-size: 0.9em;
+        top: -12px;
+        left: -12px;
+    }
+}
+
+/* Ajustes para notas en columnas */
+.notes-column .note-sticker {
+    position: relative;
+    margin-bottom: 18px;
+    width: 100%;
+    min-height: 180px;
+    cursor: default; /* Cambiar cursor para indicar que no se puede arrastrar */
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+/* Optimización de notas para pantallas grandes */
+@media (min-width: 1400px) {
+    .notes-column .note-sticker {
+        margin-bottom: 20px;
+        min-height: 200px;
+        border-radius: 14px;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+    }
+}
+
+/* Deshabilitar efectos de arrastre en columnas */
+.notes-column .note-sticker:hover {
+    transform: translateY(-2px); /* Efecto hover más sutil */
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.notes-column .note-sticker:not(.dragging) {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Responsive para columnas - Mantener organización horizontal */
+@media (max-width: 1400px) {
+    .notes-columns-container {
+        gap: 20px;
+        padding: 20px;
+    }
+}
+
+@media (max-width: 1200px) {
+    .notes-columns-container {
+        gap: 15px;
+        padding: 15px;
+    }
+    
+    .column-header {
+        padding: 15px 20px;
+    }
+}
+
+@media (max-width: 992px) {
+    .notes-columns-container {
+        grid-template-columns: 1fr;
+        gap: 20px;
+        max-width: 600px;
+    }
+    
+    .notes-column {
+        max-width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .notes-columns-container {
+        padding: 12px;
+        gap: 15px;
+    }
+    
+    .column-content {
+        padding: 12px;
+        gap: 12px;
+    }
+    
+    .column-header {
+        padding: 12px 15px;
+    }
+    
+    .column-header h3 {
+        font-size: 1.1em;
+    }
+}

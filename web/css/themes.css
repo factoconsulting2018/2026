@@ -1,0 +1,844 @@
+/* Sistema de Tema Light para la Aplicación */
+
+/* Variables CSS para tema claro */
+:root {
+    /* Tema Light (por defecto) */
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8f9fa;
+    --bg-tertiary: #e9ecef;
+    --text-primary: #212529;
+    --text-secondary: #6c757d;
+    --text-muted: #6c757d;
+    --border-color: #dee2e6;
+    --border-light: #f1f3f4;
+    --card-bg: #ffffff;
+    --shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    --shadow-lg: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    --input-bg: #ffffff;
+    --input-border: #ced4da;
+    --dropdown-bg: #ffffff;
+    --navbar-bg: #ffffff;
+    --sidebar-bg: #f8f9fa;
+}
+
+/* Aplicar variables a elementos base */
+body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Contenedores principales */
+.site-index,
+.container,
+.container-fluid {
+    background-color: var(--bg-primary);
+    transition: background-color 0.3s ease;
+}
+
+/* Tarjetas */
+.card {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+    box-shadow: var(--shadow);
+    transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card-header {
+    background-color: var(--bg-secondary);
+    border-bottom-color: var(--border-color);
+}
+
+.card-footer {
+    background-color: var(--bg-secondary);
+    border-top-color: var(--border-color);
+}
+
+/* Texto */
+.text-muted {
+    color: var(--text-muted) !important;
+}
+
+.lead {
+    color: var(--text-secondary);
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: var(--text-primary);
+}
+
+/* Asegurar que los títulos sean visibles en tema claro */
+[data-theme="light"] h1,
+[data-theme="light"] h2,
+[data-theme="light"] h3,
+[data-theme="light"] h4,
+[data-theme="light"] h5,
+[data-theme="light"] h6 {
+    color: #495057 !important; /* Gris oscuro para mejor contraste */
+    font-weight: 600 !important;
+}
+
+/* Títulos específicos en páginas de gestión - tema claro */
+[data-theme="light"] .client-index h1,
+[data-theme="light"] .car-index h1,
+[data-theme="light"] .rental-index h1,
+[data-theme="light"] .order-index h1,
+[data-theme="light"] .notes-index h1,
+[data-theme="light"] .config-index h1,
+[data-theme="light"] .reports-index h1 {
+    color: #495057 !important;
+    font-weight: 700 !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.1) !important;
+}
+
+/* Títulos en tarjetas con fondo blanco - tema claro */
+[data-theme="light"] .card h1,
+[data-theme="light"] .card h2,
+[data-theme="light"] .card h3,
+[data-theme="light"] .card h4,
+[data-theme="light"] .card h5,
+[data-theme="light"] .card h6,
+[data-theme="light"] .card-header h1,
+[data-theme="light"] .card-header h2,
+[data-theme="light"] .card-header h3,
+[data-theme="light"] .card-header h4,
+[data-theme="light"] .card-header h5,
+[data-theme="light"] .card-header h6 {
+    color: #495057 !important;
+    font-weight: 600 !important;
+}
+
+/* Títulos en contenido principal con fondo blanco */
+[data-theme="light"] .container h1,
+[data-theme="light"] .container h2,
+[data-theme="light"] .container h3,
+[data-theme="light"] .container h4,
+[data-theme="light"] .container h5,
+[data-theme="light"] .container h6,
+[data-theme="light"] .main-content h1,
+[data-theme="light"] .main-content h2,
+[data-theme="light"] .main-content h3,
+[data-theme="light"] .main-content h4,
+[data-theme="light"] .main-content h5,
+[data-theme="light"] .main-content h6 {
+    color: #495057 !important;
+    font-weight: 600 !important;
+}
+
+/* Títulos en modales - tema claro */
+[data-theme="light"] .modal-header h1,
+[data-theme="light"] .modal-header h2,
+[data-theme="light"] .modal-header h3,
+[data-theme="light"] .modal-header h4,
+[data-theme="light"] .modal-header h5,
+[data-theme="light"] .modal-header h6,
+[data-theme="light"] .modal-title {
+    color: #495057 !important;
+    font-weight: 600 !important;
+}
+
+/* Títulos en formularios - tema claro */
+[data-theme="light"] .form-label,
+[data-theme="light"] label {
+    color: #495057 !important;
+    font-weight: 500 !important;
+}
+
+/* Material Icons en títulos - tema claro */
+[data-theme="light"] h1 .material-symbols-outlined,
+[data-theme="light"] h2 .material-symbols-outlined,
+[data-theme="light"] h3 .material-symbols-outlined,
+[data-theme="light"] h4 .material-symbols-outlined,
+[data-theme="light"] h5 .material-symbols-outlined,
+[data-theme="light"] h6 .material-symbols-outlined {
+    color: #495057 !important;
+    opacity: 0.8 !important;
+}
+
+/* Mejorar visibilidad de texto en tema claro */
+[data-theme="light"] .card-title,
+[data-theme="light"] .card-header h5,
+[data-theme="light"] .card-header h6 {
+    color: #495057 !important;
+    font-weight: 600 !important;
+}
+
+[data-theme="light"] .form-label {
+    color: #495057 !important;
+    font-weight: 500 !important;
+}
+
+/* Breadcrumbs en tema claro */
+[data-theme="light"] .breadcrumb-item.active {
+    color: #495057 !important;
+    font-weight: 500 !important;
+}
+
+/* Texto secundario y muted en tema claro */
+[data-theme="light"] .text-muted,
+[data-theme="light"] .text-secondary {
+    color: #6c757d !important;
+}
+
+[data-theme="light"] .lead {
+    color: #495057 !important;
+    font-weight: 500 !important;
+}
+
+/* Títulos en tablas - tema claro */
+[data-theme="light"] .table th,
+[data-theme="light"] .table thead th {
+    color: #495057 !important;
+    font-weight: 600 !important;
+}
+
+/* Títulos en listas - tema claro */
+[data-theme="light"] .list-group-item h1,
+[data-theme="light"] .list-group-item h2,
+[data-theme="light"] .list-group-item h3,
+[data-theme="light"] .list-group-item h4,
+[data-theme="light"] .list-group-item h5,
+[data-theme="light"] .list-group-item h6 {
+    color: #495057 !important;
+    font-weight: 600 !important;
+}
+
+/* Títulos en alertas - tema claro */
+[data-theme="light"] .alert h1,
+[data-theme="light"] .alert h2,
+[data-theme="light"] .alert h3,
+[data-theme="light"] .alert h4,
+[data-theme="light"] .alert h5,
+[data-theme="light"] .alert h6 {
+    color: #495057 !important;
+    font-weight: 600 !important;
+}
+
+/* Tablas */
+.table {
+    --bs-table-bg: var(--card-bg);
+    --bs-table-color: var(--text-primary);
+    --bs-table-border-color: var(--border-color);
+    --bs-table-hover-bg: var(--bg-secondary);
+}
+
+.table th {
+    background-color: var(--bg-secondary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+.table td {
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+.table-striped > tbody > tr:nth-of-type(odd) > td {
+    background-color: var(--bg-secondary);
+}
+
+/* Formularios */
+.form-control {
+    background-color: var(--input-bg);
+    border-color: var(--input-border);
+    color: var(--text-primary);
+}
+
+.form-control:focus {
+    background-color: var(--input-bg);
+    border-color: var(--input-border);
+    color: var(--text-primary);
+}
+
+.form-select {
+    background-color: var(--input-bg);
+    border-color: var(--input-border);
+    color: var(--text-primary);
+}
+
+.form-label {
+    color: var(--text-primary);
+}
+
+/* Botones */
+.btn-light {
+    background-color: var(--bg-secondary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+.btn-light:hover {
+    background-color: var(--bg-tertiary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+.btn-outline-secondary {
+    color: var(--text-primary);
+    border-color: var(--border-color);
+}
+
+.btn-outline-secondary:hover {
+    background-color: var(--bg-secondary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+/* Navbar */
+.navbar {
+    background-color: var(--navbar-bg) !important;
+    border-bottom-color: var(--border-color);
+}
+
+.navbar-brand,
+.navbar-nav .nav-link {
+    color: var(--text-primary) !important;
+}
+
+/* Sidebar */
+.sidebar,
+.drawer {
+    background-color: var(--sidebar-bg) !important;
+}
+
+.sidebar .nav-link,
+.drawer .nav-link {
+    color: var(--text-primary) !important;
+}
+
+/* Dropdowns */
+.dropdown-menu {
+    background-color: var(--dropdown-bg);
+    border-color: var(--border-color);
+}
+
+.dropdown-item {
+    color: var(--text-primary);
+}
+
+.dropdown-item:hover {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+/* Badges */
+.badge {
+    color: var(--text-primary);
+}
+
+/* Alertas */
+.alert {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+/* Modal */
+.modal-content {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+.modal-header {
+    border-bottom-color: var(--border-color);
+}
+
+.modal-footer {
+    border-top-color: var(--border-color);
+}
+
+.modal-title {
+    color: var(--text-primary);
+}
+
+/* List group */
+.list-group-item {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+.list-group-item:hover {
+    background-color: var(--bg-secondary);
+}
+
+/* Paginación */
+.pagination .page-link {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+.pagination .page-link:hover {
+    background-color: var(--bg-secondary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+.pagination .page-item.active .page-link {
+    background-color: var(--bg-tertiary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+/* Breadcrumbs */
+.breadcrumb {
+    background-color: var(--bg-secondary);
+}
+
+.breadcrumb-item {
+    color: var(--text-secondary);
+}
+
+.breadcrumb-item.active {
+    color: var(--text-primary);
+}
+
+/* Progress bars */
+.progress {
+    background-color: var(--bg-secondary);
+}
+
+/* Tooltips */
+.tooltip .tooltip-inner {
+    background-color: var(--card-bg);
+    color: var(--text-primary);
+}
+
+/* Popovers */
+.popover {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+.popover-header {
+    background-color: var(--bg-secondary);
+    border-bottom-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+.popover-body {
+    color: var(--text-primary);
+}
+
+/* Asegurar contraste en elementos con fondo blanco */
+[data-theme="light"] .card,
+[data-theme="light"] .modal-content,
+[data-theme="light"] .container,
+[data-theme="light"] .main-content {
+    background-color: #ffffff !important;
+}
+
+[data-theme="light"] .card h1,
+[data-theme="light"] .card h2,
+[data-theme="light"] .card h3,
+[data-theme="light"] .card h4,
+[data-theme="light"] .card h5,
+[data-theme="light"] .card h6,
+[data-theme="light"] .modal-content h1,
+[data-theme="light"] .modal-content h2,
+[data-theme="light"] .modal-content h3,
+[data-theme="light"] .modal-content h4,
+[data-theme="light"] .modal-content h5,
+[data-theme="light"] .modal-content h6 {
+    color: #495057 !important;
+    font-weight: 600 !important;
+}
+
+/* Estilos específicos para botones del menú en tema claro */
+[data-theme="light"] .drawer .nav-link {
+    background-color: transparent !important;
+    color: #495057 !important; /* Gris oscuro para títulos */
+    border: none !important;
+    border-radius: 8px !important;
+    margin: 2px 10px !important;
+    transition: all 0.3s ease !important;
+}
+
+[data-theme="light"] .drawer .nav-link:hover {
+    background-color: rgba(73, 80, 87, 0.1) !important; /* Gris oscuro translúcido */
+    color: #495057 !important; /* Mantener gris oscuro en hover */
+    transform: translateX(4px) !important;
+}
+
+[data-theme="light"] .drawer .nav-link.active {
+    background-color: rgba(63, 169, 245, 0.2) !important; /* Azul translúcido */
+    color: #495057 !important; /* Gris oscuro para activo */
+    border-left: 4px solid #3fa9f5 !important;
+}
+
+[data-theme="light"] .drawer .nav-link .nav-icon {
+    color: #495057 !important; /* Iconos en gris oscuro */
+    margin-right: 12px !important;
+}
+
+[data-theme="light"] .drawer .nav-link .nav-text {
+    color: #495057 !important; /* Texto en gris oscuro */
+    font-weight: 500 !important;
+}
+
+/* Estilos para el botón de tema en el menú - tema claro */
+[data-theme="light"] .drawer .theme-toggle-menu {
+    background-color: transparent !important;
+    color: #495057 !important; /* Gris oscuro para botón de tema */
+    border: none !important;
+    border-radius: 8px !important;
+    margin: 2px 10px !important;
+    transition: all 0.3s ease !important;
+}
+
+[data-theme="light"] .drawer .theme-toggle-menu:hover {
+    background-color: rgba(73, 80, 87, 0.1) !important; /* Gris oscuro translúcido */
+    color: #495057 !important; /* Mantener gris oscuro en hover */
+    transform: translateX(4px) !important;
+}
+
+[data-theme="light"] .drawer .theme-toggle-menu .nav-icon {
+    color: #495057 !important; /* Icono en gris oscuro */
+    margin-right: 12px !important;
+}
+
+[data-theme="light"] .drawer .theme-toggle-menu .nav-text {
+    color: #495057 !important; /* Texto en gris oscuro */
+    font-weight: 500 !important;
+}
+
+/* Estilos para el header del drawer en tema claro */
+[data-theme="light"] .drawer-header {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
+    border-bottom: 1px solid rgba(73, 80, 87, 0.1) !important;
+}
+
+[data-theme="light"] .drawer-title {
+    color: #495057 !important; /* Título en gris oscuro */
+    font-weight: 600 !important;
+}
+
+[data-theme="light"] .drawer-subtitle {
+    color: #6c757d !important; /* Subtítulo en gris medio */
+}
+
+/* Estilos para la sección de tema en tema claro */
+[data-theme="light"] .theme-section {
+    border-top: 1px solid rgba(73, 80, 87, 0.1) !important;
+    margin-top: 20px !important;
+    padding: 10px 0 !important;
+}
+
+/* Estilos para el botón de logout en tema claro */
+[data-theme="light"] .logout-button {
+    background-color: transparent !important;
+    color: #495057 !important; /* Gris oscuro para logout */
+    border: none !important;
+    border-radius: 8px !important;
+    margin: 2px 10px !important;
+    transition: all 0.3s ease !important;
+    width: calc(100% - 20px) !important;
+    text-align: left !important;
+    padding: 12px 16px !important;
+}
+
+[data-theme="light"] .logout-button:hover {
+    background-color: rgba(220, 53, 69, 0.1) !important; /* Rojo translúcido */
+    color: #495057 !important; /* Mantener gris oscuro en hover */
+    transform: translateX(4px) !important;
+}
+
+/* Estilos adicionales para consistencia en el menú claro */
+[data-theme="light"] .drawer .nav-item {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+[data-theme="light"] .drawer .nav {
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+[data-theme="light"] .drawer .nav-link,
+[data-theme="light"] .drawer .theme-toggle-menu,
+[data-theme="light"] .logout-button {
+    display: flex !important;
+    align-items: center !important;
+    padding: 12px 16px !important;
+    text-decoration: none !important;
+    border-radius: 8px !important;
+    margin: 2px 10px !important;
+    font-size: 14px !important;
+    line-height: 1.4 !important;
+}
+
+/* Estilos para iconos Material en tema claro */
+[data-theme="light"] .drawer .nav-link .material-symbols-outlined,
+[data-theme="light"] .drawer .theme-toggle-menu .material-symbols-outlined,
+[data-theme="light"] .logout-button .material-symbols-outlined {
+    font-size: 20px !important;
+    color: #495057 !important; /* Iconos en gris oscuro */
+    margin-right: 12px !important;
+    opacity: 0.9 !important;
+}
+
+/* Estilos para separadores en tema claro */
+[data-theme="light"] .drawer .nav-item:not(:last-child) {
+    border-bottom: 1px solid rgba(73, 80, 87, 0.05) !important;
+    margin-bottom: 4px !important;
+}
+
+/* Mejorar contraste del menú activo en tema claro */
+[data-theme="light"] .drawer .nav-link.active::before {
+    content: '' !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    width: 4px !important;
+    height: 60% !important;
+    background-color: #3fa9f5 !important;
+    border-radius: 0 2px 2px 0 !important;
+}
+
+/* Asegurar que el tema se aplique a elementos de navegación */
+[data-theme="light"] .drawer,
+[data-theme="light"] .sidebar {
+    background-color: #f8f9fa !important;
+    color: #212529 !important;
+}
+
+/* Estilos específicos para contadores del panel de control */
+.site-index .card.text-white,
+.site-index .card.text-white *,
+.site-index .card.text-white h1,
+.site-index .card.text-white h2,
+.site-index .card.text-white h3,
+.site-index .card.text-white h4,
+.site-index .card.text-white h5,
+.site-index .card.text-white h6,
+.site-index .card.text-white small,
+.site-index .card.text-white .card-title,
+.site-index .card.text-white .material-symbols-outlined,
+.site-index .card.text-white .card-body,
+.site-index .card.text-white .card-body * {
+    color: #ffffff !important;
+}
+
+.site-index .card.text-white h6 {
+    color: #ffffff !important;
+    font-weight: 600 !important;
+}
+
+.site-index .card.text-white h2 {
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    font-size: 2.5rem !important;
+}
+
+.site-index .card.text-white small {
+    color: #ffffff !important;
+    opacity: 0.9 !important;
+    font-weight: 500 !important;
+}
+
+.site-index .card.text-white .card-title {
+    color: #ffffff !important;
+    font-weight: 600 !important;
+}
+
+.site-index .card.text-white .card-title .material-symbols-outlined {
+    color: #ffffff !important;
+    opacity: 0.9 !important;
+}
+
+.site-index .card.text-white .fs-1 .material-symbols-outlined {
+    color: #ffffff !important;
+    opacity: 0.7 !important;
+}
+
+/* Asegurar que los botones en contadores mantengan su estilo */
+.site-index .card.text-white .btn-light {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
+    color: #ffffff !important;
+}
+
+.site-index .card.text-white .btn-light:hover {
+    background-color: rgba(255, 255, 255, 0.3) !important;
+    border-color: rgba(255, 255, 255, 0.5) !important;
+    color: #ffffff !important;
+}
+
+/* Reglas adicionales para asegurar texto blanco en contadores */
+.site-index .card[style*="gradient"] h1,
+.site-index .card[style*="gradient"] h2,
+.site-index .card[style*="gradient"] h3,
+.site-index .card[style*="gradient"] h4,
+.site-index .card[style*="gradient"] h5,
+.site-index .card[style*="gradient"] h6,
+.site-index .card[style*="gradient"] small,
+.site-index .card[style*="gradient"] .card-title,
+.site-index .card[style*="gradient"] .material-symbols-outlined {
+    color: #ffffff !important;
+}
+
+/* Estilos específicos para tabla de Gestión de Vehículos */
+.car-index .table-dark th,
+.car-index .table-dark thead th {
+    color: #ffffff !important;
+    background-color: #343a40 !important;
+    border-color: #495057 !important;
+    font-weight: 600 !important;
+}
+
+.car-index .table-dark th .material-symbols-outlined {
+    color: #ffffff !important;
+}
+
+/* Asegurar que todos los elementos del header sean blancos */
+.car-index .table thead th {
+    color: #ffffff !important;
+    background-color: #343a40 !important;
+    border-color: #495057 !important;
+    font-weight: 600 !important;
+}
+
+.car-index .table thead th * {
+    color: #ffffff !important;
+}
+
+/* Estilos específicos para Gestión de Alquileres */
+.rental-index .table-header,
+.rental-index .table-header *,
+.rental-index .table-title,
+.rental-index .table-title *,
+.rental-index .table-stats,
+.rental-index .table-stats *,
+.rental-index .stat-item,
+.rental-index .stat-item * {
+    color: #ffffff !important;
+}
+
+.rental-index .table-header h3 {
+    color: #ffffff !important;
+    font-weight: 600 !important;
+}
+
+.rental-index .table-header .material-symbols-outlined {
+    color: #ffffff !important;
+}
+
+.rental-index .stat-item {
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.2) !important;
+}
+
+.rental-index .stat-item .material-symbols-outlined {
+    color: #ffffff !important;
+}
+
+.rental-index .stat-item span {
+    color: #ffffff !important;
+}
+
+/* Estilos específicos para contadores en Gestión de Alquileres */
+.rental-index .table-stats .stat-item,
+.rental-index .table-stats .stat-item *,
+.rental-index .stat-item .material-symbols-outlined,
+.rental-index .stat-item span {
+    color: #ffffff !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+.rental-index .table-header .stat-item {
+    background: rgba(255, 255, 255, 0.2) !important;
+    color: #ffffff !important;
+    border-radius: 20px !important;
+    padding: 8px 16px !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+}
+
+.rental-index .table-header .stat-item * {
+    color: #ffffff !important;
+}
+
+/* Asegurar que todos los elementos de contadores sean blancos */
+.rental-index .stat-item,
+.rental-index .stat-item *,
+.rental-index .table-stats,
+.rental-index .table-stats * {
+    color: #ffffff !important;
+}
+
+/* Estilos específicos para contadores de órdenes/alquileres */
+.order-index .card.text-white,
+.order-index .card.text-white *,
+.order-index .card.text-white h6,
+.order-index .card.text-white h2,
+.order-index .card.text-white small,
+.order-index .card.text-white .card-title,
+.order-index .card.text-white .material-symbols-outlined {
+    color: #ffffff !important;
+}
+
+.order-index .card.text-white h6 {
+    color: #ffffff !important;
+    font-weight: 600 !important;
+}
+
+.order-index .card.text-white h2 {
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    font-size: 2.5rem !important;
+}
+
+.order-index .card.text-white small {
+    color: #ffffff !important;
+    opacity: 0.9 !important;
+    font-weight: 500 !important;
+}
+
+.order-index .card.text-white .card-title {
+    color: #ffffff !important;
+    font-weight: 600 !important;
+}
+
+.order-index .card.text-white .btn {
+    color: #ffffff !important;
+}
+
+/* Estilos específicos para header de Órdenes de Alquiler */
+.order-index .table-header,
+.order-index .table-header *,
+.order-index .table-title,
+.order-index .table-title *,
+.order-index .table-title h3,
+.order-index .table-title .material-symbols-outlined {
+    color: #ffffff !important;
+}
+
+.order-index .table-header h3 {
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    font-size: 1.5rem !important;
+}
+
+.order-index .table-header .material-symbols-outlined {
+    color: #ffffff !important;
+    font-size: 28px !important;
+}
+
+/* Asegurar que todos los elementos del header sean blancos */
+.order-index .table-header,
+.order-index .table-header *,
+.order-index .table-title,
+.order-index .table-title *,
+.order-index .table-stats,
+.order-index .table-stats *,
+.order-index .stat-item,
+.order-index .stat-item * {
+    color: #ffffff !important;
+}
+
+/* Transiciones suaves para todos los elementos */
+* {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}

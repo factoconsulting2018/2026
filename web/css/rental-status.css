@@ -1,0 +1,319 @@
+/* ========================================
+   COLORES DE ESTADO PARA ALQUILERES
+   ======================================== */
+
+/* Tabla de alquileres con colores de estado */
+.rental-table tbody tr {
+    transition: all 0.3s ease;
+    border-left: 4px solid transparent;
+}
+
+/* Estado: Pendiente - AMARILLO/ANARANJADO */
+.rental-table tbody tr.estado-pendiente {
+    background-color: rgba(255, 193, 7, 0.1) !important;
+    border-left-color: #ffc107 !important;
+}
+
+.rental-table tbody tr.estado-pendiente:hover {
+    background-color: rgba(255, 193, 7, 0.2) !important;
+    transform: translateX(2px);
+    box-shadow: 0 2px 8px rgba(255, 193, 7, 0.3);
+}
+
+/* Estado: Pagado - VERDE */
+.rental-table tbody tr.estado-pagado {
+    background-color: rgba(40, 167, 69, 0.1) !important;
+    border-left-color: #28a745 !important;
+}
+
+.rental-table tbody tr.estado-pagado:hover {
+    background-color: rgba(40, 167, 69, 0.2) !important;
+    transform: translateX(2px);
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+}
+
+/* Estado: Reservado - AZUL */
+.rental-table tbody tr.estado-reservado {
+    background-color: rgba(13, 202, 240, 0.1) !important;
+    border-left-color: #0dcaf0 !important;
+}
+
+.rental-table tbody tr.estado-reservado:hover {
+    background-color: rgba(13, 202, 240, 0.2) !important;
+    transform: translateX(2px);
+    box-shadow: 0 2px 8px rgba(13, 202, 240, 0.3);
+}
+
+/* Estado: Cancelado - ROJO */
+.rental-table tbody tr.estado-cancelado {
+    background-color: rgba(220, 53, 69, 0.1) !important;
+    border-left-color: #dc3545 !important;
+    opacity: 0.7;
+}
+
+.rental-table tbody tr.estado-cancelado:hover {
+    background-color: rgba(220, 53, 69, 0.2) !important;
+    transform: translateX(2px);
+    box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+    opacity: 0.9;
+}
+
+/* Estado: Completado - VERDE OSCURO */
+.rental-table tbody tr.estado-completado {
+    background-color: rgba(25, 135, 84, 0.1) !important;
+    border-left-color: #198754 !important;
+}
+
+.rental-table tbody tr.estado-completado:hover {
+    background-color: rgba(25, 135, 84, 0.2) !important;
+    transform: translateX(2px);
+    box-shadow: 0 2px 8px rgba(25, 135, 84, 0.3);
+}
+
+/* Estados especiales para fechas */
+.rental-table tbody tr.vencido {
+    background-color: rgba(220, 53, 69, 0.05) !important;
+    border-left-color: #dc3545 !important;
+}
+
+.rental-table tbody tr.por-vencer {
+    background-color: rgba(255, 193, 7, 0.05) !important;
+    border-left-color: #ffc107 !important;
+}
+
+/* Mejoras en la tabla */
+.rental-table {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.rental-table thead th {
+    background: white;
+    color: #333;
+    font-weight: 600;
+    border: 1px solid #dee2e6;
+    padding: 15px 12px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.rental-table thead th a {
+    color: #333 !important;
+    text-decoration: none;
+}
+
+.rental-table thead th a:hover {
+    color: #0d6efd !important;
+    text-decoration: underline;
+}
+
+.rental-table thead th .material-symbols-outlined {
+    vertical-align: middle;
+}
+
+/* Íconos para las columnas del header */
+.rental-table thead th:nth-child(2)::before {
+    content: "👤";
+    margin-right: 8px;
+    font-size: 16px;
+}
+
+.rental-table thead th:nth-child(3)::before {
+    content: "🚗";
+    margin-right: 8px;
+    font-size: 16px;
+}
+
+.rental-table thead th:nth-child(4)::before {
+    content: "📅";
+    margin-right: 8px;
+    font-size: 16px;
+}
+
+.rental-table thead th:nth-child(5)::before {
+    content: "📅";
+    margin-right: 8px;
+    font-size: 16px;
+}
+
+.rental-table thead th:nth-child(6)::before {
+    content: "💰";
+    margin-right: 8px;
+    font-size: 16px;
+}
+
+.rental-table tbody td {
+    padding: 12px;
+    vertical-align: middle;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* Iconos de estado en las celdas */
+.rental-table .status-icon {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+
+.rental-table .status-icon.pendiente {
+    background-color: #ffc107;
+    animation: pulse-warning 2s infinite;
+}
+
+.rental-table .status-icon.pagado {
+    background-color: #28a745;
+    animation: pulse-success 2s infinite;
+}
+
+.rental-table .status-icon.reservado {
+    background-color: #0dcaf0;
+    animation: pulse-info 2s infinite;
+}
+
+.rental-table .status-icon.cancelado {
+    background-color: #dc3545;
+}
+
+.rental-table .status-icon.completado {
+    background-color: #198754;
+}
+
+/* Animaciones de pulso */
+@keyframes pulse-warning {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+@keyframes pulse-success {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+@keyframes pulse-info {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* Badges mejorados */
+.rental-table .badge {
+    font-size: 0.75rem;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Indicadores de fecha */
+.rental-table .fecha-indicator {
+    position: relative;
+    display: inline-block;
+}
+
+.rental-table .fecha-indicator.vencida::after {
+    content: '⚠️';
+    position: absolute;
+    top: -5px;
+    right: -15px;
+    font-size: 12px;
+}
+
+.rental-table .fecha-indicator.por-vencer::after {
+    content: '⏰';
+    position: absolute;
+    top: -5px;
+    right: -15px;
+    font-size: 12px;
+}
+
+/* Indicadores de estado en la leyenda */
+.status-indicator {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 8px;
+}
+
+.status-indicator.bg-warning {
+    background-color: #ffc107 !important;
+    animation: pulse-warning 2s infinite;
+}
+
+.status-indicator.bg-success {
+    background-color: #28a745 !important;
+    animation: pulse-success 2s infinite;
+}
+
+.status-indicator.bg-info {
+    background-color: #0dcaf0 !important;
+    animation: pulse-info 2s infinite;
+}
+
+.status-indicator.bg-danger {
+    background-color: #dc3545 !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .rental-table tbody tr {
+        border-left-width: 3px;
+    }
+    
+    .rental-table tbody tr:hover {
+        transform: none;
+    }
+    
+    .rental-table thead th,
+    .rental-table tbody td {
+        padding: 8px 6px;
+        font-size: 0.875rem;
+    }
+}
+
+/* Efectos adicionales para mejorar la experiencia */
+.rental-table tbody tr {
+    position: relative;
+}
+
+.rental-table tbody tr::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    transition: all 0.3s ease;
+}
+
+.rental-table tbody tr:hover::before {
+    width: 6px;
+}
+
+/* Colores específicos para diferentes estados de pago */
+.rental-table tbody tr[data-estado="pendiente"] {
+    background-color: rgba(255, 193, 7, 0.08);
+    border-left-color: #ffc107;
+}
+
+.rental-table tbody tr[data-estado="pagado"] {
+    background-color: rgba(40, 167, 69, 0.08);
+    border-left-color: #28a745;
+}
+
+.rental-table tbody tr[data-estado="reservado"] {
+    background-color: rgba(13, 202, 240, 0.08);
+    border-left-color: #0dcaf0;
+}
+
+.rental-table tbody tr[data-estado="cancelado"] {
+    background-color: rgba(220, 53, 69, 0.08);
+    border-left-color: #dc3545;
+    opacity: 0.8;
+}

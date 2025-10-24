@@ -1,0 +1,12 @@
+.git
+.gitignore
+.env
+runtime/*
+web/assets/*
+vendor
+tests
+node_modules
+*.md
+.DS_Store
+Thumbs.db
+

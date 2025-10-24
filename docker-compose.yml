@@ -1,0 +1,71 @@
+services:
+  # Aplicación Yii2 con Nginx + PHP-FPM
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: factorentacar_yii2
+    restart: unless-stopped
+    ports:
+      - "8083:80"
+    volumes:
+      - ./:/var/www/html
+      - ./runtime:/var/www/html/runtime
+      - ./web/assets:/var/www/html/web/assets
+    depends_on:
+      - mysql
+    environment:
+      - APP_ENV=docker
+      - DOCKER_CONTAINER=true
+      - PHP_MEMORY_LIMIT=256M
+      - PHP_UPLOAD_MAX_FILESIZE=100M
+      - PHP_POST_MAX_SIZE=100M
+    networks:
+      - factorentacar_network
+
+  # Base de datos MySQL
+  mysql:
+    image: mysql:8.0
+    container_name: factorentacar_yii2_mysql
+    restart: unless-stopped
+    ports:
+      - "3309:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: factorentacar_db
+      MYSQL_USER: factorentacar_user
+      MYSQL_PASSWORD: factorenta2024!
+      MYSQL_CHARSET: utf8mb4
+      MYSQL_COLLATION: utf8mb4_unicode_ci
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/mysql-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    networks:
+      - factorentacar_network
+
+  # phpMyAdmin (opcional)
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: factorentacar_yii2_phpmyadmin
+    restart: unless-stopped
+    ports:
+      - "8085:80"
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: root123
+      UPLOAD_LIMIT: 100M
+    depends_on:
+      - mysql
+    networks:
+      - factorentacar_network
+
+networks:
+  factorentacar_network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+    driver: local

@@ -1,0 +1,40 @@
+# Configuración UTF-8 para Apache
+AddDefaultCharset UTF-8
+
+# Configurar tipos MIME para UTF-8
+<IfModule mod_mime.c>
+    AddCharset UTF-8 .html .htm .css .js .json .xml .txt .php
+</IfModule>
+
+# Configurar PHP para UTF-8
+<IfModule mod_php.c>
+    php_value default_charset "UTF-8"
+    php_value mbstring.internal_encoding "UTF-8"
+    php_value mbstring.http_input "UTF-8"
+    php_value mbstring.http_output "UTF-8"
+</IfModule>
+
+# Configurar headers para UTF-8
+<IfModule mod_headers.c>
+    Header always set Content-Type "text/html; charset=UTF-8"
+</IfModule>
+
+# Configuración de seguridad básica
+<Files "*.php">
+    Order allow,deny
+    Allow from all
+</Files>
+
+# Denegar acceso a archivos sensibles
+<FilesMatch "\.(htaccess|htpasswd|ini|log|sh|inc|bak)$">
+    Order Deny,Allow
+    Deny from all
+</FilesMatch>
+
+# Configurar reescritura de URLs (si es necesario)
+RewriteEngine On
+
+# Redirigir a index.php si el archivo no existe
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . index.php [L]
