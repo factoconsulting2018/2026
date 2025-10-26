@@ -103,7 +103,7 @@ $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => Yii
             left: 0;
             width: var(--drawer-width);
             height: 100vh;
-            background: #262626;
+            background: #1F2937;
             box-shadow: 2px 0 8px rgba(0,0,0,0.1);
             transform: translateX(-100%);
             transition: transform 0.3s ease;
@@ -117,7 +117,7 @@ $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => Yii
         
         .drawer-header {
             padding: 20px;
-            background: linear-gradient(135deg, var(--surface-color) 0%, var(--secondary-color) 100%);
+            background: #1F2937;
             color: white;
             text-align: center;
         }
@@ -154,12 +154,12 @@ $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => Yii
         
         .nav-link:hover {
             background-color: rgba(255, 255, 255, 0.1);
-            color: var(--primary-color);
+            color: #ffffff;
         }
         
         .nav-link.active {
-            background-color: rgba(63, 169, 245, 0.2);
-            color: var(--primary-color);
+            background-color: rgba(255, 255, 255, 0.15);
+            color: #ffffff;
             border-left-color: var(--primary-color);
             font-weight: 600;
         }
