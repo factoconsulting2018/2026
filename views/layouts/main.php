@@ -169,6 +169,7 @@ $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => Yii
             margin-right: 12px;
             width: 20px;
             text-align: center;
+            color: #FFFFFF;
             font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
         }
         
