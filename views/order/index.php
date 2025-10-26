@@ -270,7 +270,7 @@ $this->registerCss('
                         'attribute' => 'total_precio',
                         'label' => '💰 Total',
                         'value' => function($model) {
-                            return '₡' . number_format($model->total_precio, 2);
+                            return '₡' . ($model->total_precio && $model->total_precio > 0 ? number_format($model->total_precio, 2) : '0.00');
                         },
                     ],
                     [

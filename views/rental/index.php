@@ -1080,7 +1080,7 @@ $this->registerCss('
                                 <div class="accordion-info-value">
                                     <span class="accordion-precio">
                                         <span class="material-symbols-outlined">monetization_on</span>
-                                        ₡<?= number_format($model->total_precio, 2) ?>
+                                        ₡<?= $model->total_precio && $model->total_precio > 0 ? number_format($model->total_precio, 2) : '0.00' ?>
                                     </span>
                                 </div>
                             </div>

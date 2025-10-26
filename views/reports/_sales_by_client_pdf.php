@@ -174,7 +174,7 @@ foreach ($salesByClient as $clientId => $clientData):
                 <td><?= $order->fecha_final ? date('d/m/Y', strtotime($order->fecha_final)) : 'N/A' ?></td>
                 <td class="number"><?= $order->cantidad_dias ?></td>
                 <td><?= $order->car ? $order->car->nombre : 'N/A' ?></td>
-                <td class="number">₡<?= number_format($order->total_precio, 2) ?></td>
+                <td class="number">₡<?= $order->total_precio && $order->total_precio > 0 ? number_format($order->total_precio, 2) : '0.00' ?></td>
                 <td class="center status-<?= $order->estado_pago ?>"><?= strtoupper($order->estado_pago) ?></td>
                 <td class="center"><?= $order->comprobante_pago ?: 'N/A' ?></td>
             </tr>
