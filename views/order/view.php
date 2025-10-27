@@ -58,11 +58,11 @@ $this->params['breadcrumbs'][] = $this->title;
                             'quantity',
                             [
                                 'attribute' => 'unit_price',
-                                'value' => '₡' . number_format($model->unit_price, 2),
+                                'value' => '₡' . ($model->unit_price && $model->unit_price > 0 ? number_format($model->unit_price, 2) : '0.00'),
                             ],
                             [
                                 'attribute' => 'total_price',
-                                'value' => '₡' . number_format($model->total_price, 2),
+                                'value' => '₡' . ($model->total_price && $model->total_price > 0 ? number_format($model->total_price, 2) : '0.00'),
                                 'format' => 'raw',
                                 'contentOptions' => ['class' => 'text-success font-weight-bold'],
                             ],
@@ -101,7 +101,7 @@ $this->params['breadcrumbs'][] = $this->title;
                     <div class="row">
                         <div class="col-6">
                             <small class="text-muted">Precio Unitario</small>
-                            <p class="h6">₡<?= number_format($model->unit_price, 2) ?></p>
+                            <p class="h6">₡<?= $model->unit_price && $model->unit_price > 0 ? number_format($model->unit_price, 2) : '0.00' ?></p>
                         </div>
                         <div class="col-6">
                             <small class="text-muted">Cantidad</small>
@@ -112,7 +112,7 @@ $this->params['breadcrumbs'][] = $this->title;
                     <div class="row">
                         <div class="col-12">
                             <small class="text-muted">Total</small>
-                            <p class="h4 text-success">₡<?= number_format($model->total_price, 2) ?></p>
+                            <p class="h4 text-success">₡<?= $model->total_price && $model->total_price > 0 ? number_format($model->total_price, 2) : '0.00' ?></p>
                         </div>
                     </div>
                 </div>
