@@ -35,11 +35,11 @@ class OrderController extends Controller
 
     public function actionIndex()
     {
-        $query = Order::find()->with(['client', 'article']);
+        $query = Order::find()->with(['client', 'car']);
         
-        $sale_mode = Yii::$app->request->get('sale_mode');
-        if ($sale_mode) {
-            $query->andWhere(['sale_mode' => $sale_mode]);
+        $estado_pago = Yii::$app->request->get('estado_pago');
+        if ($estado_pago) {
+            $query->andWhere(['estado_pago' => $estado_pago]);
         }
         
         $dataProvider = new ActiveDataProvider([
@@ -48,23 +48,23 @@ class OrderController extends Controller
             'sort' => ['defaultOrder' => ['created_at' => SORT_DESC]],
         ]);
 
-        // Obtener contadores por sale_mode
-        $modeCounters = Order::find()
-            ->select(['sale_mode', 'COUNT(*) as count'])
-            ->groupBy('sale_mode')
+        // Obtener contadores por estado_pago
+        $paymentCounters = Order::find()
+            ->select(['estado_pago', 'COUNT(*) as count'])
+            ->groupBy('estado_pago')
             ->asArray()
             ->all();
 
         // Convertir a un array asociativo
         $counters = [];
-        foreach ($modeCounters as $counter) {
-            $counters[$counter['sale_mode']] = $counter['count'];
+        foreach ($paymentCounters as $counter) {
+            $counters[$counter['estado_pago']] = $counter['count'];
         }
 
         return $this->render('index', [
             'dataProvider' => $dataProvider,
-            'modeCounters' => $counters,
-            'status' => $sale_mode,
+            'paymentCounters' => $counters,
+            'status' => $estado_pago,
         ]);
     }
 
@@ -78,20 +78,19 @@ class OrderController extends Controller
     public function actionCreate()
     {
         $model = new Order();
-        $model->sale_mode = 'retail';
+        $model->estado_pago = 'pendiente';
 
         if ($model->load(Yii::$app->request->post())) {
             if ($model->save()) {
-                Yii::$app->session->setFlash('success', '✅ Venta creada exitosamente');
+                Yii::$app->session->setFlash('success', '✅ Alquiler creado exitosamente');
                 return $this->redirect(['view', 'id' => $model->id]);
             } else {
-                Yii::$app->session->setFlash('error', '❌ Error al crear venta: ' . json_encode($model->errors));
+                Yii::$app->session->setFlash('error', '❌ Error al crear alquiler: ' . json_encode($model->errors));
             }
         }
 
-        return $this->render('create', [
-            'model' => $model,
-        ]);
+        // Redirigir a la vista de creación de rentals
+        return $this->redirect(['/rental/create']);
     }
 
     public function actionUpdate($id)
@@ -99,11 +98,12 @@ class OrderController extends Controller
         $model = $this->findModel($id);
 
         if ($model->load(Yii::$app->request->post()) && $model->save()) {
-            Yii::$app->session->setFlash('success', '✅ Venta actualizada exitosamente');
+            Yii::$app->session->setFlash('success', '✅ Alquiler actualizado exitosamente');
             return $this->redirect(['view', 'id' => $model->id]);
         }
 
-        return $this->render('update', ['model' => $model]);
+        // Redirigir a la vista de actualización de rentals
+        return $this->redirect(['/rental/update', 'id' => $id]);
     }
 
     public function actionDelete($id)
@@ -111,17 +111,8 @@ class OrderController extends Controller
         $model = $this->findModel($id);
         $model->delete();
 
-        Yii::$app->session->setFlash('success', '🗑️ Venta eliminada exitosamente');
+        Yii::$app->session->setFlash('success', '🗑️ Alquiler eliminado exitosamente');
         return $this->redirect(['index']);
-    }
-
-    public function actionGetArticlePrice($id)
-    {
-        $article = \app\models\Article::findOne(['id' => $id]);
-        if ($article) {
-            return $this->asJson(['price' => $article->price]);
-        }
-        return $this->asJson(['price' => 0]);
     }
 
     protected function findModel($id)

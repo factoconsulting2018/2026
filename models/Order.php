@@ -28,7 +28,7 @@ class Order extends ActiveRecord
      */
     public static function tableName()
     {
-        return 'sales';
+        return 'rentals';
     }
 
     /**
@@ -37,13 +37,14 @@ class Order extends ActiveRecord
     public function rules()
     {
         return [
-            [['ticket_id', 'article_id', 'quantity', 'unit_price', 'total_price'], 'required'],
-            [['article_id', 'client_id', 'store_id', 'quantity'], 'integer'],
-            [['unit_price', 'total_price'], 'number'],
-            [['created_at', 'updated_at'], 'safe'],
-            [['ticket_id'], 'string', 'max' => 50],
-            [['sale_mode'], 'in', 'range' => ['retail', 'wholesale', 'auction']],
-            [['notes'], 'string'],
+            [['client_id', 'car_id', 'fecha_inicio', 'cantidad_dias'], 'required'],
+            [['client_id', 'car_id', 'correapartir_enabled', 'cantidad_dias'], 'integer'],
+            [['fecha_inicio', 'fecha_final', 'hora_inicio', 'hora_final', 'fecha_correapartir', 'created_at', 'updated_at'], 'safe'],
+            [['precio_por_dia'], 'number'],
+            [['rental_id', 'lugar_entrega', 'lugar_retiro', 'estado_pago', 'ejecutivo', 'ejecutivo_otro'], 'string', 'max' => 255],
+            [['comprobante_pago'], 'string', 'max' => 500],
+            [['condiciones_especiales', 'choferes_autorizados'], 'string'],
+            [['estado_pago'], 'in', 'range' => ['pendiente', 'pagado', 'reservado', 'cancelado']],
         ];
     }
 
@@ -54,15 +55,26 @@ class Order extends ActiveRecord
     {
         return [
             'id' => 'ID',
-            'ticket_id' => 'ID de Ticket',
-            'article_id' => 'ID de Artículo',
-            'client_id' => 'ID de Cliente',
-            'sale_mode' => 'Modo de Venta',
-            'store_id' => 'ID de Tienda',
-            'quantity' => 'Cantidad',
-            'unit_price' => 'Precio Unitario',
-            'total_price' => 'Precio Total',
-            'notes' => 'Notas',
+            'rental_id' => 'ID del Alquiler',
+            'client_id' => 'Cliente',
+            'car_id' => 'Vehículo',
+            'correapartir_enabled' => 'Correapartir Habilitado',
+            'fecha_correapartir' => 'Fecha Correapartir',
+            'fecha_inicio' => 'Fecha de Inicio',
+            'hora_inicio' => 'Hora de Inicio',
+            'fecha_final' => 'Fecha Final',
+            'hora_final' => 'Hora Final',
+            'lugar_entrega' => 'Lugar de Entrega',
+            'lugar_retiro' => 'Lugar de Retiro',
+            'cantidad_dias' => 'Cantidad de Días',
+            'precio_por_dia' => 'Precio por Día',
+            'total_precio' => 'Precio Total',
+            'condiciones_especiales' => 'Condiciones Especiales',
+            'choferes_autorizados' => 'Choferes Autorizados',
+            'estado_pago' => 'Estado de Pago',
+            'comprobante_pago' => 'Comprobante de Pago',
+            'ejecutivo' => 'Ejecutivo',
+            'ejecutivo_otro' => 'Ejecutivo Otro',
             'created_at' => 'Fecha de Creación',
             'updated_at' => 'Fecha de Actualización',
         ];
@@ -74,8 +86,8 @@ class Order extends ActiveRecord
     public function beforeSave($insert)
     {
         if (parent::beforeSave($insert)) {
-            if ($insert && empty($this->ticket_id)) {
-                $this->ticket_id = $this->generateTicketId();
+            if ($insert && empty($this->rental_id)) {
+                $this->rental_id = $this->generateRentalId();
             }
             return true;
         }
@@ -83,12 +95,12 @@ class Order extends ActiveRecord
     }
 
     /**
-     * Genera un ID único para el ticket
+     * Genera un ID único para el alquiler
      * @return string
      */
-    protected function generateTicketId()
+    protected function generateRentalId()
     {
-        $prefix = 'TKT';
+        $prefix = 'RENT';
         $timestamp = time();
         $random = mt_rand(1000, 9999);
         return $prefix . $timestamp . $random;
@@ -104,21 +116,12 @@ class Order extends ActiveRecord
     }
 
     /**
-     * Obtiene el artículo asociado
+     * Obtiene el vehículo asociado
      * @return \yii\db\ActiveQuery
      */
-    public function getArticle()
+    public function getCar()
     {
-        return $this->hasOne(\app\models\Article::class, ['id' => 'article_id']);
-    }
-
-    /**
-     * Calcula el precio total
-     * @return float
-     */
-    public function calculateTotal()
-    {
-        return $this->quantity * $this->unit_price;
+        return $this->hasOne(\app\models\Car::class, ['id' => 'car_id']);
     }
 }
 
