@@ -42,8 +42,8 @@ class PdfController extends Controller
         $rental = $this->findRental($id);
         $companyInfo = CompanyConfig::getCompanyInfo();
         
-        // Configurar UTF-8 para la respuesta
-        header('Content-Type: application/pdf; charset=UTF-8');
+        // Limpiar cualquier salida previa
+        ob_clean();
         
         // Crear PDF con soporte UTF-8
         $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
@@ -79,8 +79,14 @@ class PdfController extends Controller
         // Generar nombre del archivo
         $filename = 'Orden_Alquiler_' . $rental->rental_id . '_' . date('Y-m-d') . '.pdf';
         
+        // Enviar headers correctos para PDF
+        Yii::$app->response->format = \yii\web\Response::FORMAT_RAW;
+        
         // Descargar el PDF
         $pdf->Output($filename, 'D');
+        
+        // Exit para evitar cualquier salida adicional
+        Yii::$app->end();
     }
 
     /**
@@ -91,8 +97,8 @@ class PdfController extends Controller
         $order = $this->findOrder($id);
         $companyInfo = CompanyConfig::getCompanyInfo();
         
-        // Configurar UTF-8 para la respuesta
-        header('Content-Type: application/pdf; charset=UTF-8');
+        // Limpiar cualquier salida previa
+        ob_clean();
         
         // Crear PDF con soporte UTF-8
         $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
@@ -121,8 +127,14 @@ class PdfController extends Controller
         // Generar nombre del archivo
         $filename = 'Orden_Venta_' . $order->ticket_id . '_' . date('Y-m-d') . '.pdf';
         
+        // Enviar headers correctos para PDF
+        Yii::$app->response->format = \yii\web\Response::FORMAT_RAW;
+        
         // Descargar el PDF
         $pdf->Output($filename, 'D');
+        
+        // Exit para evitar cualquier salida adicional
+        Yii::$app->end();
     }
 
     /**
