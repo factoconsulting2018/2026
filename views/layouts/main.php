@@ -396,10 +396,10 @@ $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => Yii
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link <?= Yii::$app->controller->id === 'rental' ? 'active' : '' ?>" 
-                   href="<?= \yii\helpers\Url::to(['/rental/index']) ?>">
-                    <span class="nav-icon material-symbols-outlined">receipt_long</span>
-                    <span class="nav-text">Alquileres</span>
+                <a class="nav-link <?= Yii::$app->controller->id === 'order' ? 'active' : '' ?>" 
+                   href="<?= \yii\helpers\Url::to(['/order/index']) ?>">
+                    <span class="nav-icon material-symbols-outlined">shopping_cart</span>
+                    <span class="nav-text">Órdenes</span>
                 </a>
             </li>
             <li class="nav-item">
@@ -414,13 +414,6 @@ $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => Yii
                    href="<?= \yii\helpers\Url::to(['/car/index']) ?>">
                     <span class="nav-icon material-symbols-outlined">directions_car</span>
                     <span class="nav-text">Vehículos</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link <?= Yii::$app->controller->id === 'order' ? 'active' : '' ?>" 
-                   href="<?= \yii\helpers\Url::to(['/order/index']) ?>">
-                    <span class="nav-icon material-symbols-outlined">shopping_cart</span>
-                    <span class="nav-text">Órdenes</span>
                 </a>
             </li>
             <li class="nav-item">
