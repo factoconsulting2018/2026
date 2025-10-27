@@ -35,7 +35,7 @@ class OrderController extends Controller
 
     public function actionIndex()
     {
-        $query = Order::find()->with(['client']);
+        $query = Order::find()->with(['client', 'article']);
         
         $sale_mode = Yii::$app->request->get('sale_mode');
         if ($sale_mode) {
@@ -48,32 +48,23 @@ class OrderController extends Controller
             'sort' => ['defaultOrder' => ['created_at' => SORT_DESC]],
         ]);
 
-        // También obtener alquileres para mostrar como órdenes
-        $rentalsQuery = Rental::find()->with(['client', 'car']);
-        $rentalsDataProvider = new ActiveDataProvider([
-            'query' => $rentalsQuery,
-            'pagination' => ['pageSize' => 20],
-            'sort' => ['defaultOrder' => ['created_at' => SORT_DESC]],
-        ]);
-
-        // Obtener contadores por estado de pago para los alquileres
-        $paymentCounters = Rental::find()
-            ->select(['estado_pago', 'COUNT(*) as count'])
-            ->groupBy('estado_pago')
+        // Obtener contadores por sale_mode
+        $modeCounters = Order::find()
+            ->select(['sale_mode', 'COUNT(*) as count'])
+            ->groupBy('sale_mode')
             ->asArray()
             ->all();
 
-        // Convertir a un array asociativo más fácil de usar
+        // Convertir a un array asociativo
         $counters = [];
-        foreach ($paymentCounters as $counter) {
-            $counters[$counter['estado_pago']] = $counter['count'];
+        foreach ($modeCounters as $counter) {
+            $counters[$counter['sale_mode']] = $counter['count'];
         }
 
         return $this->render('index', [
             'dataProvider' => $dataProvider,
-            'rentalsDataProvider' => $rentalsDataProvider,
+            'modeCounters' => $counters,
             'status' => $sale_mode,
-            'paymentCounters' => $counters,
         ]);
     }
 

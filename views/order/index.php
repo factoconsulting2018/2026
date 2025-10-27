@@ -139,13 +139,13 @@ $this->registerCss('
     <div class="card">
         <div class="table-header">
             <div class="table-title">
-                <span class="material-symbols-outlined">receipt_long</span>
-                <h3>Órdenes de Alquiler</h3>
+                <span class="material-symbols-outlined">shopping_cart</span>
+                <h3>Gestión de Órdenes de Venta</h3>
             </div>
             <div class="table-stats">
                 <span class="stat-item">
                     <span class="material-symbols-outlined">receipt</span>
-                    <span><?= $rentalsDataProvider->getTotalCount() ?> Alquileres</span>
+                    <span><?= $dataProvider->getTotalCount() ?> Órdenes</span>
                 </span>
             </div>
         </div>
@@ -153,35 +153,29 @@ $this->registerCss('
             <!-- Panel de Control - Estados de Pago -->
             <div class="row mb-4">
                 <?php
-                $estados = [
-                    'pagado' => [
-                        'title' => 'Pagados',
-                        'icon' => 'check_circle',
+                $modos = [
+                    'retail' => [
+                        'title' => 'Retail',
+                        'icon' => 'shopping_cart',
                         'gradient' => 'linear-gradient(135deg, #28a745 0%, #20c997 100%)',
-                        'description' => 'Órdenes pagadas'
+                        'description' => 'Ventas al detalle'
                     ],
-                    'pendiente' => [
-                        'title' => 'Pendientes',
-                        'icon' => 'pending',
+                    'wholesale' => [
+                        'title' => 'Wholesale',
+                        'icon' => 'inventory_2',
                         'gradient' => 'linear-gradient(135deg, #ffc107 0%, #fd7e14 100%)',
-                        'description' => 'Por procesar'
+                        'description' => 'Ventas mayoristas'
                     ],
-                    'reservado' => [
-                        'title' => 'Reservados',
-                        'icon' => 'event_available',
+                    'auction' => [
+                        'title' => 'Subasta',
+                        'icon' => 'gavel',
                         'gradient' => 'linear-gradient(135deg, #3fa9f5 0%, #3891d6 100%)',
-                        'description' => 'Reservaciones'
-                    ],
-                    'cancelado' => [
-                        'title' => 'Cancelados',
-                        'icon' => 'cancel',
-                        'gradient' => 'linear-gradient(135deg, #dc3545 0%, #e83e8c 100%)',
-                        'description' => 'Cancelados'
+                        'description' => 'Órdenes de subasta'
                     ],
                 ];
                 
-                foreach ($estados as $estado => $config) {
-                    $count = isset($paymentCounters[$estado]) ? $paymentCounters[$estado] : 0;
+                foreach ($modos as $modo => $config) {
+                    $count = isset($modeCounters[$modo]) ? $modeCounters[$modo] : 0;
                 ?>
                 <div class="col-md-3 mb-4">
                     <div class="card text-white" style="background: <?= $config['gradient'] ?>;">
@@ -203,7 +197,7 @@ $this->registerCss('
                                     </span>
                                 </div>
                             </div>
-                            <a href="<?= Url::to(['/order/index', 'sale_mode' => $estado]) ?>" class="btn btn-sm btn-light mt-3">
+                            <a href="<?= Url::to(['/order/index', 'sale_mode' => $modo]) ?>" class="btn btn-sm btn-light mt-3">
                                 Ver <?= strtolower($config['title']) ?> →
                             </a>
                         </div>
