@@ -31,7 +31,16 @@ $this->params['breadcrumbs'][] = $this->title;
                     
                     <?= $form->field($model, 'ticket_id')->textInput(['maxlength' => true, 'placeholder' => 'ID del ticket']) ?>
                     
-                    <?= $form->field($model, 'article_id')->textInput(['type' => 'number', 'placeholder' => 'ID del artículo']) ?>
+                    <?= $form->field($model, 'article_id')->dropDownList(
+                        \yii\helpers\ArrayHelper::map(
+                            \app\models\Article::find()->where(['status' => 'available'])->all(),
+                            'id',
+                            function($article) {
+                                return $article->article_id . ' - ' . $article->name;
+                            }
+                        ),
+                        ['prompt' => 'Seleccionar artículo...']
+                    ) ?>
                     
                     <?= $form->field($model, 'client_id')->dropDownList(
                         \yii\helpers\ArrayHelper::map(
@@ -75,3 +84,42 @@ $this->params['breadcrumbs'][] = $this->title;
         </div>
     </div>
 </div>
+
+<?php
+// JavaScript para calcular el total automáticamente
+$this->registerJs('
+    $(document).ready(function() {
+        var $quantity = $("input[name=\'Order[quantity]\']]");
+        var $unitPrice = $("input[name=\'Order[unit_price]\']]");
+        var $totalPrice = $("input[name=\'Order[total_price]\']]");
+        
+        function calculateTotal() {
+            var quantity = parseFloat($quantity.val()) || 0;
+            var unitPrice = parseFloat($unitPrice.val()) || 0;
+            var total = quantity * unitPrice;
+            $totalPrice.val(total.toFixed(2));
+        }
+        
+        $quantity.on("input", calculateTotal);
+        $unitPrice.on("input", calculateTotal);
+        
+        // Cargar precio del artículo cuando se selecciona
+        $("select[name=\'Order[article_id]\']").on("change", function() {
+            var articleId = $(this).val();
+            if (articleId) {
+                $.ajax({
+                    url: "/order/get-article-price",
+                    data: { id: articleId },
+                    dataType: "json",
+                    success: function(data) {
+                        if (data.price) {
+                            $unitPrice.val(data.price);
+                            calculateTotal();
+                        }
+                    }
+                });
+            }
+        });
+    });
+');
+?>

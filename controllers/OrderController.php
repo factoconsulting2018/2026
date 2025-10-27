@@ -115,6 +115,15 @@ class OrderController extends Controller
         return $this->redirect(['index']);
     }
 
+    public function actionGetArticlePrice($id)
+    {
+        $article = \app\models\Article::findOne(['id' => $id]);
+        if ($article) {
+            return $this->asJson(['price' => $article->price]);
+        }
+        return $this->asJson(['price' => 0]);
+    }
+
     protected function findModel($id)
     {
         if (($model = Order::findOne(['id' => $id])) !== null) {
