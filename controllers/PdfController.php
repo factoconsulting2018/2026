@@ -43,7 +43,9 @@ class PdfController extends Controller
         $companyInfo = CompanyConfig::getCompanyInfo();
         
         // Limpiar cualquier salida previa
-        ob_clean();
+        if (ob_get_level()) {
+            ob_end_clean();
+        }
         
         // Crear PDF con soporte UTF-8
         $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
@@ -98,7 +100,9 @@ class PdfController extends Controller
         $companyInfo = CompanyConfig::getCompanyInfo();
         
         // Limpiar cualquier salida previa
-        ob_clean();
+        if (ob_get_level()) {
+            ob_end_clean();
+        }
         
         // Crear PDF con soporte UTF-8
         $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
