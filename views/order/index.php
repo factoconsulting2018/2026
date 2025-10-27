@@ -158,7 +158,7 @@ $this->registerCss('
                         'title' => 'Pagados',
                         'icon' => 'check_circle',
                         'gradient' => 'linear-gradient(135deg, #28a745 0%, #20c997 100%)',
-                        'description' => 'Alquileres pagados'
+                        'description' => 'Órdenes pagadas'
                     ],
                     'pendiente' => [
                         'title' => 'Pendientes',
@@ -203,7 +203,7 @@ $this->registerCss('
                                     </span>
                                 </div>
                             </div>
-                            <a href="<?= Url::to(['/rental/index', 'estado_pago' => $estado]) ?>" class="btn btn-sm btn-light mt-3">
+                            <a href="<?= Url::to(['/order/index', 'sale_mode' => $estado]) ?>" class="btn btn-sm btn-light mt-3">
                                 Ver <?= strtolower($config['title']) ?> →
                             </a>
                         </div>
@@ -214,31 +214,25 @@ $this->registerCss('
         </div>
     </div>
 
-    <!-- Sección de Alquileres -->
+    <!-- Sección de Órdenes -->
     <div class="card mt-4">
         <div class="card-header">
             <h3 class="card-title">
-                <span class="material-symbols-outlined" style="font-size: 24px; vertical-align: middle; margin-right: 8px;">directions_car</span>
-                Órdenes de Alquiler (<?= $rentalsDataProvider->getTotalCount() ?>)
+                <span class="material-symbols-outlined" style="font-size: 24px; vertical-align: middle; margin-right: 8px;">shopping_cart</span>
+                Órdenes de Venta (<?= $dataProvider->getTotalCount() ?>)
             </h3>
         </div>
         <div class="card-body">
             <?php Pjax::begin(); ?>
             
             <?= GridView::widget([
-                'dataProvider' => $rentalsDataProvider,
+                'dataProvider' => $dataProvider,
                 'tableOptions' => ['class' => 'table table-hover'],
                 'showHeader' => true,
                 'emptyText' => '',
                 'columns' => [
-                    [
-                        'attribute' => 'rental_id',
-                        'label' => 'ID Alquiler',
-                        'format' => 'text',
-                        'value' => function($model) {
-                            return $model->rental_id ?: ('R' . str_pad($model->id, 6, '0', STR_PAD_LEFT));
-                        },
-                    ],
+                    'id',
+                    'ticket_id',
                     [
                         'attribute' => 'client_id',
                         'label' => '👤 Cliente',
@@ -247,78 +241,51 @@ $this->registerCss('
                         },
                     ],
                     [
-                        'attribute' => 'car_id',
-                        'label' => '🚗 Vehículo',
+                        'attribute' => 'article_id',
+                        'label' => '📦 Artículo',
                         'value' => function($model) {
-                            if ($model->car) {
-                                return $model->car->nombre . ' (' . $model->car->placa . ')';
-                            }
-                            return 'Vehículo no encontrado';
+                            return $model->article ? $model->article->name : 'N/A';
+                        },
+                    ],
+                    'quantity',
+                    [
+                        'attribute' => 'unit_price',
+                        'label' => '💰 Precio Unitario',
+                        'value' => function($model) {
+                            return '₡' . ($model->unit_price && $model->unit_price > 0 ? number_format($model->unit_price, 2) : '0.00');
                         },
                     ],
                     [
-                        'attribute' => 'fecha_inicio',
-                        'label' => '📅 Inicio',
-                        'format' => 'date',
-                    ],
-                    [
-                        'attribute' => 'fecha_final',
-                        'label' => '📅 Fin',
-                        'format' => 'date',
-                    ],
-                    [
-                        'attribute' => 'total_precio',
+                        'attribute' => 'total_price',
                         'label' => '💰 Total',
                         'value' => function($model) {
-                            return '₡' . ($model->total_precio && $model->total_precio > 0 ? number_format($model->total_precio, 2) : '0.00');
+                            return '₡' . ($model->total_price && $model->total_price > 0 ? number_format($model->total_price, 2) : '0.00');
                         },
                     ],
                     [
-                        'attribute' => 'estado_pago',
-                        'label' => 'Estado',
-                        'format' => 'raw',
+                        'attribute' => 'sale_mode',
+                        'label' => 'Modo',
                         'value' => function($model) {
-                            $estado = $model->estado_pago ?? 'pendiente';
-                            $badges = [
-                                'pagado' => ['success', '✅ Pagado'],
-                                'pendiente' => ['warning', '⏳ Pendiente'],
-                                'reservado' => ['info', '📋 Reservado'],
-                                'cancelado' => ['danger', '❌ Cancelado'],
-                            ];
-                            $badge = $badges[$estado] ?? ['secondary', $estado];
-                            return '<span class="badge bg-' . $badge[0] . '">' . $badge[1] . '</span>';
+                            return $model->sale_mode === 'retail' ? 'Retail' : 'Wholesale';
                         },
                     ],
+                    'created_at:datetime',
                     [
                         'class' => 'yii\grid\ActionColumn',
                         'header' => 'Acciones',
-                        'template' => '{view} {pdf} {share} {update} {delete}',
+                        'template' => '{view} {update} {delete}',
                         'buttons' => [
                             'view' => function ($url, $model) {
-                                return Html::a('👁️', ['/rental/view', 'id' => $model->id], ['class' => 'btn btn-sm btn-info', 'title' => 'Ver']);
-                            },
-                            'pdf' => function ($url, $model) {
-                                return Html::a('📄', ['/pdf/rental-order', 'id' => $model->id], [
-                                    'class' => 'btn btn-sm btn-warning',
-                                    'title' => 'Descargar PDF',
-                                    'target' => '_blank'
-                                ]);
-                            },
-                            'share' => function ($url, $model) {
-                                return Html::button('📤', [
-                                    'class' => 'btn btn-sm btn-success',
-                                    'title' => 'Compartir PDF',
-                                    'onclick' => 'shareRental(' . $model->id . ')'
-                                ]);
+                                return Html::a('👁️', ['/order/view', 'id' => $model->id], ['class' => 'btn btn-sm btn-info', 'title' => 'Ver']);
                             },
                             'update' => function ($url, $model) {
-                                return Html::a('✏️', ['/rental/update', 'id' => $model->id], ['class' => 'btn btn-sm btn-primary', 'title' => 'Editar']);
+                                return Html::a('✏️', ['/order/update', 'id' => $model->id], ['class' => 'btn btn-sm btn-primary', 'title' => 'Editar']);
                             },
                             'delete' => function ($url, $model) {
-                                return Html::a('🗑️', ['/rental/delete', 'id' => $model->id], [
+                                return Html::a('🗑️', ['/order/delete', 'id' => $model->id], [
                                     'class' => 'btn btn-sm btn-danger',
-                                    'title' => 'Cancelar',
-                                    'data-confirm' => '¿Estás seguro de cancelar este alquiler?',
+                                    'title' => 'Eliminar',
+                                    'data-confirm' => '¿Estás seguro de eliminar esta orden?',
                                     'data-method' => 'post',
                                 ]);
                             },
@@ -331,96 +298,3 @@ $this->registerCss('
         </div>
     </div>
 </div>
-
-<script>
-function shareRental(rentalId) {
-    // URL del PDF de la orden de alquiler
-    const pdfUrl = '/pdf/rental-order?id=' + rentalId;
-    const shareUrl = window.location.origin + pdfUrl;
-    
-    // Título del documento a compartir
-    const title = 'Orden de Alquiler #' + rentalId;
-    const text = 'Compartir orden de alquiler: ' + title;
-    
-    // Verificar si el navegador soporta Web Share API
-    if (navigator.share) {
-        navigator.share({
-            title: title,
-            text: text,
-            url: shareUrl
-        }).then(() => {
-            showNotification('✅ Orden compartida exitosamente', 'success');
-        }).catch((error) => {
-            console.log('Error al compartir:', error);
-            // Fallback a copiar al portapapeles
-            copyToClipboard(shareUrl);
-        });
-    } else {
-        // Fallback: copiar URL al portapapeles
-        copyToClipboard(shareUrl);
-    }
-}
-
-function copyToClipboard(text) {
-    if (navigator.clipboard) {
-        navigator.clipboard.writeText(text).then(() => {
-            showNotification('✅ URL copiada al portapapeles', 'success');
-        }).catch((error) => {
-            console.error('Error al copiar:', error);
-            fallbackCopyTextToClipboard(text);
-        });
-    } else {
-        fallbackCopyTextToClipboard(text);
-    }
-}
-
-function fallbackCopyTextToClipboard(text) {
-    const textArea = document.createElement('textarea');
-    textArea.value = text;
-    textArea.style.position = 'fixed';
-    textArea.style.left = '-999999px';
-    textArea.style.top = '-999999px';
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
-    
-    try {
-        const successful = document.execCommand('copy');
-        if (successful) {
-            showNotification('✅ URL copiada al portapapeles', 'success');
-        } else {
-            showNotification('❌ Error al copiar URL', 'error');
-        }
-    } catch (err) {
-        console.error('Error en fallback copy:', err);
-        showNotification('❌ Error al copiar URL', 'error');
-    }
-    
-    document.body.removeChild(textArea);
-}
-
-function showNotification(message, type) {
-    // Crear elemento de notificación
-    const notification = document.createElement('div');
-    notification.className = 'alert alert-' + (type === 'success' ? 'success' : 'danger') + ' alert-dismissible fade show';
-    notification.style.position = 'fixed';
-    notification.style.top = '20px';
-    notification.style.right = '20px';
-    notification.style.zIndex = '9999';
-    notification.style.minWidth = '300px';
-    
-    notification.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
-    
-    document.body.appendChild(notification);
-    
-    // Auto-remover después de 3 segundos
-    setTimeout(() => {
-        if (notification.parentNode) {
-            notification.parentNode.removeChild(notification);
-        }
-    }, 3000);
-}
-</script>
