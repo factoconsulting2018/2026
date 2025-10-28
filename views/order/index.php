@@ -2462,3 +2462,133 @@ $(document).ready(function() {
 ');
 ?>
 
+<!-- Modal de Acciones para Móvil -->
+<div class="modal fade" id="actionsModal" tabindex="-1" aria-labelledby="actionsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #3fa9f5 0%, #1b305b 100%); color: white;">
+                <h5 class="modal-title" id="actionsModalLabel">
+                    <span class="material-symbols-outlined" style="vertical-align: middle; margin-right: 8px;">settings</span>
+                    Menú de Acciones
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="actionsModalBody">
+                <!-- Contenido dinámico se cargará aquí -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<?php
+// JavaScript para manejar el modal de acciones en móvil
+$this->registerJs('
+$(document).ready(function() {
+    // En pantallas pequeñas, interceptar clic en el card y abrir modal
+    if (window.innerWidth <= 768) {
+        $(".rental-accordion-item").on("click", function(e) {
+            // Solo abrir modal si se hace clic en el header del acordeón
+            if ($(e.target).closest(".accordion-header").length && !$(e.target).closest("a, button").length) {
+                var item = $(this);
+                var rentalId = item.data("rental-id");
+                
+                // Evitar que el acordeón normal se ejecute
+                e.stopPropagation();
+                e.preventDefault();
+                
+                // Obtener todas las acciones del item
+                var actions = item.find(".accordion-actions").html();
+                
+                // Crear contenido del modal con mejor estructura
+                var modalBody = $("#actionsModalBody");
+                modalBody.html(`
+                    <div class="actions-modal-content">
+                        ${actions}
+                    </div>
+                `);
+                
+                // Ajustar estilos de los botones en el modal
+                modalBody.find(".action-btn").each(function() {
+                    var $btn = $(this);
+                    var title = $btn.attr("title") || $btn.find(".material-symbols-outlined").attr("aria-label") || "Acción";
+                    
+                    // Agregar label si no tiene texto visible
+                    if (!$btn.text().trim()) {
+                        var icon = $btn.html();
+                        $btn.html(icon + \'<span class="action-label">\' + title + \'</span>\');
+                    }
+                    
+                    // Hacer que el botón sea más grande y visible
+                    $btn.css({
+                        "min-height": "80px",
+                        "width": "100%",
+                        "justify-content": "center",
+                        "flex-direction": "column"
+                    });
+                });
+                
+                // Mostrar modal
+                var modal = new bootstrap.Modal(document.getElementById("actionsModal"));
+                modal.show();
+            }
+        });
+    }
+});
+');
+?>
+
+<style>
+/* Estilos para el modal de acciones móvil */
+@media (max-width: 768px) {
+    #actionsModal .modal-dialog {
+        margin: 0;
+    }
+    
+    #actionsModal .modal-content {
+        min-height: 100vh;
+        border-radius: 0;
+    }
+    
+    #actionsModal .modal-header {
+        border-bottom: 2px solid rgba(255,255,255,0.2);
+        padding: 20px;
+    }
+    
+    #actionsModal .modal-body {
+        padding: 20px;
+    }
+    
+    /* Hacer que los botones de acción ocupen todo el ancho en el modal */
+    #actionsModalBody .crud-actions-mobile {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+        gap: 12px;
+    }
+    
+    #actionsModalBody .action-btn {
+        width: 100%;
+        height: 60px;
+        border-radius: 12px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+    
+    #actionsModalBody .action-btn .material-symbols-outlined {
+        font-size: 24px;
+    }
+    
+    /* Texto visible debajo de los iconos */
+    #actionsModalBody .action-btn .action-label {
+        display: block;
+        font-size: 11px;
+        margin-top: 4px;
+    }
+}
+</style>
+
