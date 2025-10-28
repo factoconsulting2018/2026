@@ -941,7 +941,7 @@ $this->registerCss('
                                             <span class="material-symbols-outlined">share</span>
                                         </button>
                                         <a href="<?= Url::to(['/pdf/rental-order', 'id' => $model->id]) ?>" class="action-btn pdf-btn" 
-                                           title="Descargar PDF de Orden" target="_blank" onclick="window.location.reload();">
+                                           title="Descargar PDF de Orden" download>
                                             <span class="material-symbols-outlined">description</span>
                                         </a>
                                         <a href="<?= Url::to(['delete', 'id' => $model->id]) ?>" class="action-btn delete-btn" 
@@ -1156,7 +1156,7 @@ $this->registerCss('
                                     <span class="material-symbols-outlined">share</span>
                                 </button>
                                 <a href="<?= Url::to(['/pdf/rental-order', 'id' => $model->id]) ?>" class="action-btn pdf-btn" 
-                                   title="Descargar PDF de Orden" target="_blank" onclick="window.location.reload();">
+                                   title="Descargar PDF de Orden" download>
                                     <span class="material-symbols-outlined">description</span>
                                 </a>
                                 <a href="<?= $deleteUrl ?>" class="action-btn delete-btn" 

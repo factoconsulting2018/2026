@@ -84,11 +84,17 @@ class PdfController extends Controller
         // Generar nombre del archivo
         $filename = 'Orden_Alquiler_' . $rental->rental_id . '_' . date('Y-m-d') . '.pdf';
         
+        // Establecer headers para forzar descarga
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Content-Transfer-Encoding: binary');
+        header('Accept-Ranges: bytes');
+        
         // Descargar el PDF
         $pdf->Output($filename, 'D');
         
         // Exit para evitar cualquier salida adicional
-        Yii::$app->end();
+        exit();
     }
 
     /**
@@ -134,11 +140,17 @@ class PdfController extends Controller
         // Generar nombre del archivo
         $filename = 'Orden_Venta_' . $order->ticket_id . '_' . date('Y-m-d') . '.pdf';
         
+        // Establecer headers para forzar descarga
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Content-Transfer-Encoding: binary');
+        header('Accept-Ranges: bytes');
+        
         // Descargar el PDF
         $pdf->Output($filename, 'D');
         
         // Exit para evitar cualquier salida adicional
-        Yii::$app->end();
+        exit();
     }
 
     /**
