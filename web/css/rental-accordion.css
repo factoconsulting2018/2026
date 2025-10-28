@@ -151,10 +151,21 @@
     overflow: hidden;
     transition: max-height 0.3s cubic-bezier(0.2, 0, 0, 1);
     background: #FAFAFA;
+    display: none; /* Inicialmente oculto */
 }
 
-.accordion-item.active .accordion-content {
-    max-height: 1000px;
+.rental-accordion-item.active .accordion-content {
+    display: block; /* Mostrar cuando está activo */
+    overflow: visible; /* Permitir scroll si es necesario */
+}
+
+/* Asegurar que el contenido permanezca visible */
+.rental-accordion-item.active .accordion-content.opening {
+    animation: slideDown 0.3s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.rental-accordion-item.active .accordion-content.closing {
+    animation: slideUp 0.3s cubic-bezier(0.2, 0, 0, 1);
 }
 
 .accordion-body {

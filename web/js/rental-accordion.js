@@ -34,11 +34,17 @@ class RentalAccordion {
                 
                 // Agregar event listener al header
                 header.addEventListener('click', (e) => {
-                    e.preventDefault();
+                    // NO prevenir evento por defecto para evitar problemas con el scroll
                     e.stopPropagation();
                     
                     console.log(`🖱️ RentalAccordion: Header ${index + 1} clicked`);
                     this.toggleItem(item, index);
+                });
+                
+                // Prevenir que el scroll cierre el acordeón
+                content.addEventListener('scroll', (e) => {
+                    // No hacer nada al hacer scroll
+                    e.stopPropagation();
                 });
 
                 // Configurar estado inicial
@@ -90,6 +96,9 @@ class RentalAccordion {
             // Remover cualquier animación anterior
             content.classList.remove('closing');
             
+            // Mostrar el contenido primero
+            content.style.display = 'block';
+            
             // Obtener la altura real del contenido
             const contentHeight = content.scrollHeight;
             
@@ -99,14 +108,13 @@ class RentalAccordion {
             // Forzar reflow
             content.offsetHeight;
             
-            // Mostrar contenido con altura máxima animada
+            // Establecer altura máxima para la animación
             content.style.maxHeight = contentHeight + 'px';
-            content.style.display = 'block';
             
             // Remover clase de animación después de completar
             setTimeout(() => {
                 content.classList.remove('opening');
-                // NO poner maxHeight a 'none' - mantener el valor
+                // Dejar maxHeight con el valor calculado
             }, 300);
         }
         
