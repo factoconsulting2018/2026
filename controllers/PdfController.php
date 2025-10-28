@@ -694,4 +694,71 @@ class PdfController extends Controller
         
         return $this->formatDateTimeSpanish($dateTime);
     }
+
+    /**
+     * Generar PDF con mPDF - PDF2
+     */
+    public function actionGenerateMpdf($id)
+    {
+        // Limpiar buffers ANTES de todo
+        if (ob_get_length()) @ob_end_clean();
+        while (ob_get_level() > 0) @ob_end_clean();
+        
+        $rental = $this->findRental($id);
+        $companyInfo = CompanyConfig::getCompanyInfo();
+        
+        // Desactivar compresión
+        if (function_exists('apache_setenv')) {
+            @apache_setenv('no-gzip', 1);
+        }
+        @ini_set('zlib.output_compression', 0);
+        @ini_set('output_buffering', 0);
+        
+        try {
+            // Cargar mPDF
+            require_once Yii::getAlias('@vendor/autoload.php');
+            $mpdf = new \Mpdf\Mpdf([
+                'mode' => 'utf-8',
+                'format' => 'A4',
+                'orientation' => 'P',
+                'margin_left' => 15,
+                'margin_right' => 15,
+                'margin_top' => 20,
+                'margin_bottom' => 10,
+                'default_font' => 'dejavusans'
+            ]);
+            
+            // Generar HTML
+            $html = $this->renderPartial('_rental-pdf', [
+                'model' => $rental,
+                'companyInfo' => $companyInfo
+            ], true);
+            
+            // Escribir HTML al PDF
+            $mpdf->WriteHTML($html);
+            
+            // Nombre del archivo
+            $filename = 'Orden_Alquiler_' . $rental->rental_id . '_' . date('Y-m-d') . '_PDF2.pdf';
+            $filepath = Yii::getAlias('@app') . '/pdfs/' . $filename;
+            
+            // Guardar en servidor
+            $mpdf->Output($filepath, 'F');
+            
+            // Configurar respuesta para descarga
+            Yii::$app->response->format = \yii\web\Response::FORMAT_RAW;
+            Yii::$app->response->headers->removeAll();
+            Yii::$app->response->headers->set('Content-Type', 'application/pdf');
+            Yii::$app->response->headers->set('Content-Disposition', 'attachment; filename="' . $filename . '"');
+            Yii::$app->response->headers->set('Content-Length', filesize($filepath));
+            
+            // Leer y enviar archivo
+            Yii::$app->response->data = file_get_contents($filepath);
+            
+            return Yii::$app->response;
+            
+        } catch (\Exception $e) {
+            Yii::error('Error generando PDF con mPDF: ' . $e->getMessage());
+            throw new NotFoundHttpException('Error al generar el PDF: ' . $e->getMessage());
+        }
+    }
 }

@@ -323,6 +323,11 @@
     opacity: 1 !important;
 }
 
+.pdf2-icon {
+    color: #6F42C1;
+    border-color: #6F42C1;
+}
+
 .delete-icon {
     color: #BA1A1A;
     border-color: #BA1A1A;
