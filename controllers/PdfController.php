@@ -42,8 +42,11 @@ class PdfController extends Controller
         $rental = $this->findRental($id);
         $companyInfo = CompanyConfig::getCompanyInfo();
         
+        // Configurar response format antes de todo
+        Yii::$app->response->format = \yii\web\Response::FORMAT_RAW;
+        
         // Limpiar cualquier salida previa
-        if (ob_get_level()) {
+        while (ob_get_level()) {
             ob_end_clean();
         }
         
@@ -81,9 +84,6 @@ class PdfController extends Controller
         // Generar nombre del archivo
         $filename = 'Orden_Alquiler_' . $rental->rental_id . '_' . date('Y-m-d') . '.pdf';
         
-        // Enviar headers correctos para PDF
-        Yii::$app->response->format = \yii\web\Response::FORMAT_RAW;
-        
         // Descargar el PDF
         $pdf->Output($filename, 'D');
         
@@ -99,8 +99,11 @@ class PdfController extends Controller
         $order = $this->findOrder($id);
         $companyInfo = CompanyConfig::getCompanyInfo();
         
+        // Configurar response format antes de todo
+        Yii::$app->response->format = \yii\web\Response::FORMAT_RAW;
+        
         // Limpiar cualquier salida previa
-        if (ob_get_level()) {
+        while (ob_get_level()) {
             ob_end_clean();
         }
         
@@ -130,9 +133,6 @@ class PdfController extends Controller
         
         // Generar nombre del archivo
         $filename = 'Orden_Venta_' . $order->ticket_id . '_' . date('Y-m-d') . '.pdf';
-        
-        // Enviar headers correctos para PDF
-        Yii::$app->response->format = \yii\web\Response::FORMAT_RAW;
         
         // Descargar el PDF
         $pdf->Output($filename, 'D');
