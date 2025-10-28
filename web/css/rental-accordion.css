@@ -313,6 +313,14 @@
 
 .pdf-icon-hide.show-pdf {
     display: flex !important;
+    visibility: visible !important;
+}
+
+/* Asegurar que el icono PDF sea visible cuando tenga la clase show-pdf */
+.action-icon.pdf-icon.show-pdf {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
 }
 
 .delete-icon {

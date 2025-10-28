@@ -2460,8 +2460,18 @@ $(document).ready(function() {
                         // Para iconos con .pdf-icon-hide, usar clase show-pdf
                         if (btn.hasClass("pdf-icon-hide")) {
                             btn.removeClass("pdf-icon-hide").addClass("show-pdf");
+                            // Forzar visibilidad con estilo inline
+                            btn.css({
+                                "display": "flex !important",
+                                "visibility": "visible",
+                                "opacity": "1"
+                            });
                         } else {
-                            btn.css("display", "flex");
+                            btn.css({
+                                "display": "flex",
+                                "visibility": "visible",
+                                "opacity": "1"
+                            });
                         }
                         
                         // En móvil, remover el atributo download para permitir que Chrome maneje la descarga
