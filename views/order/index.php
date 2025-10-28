@@ -2464,7 +2464,7 @@ $(document).ready(function() {
                             btn.css("display", "flex");
                         }
                         
-                        // En móvil, remover el atributo 'download' para permitir que Chrome maneje la descarga
+                        // En móvil, remover el atributo download para permitir que Chrome maneje la descarga
                         if (window.innerWidth <= 768) {
                             btn.removeAttr("download");
                         }
