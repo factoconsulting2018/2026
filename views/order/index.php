@@ -621,6 +621,88 @@ $this->registerCss('
         .modern-rental-table {
             display: none;
         }
+        
+        /* Mejorar responsividad en móviles */
+        .rental-index h1 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .btn-success {
+            font-size: 0.9rem;
+            padding: 0.5rem 1rem;
+        }
+        
+        .nav-tabs {
+            font-size: 0.9rem;
+        }
+        
+        .nav-tabs .material-symbols-outlined {
+            font-size: 16px !important;
+        }
+        
+        /* Contador responsive */
+        .stat-item {
+            font-size: 0.75rem;
+            padding: 0.4rem 0.8rem;
+        }
+        
+        .stat-item .material-symbols-outlined {
+            font-size: 16px;
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .rental-index {
+            padding: 0.5rem;
+        }
+        
+        .rental-index h1 {
+            font-size: 1.25rem;
+        }
+        
+        .rental-index h1 .material-symbols-outlined {
+            font-size: 24px !important;
+        }
+        
+        .btn-success {
+            font-size: 0.8rem;
+            padding: 0.4rem 0.8rem;
+        }
+        
+        .nav-tabs {
+            font-size: 0.8rem;
+            display: flex;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+        }
+        
+        .nav-tabs .nav-item {
+            flex: 0 0 auto;
+            white-space: nowrap;
+        }
+        
+        .nav-tabs .nav-link {
+            padding: 0.5rem 0.75rem;
+        }
+        
+        .accordion-card {
+            margin-bottom: 1rem;
+        }
+        
+        .stat-item {
+            font-size: 0.7rem;
+            padding: 0.3rem 0.6rem;
+        }
+        
+        .table-header h3 {
+            font-size: 1.2rem !important;
+        }
+        
+        .table-stats {
+            flex-direction: column;
+            gap: 8px;
+        }
     }
 ');
 ?>

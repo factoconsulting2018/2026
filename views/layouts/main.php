@@ -271,7 +271,14 @@ $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => Yii
         @media (max-width: 767px) {
             .drawer {
                 width: 100%;
-                max-width: 320px;
+                max-width: 100%;
+                z-index: 9999;
+                box-shadow: 0 0 50px rgba(0,0,0,0.3);
+            }
+            
+            .drawer-overlay {
+                z-index: 9998;
+                background: rgba(0, 0, 0, 0.5);
             }
             
             .main-content.drawer-open {
@@ -284,6 +291,54 @@ $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => Yii
                 width: 45px;
                 height: 45px;
                 font-size: 18px;
+                z-index: 10000;
+                position: fixed;
+            }
+            
+            /* Mejorar el header del drawer en móvil */
+            .drawer-header {
+                padding: 30px 20px;
+                border-bottom: 2px solid rgba(255,255,255,0.1);
+            }
+            
+            .drawer-title {
+                font-size: 22px;
+            }
+            
+            /* Hacer el menu más grande en móvil */
+            .nav-text {
+                font-size: 16px;
+            }
+            
+            .nav-icon {
+                font-size: 24px;
+            }
+            
+            /* Padding para los items del menu */
+            .nav-link {
+                padding: 16px 20px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .drawer {
+                font-size: 1.1rem;
+            }
+            
+            .drawer-title {
+                font-size: 20px;
+            }
+            
+            .nav-text {
+                font-size: 15px;
+            }
+            
+            .nav-icon {
+                font-size: 22px;
+            }
+            
+            .nav-link {
+                padding: 14px 18px;
             }
         }
         
