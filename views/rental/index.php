@@ -480,6 +480,31 @@ $this->registerCss('
         left: 100%;
     }
 
+    /* Botón PDF */
+    .pdf-btn {
+        background: linear-gradient(135deg, #9249ff, #6f42c1);
+        color: white;
+    }
+    
+    .pdf-btn:hover {
+        background: linear-gradient(135deg, #6f42c1, #5a32a3);
+    }
+    
+    .pdf-btn::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: left 0.5s ease;
+    }
+    
+    .pdf-btn:hover::before {
+        left: 100%;
+    }
+
     /* Botón Eliminar */
     .delete-btn {
         background: linear-gradient(135deg, #dc3545, #c82333);
@@ -915,6 +940,10 @@ $this->registerCss('
                                                 onclick="shareRental(<?= $model->id ?>)">
                                             <span class="material-symbols-outlined">share</span>
                                         </button>
+                                        <a href="<?= Url::to(['/pdf/rental-order', 'id' => $model->id]) ?>" class="action-btn pdf-btn" 
+                                           title="Descargar PDF de Orden">
+                                            <span class="material-symbols-outlined">description</span>
+                                        </a>
                                         <a href="<?= Url::to(['delete', 'id' => $model->id]) ?>" class="action-btn delete-btn" 
                                            title="Cancelar Alquiler"
                                            data-confirm="¿Estás seguro de cancelar este alquiler?" 
@@ -1126,6 +1155,10 @@ $this->registerCss('
                                         onclick="shareRental(<?= $model->id ?>)">
                                     <span class="material-symbols-outlined">share</span>
                                 </button>
+                                <a href="<?= Url::to(['/pdf/rental-order', 'id' => $model->id]) ?>" class="action-btn pdf-btn" 
+                                   title="Descargar PDF de Orden">
+                                    <span class="material-symbols-outlined">description</span>
+                                </a>
                                 <a href="<?= $deleteUrl ?>" class="action-btn delete-btn" 
                                    title="Cancelar Alquiler"
                                    data-confirm="¿Estás seguro de cancelar este alquiler?" 
