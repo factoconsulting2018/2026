@@ -103,7 +103,7 @@ class PdfController extends Controller
         
         $rental = $this->findRental($id);
         $filename = 'Orden_Alquiler_' . $rental->rental_id . '_' . date('Y-m-d') . '.pdf';
-        $filepath = Yii::getAlias('@app') . '/pdfs/' . $filename;
+        $filepath = Yii::getAlias('@app') . '/runtime/' . $filename;
         
         if (!file_exists($filepath)) {
             throw new NotFoundHttpException('El archivo PDF no existe. Por favor, genere el PDF primero.');
@@ -145,7 +145,7 @@ class PdfController extends Controller
     {
         $rental = $this->findRental($id);
         $filename = 'Orden_Alquiler_' . $rental->rental_id . '_' . date('Y-m-d') . '.pdf';
-        $filepath = Yii::getAlias('@app') . '/pdfs/' . $filename;
+        $filepath = Yii::getAlias('@app') . '/runtime/' . $filename;
         
         return json_encode([
             'exists' => file_exists($filepath),
@@ -747,7 +747,7 @@ class PdfController extends Controller
             
             // Nombre del archivo
             $filename = 'Orden_Alquiler_' . $rental->rental_id . '_' . date('Y-m-d') . '_PDF2.pdf';
-            $filepath = Yii::getAlias('@app') . '/pdfs/' . $filename;
+            $filepath = Yii::getAlias('@app') . '/runtime/' . $filename;
             
             // Guardar en servidor
             $mpdf->Output($filepath, 'F');
