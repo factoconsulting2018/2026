@@ -726,6 +726,13 @@ class RentalController extends Controller
             
             // Crear PDF usando mPDF
             require_once Yii::getAlias('@vendor/autoload.php');
+            
+            // Crear directorio temporal personalizado para mPDF
+            $tempDir = Yii::getAlias('@app') . '/runtime/mpdf_temp';
+            if (!is_dir($tempDir)) {
+                mkdir($tempDir, 0777, true);
+            }
+            
             $pdf = new \Mpdf\Mpdf([
                 'mode' => 'utf-8',
                 'format' => 'A4',
@@ -734,7 +741,8 @@ class RentalController extends Controller
                 'margin_right' => 15,
                 'margin_top' => 20,
                 'margin_bottom' => 10,
-                'default_font' => 'dejavusans'
+                'default_font' => 'dejavusans',
+                'tempDir' => $tempDir
             ]);
             
             // Generar contenido HTML
