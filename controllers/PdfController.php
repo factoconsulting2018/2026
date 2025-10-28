@@ -42,35 +42,41 @@ class PdfController extends Controller
         $rental = $this->findRental($id);
         $companyInfo = CompanyConfig::getCompanyInfo();
         
-        // Configurar response format antes de todo
-        Yii::$app->response->format = \yii\web\Response::FORMAT_RAW;
-        
-        // Limpiar cualquier salida previa
+        // Limpiar TODOS los buffers de salida
         while (ob_get_level()) {
             ob_end_clean();
         }
         
-        // Crear PDF con soporte UTF-8
+        // Desactivar compresión de salida
+        if (function_exists('apache_setenv')) {
+            @apache_setenv('no-gzip', 1);
+        }
+        @ini_set('zlib.output_compression', 0);
+        
+        // Limpiar cualquier buffer que Yii pueda tener
+        Yii::$app->response->format = \yii\web\Response::FORMAT_RAW;
+        Yii::$app->response->stream = false;
+        
+        // Crear PDF
         $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
         
-        // Configurar documento
+        // Configuración del documento
         $pdf->SetCreator('Facto Rent a Car');
         $pdf->SetAuthor('Facto Rent a Car');
         $pdf->SetTitle('Orden de Alquiler - ' . $rental->rental_id);
-        $pdf->SetSubject('Orden de Alquiler');
         
         // Configurar márgenes
         $pdf->SetMargins(15, 20, 15);
         $pdf->SetHeaderMargin(10);
         $pdf->SetFooterMargin(10);
         
-        // Configurar fuente UTF-8 compatible
+        // Configurar fuente
         $pdf->SetFont('dejavusans', '', 10);
         
         // Agregar página
         $pdf->AddPage();
         
-        // Generar contenido del PDF
+        // Generar contenido
         $html = $this->generateRentalOrderHtml($rental, $companyInfo);
         $pdf->writeHTML($html, true, false, true, false, '');
         
@@ -84,17 +90,16 @@ class PdfController extends Controller
         // Generar nombre del archivo
         $filename = 'Orden_Alquiler_' . $rental->rental_id . '_' . date('Y-m-d') . '.pdf';
         
-        // Establecer headers para forzar descarga
-        header('Content-Type: application/pdf');
-        header('Content-Disposition: attachment; filename="' . $filename . '"');
-        header('Content-Transfer-Encoding: binary');
-        header('Accept-Ranges: bytes');
+        // Configurar headers para descarga forzada
+        header('Content-Type: application/pdf', true);
+        header('Content-Disposition: attachment; filename="' . $filename . '"', true);
+        header('Cache-Control: private, max-age=0, must-revalidate');
+        header('Pragma: no-cache');
         
-        // Descargar el PDF
+        // TCPDF Output maneja todo
         $pdf->Output($filename, 'D');
         
-        // Exit para evitar cualquier salida adicional
-        exit();
+        return;
     }
 
     /**
@@ -105,52 +110,57 @@ class PdfController extends Controller
         $order = $this->findOrder($id);
         $companyInfo = CompanyConfig::getCompanyInfo();
         
-        // Configurar response format antes de todo
-        Yii::$app->response->format = \yii\web\Response::FORMAT_RAW;
-        
-        // Limpiar cualquier salida previa
+        // Limpiar TODOS los buffers de salida
         while (ob_get_level()) {
             ob_end_clean();
         }
         
-        // Crear PDF con soporte UTF-8
+        // Desactivar compresión de salida
+        if (function_exists('apache_setenv')) {
+            @apache_setenv('no-gzip', 1);
+        }
+        @ini_set('zlib.output_compression', 0);
+        
+        // Limpiar cualquier buffer que Yii pueda tener
+        Yii::$app->response->format = \yii\web\Response::FORMAT_RAW;
+        Yii::$app->response->stream = false;
+        
+        // Crear PDF
         $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
         
-        // Configurar documento
+        // Configuración del documento
         $pdf->SetCreator('Facto Rent a Car');
         $pdf->SetAuthor('Facto Rent a Car');
         $pdf->SetTitle('Orden de Venta - ' . $order->ticket_id);
-        $pdf->SetSubject('Orden de Venta');
         
         // Configurar márgenes
         $pdf->SetMargins(15, 20, 15);
         $pdf->SetHeaderMargin(10);
         $pdf->SetFooterMargin(10);
         
-        // Configurar fuente UTF-8 compatible
+        // Configurar fuente
         $pdf->SetFont('dejavusans', '', 10);
         
         // Agregar página
         $pdf->AddPage();
         
-        // Generar contenido del PDF
+        // Generar contenido
         $html = $this->generateSaleOrderHtml($order, $companyInfo);
         $pdf->writeHTML($html, true, false, true, false, '');
         
         // Generar nombre del archivo
         $filename = 'Orden_Venta_' . $order->ticket_id . '_' . date('Y-m-d') . '.pdf';
         
-        // Establecer headers para forzar descarga
-        header('Content-Type: application/pdf');
-        header('Content-Disposition: attachment; filename="' . $filename . '"');
-        header('Content-Transfer-Encoding: binary');
-        header('Accept-Ranges: bytes');
+        // Configurar headers para descarga forzada
+        header('Content-Type: application/pdf', true);
+        header('Content-Disposition: attachment; filename="' . $filename . '"', true);
+        header('Cache-Control: private, max-age=0, must-revalidate');
+        header('Pragma: no-cache');
         
-        // Descargar el PDF
+        // TCPDF Output maneja todo
         $pdf->Output($filename, 'D');
         
-        // Exit para evitar cualquier salida adicional
-        exit();
+        return;
     }
 
     /**
