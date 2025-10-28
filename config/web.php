@@ -79,6 +79,7 @@ $config = [
                 'logout' => 'site/logout',
                 'logs' => 'site/logs',
                 'pdf/generate-mpdf/<id:\d+>' => 'pdf/generate-mpdf',
+                'pdf/preview-pdf/<id:\d+>' => 'pdf/preview-pdf',
             ],
         ],
     ],
