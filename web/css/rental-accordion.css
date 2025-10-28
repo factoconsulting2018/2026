@@ -67,6 +67,13 @@
     flex: 1;
 }
 
+.accordion-rental-id-status-container {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: flex-start;
+}
+
 .accordion-rental-id {
     background: rgba(255, 255, 255, 0.2);
     padding: 8px 12px;

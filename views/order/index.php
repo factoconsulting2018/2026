@@ -1135,7 +1135,12 @@ $this->registerCss('
             <div class="rental-accordion-item <?= $estadoClass ?>" data-rental-id="<?= $model->id ?>">
                 <button class="accordion-header">
                     <div class="accordion-header-info">
-                        <div class="accordion-rental-id"><?= Html::encode(!empty($model->rental_id) ? $model->rental_id : 'R' . $model->id) ?></div>
+                        <div class="accordion-rental-id-status-container">
+                            <div class="accordion-rental-id"><?= Html::encode(!empty($model->rental_id) ? $model->rental_id : 'R' . $model->id) ?></div>
+                            <div class="accordion-status-badge accordion-status-<?= $estado ?>">
+                                <?= ucfirst($estado) ?>
+                            </div>
+                        </div>
                         <div class="accordion-client-info">
                             <div class="accordion-client-name">
                                 <?php
@@ -1154,9 +1159,6 @@ $this->registerCss('
                                 echo $model->car ? Html::encode($model->car->nombre . ' (' . $model->car->placa . ')') : 'N/A';
                                 ?>
                             </div>
-                        </div>
-                        <div class="accordion-status-badge accordion-status-<?= $estado ?>">
-                            <?= ucfirst($estado) ?>
                         </div>
                     </div>
                     <div class="accordion-toggle-icon">
