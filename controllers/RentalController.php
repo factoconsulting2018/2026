@@ -118,15 +118,15 @@ class RentalController extends Controller
     {
         $model = $this->findModel($id);
         
-        // Verificar si se debe descargar PDF automáticamente
-        $download = Yii::$app->request->get('download');
-        if ($download === 'mpdf') {
-            // Redirigir a la acción de descarga con mPDF
-            return $this->redirect(['/pdf/generate-mpdf', 'id' => $id]);
+        // Verificar si se debe mostrar preview del PDF
+        $showPreview = Yii::$app->request->get('showPreview');
+        if ($showPreview === '1') {
+            // Redirigir a la vista de preview
+            return $this->redirect(['/order/index', 'showPdfPreview' => $id]);
         }
         
         return $this->render('view', [
-            'model' => $model,
+'model' => $model,
         ]);
     }
 
@@ -149,10 +149,10 @@ class RentalController extends Controller
                 // Generar PDF automáticamente al crear la orden
                 $this->generateOrderPdf($model->id);
                 
-                Yii::$app->session->setFlash('success', '✅ Alquiler creado exitosamente. El PDF se está descargando...');
+                Yii::$app->session->setFlash('success', '✅ Alquiler creado exitosamente.');
                 
-                // Redirigir a la vista con flag para descargar PDF con mPDF
-                return $this->redirect(['view', 'id' => $model->id, 'download' => 'mpdf']);
+                // Redirigir a la vista con flag para mostrar preview del PDF
+                return $this->redirect(['view', 'id' => $model->id, 'showPreview' => '1']);
             } else {
                 // Debug: Log de errores de validación
                 Yii::info('DEBUG - Errores de validación: ' . json_encode($model->errors), 'rental');

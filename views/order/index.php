@@ -1292,12 +1292,13 @@ $this->registerCss('
                                    style="display:none;">
                                     <span class="material-symbols-outlined">description</span>
                                 </a>
-                                <a href="<?= Url::to(['/pdf/generate-mpdf', 'id' => $model->id]) ?>" 
+                                <button type="button" 
                                    class="action-icon pdf2-icon" 
                                    data-rental-id="<?= $model->id ?>"
-                                   title="Generar y Descargar PDF2 (mPDF)">
+                                   title="Previsualizar PDF"
+                                   onclick="openPdfPreviewModal(<?= $model->id ?>)">
                                     <span class="material-symbols-outlined">file_present</span>
-                                </a>
+                                </button>
                                 <a href="<?= $deleteUrl ?>" class="action-icon delete-icon" 
                                    title="Cancelar Alquiler"
                                    data-confirm="¿Estás seguro de cancelar este alquiler?" 
@@ -2604,3 +2605,95 @@ $(document).ready(function() {
 });
 ');
 ?>
+
+<!-- Modal de Preview de PDF -->
+<div class="modal fade" id="pdfPreviewModal" tabindex="-1" aria-labelledby="pdfPreviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #3fa9f5 0%, #1b305b 100%); color: white;">
+                <h5 class="modal-title" id="pdfPreviewModalLabel">
+                    <span class="material-symbols-outlined" style="vertical-align: middle; margin-right: 8px;">preview</span>
+                    Previsualizar PDF de Orden
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body" style="padding: 0;">
+                <div id="pdf-spinner" style="display: none; text-align: center; padding: 40px;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="sr-only">Cargando...</span>
+                    </div>
+                    <p style="margin-top: 10px;">Cargando preview del PDF...</p>
+                </div>
+                <div id="pdf-iframe-container" style="height: 70vh; overflow: auto;">
+                    <iframe id="pdf-preview-iframe" style="width: 100%; height: 100%; border: none;"></iframe>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <span class="material-symbols-outlined" style="vertical-align: middle; margin-right: 4px;">close</span>
+                    Cerrar
+                </button>
+                <button type="button" class="btn btn-success" id="download-pdf-btn">
+                    <span class="material-symbols-outlined" style="vertical-align: middle; margin-right: 4px;">download</span>
+                    Generar y Descargar PDF
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function openPdfPreviewModal(rentalId) {
+    // Mostrar spinner
+    $('#pdf-spinner').show();
+    $('#pdf-iframe-container').hide();
+    
+    // Cargar el preview del PDF en el iframe
+    var previewUrl = '/pdf/preview-pdf?id=' + rentalId;
+    $('#pdf-preview-iframe').attr('src', previewUrl);
+    
+    // Mostrar el modal
+    var myModal = new bootstrap.Modal(document.getElementById('pdfPreviewModal'));
+    myModal.show();
+    
+    // Cuando el iframe se carga, ocultar el spinner
+    $('#pdf-preview-iframe').on('load', function() {
+        $('#pdf-spinner').hide();
+        $('#pdf-iframe-container').show();
+    });
+    
+    // Configurar el botón de descarga
+    $('#download-pdf-btn').off('click').on('click', function() {
+        // Mostrar spinner en el botón
+        var btn = $(this);
+        btn.prop('disabled', true);
+        btn.html('<span class="spinner-border spinner-border-sm me-2"></span>Generando PDF...');
+        
+        // Iniciar descarga
+        window.location.href = '/pdf/generate-mpdf?id=' + rentalId;
+        
+        // Cerrar modal después de un segundo
+        setTimeout(function() {
+            myModal.hide();
+        }, 1000);
+    });
+}
+</script>
+
+<style>
+#pdf-preview-iframe {
+    min-height: 500px;
+}
+
+@media (max-width: 768px) {
+    #pdf-preview-iframe {
+        min-height: 400px;
+    }
+}
+
+.pdf-iframe-container {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    overflow: hidden;
+}
+</style>

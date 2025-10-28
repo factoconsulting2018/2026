@@ -154,6 +154,26 @@ class PdfController extends Controller
     }
 
     /**
+     * Preview del PDF (genera HTML para mostrar en el modal)
+     */
+    public function actionPreviewPdf($id)
+    {
+        $rental = $this->findRental($id);
+        $companyInfo = CompanyConfig::getCompanyInfo();
+        
+        // Renderizar el HTML del PDF
+        $html = $this->renderPartial('_rental-pdf', [
+            'model' => $rental,
+            'companyInfo' => $companyInfo
+        ], true);
+        
+        // Retornar el HTML para mostrarlo en el iframe
+        return $this->renderPartial('_pdf-preview', [
+            'html' => $html
+        ]);
+    }
+
+    /**
      * Generar PDF de una orden de alquiler (método original para compatibilidad)
      */
     public function actionRentalOrder($id)
