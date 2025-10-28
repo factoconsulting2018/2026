@@ -24,8 +24,8 @@ $this->params['breadcrumbs'][] = $this->title;
         <div class="col-md-8">
             <div class="card">
                 <div class="card-header" style="background: linear-gradient(135deg, #22487a 0%, #0d001e 100%); color: white;">
-                    <h5 class="card-title mb-0">
-                        <span class="material-symbols-outlined" style="font-size: 20px; vertical-align: middle; margin-right: 8px;">
+                    <h5 class="card-title mb-0" style="color: white !important;">
+                        <span class="material-symbols-outlined" style="font-size: 20px; vertical-align: middle; margin-right: 8px; color: white;">
                             info
                         </span>
                         Detalles del Alquiler
@@ -94,8 +94,8 @@ $this->params['breadcrumbs'][] = $this->title;
         <div class="col-md-4">
             <div class="card">
                 <div class="card-header" style="background: linear-gradient(135deg, #22487a 0%, #0d001e 100%); color: white;">
-                    <h5 class="card-title mb-0">
-                        <span class="material-symbols-outlined" style="font-size: 20px; vertical-align: middle; margin-right: 8px;">
+                    <h5 class="card-title mb-0" style="color: white !important;">
+                        <span class="material-symbols-outlined" style="font-size: 20px; vertical-align: middle; margin-right: 8px; color: white;">
                             settings
                         </span>
                         Acciones
@@ -126,8 +126,8 @@ $this->params['breadcrumbs'][] = $this->title;
             <?php if ($model->condiciones_especiales || $model->choferes_autorizados): ?>
             <div class="card mt-3">
                 <div class="card-header" style="background: linear-gradient(135deg, #22487a 0%, #0d001e 100%); color: white;">
-                    <h5 class="card-title mb-0">
-                        <span class="material-symbols-outlined" style="font-size: 20px; vertical-align: middle; margin-right: 8px;">
+                    <h5 class="card-title mb-0" style="color: white !important;">
+                        <span class="material-symbols-outlined" style="font-size: 20px; vertical-align: middle; margin-right: 8px; color: white;">
                             notes
                         </span>
                         Información Adicional
