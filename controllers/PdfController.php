@@ -752,17 +752,19 @@ class PdfController extends Controller
             // Guardar en servidor
             $mpdf->Output($filepath, 'F');
             
-            // Configurar respuesta para descarga
-            Yii::$app->response->format = \yii\web\Response::FORMAT_RAW;
+            // Configurar respuesta para descarga con limpieza de headers
             Yii::$app->response->headers->removeAll();
+            Yii::$app->response->headers->set('Pragma', 'public');
+            Yii::$app->response->headers->set('Expires', '0');
+            Yii::$app->response->headers->set('Cache-Control', 'must-revalidate, post-check=0, pre-check=0');
             Yii::$app->response->headers->set('Content-Type', 'application/pdf');
             Yii::$app->response->headers->set('Content-Disposition', 'attachment; filename="' . $filename . '"');
             Yii::$app->response->headers->set('Content-Length', filesize($filepath));
             
-            // Leer y enviar archivo
+            // Enviar el contenido del archivo y terminar
             Yii::$app->response->data = file_get_contents($filepath);
-            
-            return Yii::$app->response;
+            Yii::$app->response->send();
+            exit;
             
         } catch (\Exception $e) {
             Yii::error('Error generando PDF con mPDF: ' . $e->getMessage());
