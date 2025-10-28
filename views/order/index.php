@@ -1305,6 +1305,15 @@ $this->registerCss('
             </div>
         <?php endforeach; ?>
         
+        <!-- Versión en móvil -->
+        <div class="version-info-mobile text-center mt-4 mb-3" style="padding: 16px; display: none;">
+            <div style="background: linear-gradient(135deg, #3fa9f5 0%, #1b305b 100%); color: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                <span class="material-symbols-outlined" style="font-size: 24px; vertical-align: middle; margin-right: 8px; display: block; margin-bottom: 8px;">info</span>
+                <div style="font-size: 16px; font-weight: 600;">Versión 1.0</div>
+                <div style="font-size: 12px; opacity: 0.9; margin-top: 4px;">Sistema de Gestión de Alquileres</div>
+            </div>
+        </div>
+        
         <!-- Paginación para acordeón móvil -->
         <div class="d-flex justify-content-center mt-4">
             <?= \yii\widgets\LinkPager::widget([
@@ -2592,3 +2601,29 @@ $(document).ready(function() {
 }
 </style>
 
+<?php
+// JavaScript para mostrar la versión solo en móvil
+$this->registerJs('
+$(document).ready(function() {
+    function checkAndShowVersion() {
+        var $versionInfo = $(".version-info-mobile");
+        
+        if (window.innerWidth <= 768) {
+            // Mostrar solo en móvil
+            $versionInfo.css("display", "block");
+        } else {
+            // Ocultar en desktop
+            $versionInfo.css("display", "none");
+        }
+    }
+    
+    // Verificar al cargar
+    checkAndShowVersion();
+    
+    // Verificar al redimensionar
+    $(window).on("resize", function() {
+        checkAndShowVersion();
+    });
+});
+');
+?>
