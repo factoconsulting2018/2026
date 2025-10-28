@@ -86,7 +86,7 @@ $car = $model->car;
             <td>¢<?= number_format($model->precio_por_dia, 0) ?></td>
             <td>1 Unidad x <?= str_pad($model->cantidad_dias, 2, '0', STR_PAD_LEFT) ?></td>
             <td style="text-align: right;">Total:</td>
-            <td style="text-align: right;">¢<?= number_format($model->total_precio, 0) ?></td>
+            <td style="text-align: right;">¢<?= number_format($model->total_precio ?? 0, 0) ?></td>
         </tr>
     </table>
 </body>

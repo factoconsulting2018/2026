@@ -302,7 +302,7 @@ use yii\helpers\Html;
                                     </span>
                                 </td>
                                 <td style="font-weight: bold; color: #2E86AB;">
-                                    ₡<?= number_format($rental->total_precio, 2, '.', ',') ?>
+                                    ₡<?= number_format($rental->total_precio ?? 0, 2, '.', ',') ?>
                                 </td>
                                 <td>
                                     <?php

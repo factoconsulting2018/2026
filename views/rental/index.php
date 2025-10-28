@@ -1065,7 +1065,7 @@ $this->registerCss('
                                 <div class="data-cell amount-cell">
                                     <div class="total-amount">
                                         <span class="currency">₡</span>
-                                        <span class="amount"><?= $model->total_precio && $model->total_precio > 0 ? number_format($model->total_precio, 2) : '0.00' ?></span>
+                                        <span class="amount"><?= number_format($model->total_precio ?? 0, 2) ?></span>
                                     </div>
                                 </div>
                                 
@@ -1268,7 +1268,7 @@ $this->registerCss('
                                 <div class="accordion-info-value">
                                     <span class="accordion-precio">
                                         <span class="material-symbols-outlined">monetization_on</span>
-                                        ₡<?= $model->total_precio && $model->total_precio > 0 ? number_format($model->total_precio, 2) : '0.00' ?>
+                                        ₡<?= number_format($model->total_precio ?? 0, 2) ?>
                                     </span>
                                 </div>
                             </div>

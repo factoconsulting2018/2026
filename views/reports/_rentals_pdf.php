@@ -114,8 +114,8 @@ body {
                         <td><?= date('d/m/Y', strtotime($rental->created_at)) ?></td>
                         <td><?= $rental->client ? $rental->client->full_name : 'N/A' ?></td>
                         <td><?= $rental->car ? $rental->car->nombre . ' (' . $rental->car->placa . ')' : 'N/A' ?></td>
-                        <td class="number">₡<?= $rental->total_precio && $rental->total_precio > 0 ? number_format($rental->total_precio, 2) : '0.00' ?></td>
-                        <td class="number">₡<?= $rental->total_precio && $rental->total_precio > 0 ? number_format($rental->total_precio, 2) : '0.00' ?></td>
+                        <td class="number">₡<?= number_format($rental->total_precio ?? 0, 2) ?></td>
+                        <td class="number">₡<?= number_format($rental->total_precio ?? 0, 2) ?></td>
                         <td><?= $rental->comprobante_pago ?? 'N/A' ?></td>
                         <td><?= $rental->ejecutivo ?? 'N/A' ?></td>
                     </tr>

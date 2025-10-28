@@ -55,10 +55,10 @@ $this->params['breadcrumbs'][] = $this->title;
                             ],
                             [
                                 'attribute' => 'total_precio',
-                                'value' => '₡' . ($model->total_precio && $model->total_precio > 0 ? number_format($model->total_precio, 2) : '0.00'),
+                                'value' => '₡' . number_format($model->total_precio ?? 0, 2),
                                 'format' => 'raw',
                                 'value' => function($model) {
-                                    $total = $model->total_precio && $model->total_precio > 0 ? number_format($model->total_precio, 2) : '0.00';
+                                    $total = number_format($model->total_precio ?? 0, 2);
                                     return '<strong style="color: #28a745; font-size: 18px;">₡' . $total . '</strong>';
                                 }
                             ],
