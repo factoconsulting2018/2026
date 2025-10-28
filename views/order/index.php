@@ -1168,7 +1168,8 @@ $this->registerCss('
                 
                 <div class="accordion-content">
                     <div class="accordion-body">
-                        <div class="accordion-info-grid">
+                        <div class="accordion-layout-container">
+                            <div class="accordion-info-grid">
                                 <div class="accordion-info-item">
                                     <div class="accordion-info-label">
                                         <span class="material-symbols-outlined">calendar_today</span>
@@ -1264,15 +1265,14 @@ $this->registerCss('
                             </div>
                         </div>
                         
-                        <div class="accordion-actions">
-                            <div class="crud-actions-mobile">
-                                <a href="<?= $viewUrl ?>" class="action-btn view-btn" title="Ver Detalles">
+                            <div class="accordion-actions-right">
+                                <a href="<?= $viewUrl ?>" class="action-icon view-icon" title="Ver Detalles">
                                     <span class="material-symbols-outlined">visibility</span>
                                 </a>
-                                <a href="<?= $updateUrl ?>" class="action-btn edit-btn" title="Editar">
+                                <a href="<?= $updateUrl ?>" class="action-icon edit-icon" title="Editar">
                                     <span class="material-symbols-outlined">edit</span>
                                 </a>
-                                <button type="button" class="action-btn payment-btn" 
+                                <button type="button" class="action-icon payment-icon" 
                                         title="Cambiar Estado de Pago"
                                         data-rental-id="<?= $model->id ?>"
                                         data-current-status="<?= $estado ?>"
@@ -1280,21 +1280,21 @@ $this->registerCss('
                                         onclick="openPaymentModal(this)">
                                     <span class="material-symbols-outlined">payment</span>
                                 </button>
-                                <button type="button" class="action-btn share-btn" 
+                                <button type="button" class="action-icon share-icon" 
                                         title="Compartir Orden"
                                         data-rental-id="<?= $model->id ?>"
                                         onclick="shareRental(<?= $model->id ?>)">
                                     <span class="material-symbols-outlined">share</span>
                                 </button>
                                 <a href="<?= Url::to(['/pdf/download-rental', 'id' => $model->id]) ?>" 
-                                   class="action-btn pdf-btn pdf-btn-hide" 
+                                   class="action-icon pdf-icon pdf-icon-hide" 
                                    data-rental-id="<?= $model->id ?>"
                                    title="Descargar PDF"
                                    style="display:none;"
                                    download>
                                     <span class="material-symbols-outlined">description</span>
                                 </a>
-                                <a href="<?= $deleteUrl ?>" class="action-btn delete-btn" 
+                                <a href="<?= $deleteUrl ?>" class="action-icon delete-icon" 
                                    title="Cancelar Alquiler"
                                    data-confirm="¿Estás seguro de cancelar este alquiler?" 
                                    data-method="post">

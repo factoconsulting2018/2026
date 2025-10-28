@@ -241,7 +241,77 @@
     gap: 8px;
 }
 
+/* Layout del contenido del acordeón */
+.accordion-layout-container {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 20px;
+    align-items: start;
+}
+
 /* Acciones del acordeón */
+.accordion-actions-right {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 8px;
+    position: sticky;
+    top: 20px;
+}
+
+.action-icon {
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    text-decoration: none;
+    transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
+    border: 2px solid transparent;
+    background: #f5f5f5;
+}
+
+.action-icon:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.action-icon .material-symbols-outlined {
+    font-size: 22px;
+}
+
+.view-icon {
+    color: #006A6B;
+    border-color: #006A6B;
+}
+
+.edit-icon {
+    color: #6750A4;
+    border-color: #6750A4;
+}
+
+.payment-icon {
+    color: #28A745;
+    border-color: #28A745;
+}
+
+.share-icon {
+    color: #007BFF;
+    border-color: #007BFF;
+}
+
+.pdf-icon {
+    color: #DC3545;
+    border-color: #DC3545;
+}
+
+.delete-icon {
+    color: #BA1A1A;
+    border-color: #BA1A1A;
+}
+
+/* Acciones antiguas (compatibilidad) */
 .accordion-actions {
     display: flex;
     gap: 12px;
@@ -327,6 +397,25 @@
     .accordion-info-grid {
         grid-template-columns: 1fr;
         gap: 16px;
+    }
+    
+    /* En móvil, mostrar acciones en fila horizontal al final */
+    .accordion-layout-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .accordion-actions-right {
+        flex-direction: row;
+        justify-content: center;
+        flex-wrap: wrap;
+        padding-top: 20px;
+        border-top: 1px solid rgba(0, 0, 0, 0.08);
+        position: relative;
+        top: 0;
+    }
+    
+    .action-icon {
+        flex: 0 0 auto;
     }
     
     .accordion-actions {
