@@ -140,8 +140,10 @@ class RentalController extends Controller
                 // Generar PDF automáticamente al crear la orden
                 $this->generateOrderPdf($model->id);
                 
-                Yii::$app->session->setFlash('success', '✅ Alquiler creado exitosamente');
-                return $this->redirect(['view', 'id' => $model->id]);
+                Yii::$app->session->setFlash('success', '✅ Alquiler creado exitosamente. El PDF se está descargando...');
+                
+                // Redirigir a la vista con flag para descargar PDF
+                return $this->redirect(['view', 'id' => $model->id, 'download' => 'pdf']);
             } else {
                 // Debug: Log de errores de validación
                 Yii::info('DEBUG - Errores de validación: ' . json_encode($model->errors), 'rental');

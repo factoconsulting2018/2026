@@ -153,7 +153,43 @@ $this->params['breadcrumbs'][] = $this->title;
         </div>
     </div>
 
+    <!-- Spinner de descarga PDF -->
+    <div id="pdfDownloadOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; justify-content: center; align-items: center;">
+        <div style="background: white; padding: 40px; border-radius: 12px; text-align: center;">
+            <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                <span class="sr-only">Cargando...</span>
+            </div>
+            <p style="margin-top: 20px; font-size: 18px; color: #333;">Generando y descargando PDF...</p>
+        </div>
+    </div>
+
 </div>
+
+<?php
+// Descargar PDF automáticamente si viene de crear orden
+if (isset($_GET['download']) && $_GET['download'] === 'pdf') {
+    $this->registerJs('
+    $(document).ready(function() {
+        var rentalId = ' . $model->id . ';
+        
+        // Mostrar spinner
+        $("#pdfDownloadOverlay").show();
+        
+        // Esperar un poco para que se genere el PDF
+        setTimeout(function() {
+            // Intentar descargar el PDF
+            var downloadUrl = "/pdf/download-rental?id=" + rentalId;
+            window.location.href = downloadUrl;
+            
+            // Ocultar spinner después de 2 segundos
+            setTimeout(function() {
+                $("#pdfDownloadOverlay").hide();
+            }, 2000);
+        }, 1000);
+    });
+    ');
+}
+?>
 
 <style>
 .rental-view .card {
