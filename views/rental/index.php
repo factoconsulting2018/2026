@@ -584,6 +584,7 @@ $this->registerCss('
         align-items: center;
         justify-content: center;
         padding: 16px 0;
+        flex-wrap: wrap;
     }
     
     .crud-actions-mobile .action-btn {
@@ -595,6 +596,41 @@ $this->registerCss('
     
     .crud-actions-mobile .action-btn .material-symbols-outlined {
         font-size: 18px;
+    }
+    
+    @media (max-width: 576px) {
+        /* Acciones móviles más pequeñas en pantallas pequeñas */
+        .crud-actions-mobile {
+            gap: 8px;
+            padding: 12px 0;
+        }
+        
+        .crud-actions-mobile .action-btn {
+            width: 36px;
+            height: 36px;
+        }
+        
+        .crud-actions-mobile .action-btn .material-symbols-outlined {
+            font-size: 16px;
+        }
+    }
+    
+    @media (max-width: 400px) {
+        /* Acciones aún más pequeñas en pantallas muy pequeñas */
+        .crud-actions-mobile {
+            gap: 6px;
+            padding: 10px 0;
+        }
+        
+        .crud-actions-mobile .action-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+        }
+        
+        .crud-actions-mobile .action-btn .material-symbols-outlined {
+            font-size: 14px;
+        }
     }
     
     /* Responsive */
@@ -623,6 +659,98 @@ $this->registerCss('
     @media (max-width: 992px) {
         .modern-rental-table {
             display: none;
+        }
+        
+        /* Mejorar responsividad en móviles */
+        .rental-index h1 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .btn-success {
+            font-size: 0.9rem;
+            padding: 0.5rem 1rem;
+        }
+        
+        .nav-tabs {
+            font-size: 0.9rem;
+        }
+        
+        .nav-tabs .material-symbols-outlined {
+            font-size: 16px !important;
+        }
+        
+        /* Contador responsive */
+        .stat-item {
+            font-size: 0.75rem;
+            padding: 0.4rem 0.8rem;
+        }
+        
+        .stat-item .material-symbols-outlined {
+            font-size: 16px;
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .rental-index {
+            padding: 0.5rem;
+        }
+        
+        .rental-index h1 {
+            font-size: 1.25rem;
+        }
+        
+        .rental-index h1 .material-symbols-outlined {
+            font-size: 24px !important;
+        }
+        
+        .btn-success {
+            font-size: 0.8rem;
+            padding: 0.4rem 0.8rem;
+        }
+        
+        .nav-tabs {
+            font-size: 0.8rem;
+            display: flex;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+        }
+        
+        .nav-tabs .nav-item {
+            flex: 0 0 auto;
+            white-space: nowrap;
+        }
+        
+        .nav-tabs .nav-link {
+            padding: 0.5rem 0.75rem;
+        }
+        
+        .accordion-card {
+            margin-bottom: 1rem;
+        }
+        
+        .stat-item {
+            font-size: 0.7rem;
+            padding: 0.3rem 0.6rem;
+        }
+        
+        .table-header h3 {
+            font-size: 1.2rem !important;
+        }
+        
+        .table-stats {
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        /* Mejorar espaciado en acordeones */
+        .accordion-actions {
+            padding: 12px;
+        }
+        
+        /* Ajustar padding de los cards de acordeón */
+        .accordion-body {
+            padding: 0.75rem !important;
         }
     }
 ');
