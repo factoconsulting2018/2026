@@ -1093,11 +1093,12 @@ $this->registerCss('
                                             <span class="material-symbols-outlined">share</span>
                                         </button>
                                         <a href="<?= Url::to(['/pdf/rental-order', 'id' => $model->id]) ?>" class="action-btn pdf-btn" 
-                                           title="Descargar PDF de Orden (TCPDF)" download>
+                                           title="Descargar PDF de Orden (TCPDF)" download target="_blank">
                                             <span class="material-symbols-outlined">description</span>
                                         </a>
                                         <a href="<?= Url::to(['/pdf/generate-mpdf', 'id' => $model->id]) ?>" class="action-btn pdf2-btn" 
-                                           title="Generar y Descargar PDF2 (mPDF)">
+                                           title="Generar y Descargar PDF2 (mPDF)"
+                                           target="_blank">
                                             <span class="material-symbols-outlined">file_present</span>
                                         </a>
                                         <a href="<?= Url::to(['delete', 'id' => $model->id]) ?>" class="action-btn delete-btn" 
@@ -1314,11 +1315,12 @@ $this->registerCss('
                                     <span class="material-symbols-outlined">share</span>
                                 </button>
                                 <a href="<?= Url::to(['/pdf/rental-order', 'id' => $model->id]) ?>" class="action-btn pdf-btn" 
-                                   title="Descargar PDF de Orden (TCPDF)" download>
+                                   title="Descargar PDF de Orden (TCPDF)" download target="_blank">
                                     <span class="material-symbols-outlined">description</span>
                                 </a>
                                 <a href="<?= Url::to(['/pdf/generate-mpdf', 'id' => $model->id]) ?>" class="action-btn pdf2-btn" 
-                                   title="Generar y Descargar PDF2 (mPDF)">
+                                   title="Generar y Descargar PDF2 (mPDF)"
+                                   target="_blank">
                                     <span class="material-symbols-outlined">file_present</span>
                                 </a>
                                 <a href="<?= $deleteUrl ?>" class="action-btn delete-btn" 

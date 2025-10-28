@@ -1289,13 +1289,15 @@ $this->registerCss('
                                    class="action-icon pdf-icon pdf-icon-hide" 
                                    data-rental-id="<?= $model->id ?>"
                                    title="Descargar PDF (TCPDF)"
-                                   style="display:none;">
+                                   style="display:none;"
+                                   target="_blank">
                                     <span class="material-symbols-outlined">description</span>
                                 </a>
                                 <a href="<?= Url::to(['/pdf/generate-mpdf', 'id' => $model->id]) ?>" 
                                    class="action-icon pdf2-icon" 
                                    data-rental-id="<?= $model->id ?>"
-                                   title="Generar y Descargar PDF2 (mPDF)">
+                                   title="Generar y Descargar PDF2 (mPDF)"
+                                   target="_blank">
                                     <span class="material-symbols-outlined">file_present</span>
                                 </a>
                                 <a href="<?= $deleteUrl ?>" class="action-icon delete-icon" 

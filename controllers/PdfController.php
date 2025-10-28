@@ -700,6 +700,13 @@ class PdfController extends Controller
      */
     public function actionGenerateMpdf($id)
     {
+        // Si es petición PJAX, redirigir a URL completa sin PJAX
+        if (Yii::$app->request->getIsPjax()) {
+            $url = Yii::$app->request->hostInfo . '/pdf/generate-mpdf?id=' . $id;
+            Yii::$app->response->redirect($url)->send();
+            exit;
+        }
+        
         // Limpiar buffers ANTES de todo
         if (ob_get_length()) @ob_end_clean();
         while (ob_get_level() > 0) @ob_end_clean();
