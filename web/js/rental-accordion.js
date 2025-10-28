@@ -61,10 +61,23 @@ class RentalAccordion {
         if (isActive) {
             this.closeItem(item, index);
         } else {
-            // Cerrar otros items abiertos
-            this.closeAllItems();
-            this.openItem(item, index);
+            // Cerrar otros items abiertos primero
+            this.closeOtherItems(item);
+            // Esperar un poco antes de abrir el nuevo
+            setTimeout(() => {
+                this.openItem(item, index);
+            }, 50);
         }
+    }
+    
+    closeOtherItems(currentItem) {
+        const allItems = document.querySelectorAll('.rental-accordion-item');
+        allItems.forEach((item) => {
+            if (item !== currentItem && item.classList.contains('active')) {
+                const index = Array.from(item.parentNode.children).indexOf(item);
+                this.closeItem(item, index);
+            }
+        });
     }
 
     openItem(item, index) {
@@ -77,19 +90,23 @@ class RentalAccordion {
             // Remover cualquier animación anterior
             content.classList.remove('closing');
             
+            // Obtener la altura real del contenido
+            const contentHeight = content.scrollHeight;
+            
             // Agregar clase de animación
             content.classList.add('opening');
             
             // Forzar reflow
             content.offsetHeight;
             
-            // Mostrar contenido con altura máxima
-            content.style.maxHeight = content.scrollHeight + 'px';
+            // Mostrar contenido con altura máxima animada
+            content.style.maxHeight = contentHeight + 'px';
+            content.style.display = 'block';
             
             // Remover clase de animación después de completar
             setTimeout(() => {
                 content.classList.remove('opening');
-                content.style.maxHeight = 'none'; // Permitir que el contenido se expanda
+                // NO poner maxHeight a 'none' - mantener el valor
             }, 300);
         }
         
@@ -157,7 +174,9 @@ class RentalAccordion {
         
         const content = item.querySelector('.accordion-content');
         if (content) {
-            content.style.maxHeight = '0';
+            // No establecer maxHeight a 0 inicialmente
+            // Permitir que el CSS maneje el estado inicial
+            content.style.display = 'none';
         }
     }
 
