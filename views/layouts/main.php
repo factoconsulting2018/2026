@@ -345,16 +345,61 @@ $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => Yii
             font-size: 18px;
         }
         
-        /* Responsive para botón de regreso */
+        /* Botón de Limpiar Caché */
+        .clear-cache-button {
+            position: fixed;
+            top: 70px;
+            right: 20px;
+            z-index: 1000;
+            background: linear-gradient(135deg, #ff6b35, #ff4500);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 25px;
+            box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: none;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .clear-cache-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 107, 53, 0.4);
+            background: linear-gradient(135deg, #ff4500, #ff6b35);
+        }
+        
+        .clear-cache-button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
+        }
+        
+        .clear-cache-button .material-symbols-outlined {
+            font-size: 18px;
+        }
+        
+        /* Responsive para botones de regreso y limpiar caché */
         @media (max-width: 768px) {
-            .back-button {
+            .back-button, .clear-cache-button {
                 top: 15px;
                 right: 15px;
                 padding: 10px 14px;
                 font-size: 13px;
             }
             
-            .back-button .material-symbols-outlined {
+            .back-button {
+                top: 15px;
+            }
+            
+            .clear-cache-button {
+                top: 60px;
+            }
+            
+            .back-button .material-symbols-outlined,
+            .clear-cache-button .material-symbols-outlined {
                 font-size: 16px;
             }
         }
@@ -454,12 +499,36 @@ $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => Yii
 <!-- Drawer Overlay -->
 <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
 
-<!-- Botón de Regreso -->
+<!-- Botones de Regreso y Limpiar Caché -->
 <?php if (!Yii::$app->user->isGuest): ?>
 <a href="javascript:history.back()" class="back-button" title="Regresar a la página anterior">
     <span class="material-symbols-outlined">arrow_back</span>
     Regresar
 </a>
+<button onclick="clearCache()" class="clear-cache-button" title="Limpiar caché del navegador">
+    <span class="material-symbols-outlined">cached</span>
+    Limpiar Caché
+</button>
+<script>
+function clearCache() {
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+            for(let registration of registrations) {
+                registration.unregister();
+            }
+        });
+    }
+    
+    // Limpiar localStorage
+    localStorage.clear();
+    
+    // Limpiar sessionStorage
+    sessionStorage.clear();
+    
+    // Forzar recarga con limpieza de caché
+    window.location.reload(true);
+}
+</script>
 <?php endif; ?>
 
 <!-- Main Content -->
