@@ -29,7 +29,7 @@ class SiteController extends Controller
                         'allow' => true,
                     ],
                     [
-                        'actions' => ['logout', 'index'],
+                        'actions' => ['logout', 'index', 'logs'],
                         'allow' => true,
                         'roles' => ['@'],
                     ],
@@ -154,5 +154,22 @@ class SiteController extends Controller
         Yii::$app->user->logout();
 
         return $this->goHome();
+    }
+
+    public function actionLogs()
+    {
+        $logFile = Yii::getAlias('@app/runtime/logs/app.log');
+        $content = '';
+
+        if (file_exists($logFile)) {
+            // Leer las últimas 1000 líneas del log
+            $lines = file($logFile);
+            $content = implode('', array_slice($lines, -1000));
+        }
+
+        return $this->render('logs', [
+            'content' => $content,
+            'logFile' => $logFile
+        ]);
     }
 }

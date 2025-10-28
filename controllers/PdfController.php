@@ -724,6 +724,8 @@ class PdfController extends Controller
                 mkdir($tempDir, 0777, true);
             }
             
+            Yii::info('Generando PDF con mPDF para rental ID: ' . $id, 'pdf');
+            
             $mpdf = new \Mpdf\Mpdf([
                 'mode' => 'utf-8',
                 'format' => 'A4',
@@ -736,17 +738,27 @@ class PdfController extends Controller
                 'tempDir' => $tempDir
             ]);
             
+            Yii::info('mPDF inicializado correctamente', 'pdf');
+            
             // Generar HTML
             $html = $this->renderPartial('_rental-pdf', [
                 'model' => $rental,
                 'companyInfo' => $companyInfo
             ], true);
             
+            Yii::info('HTML generado. Tamaño: ' . strlen($html) . ' bytes', 'pdf');
+            
             // Escribir HTML al PDF
             $mpdf->WriteHTML($html);
             
+            Yii::info('HTML escrito en mPDF', 'pdf');
+            
             // Nombre del archivo
             $filename = 'Orden_Alquiler_' . $rental->rental_id . '_' . date('Y-m-d') . '_PDF2.pdf';
+            
+            Yii::info('Enviando PDF con nombre: ' . $filename, 'pdf');
+            Yii::info('Headers actuales: ' . json_encode(headers_list()), 'pdf');
+            Yii::info('Buffers activos: ' . ob_get_level(), 'pdf');
             
             // Configurar respuesta para descarga con limpieza de headers
             Yii::$app->response->headers->removeAll();
@@ -756,12 +768,15 @@ class PdfController extends Controller
             Yii::$app->response->headers->set('Content-Type', 'application/pdf');
             Yii::$app->response->headers->set('Content-Disposition', 'attachment; filename="' . $filename . '"');
             
+            Yii::info('Enviando PDF al navegador', 'pdf');
+            
             // Enviar directamente sin guardar
             $mpdf->Output($filename, 'D');
             exit;
             
         } catch (\Exception $e) {
-            Yii::error('Error generando PDF con mPDF: ' . $e->getMessage());
+            Yii::error('Error generando PDF con mPDF: ' . $e->getMessage(), 'pdf');
+            Yii::error('Stack trace: ' . $e->getTraceAsString(), 'pdf');
             throw new NotFoundHttpException('Error al generar el PDF: ' . $e->getMessage());
         }
     }

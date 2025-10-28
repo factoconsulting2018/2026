@@ -492,6 +492,14 @@ $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => Yii
                     <span class="nav-text">Configuración</span>
                 </a>
             </li>
+            <li>
+                <a class="nav-link" 
+                   href="<?= \yii\helpers\Url::to(['/site/logs']) ?>"
+                   target="_blank">
+                    <span class="nav-icon material-symbols-outlined">description</span>
+                    <span class="nav-text">Logs de Error</span>
+                </a>
+            </li>
         </ul>
         
         
