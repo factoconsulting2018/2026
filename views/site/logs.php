@@ -40,6 +40,10 @@ $this->title = 'Logs de Error';
                         <span class="material-symbols-outlined" style="vertical-align: middle; margin-right: 4px;">refresh</span>
                         Actualizar
                     </button>
+                    <button onclick="captureLogs()" class="btn btn-success">
+                        <span class="material-symbols-outlined" style="vertical-align: middle; margin-right: 4px;">camera_alt</span>
+                        Capturar PNG
+                    </button>
                 </div>
             </div>
         </div>
@@ -52,4 +56,93 @@ pre {
     white-space: pre-wrap;
     word-wrap: break-word;
 }
+
+#loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+#loading-content {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+}
+
+.spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3498db;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 2s linear infinite;
+    margin: 0 auto 10px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
 </style>
+
+<!-- html2canvas library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<script>
+function captureLogs() {
+    const overlay = document.getElementById('loading-overlay');
+    const cardBody = document.querySelector('.card-body');
+    
+    // Mostrar overlay de carga
+    overlay.style.display = 'flex';
+    
+    // Configurar html2canvas
+    html2canvas(cardBody, {
+        backgroundColor: '#ffffff',
+        scale: 2, // Mayor resolución
+        useCORS: true,
+        allowTaint: true,
+        scrollX: 0,
+        scrollY: 0,
+        width: cardBody.scrollWidth,
+        height: cardBody.scrollHeight
+    }).then(function(canvas) {
+        // Crear enlace de descarga
+        const link = document.createElement('a');
+        link.download = 'logs_error_' + new Date().toISOString().slice(0, 19).replace(/:/g, '-') + '.png';
+        link.href = canvas.toDataURL('image/png');
+        
+        // Descargar automáticamente
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Ocultar overlay
+        overlay.style.display = 'none';
+        
+        // Mostrar mensaje de éxito
+        alert('Captura de pantalla guardada exitosamente');
+        
+    }).catch(function(error) {
+        console.error('Error al capturar:', error);
+        overlay.style.display = 'none';
+        alert('Error al capturar la pantalla: ' + error.message);
+    });
+}
+</script>
+
+<!-- Overlay de carga -->
+<div id="loading-overlay">
+    <div id="loading-content">
+        <div class="spinner"></div>
+        <p>Generando captura de pantalla...</p>
+    </div>
+</div>
