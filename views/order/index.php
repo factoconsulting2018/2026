@@ -937,17 +937,10 @@ $this->registerCss('
                                                 onclick="shareRental(<?= $model->id ?>)">
                                             <span class="material-symbols-outlined">share</span>
                                         </button>
-                                        <button type="button" class="action-btn pdf-btn pdf-generate-btn" 
-                                                data-rental-id="<?= $model->id ?>"
-                                                title="Generar PDF">
-                                            <span class="material-symbols-outlined pdf-icon">description</span>
-                                            <span class="spinner" style="display:none;">⏳</span>
-                                        </button>
-                                        <a href="<?= Url::to(['/pdf/download-rental', 'id' => $model->id]) ?>" class="action-btn pdf-btn pdf-download-btn" 
+                                        <a href="<?= Url::to(['/pdf/download-rental', 'id' => $model->id]) ?>" class="action-btn pdf-btn" 
                                            title="Descargar PDF"
-                                           style="display:none;"
                                            download>
-                                            <span class="material-symbols-outlined">download</span>
+                                            <span class="material-symbols-outlined">description</span>
                                         </a>
                                         <a href="<?= Url::to(['delete', 'id' => $model->id]) ?>" class="action-btn delete-btn" 
                                            title="Cancelar Alquiler"
@@ -1160,17 +1153,10 @@ $this->registerCss('
                                         onclick="shareRental(<?= $model->id ?>)">
                                     <span class="material-symbols-outlined">share</span>
                                 </button>
-                                <button type="button" class="action-btn pdf-btn pdf-generate-btn-mobile" 
-                                        data-rental-id="<?= $model->id ?>"
-                                        title="Generar PDF">
-                                    <span class="material-symbols-outlined pdf-icon">description</span>
-                                    <span class="spinner" style="display:none;">⏳</span>
-                                </button>
-                                <a href="<?= Url::to(['/pdf/download-rental', 'id' => $model->id]) ?>" class="action-btn pdf-btn pdf-download-btn-mobile" 
+                                <a href="<?= Url::to(['/pdf/download-rental', 'id' => $model->id]) ?>" class="action-btn pdf-btn" 
                                    title="Descargar PDF"
-                                   style="display:none;"
                                    download>
-                                    <span class="material-symbols-outlined">download</span>
+                                    <span class="material-symbols-outlined">description</span>
                                 </a>
                                 <a href="<?= $deleteUrl ?>" class="action-btn delete-btn" 
                                    title="Cancelar Alquiler"
@@ -2309,61 +2295,3 @@ function renderCarMiniCalendar(carData, monthStr) {
 }
 </style>
 
-<?php
-// Script para generar PDF con AJAX
-$this->registerJs('
-$(document).ready(function() {
-    $(".pdf-generate-btn, .pdf-generate-btn-mobile").on("click", function() {
-        var btn = $(this);
-        var rentalId = btn.data("rental-id");
-        var icon = btn.find(".pdf-icon");
-        var spinner = btn.find(".spinner");
-        var downloadBtn = btn.siblings(".pdf-download-btn, .pdf-download-btn-mobile");
-        var generateBtn = btn;
-        
-        // Mostrar spinner
-        icon.hide();
-        spinner.show();
-        btn.prop("disabled", true);
-        btn.css("opacity", "0.6");
-        
-        // Llamar a la API para generar el PDF
-        $.ajax({
-            url: "/pdf/generate-rental-pdf?id=" + rentalId,
-            type: "GET",
-            success: function(response) {
-                try {
-                    var data = typeof response === "string" ? JSON.parse(response) : response;
-                    if (data.success) {
-                        // Ocultar botón de generar, mostrar botón de descargar
-                        generateBtn.hide();
-                        downloadBtn.show();
-                        
-                        // Resetear botón de generar
-                        icon.show();
-                        spinner.hide();
-                        btn.prop("disabled", false);
-                        btn.css("opacity", "1");
-                    }
-                } catch (e) {
-                    console.error("Error parsing response:", e);
-                    alert("Error al generar el PDF");
-                    icon.show();
-                    spinner.hide();
-                    btn.prop("disabled", false);
-                    btn.css("opacity", "1");
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error("Error generating PDF:", error);
-                alert("Error al generar el PDF: " + error);
-                icon.show();
-                spinner.hide();
-                btn.prop("disabled", false);
-                btn.css("opacity", "1");
-            }
-        });
-    });
-});
-');
-?>

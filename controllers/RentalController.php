@@ -137,6 +137,9 @@ class RentalController extends Controller
                     $model->car->save(false);
                 }
                 
+                // Generar PDF automáticamente al crear la orden
+                $this->generateOrderPdf($model->id);
+                
                 Yii::$app->session->setFlash('success', '✅ Alquiler creado exitosamente');
                 return $this->redirect(['view', 'id' => $model->id]);
             } else {
@@ -683,6 +686,84 @@ class RentalController extends Controller
             return $model;
         }
         throw new NotFoundHttpException('La página solicitada no existe.');
+    }
+    
+    /**
+     * Generar PDF de orden automáticamente
+     */
+    private function generateOrderPdf($rentalId)
+    {
+        try {
+            $rental = Rental::findOne($rentalId);
+            if (!$rental) {
+                return;
+            }
+            
+            $companyInfo = \app\models\CompanyConfig::getCompanyInfo();
+            
+            // Limpiar buffers
+            while (ob_get_level()) {
+                ob_end_clean();
+            }
+            
+            // Desactivar compresión
+            if (function_exists('apache_setenv')) {
+                @apache_setenv('no-gzip', 1);
+            }
+            @ini_set('zlib.output_compression', 0);
+            @ini_set('output_buffering', 0);
+            
+            // Crear PDF usando TCPDF
+            $pdf = new \TCPDF(\PDF_PAGE_ORIENTATION, \PDF_UNIT, \PDF_PAGE_FORMAT, true, 'UTF-8', false);
+            $pdf->SetCreator('Facto Rent a Car');
+            $pdf->SetAuthor('Facto Rent a Car');
+            $pdf->SetTitle('Orden de Alquiler - ' . $rental->rental_id);
+            $pdf->SetMargins(15, 20, 15);
+            $pdf->SetHeaderMargin(10);
+            $pdf->SetFooterMargin(10);
+            $pdf->SetFont('dejavusans', '', 10);
+            
+            // Agregar página
+            $pdf->AddPage();
+            
+            // Generar contenido
+            $html = $this->generateRentalOrderHtml($rental, $companyInfo);
+            $pdf->writeHTML($html, true, false, true, false, '');
+            
+            // Agregar segunda página con condiciones si existe
+            if ($companyInfo['conditions']) {
+                $pdf->AddPage();
+                $conditionsHtml = $this->generateConditionsHtml($companyInfo);
+                $pdf->writeHTML($conditionsHtml, true, false, true, false, '');
+            }
+            
+            // Generar nombre del archivo
+            $filename = 'Orden_Alquiler_' . $rental->rental_id . '_' . date('Y-m-d') . '.pdf';
+            $filepath = Yii::getAlias('@app') . '/pdfs/' . $filename;
+            
+            // Guardar PDF en disco
+            $pdf->Output($filepath, 'F');
+        } catch (\Exception $e) {
+            Yii::error('Error generating PDF: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Generar HTML para orden de alquiler
+     */
+    private function generateRentalOrderHtml($rental, $companyInfo)
+    {
+        $pdfController = new \app\controllers\PdfController('pdf', \Yii::$app);
+        return $pdfController->generateRentalOrderHtml($rental, $companyInfo);
+    }
+    
+    /**
+     * Generar HTML para condiciones de alquiler
+     */
+    private function generateConditionsHtml($companyInfo)
+    {
+        $pdfController = new \app\controllers\PdfController('pdf', \Yii::$app);
+        return $pdfController->generateConditionsHtml($companyInfo);
     }
 }
 

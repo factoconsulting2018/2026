@@ -280,7 +280,7 @@ class PdfController extends Controller
     /**
      * Generar HTML para orden de alquiler
      */
-    private function generateRentalOrderHtml($rental, $companyInfo)
+    public function generateRentalOrderHtml($rental, $companyInfo)
     {
         $rentalId = $rental->rental_id ?: ('R' . str_pad($rental->id, 6, '0', STR_PAD_LEFT));
         $client = $rental->client;
@@ -558,7 +558,7 @@ class PdfController extends Controller
     /**
      * Generar HTML para condiciones de alquiler
      */
-    private function generateConditionsHtml($companyInfo)
+    public function generateConditionsHtml($companyInfo)
     {
         $html = '
         <style>
