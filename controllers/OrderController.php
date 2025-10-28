@@ -70,9 +70,8 @@ class OrderController extends Controller
 
     public function actionView($id)
     {
-        return $this->render('view', [
-            'model' => $this->findModel($id),
-        ]);
+        // Redirigir a la vista de rental en lugar de order
+        return $this->redirect(['/rental/view', 'id' => $id]);
     }
 
     public function actionCreate()
