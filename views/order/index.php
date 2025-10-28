@@ -725,18 +725,18 @@ $this->registerCss('
     <!-- Contenedor de la tabla moderna (desktop) -->
     <div class="rental-table-container">
         <div class="modern-rental-table">
-            <div class="table-header">
-                <div class="table-title">
-                    <span class="material-symbols-outlined">receipt_long</span>
+        <div class="table-header">
+            <div class="table-title">
+                <span class="material-symbols-outlined">receipt_long</span>
                     <h3>Listado de Alquileres</h3>
-                </div>
-                <div class="table-stats">
-                    <span class="stat-item">
-                        <span class="material-symbols-outlined">receipt</span>
-                        <span><?= $dataProvider->getTotalCount() ?> Alquileres</span>
-                    </span>
-                </div>
             </div>
+            <div class="table-stats">
+                <span class="stat-item">
+                    <span class="material-symbols-outlined">receipt</span>
+                        <span><?= $dataProvider->getTotalCount() ?> Alquileres</span>
+                </span>
+            </div>
+        </div>
             
             <div class="table-content">
                 <?php Pjax::begin(); ?>
@@ -775,7 +775,7 @@ $this->registerCss('
                     
                     <div class="table-body">
                         <?php foreach ($dataProvider->getModels() as $model): ?>
-                            <?php
+                <?php
                             $estado = $model->estado_pago ?? 'pendiente';
                             $rentalId = !empty($model->rental_id) ? $model->rental_id : ('R' . str_pad($model->id, 6, '0', STR_PAD_LEFT));
                             
@@ -851,8 +851,8 @@ $this->registerCss('
                                                     echo 'Sin fecha';
                                                 }
                                                 ?>
-                                            </span>
-                                        </div>
+                                        </span>
+                                </div>
                                         <div class="end-date <?= $fechaFin && $fechaFin < $hoy && $estado !== 'cancelado' ? 'expired' : ($diferencia && $diferencia <= 2 && $estado === 'pagado' ? 'expiring' : '') ?>">
                                             <span class="material-symbols-outlined">stop</span>
                                             <span>
@@ -876,9 +876,9 @@ $this->registerCss('
                                                     echo 'Sin fecha';
                                                 }
                                                 ?>
-                                            </span>
-                                        </div>
-                                    </div>
+                                    </span>
+                                </div>
+                            </div>
                                 </div>
                                 
                                 <div class="data-cell status-cell">
@@ -939,7 +939,7 @@ $this->registerCss('
                                         </button>
                                         <a href="<?= Url::to(['/pdf/rental-order', 'id' => $model->id]) ?>" class="action-btn pdf-btn" 
                                            title="Descargar PDF"
-                                           target="_blank">
+                                           download>
                                             <span class="material-symbols-outlined">picture_as_pdf</span>
                                         </a>
                                         <a href="<?= Url::to(['delete', 'id' => $model->id]) ?>" class="action-btn delete-btn" 
@@ -947,10 +947,10 @@ $this->registerCss('
                                            data-confirm="¿Estás seguro de cancelar este alquiler?" 
                                            data-method="post">
                                             <span class="material-symbols-outlined">delete</span>
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
                         <?php endforeach; ?>
                     </div>
                 </div>
@@ -972,15 +972,15 @@ $this->registerCss('
             'activePageCssClass' => 'active',
             'disabledPageCssClass' => 'disabled',
         ]) ?>
-    </div>
+        </div>
 
     <!-- Acordeón responsivo (móvil) -->
     <div class="rental-accordion">
-        <?php Pjax::begin(); ?>
-        
+            <?php Pjax::begin(); ?>
+            
         <?php foreach ($dataProvider->getModels() as $model): ?>
             <?php
-            $estado = $model->estado_pago ?? 'pendiente';
+                            $estado = $model->estado_pago ?? 'pendiente';
             $estadoClass = 'estado-' . $estado;
             
             // Verificar si el alquiler está vencido o por vencer
@@ -1155,7 +1155,7 @@ $this->registerCss('
                                 </button>
                                 <a href="<?= Url::to(['/pdf/rental-order', 'id' => $model->id]) ?>" class="action-btn pdf-btn" 
                                    title="Descargar PDF"
-                                   target="_blank">
+                                   download>
                                     <span class="material-symbols-outlined">picture_as_pdf</span>
                                 </a>
                                 <a href="<?= $deleteUrl ?>" class="action-btn delete-btn" 
@@ -1184,8 +1184,8 @@ $this->registerCss('
                 'disabledPageCssClass' => 'disabled',
             ]) ?>
         </div>
-        
-        <?php Pjax::end(); ?>
+
+            <?php Pjax::end(); ?>
         </div>
         <!-- Fin Tab 1: Listado de Alquileres -->
 
