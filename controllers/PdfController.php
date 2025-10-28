@@ -55,14 +55,7 @@ class PdfController extends Controller
         @ini_set('output_buffering', 0);
         @ini_set('zlib.output_compression_level', 0);
         
-        // Detener cualquier buffer de Yii
-        \Yii::$app->response->format = \yii\web\Response::FORMAT_RAW;
-        \Yii::$app->response->stream = false;
-        
-        // No usar el header de Yii, usar directamente
-        header_remove();
-        
-        // Crear PDF con buffer desactivado
+        // Crear PDF
         $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
         
         // Configuración del documento
@@ -70,14 +63,10 @@ class PdfController extends Controller
         $pdf->SetAuthor('Facto Rent a Car');
         $pdf->SetTitle('Orden de Alquiler - ' . $rental->rental_id);
         
-        // Desactivar headers automáticos de TCPDF
-        $pdf->setPrintHeader(false);
-        $pdf->setPrintFooter(false);
-        
         // Configurar márgenes
         $pdf->SetMargins(15, 20, 15);
-        $pdf->SetHeaderMargin(0);
-        $pdf->SetFooterMargin(0);
+        $pdf->SetHeaderMargin(10);
+        $pdf->SetFooterMargin(10);
         
         // Configurar fuente
         $pdf->SetFont('dejavusans', '', 10);
@@ -99,10 +88,22 @@ class PdfController extends Controller
         // Generar nombre del archivo
         $filename = 'Orden_Alquiler_' . $rental->rental_id . '_' . date('Y-m-d') . '.pdf';
         
-        // TCPDF Output 'D' maneja automáticamente los headers correctos
-        $pdf->Output($filename, 'D');
+        // Configurar la respuesta de Yii para descargar el PDF
+        Yii::$app->response->format = \yii\web\Response::FORMAT_RAW;
+        Yii::$app->response->headers->set('Content-Type', 'application/pdf');
+        Yii::$app->response->headers->set('Content-Disposition', 'attachment; filename="' . $filename . '"');
+        Yii::$app->response->headers->set('Content-Transfer-Encoding', 'binary');
+        Yii::$app->response->headers->set('Cache-Control', 'private, max-age=0, must-revalidate');
+        Yii::$app->response->headers->set('Pragma', 'no-cache');
         
-        exit;
+        // Generar PDF como string
+        $pdfContent = $pdf->Output('', 'S');
+        
+        // Enviar contenido
+        Yii::$app->response->data = $pdfContent;
+        Yii::$app->response->send();
+        
+        Yii::$app->end();
     }
 
     /**
