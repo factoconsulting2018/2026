@@ -581,6 +581,7 @@ $this->registerCss('
         align-items: center;
         justify-content: center;
         padding: 16px 0;
+        flex-wrap: wrap;
     }
     
     .crud-actions-mobile .action-btn {
@@ -592,6 +593,41 @@ $this->registerCss('
     
     .crud-actions-mobile .action-btn .material-symbols-outlined {
         font-size: 18px;
+    }
+    
+    @media (max-width: 576px) {
+        /* Acciones móviles más pequeñas en pantallas pequeñas */
+        .crud-actions-mobile {
+            gap: 8px;
+            padding: 12px 0;
+        }
+        
+        .crud-actions-mobile .action-btn {
+            width: 36px;
+            height: 36px;
+        }
+        
+        .crud-actions-mobile .action-btn .material-symbols-outlined {
+            font-size: 16px;
+        }
+    }
+    
+    @media (max-width: 400px) {
+        /* Acciones aún más pequeñas en pantallas muy pequeñas */
+        .crud-actions-mobile {
+            gap: 6px;
+            padding: 10px 0;
+        }
+        
+        .crud-actions-mobile .action-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+        }
+        
+        .crud-actions-mobile .action-btn .material-symbols-outlined {
+            font-size: 14px;
+        }
     }
     
     /* Responsive */
@@ -688,6 +724,16 @@ $this->registerCss('
         
         .accordion-card {
             margin-bottom: 1rem;
+        }
+        
+        /* Mejorar espaciado en acordeones */
+        .accordion-actions {
+            padding: 12px;
+        }
+        
+        /* Ajustar padding de los cards de acordeón */
+        .accordion-body {
+            padding: 0.75rem !important;
         }
         
         .stat-item {
