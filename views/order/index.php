@@ -1290,8 +1290,7 @@ $this->registerCss('
                                    class="action-icon pdf-icon pdf-icon-hide" 
                                    data-rental-id="<?= $model->id ?>"
                                    title="Descargar PDF"
-                                   style="display:none;"
-                                   download>
+                                   style="display:none;">
                                     <span class="material-symbols-outlined">description</span>
                                 </a>
                                 <a href="<?= $deleteUrl ?>" class="action-icon delete-icon" 
@@ -2464,6 +2463,12 @@ $(document).ready(function() {
                         } else {
                             btn.css("display", "flex");
                         }
+                        
+                        // En móvil, remover el atributo 'download' para permitir que Chrome maneje la descarga
+                        if (window.innerWidth <= 768) {
+                            btn.removeAttr("download");
+                        }
+                        
                         console.log("PDF exists for rental " + rentalId + ", showing button");
                     } else {
                         console.log("PDF does not exist for rental " + rentalId + ", hiding button");
