@@ -105,34 +105,33 @@ class PdfController extends Controller
             throw new NotFoundHttpException('El archivo PDF no existe. Por favor, genere el PDF primero.');
         }
         
-        // Limpiar TODOS los buffers
+        // Limpiar TODOS los buffers de salida
         while (ob_get_level()) {
             ob_end_clean();
         }
         
-        // Configurar Yii para enviar el archivo
-        Yii::$app->response->format = \yii\web\Response::FORMAT_RAW;
-        
-        // Headers específicos para descarga
-        Yii::$app->response->headers->remove('Pragma');
-        Yii::$app->response->headers->remove('Expires');
-        Yii::$app->response->headers->remove('Cache-Control');
-        
-        Yii::$app->response->headers->set('Content-Type', 'application/pdf');
-        Yii::$app->response->headers->set('Content-Disposition', 'attachment; filename="' . $filename . '"');
-        Yii::$app->response->headers->set('Content-Length', filesize($filepath));
-        Yii::$app->response->headers->set('Content-Transfer-Encoding', 'binary');
-        
-        // Enviar el archivo
-        Yii::$app->response->stream = fopen($filepath, 'rb');
-        Yii::$app->response->send();
-        
-        // Cleanup
-        if (is_resource(Yii::$app->response->stream)) {
-            fclose(Yii::$app->response->stream);
+        // Desactivar cualquier compresión de salida
+        if (function_exists('apache_setenv')) {
+            @apache_setenv('no-gzip', 1);
         }
+        @ini_set('zlib.output_compression', 0);
+        @ini_set('output_buffering', 0);
         
-        Yii::$app->end();
+        // No usar Yii para esto, usar headers directos de PHP
+        header_remove();
+        
+        // Configurar headers directamente con PHP
+        header('Content-Type: application/pdf', true);
+        header('Content-Disposition: attachment; filename="' . $filename . '"', true);
+        header('Content-Length: ' . filesize($filepath), true);
+        header('Content-Transfer-Encoding: binary', true);
+        header('Cache-Control: private, max-age=0, must-revalidate', true);
+        header('Pragma: private', true);
+        header('Expires: 0', true);
+        
+        // Enviar el archivo directamente
+        readfile($filepath);
+        exit;
     }
 
     /**
