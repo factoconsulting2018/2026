@@ -74,15 +74,22 @@ class RentalAccordion {
         const content = item.querySelector('.accordion-content');
         
         if (content) {
+            // Remover cualquier animación anterior
+            content.classList.remove('closing');
+            
             // Agregar clase de animación
             content.classList.add('opening');
             
             // Forzar reflow
             content.offsetHeight;
             
+            // Mostrar contenido con altura máxima
+            content.style.maxHeight = content.scrollHeight + 'px';
+            
             // Remover clase de animación después de completar
             setTimeout(() => {
                 content.classList.remove('opening');
+                content.style.maxHeight = 'none'; // Permitir que el contenido se expanda
             }, 300);
         }
         
@@ -96,13 +103,23 @@ class RentalAccordion {
         const content = item.querySelector('.accordion-content');
         
         if (content) {
+            // Establecer altura máxima antes de la animación
+            content.style.maxHeight = content.scrollHeight + 'px';
+            
+            // Forzar reflow
+            content.offsetHeight;
+            
             // Agregar clase de animación
             content.classList.add('closing');
+            item.classList.remove('active');
             
-            // Remover clase activa después de la animación
+            // Reducir altura a 0
+            content.style.maxHeight = '0';
+            
+            // Remover clase de animación después de completar
             setTimeout(() => {
-                item.classList.remove('active');
                 content.classList.remove('closing');
+                content.style.maxHeight = '';
             }, 300);
         } else {
             item.classList.remove('active');
@@ -115,7 +132,11 @@ class RentalAccordion {
     closeAllItems() {
         const activeItems = document.querySelectorAll('.rental-accordion-item.active');
         activeItems.forEach((item, index) => {
-            this.closeItem(item, index);
+            // No cerrar si es el mismo item que se está abriendo
+            const isBeingOpened = item.dataset && item.dataset.rentalId;
+            if (!isBeingOpened) {
+                this.closeItem(item, index);
+            }
         });
     }
 
