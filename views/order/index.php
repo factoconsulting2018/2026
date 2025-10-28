@@ -2444,8 +2444,8 @@ function renderCarMiniCalendar(carData, monthStr) {
 // JavaScript para verificar si el PDF existe y mostrar el botón
 $this->registerJs('
 $(document).ready(function() {
-    // Verificar cada botón PDF
-    $(".pdf-btn-hide").each(function() {
+    // Verificar cada botón PDF (tanto .pdf-btn-hide como .pdf-icon-hide)
+    $(".pdf-btn-hide, .pdf-icon-hide").each(function() {
         var btn = $(this);
         var rentalId = btn.data("rental-id");
         
@@ -2458,7 +2458,15 @@ $(document).ready(function() {
                     var data = typeof response === "string" ? JSON.parse(response) : response;
                     if (data.exists) {
                         // Mostrar el botón si el PDF existe
-                        btn.show();
+                        // Para iconos con .pdf-icon-hide, usar clase show-pdf
+                        if (btn.hasClass("pdf-icon-hide")) {
+                            btn.removeClass("pdf-icon-hide").addClass("show-pdf");
+                        } else {
+                            btn.css("display", "flex");
+                        }
+                        console.log("PDF exists for rental " + rentalId + ", showing button");
+                    } else {
+                        console.log("PDF does not exist for rental " + rentalId + ", hiding button");
                     }
                 } catch (e) {
                     console.error("Error checking PDF:", e);

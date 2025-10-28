@@ -306,6 +306,15 @@
     border-color: #DC3545;
 }
 
+/* Estilos especiales para icono PDF oculto */
+.pdf-icon-hide {
+    display: none !important;
+}
+
+.pdf-icon-hide.show-pdf {
+    display: flex !important;
+}
+
 .delete-icon {
     color: #BA1A1A;
     border-color: #BA1A1A;
