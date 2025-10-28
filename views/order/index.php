@@ -1263,8 +1263,7 @@ $this->registerCss('
                                     <?php endif; ?>
                                 </div>
                             </div>
-                        </div>
-                        
+                            
                             <div class="accordion-actions-right">
                                 <a href="<?= $viewUrl ?>" class="action-icon view-icon" title="Ver Detalles">
                                     <span class="material-symbols-outlined">visibility</span>
