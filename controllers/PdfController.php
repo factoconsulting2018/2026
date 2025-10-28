@@ -700,13 +700,6 @@ class PdfController extends Controller
      */
     public function actionGenerateMpdf($id)
     {
-        // Si es petición PJAX, redirigir a URL completa sin PJAX
-        if (Yii::$app->request->getIsPjax()) {
-            $url = Yii::$app->request->hostInfo . '/pdf/generate-mpdf?id=' . $id;
-            Yii::$app->response->redirect($url)->send();
-            exit;
-        }
-        
         // Limpiar buffers ANTES de todo
         if (ob_get_length()) @ob_end_clean();
         while (ob_get_level() > 0) @ob_end_clean();
@@ -754,10 +747,6 @@ class PdfController extends Controller
             
             // Nombre del archivo
             $filename = 'Orden_Alquiler_' . $rental->rental_id . '_' . date('Y-m-d') . '_PDF2.pdf';
-            $filepath = Yii::getAlias('@app') . '/runtime/' . $filename;
-            
-            // Guardar en servidor
-            $mpdf->Output($filepath, 'F');
             
             // Configurar respuesta para descarga con limpieza de headers
             Yii::$app->response->headers->removeAll();
@@ -766,11 +755,9 @@ class PdfController extends Controller
             Yii::$app->response->headers->set('Cache-Control', 'must-revalidate, post-check=0, pre-check=0');
             Yii::$app->response->headers->set('Content-Type', 'application/pdf');
             Yii::$app->response->headers->set('Content-Disposition', 'attachment; filename="' . $filename . '"');
-            Yii::$app->response->headers->set('Content-Length', filesize($filepath));
             
-            // Enviar el contenido del archivo y terminar
-            Yii::$app->response->data = file_get_contents($filepath);
-            Yii::$app->response->send();
+            // Enviar directamente sin guardar
+            $mpdf->Output($filename, 'D');
             exit;
             
         } catch (\Exception $e) {
