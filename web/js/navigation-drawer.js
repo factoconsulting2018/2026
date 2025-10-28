@@ -62,10 +62,15 @@ document.addEventListener('DOMContentLoaded', function() {
         link.addEventListener('click', function(e) {
             // Solo cerrar drawer en móvil, no en desktop
             if (window.innerWidth < 768) {
-                // Pequeño delay para permitir la navegación
-                setTimeout(() => {
-                    closeDrawer();
-                }, 100);
+                // Solo cerrar si NO es un link externo o si no es el mismo dominio
+                var href = link.getAttribute('href');
+                // Verificar si es un link interno
+                if (href && (href.startsWith('#') || href.startsWith('/'))) {
+                    // Pequeño delay para permitir la navegación
+                    setTimeout(() => {
+                        closeDrawer();
+                    }, 300); // Aumentado a 300ms
+                }
             }
             // En desktop, no hacer nada - dejar el drawer abierto
         });
@@ -82,22 +87,28 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Manejar redimensionamiento de ventana
+    let resizeTimeout;
     window.addEventListener('resize', function() {
-        const drawer = document.getElementById('drawer');
-        const overlay = document.getElementById('drawerOverlay');
-        const mainContent = document.getElementById('mainContent');
-        
-        if (window.innerWidth >= 768) {
-            // Cambio a desktop: abrir drawer, quitar overlay
-            drawer.classList.add('open');
-            overlay.classList.remove('show');
-            mainContent.classList.add('drawer-open');
-        } else {
-            // Cambio a móvil: cerrar drawer completamente
-            drawer.classList.remove('open');
-            overlay.classList.remove('show');
-            mainContent.classList.remove('drawer-open');
-        }
+        // Debounce para evitar múltiples llamadas
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(function() {
+            const drawer = document.getElementById('drawer');
+            const overlay = document.getElementById('drawerOverlay');
+            const mainContent = document.getElementById('mainContent');
+            
+            if (window.innerWidth >= 768) {
+                // Cambio a desktop: abrir drawer, quitar overlay
+                drawer.classList.add('open');
+                overlay.classList.remove('show');
+                mainContent.classList.add('drawer-open');
+            } else {
+                // Cambio a móvil: mantener el estado actual del drawer
+                // No cerrarlo automáticamente - respetar si el usuario lo abrió
+                if (!drawer.classList.contains('open')) {
+                    mainContent.classList.remove('drawer-open');
+                }
+            }
+        }, 150);
     });
     
     // Botón de Regreso mejorado
