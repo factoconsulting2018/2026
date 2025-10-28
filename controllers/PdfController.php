@@ -97,6 +97,10 @@ class PdfController extends Controller
      */
     public function actionDownloadRental($id)
     {
+        // Limpiar buffers ANTES de todo
+        if (ob_get_length()) @ob_end_clean();
+        while (ob_get_level() > 0) @ob_end_clean();
+        
         $rental = $this->findRental($id);
         $filename = 'Orden_Alquiler_' . $rental->rental_id . '_' . date('Y-m-d') . '.pdf';
         $filepath = Yii::getAlias('@app') . '/pdfs/' . $filename;
@@ -105,45 +109,30 @@ class PdfController extends Controller
             throw new NotFoundHttpException('El archivo PDF no existe. Por favor, genere el PDF primero.');
         }
         
-        // Limpiar TODOS los buffers de salida
-        while (ob_get_level()) {
-            ob_end_clean();
-        }
-        
-        // Desactivar cualquier compresión de salida
+        // Desactivar cualquier compresión
         if (function_exists('apache_setenv')) {
             @apache_setenv('no-gzip', 1);
         }
         @ini_set('zlib.output_compression', 0);
         @ini_set('output_buffering', 0);
         
-        // Usar la clase response de Yii para manejar mejor la descarga
+        // Usar response de Yii
         Yii::$app->response->format = \yii\web\Response::FORMAT_RAW;
-        
-        // Limpiar headers anteriores
         Yii::$app->response->headers->removeAll();
         
-        // Configurar headers para descarga
+        // Headers
         Yii::$app->response->headers->set('Content-Type', 'application/pdf');
         Yii::$app->response->headers->set('Content-Disposition', 'attachment; filename="' . $filename . '"');
         Yii::$app->response->headers->set('Content-Length', filesize($filepath));
-        Yii::$app->response->headers->set('Cache-Control', 'private, max-age=0, must-revalidate');
-        Yii::$app->response->headers->set('Pragma', 'private');
-        Yii::$app->response->headers->set('Expires', '0');
         
-        // Leer el archivo en chunks para mejor rendimiento
+        // Leer archivo
         $handle = fopen($filepath, 'rb');
         if ($handle === false) {
             throw new \Exception('No se puede abrir el archivo PDF.');
         }
         
-        // Configurar el stream de respuesta
         Yii::$app->response->stream = $handle;
-        
-        // Enviar la respuesta
         Yii::$app->response->send();
-        
-        // Cerrar el handle
         fclose($handle);
         
         Yii::$app->end();
