@@ -442,7 +442,7 @@ $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => Yii
             </li>
             <li class="nav-item">
                 <a class="nav-link <?= Yii::$app->controller->id === 'order' ? 'active' : '' ?>" 
-                   href="/order/index">
+                   href="<?= \yii\helpers\Url::toRoute(['order/index']) ?>">
                     <span class="nav-icon material-symbols-outlined">shopping_cart</span>
                     <span class="nav-text">Órdenes</span>
                 </a>
