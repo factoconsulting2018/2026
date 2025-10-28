@@ -408,14 +408,18 @@
         flex-direction: row;
         justify-content: center;
         flex-wrap: wrap;
-        padding-top: 20px;
-        border-top: 1px solid rgba(0, 0, 0, 0.08);
+        padding: 20px 8px;
+        border-top: 2px solid rgba(0, 0, 0, 0.08);
         position: relative;
         top: 0;
+        display: flex !important;  /* Forzar display en móvil */
     }
     
     .action-icon {
         flex: 0 0 auto;
+        min-width: 48px;
+        min-height: 48px;
+        font-size: 24px !important;
     }
     
     .accordion-actions {
@@ -451,6 +455,18 @@
     
     .accordion-info-grid {
         gap: 12px;
+    }
+    
+    /* Iconos de acción más grandes en pantallas muy pequeñas */
+    .accordion-actions-right {
+        padding: 16px 4px;
+        gap: 12px;
+    }
+    
+    .action-icon {
+        min-width: 52px;
+        min-height: 52px;
+        font-size: 26px !important;
     }
 }
 

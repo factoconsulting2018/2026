@@ -2492,60 +2492,7 @@ $(document).ready(function() {
 </div>
 
 <?php
-// JavaScript para manejar el modal de acciones en móvil
-$this->registerJs('
-$(document).ready(function() {
-    // En pantallas pequeñas, interceptar clic en el card y abrir modal
-    if (window.innerWidth <= 768) {
-        $(".rental-accordion-item").on("click", function(e) {
-            // Solo abrir modal si se hace clic en el header del acordeón
-            if ($(e.target).closest(".accordion-header").length && !$(e.target).closest("a, button").length) {
-                var item = $(this);
-                var rentalId = item.data("rental-id");
-                
-                // Evitar que el acordeón normal se ejecute
-                e.stopPropagation();
-                e.preventDefault();
-                
-                // Obtener todas las acciones del item
-                var actions = item.find(".accordion-actions").html();
-                
-                // Crear contenido del modal con mejor estructura
-                var modalBody = $("#actionsModalBody");
-                modalBody.html(`
-                    <div class="actions-modal-content">
-                        ${actions}
-                    </div>
-                `);
-                
-                // Ajustar estilos de los botones en el modal
-                modalBody.find(".action-btn").each(function() {
-                    var $btn = $(this);
-                    var title = $btn.attr("title") || $btn.find(".material-symbols-outlined").attr("aria-label") || "Acción";
-                    
-                    // Agregar label si no tiene texto visible
-                    if (!$btn.text().trim()) {
-                        var icon = $btn.html();
-                        $btn.html(icon + \'<span class="action-label">\' + title + \'</span>\');
-                    }
-                    
-                    // Hacer que el botón sea más grande y visible
-                    $btn.css({
-                        "min-height": "80px",
-                        "width": "100%",
-                        "justify-content": "center",
-                        "flex-direction": "column"
-                    });
-                });
-                
-                // Mostrar modal
-                var modal = new bootstrap.Modal(document.getElementById("actionsModal"));
-                modal.show();
-            }
-        });
-    }
-});
-');
+// Nota: El modal de acciones se ha deshabilitado - ahora se usan iconos a la derecha
 ?>
 
 <style>
