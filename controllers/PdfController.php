@@ -35,7 +35,105 @@ class PdfController extends Controller
     }
 
     /**
-     * Generar PDF de una orden de alquiler
+     * Generar PDF y guardarlo en servidor
+     */
+    public function actionGenerateRentalPdf($id)
+    {
+        $rental = $this->findRental($id);
+        $companyInfo = CompanyConfig::getCompanyInfo();
+        
+        // Limpiar buffers
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+        
+        // Desactivar compresión
+        if (function_exists('apache_setenv')) {
+            @apache_setenv('no-gzip', 1);
+        }
+        @ini_set('zlib.output_compression', 0);
+        @ini_set('output_buffering', 0);
+        
+        // Crear PDF
+        $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+        $pdf->SetCreator('Facto Rent a Car');
+        $pdf->SetAuthor('Facto Rent a Car');
+        $pdf->SetTitle('Orden de Alquiler - ' . $rental->rental_id);
+        $pdf->SetMargins(15, 20, 15);
+        $pdf->SetHeaderMargin(10);
+        $pdf->SetFooterMargin(10);
+        $pdf->SetFont('dejavusans', '', 10);
+        
+        // Agregar página
+        $pdf->AddPage();
+        
+        // Generar contenido
+        $html = $this->generateRentalOrderHtml($rental, $companyInfo);
+        $pdf->writeHTML($html, true, false, true, false, '');
+        
+        // Agregar segunda página con condiciones si existe
+        if ($companyInfo['conditions']) {
+            $pdf->AddPage();
+            $conditionsHtml = $this->generateConditionsHtml($companyInfo);
+            $pdf->writeHTML($conditionsHtml, true, false, true, false, '');
+        }
+        
+        // Generar nombre del archivo
+        $filename = 'Orden_Alquiler_' . $rental->rental_id . '_' . date('Y-m-d') . '.pdf';
+        $filepath = Yii::getAlias('@app') . '/pdfs/' . $filename;
+        
+        // Guardar PDF en disco
+        $pdf->Output($filepath, 'F');
+        
+        return json_encode([
+            'success' => true,
+            'filename' => $filename,
+            'url' => '/pdf/download-rental?id=' . $id
+        ]);
+    }
+
+    /**
+     * Descargar PDF desde carpeta
+     */
+    public function actionDownloadRental($id)
+    {
+        $rental = $this->findRental($id);
+        $filename = 'Orden_Alquiler_' . $rental->rental_id . '_' . date('Y-m-d') . '.pdf';
+        $filepath = Yii::getAlias('@app') . '/pdfs/' . $filename;
+        
+        if (!file_exists($filepath)) {
+            throw new NotFoundHttpException('El archivo PDF no existe. Por favor, genere el PDF primero.');
+        }
+        
+        Yii::$app->response->format = \yii\web\Response::FORMAT_RAW;
+        Yii::$app->response->headers->set('Content-Type', 'application/pdf');
+        Yii::$app->response->headers->set('Content-Disposition', 'attachment; filename="' . $filename . '"');
+        Yii::$app->response->headers->set('Content-Transfer-Encoding', 'binary');
+        Yii::$app->response->headers->set('Cache-Control', 'private, max-age=0, must-revalidate');
+        
+        // Enviar archivo
+        Yii::$app->response->data = file_get_contents($filepath);
+        Yii::$app->response->send();
+        Yii::$app->end();
+    }
+
+    /**
+     * Verificar si existe PDF
+     */
+    public function actionCheckRentalPdf($id)
+    {
+        $rental = $this->findRental($id);
+        $filename = 'Orden_Alquiler_' . $rental->rental_id . '_' . date('Y-m-d') . '.pdf';
+        $filepath = Yii::getAlias('@app') . '/pdfs/' . $filename;
+        
+        return json_encode([
+            'exists' => file_exists($filepath),
+            'url' => '/pdf/download-rental?id=' . $id
+        ]);
+    }
+
+    /**
+     * Generar PDF de una orden de alquiler (método original para compatibilidad)
      */
     public function actionRentalOrder($id)
     {
