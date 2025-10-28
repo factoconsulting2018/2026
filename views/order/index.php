@@ -1296,7 +1296,7 @@ $this->registerCss('
                                 <a href="<?= Url::to(['/pdf/generate-mpdf', 'id' => $model->id]) ?>" 
                                    class="action-icon pdf2-icon" 
                                    data-rental-id="<?= $model->id ?>"
-                                   title="Generar PDF2 (mPDF)">
+                                   title="Generar y Descargar PDF2 (mPDF)">
                                     <span class="material-symbols-outlined">file_present</span>
                                 </a>
                                 <a href="<?= $deleteUrl ?>" class="action-icon delete-icon" 

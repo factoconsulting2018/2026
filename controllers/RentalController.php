@@ -116,8 +116,17 @@ class RentalController extends Controller
 
     public function actionView($id)
     {
+        $model = $this->findModel($id);
+        
+        // Verificar si se debe descargar PDF automáticamente
+        $download = Yii::$app->request->get('download');
+        if ($download === 'mpdf') {
+            // Redirigir a la acción de descarga con mPDF
+            return $this->redirect(['/pdf/generate-mpdf', 'id' => $id]);
+        }
+        
         return $this->render('view', [
-            'model' => $this->findModel($id),
+            'model' => $model,
         ]);
     }
 
@@ -142,8 +151,8 @@ class RentalController extends Controller
                 
                 Yii::$app->session->setFlash('success', '✅ Alquiler creado exitosamente. El PDF se está descargando...');
                 
-                // Redirigir a la vista con flag para descargar PDF
-                return $this->redirect(['view', 'id' => $model->id, 'download' => 'pdf']);
+                // Redirigir a la vista con flag para descargar PDF con mPDF
+                return $this->redirect(['view', 'id' => $model->id, 'download' => 'mpdf']);
             } else {
                 // Debug: Log de errores de validación
                 Yii::info('DEBUG - Errores de validación: ' . json_encode($model->errors), 'rental');
@@ -715,29 +724,30 @@ class RentalController extends Controller
             @ini_set('zlib.output_compression', 0);
             @ini_set('output_buffering', 0);
             
-            // Crear PDF usando TCPDF
-            $pdf = new \TCPDF(\PDF_PAGE_ORIENTATION, \PDF_UNIT, \PDF_PAGE_FORMAT, true, 'UTF-8', false);
-            $pdf->SetCreator('Facto Rent a Car');
-            $pdf->SetAuthor('Facto Rent a Car');
-            $pdf->SetTitle('Orden de Alquiler - ' . $rental->rental_id);
-            $pdf->SetMargins(15, 20, 15);
-            $pdf->SetHeaderMargin(10);
-            $pdf->SetFooterMargin(10);
-            $pdf->SetFont('dejavusans', '', 10);
+            // Crear PDF usando mPDF
+            require_once Yii::getAlias('@vendor/autoload.php');
+            $pdf = new \Mpdf\Mpdf([
+                'mode' => 'utf-8',
+                'format' => 'A4',
+                'orientation' => 'P',
+                'margin_left' => 15,
+                'margin_right' => 15,
+                'margin_top' => 20,
+                'margin_bottom' => 10,
+                'default_font' => 'dejavusans'
+            ]);
             
-            // Agregar página
-            $pdf->AddPage();
-            
-            // Generar contenido
+            // Generar contenido HTML
             $html = $this->generateRentalOrderHtml($rental, $companyInfo);
-            $pdf->writeHTML($html, true, false, true, false, '');
             
-            // Agregar segunda página con condiciones si existe
+            // Agregar condiciones si existen
             if ($companyInfo['conditions']) {
-                $pdf->AddPage();
                 $conditionsHtml = $this->generateConditionsHtml($companyInfo);
-                $pdf->writeHTML($conditionsHtml, true, false, true, false, '');
+                $html .= '<div style="page-break-before: always;"></div>' . $conditionsHtml;
             }
+            
+            // Escribir HTML al PDF
+            $pdf->WriteHTML($html);
             
             // Generar nombre del archivo
             $filename = 'Orden_Alquiler_' . $rental->rental_id . '_' . date('Y-m-d') . '.pdf';

@@ -505,6 +505,30 @@ $this->registerCss('
         left: 100%;
     }
 
+    .pdf2-btn {
+        background: linear-gradient(135deg, #6F42C1, #5A32A3);
+        color: white;
+    }
+    
+    .pdf2-btn:hover {
+        background: linear-gradient(135deg, #5A32A3, #4A2A8A);
+    }
+    
+    .pdf2-btn::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        transition: left 0.5s;
+    }
+    
+    .pdf2-btn:hover::before {
+        left: 100%;
+    }
+
     /* Botón Eliminar */
     .delete-btn {
         background: linear-gradient(135deg, #dc3545, #c82333);
@@ -1069,8 +1093,12 @@ $this->registerCss('
                                             <span class="material-symbols-outlined">share</span>
                                         </button>
                                         <a href="<?= Url::to(['/pdf/rental-order', 'id' => $model->id]) ?>" class="action-btn pdf-btn" 
-                                           title="Descargar PDF de Orden" download>
+                                           title="Descargar PDF de Orden (TCPDF)" download>
                                             <span class="material-symbols-outlined">description</span>
+                                        </a>
+                                        <a href="<?= Url::to(['/pdf/generate-mpdf', 'id' => $model->id]) ?>" class="action-btn pdf2-btn" 
+                                           title="Generar y Descargar PDF2 (mPDF)">
+                                            <span class="material-symbols-outlined">file_present</span>
                                         </a>
                                         <a href="<?= Url::to(['delete', 'id' => $model->id]) ?>" class="action-btn delete-btn" 
                                            title="Cancelar Alquiler"
@@ -1286,8 +1314,12 @@ $this->registerCss('
                                     <span class="material-symbols-outlined">share</span>
                                 </button>
                                 <a href="<?= Url::to(['/pdf/rental-order', 'id' => $model->id]) ?>" class="action-btn pdf-btn" 
-                                   title="Descargar PDF de Orden" download>
+                                   title="Descargar PDF de Orden (TCPDF)" download>
                                     <span class="material-symbols-outlined">description</span>
+                                </a>
+                                <a href="<?= Url::to(['/pdf/generate-mpdf', 'id' => $model->id]) ?>" class="action-btn pdf2-btn" 
+                                   title="Generar y Descargar PDF2 (mPDF)">
+                                    <span class="material-symbols-outlined">file_present</span>
                                 </a>
                                 <a href="<?= $deleteUrl ?>" class="action-btn delete-btn" 
                                    title="Cancelar Alquiler"
