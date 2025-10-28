@@ -937,8 +937,11 @@ $this->registerCss('
                                                 onclick="shareRental(<?= $model->id ?>)">
                                             <span class="material-symbols-outlined">share</span>
                                         </button>
-                                        <a href="<?= Url::to(['/pdf/download-rental', 'id' => $model->id]) ?>" class="action-btn pdf-btn" 
+                                        <a href="<?= Url::to(['/pdf/download-rental', 'id' => $model->id]) ?>" 
+                                           class="action-btn pdf-btn pdf-btn-hide" 
+                                           data-rental-id="<?= $model->id ?>"
                                            title="Descargar PDF"
+                                           style="display:none;"
                                            download>
                                             <span class="material-symbols-outlined">description</span>
                                         </a>
@@ -1153,8 +1156,11 @@ $this->registerCss('
                                         onclick="shareRental(<?= $model->id ?>)">
                                     <span class="material-symbols-outlined">share</span>
                                 </button>
-                                <a href="<?= Url::to(['/pdf/download-rental', 'id' => $model->id]) ?>" class="action-btn pdf-btn" 
+                                <a href="<?= Url::to(['/pdf/download-rental', 'id' => $model->id]) ?>" 
+                                   class="action-btn pdf-btn pdf-btn-hide" 
+                                   data-rental-id="<?= $model->id ?>"
                                    title="Descargar PDF"
+                                   style="display:none;"
                                    download>
                                     <span class="material-symbols-outlined">description</span>
                                 </a>
@@ -2294,4 +2300,37 @@ function renderCarMiniCalendar(carData, monthStr) {
     border: 1px solid blue !important;
 }
 </style>
+
+<?php
+// JavaScript para verificar si el PDF existe y mostrar el botón
+$this->registerJs('
+$(document).ready(function() {
+    // Verificar cada botón PDF
+    $(".pdf-btn-hide").each(function() {
+        var btn = $(this);
+        var rentalId = btn.data("rental-id");
+        
+        // Verificar si el PDF existe
+        $.ajax({
+            url: "/pdf/check-rental-pdf?id=" + rentalId,
+            type: "GET",
+            success: function(response) {
+                try {
+                    var data = typeof response === "string" ? JSON.parse(response) : response;
+                    if (data.exists) {
+                        // Mostrar el botón si el PDF existe
+                        btn.show();
+                    }
+                } catch (e) {
+                    console.error("Error checking PDF:", e);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error("Error checking PDF:", error);
+            }
+        });
+    });
+});
+');
+?>
 
