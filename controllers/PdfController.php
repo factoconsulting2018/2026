@@ -700,12 +700,15 @@ class PdfController extends Controller
      */
     public function actionGenerateMpdf($id)
     {
-        // Limpiar buffers ANTES de todo
-        if (ob_get_length()) @ob_end_clean();
-        while (ob_get_level() > 0) @ob_end_clean();
+        // Detener cualquier output que Yii2 pueda estar enviando
+        if (ob_get_level()) {
+            ob_end_clean();
+        }
         
-        $rental = $this->findRental($id);
-        $companyInfo = CompanyConfig::getCompanyInfo();
+        // Desactivar completamente el output buffering
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
         
         // Desactivar compresión
         if (function_exists('apache_setenv')) {
@@ -713,6 +716,9 @@ class PdfController extends Controller
         }
         @ini_set('zlib.output_compression', 0);
         @ini_set('output_buffering', 0);
+        
+        $rental = $this->findRental($id);
+        $companyInfo = CompanyConfig::getCompanyInfo();
         
         try {
             // Cargar mPDF
@@ -760,18 +766,21 @@ class PdfController extends Controller
             Yii::info('Headers actuales: ' . json_encode(headers_list()), 'pdf');
             Yii::info('Buffers activos: ' . ob_get_level(), 'pdf');
             
-            // Configurar respuesta para descarga con limpieza de headers
-            Yii::$app->response->headers->removeAll();
-            Yii::$app->response->headers->set('Pragma', 'public');
-            Yii::$app->response->headers->set('Expires', '0');
-            Yii::$app->response->headers->set('Cache-Control', 'must-revalidate, post-check=0, pre-check=0');
-            Yii::$app->response->headers->set('Content-Type', 'application/pdf');
-            Yii::$app->response->headers->set('Content-Disposition', 'attachment; filename="' . $filename . '"');
+            // Configurar headers ANTES de cualquier output usando header() nativo
+            header('Content-Type: application/pdf');
+            header('Content-Disposition: attachment; filename="' . $filename . '"');
+            header('Cache-Control: no-cache, must-revalidate');
+            header('Pragma: no-cache');
+            header('Expires: 0');
             
-            Yii::info('Enviando PDF al navegador', 'pdf');
+            Yii::info('Headers configurados para descarga', 'pdf');
             
-            // Enviar directamente sin guardar
+            // Enviar PDF directamente
             $mpdf->Output($filename, 'D');
+            
+            Yii::info('PDF enviado exitosamente', 'pdf');
+            
+            // Terminar ejecución inmediatamente
             exit;
             
         } catch (\Exception $e) {
