@@ -117,21 +117,36 @@ class PdfController extends Controller
         @ini_set('zlib.output_compression', 0);
         @ini_set('output_buffering', 0);
         
-        // No usar Yii para esto, usar headers directos de PHP
-        header_remove();
+        // Usar la clase response de Yii para manejar mejor la descarga
+        Yii::$app->response->format = \yii\web\Response::FORMAT_RAW;
         
-        // Configurar headers directamente con PHP
-        header('Content-Type: application/pdf', true);
-        header('Content-Disposition: attachment; filename="' . $filename . '"', true);
-        header('Content-Length: ' . filesize($filepath), true);
-        header('Content-Transfer-Encoding: binary', true);
-        header('Cache-Control: private, max-age=0, must-revalidate', true);
-        header('Pragma: private', true);
-        header('Expires: 0', true);
+        // Limpiar headers anteriores
+        Yii::$app->response->headers->removeAll();
         
-        // Enviar el archivo directamente
-        readfile($filepath);
-        exit;
+        // Configurar headers para descarga
+        Yii::$app->response->headers->set('Content-Type', 'application/pdf');
+        Yii::$app->response->headers->set('Content-Disposition', 'attachment; filename="' . $filename . '"');
+        Yii::$app->response->headers->set('Content-Length', filesize($filepath));
+        Yii::$app->response->headers->set('Cache-Control', 'private, max-age=0, must-revalidate');
+        Yii::$app->response->headers->set('Pragma', 'private');
+        Yii::$app->response->headers->set('Expires', '0');
+        
+        // Leer el archivo en chunks para mejor rendimiento
+        $handle = fopen($filepath, 'rb');
+        if ($handle === false) {
+            throw new \Exception('No se puede abrir el archivo PDF.');
+        }
+        
+        // Configurar el stream de respuesta
+        Yii::$app->response->stream = $handle;
+        
+        // Enviar la respuesta
+        Yii::$app->response->send();
+        
+        // Cerrar el handle
+        fclose($handle);
+        
+        Yii::$app->end();
     }
 
     /**
