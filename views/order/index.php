@@ -8,7 +8,7 @@ use yii\helpers\Url;
 use yii\grid\GridView;
 use yii\widgets\Pjax;
 
-$this->title = 'Gestión de Órdenes';
+$this->title = 'Gestión de Órdenes1';
 $this->params['breadcrumbs'][] = $this->title;
 
 // Registrar CSS para colores de estado y acordeón
