@@ -594,9 +594,45 @@ function formatFileSize(bytes) {
 
 // Función para subir archivo
 function uploadFile(clientId) {
+    // Obtener clientId si no se proporciona
+    if (!clientId) {
+        // Intentar obtener del URL o del contexto
+        const pathParts = window.location.pathname.split('/').filter(p => p);
+        const updateIndex = pathParts.indexOf('update');
+        
+        if (updateIndex !== -1 && pathParts[updateIndex + 1]) {
+            clientId = pathParts[updateIndex + 1];
+        } else {
+            // Intentar obtener de la URL actual si estamos en view o update
+            const urlMatch = window.location.pathname.match(/\/client\/(update|view)\/(\d+)/);
+            if (urlMatch && urlMatch[2]) {
+                clientId = urlMatch[2];
+            }
+        }
+    }
+    
+    if (!clientId || clientId === 'undefined' || clientId === 'null') {
+        showNotification('❌ Error: No se pudo determinar el ID del cliente. Por favor, recarga la página.', 'danger');
+        console.error('Client ID no disponible:', clientId);
+        return;
+    }
+    
     const fileInput = document.getElementById('file-input');
     const fileNameInput = document.getElementById('file-name-input');
     const descriptionInput = document.getElementById('file-description-input');
+    
+    // Validar que los elementos existan
+    if (!fileInput) {
+        showNotification('❌ Error: No se encontró el campo de archivo', 'danger');
+        console.error('Elemento file-input no encontrado');
+        return;
+    }
+    
+    if (!fileNameInput) {
+        showNotification('❌ Error: No se encontró el campo de nombre', 'danger');
+        console.error('Elemento file-name-input no encontrado');
+        return;
+    }
     
     if (!fileInput.files || fileInput.files.length === 0) {
         showNotification('❌ Por favor seleccione un archivo', 'warning');
@@ -624,19 +660,40 @@ function uploadFile(clientId) {
     
     // Mostrar loading
     const uploadBtn = document.querySelector('#file-upload-form button[type="button"]');
+    
+    if (!uploadBtn) {
+        showNotification('❌ Error: No se encontró el botón de subir', 'danger');
+        console.error('Botón de upload no encontrado');
+        return;
+    }
+    
     const originalText = uploadBtn.innerHTML;
     uploadBtn.disabled = true;
     uploadBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Subiendo...';
     
-    fetch(`/client/upload-file/${clientId}`, {
+    // Construir URL correcta
+    const baseUrl = window.location.origin;
+    const uploadUrl = `${baseUrl}/client/upload-file/${clientId}`;
+    
+    console.log('Subiendo archivo a:', uploadUrl);
+    console.log('Client ID:', clientId);
+    
+    fetch(uploadUrl, {
         method: 'POST',
         body: formData,
         headers: {
             'X-Requested-With': 'XMLHttpRequest'
         }
     })
-    .then(response => response.json())
+    .then(response => {
+        console.log('Respuesta recibida:', response.status, response.statusText);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
     .then(data => {
+        console.log('Datos recibidos:', data);
         uploadBtn.disabled = false;
         uploadBtn.innerHTML = originalText;
         
@@ -646,18 +703,22 @@ function uploadFile(clientId) {
             // Limpiar formulario
             fileInput.value = '';
             fileNameInput.value = '';
-            descriptionInput.value = '';
+            if (descriptionInput) {
+                descriptionInput.value = '';
+            }
             
             // Recargar lista de archivos
-            loadFiles(clientId, currentSearchTerm);
+            if (clientId) {
+                loadFiles(clientId, currentSearchTerm);
+            }
         } else {
             showNotification('❌ ' + (data.message || 'Error al subir el archivo'), 'danger');
         }
     })
     .catch(error => {
+        console.error('Error completo:', error);
         uploadBtn.disabled = false;
         uploadBtn.innerHTML = originalText;
-        console.error('Error:', error);
         showNotification('❌ Error al subir el archivo: ' + error.message, 'danger');
     });
 }

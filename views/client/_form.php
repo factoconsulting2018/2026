@@ -586,7 +586,7 @@ $this->registerCssFile('/css/client-form.css');
                                         <textarea class="form-control" id="file-description-input" rows="2" placeholder="Descripción adicional del archivo"></textarea>
                                     </div>
                                 </div>
-                                <button type="button" class="btn btn-primary" onclick="uploadFile(<?= $model->id ?>)">
+                                <button type="button" class="btn btn-primary" onclick="uploadFile(<?= $model->isNewRecord ? 'null' : $model->id ?>)">
                                     <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">upload</span>
                                     Subir Archivo
                                 </button>
