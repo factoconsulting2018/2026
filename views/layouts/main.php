@@ -500,6 +500,19 @@ $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => Yii
                     <span class="nav-text">Logs de Error</span>
                 </a>
             </li>
+            
+            <!-- Versión del Sistema -->
+            <li style="margin-top: 20px; padding: 15px 20px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                <div style="text-align: center; color: #9CA3AF; font-size: 12px;">
+                    <div style="margin-bottom: 5px;">
+                        <span class="material-symbols-outlined" style="font-size: 16px; vertical-align: middle; margin-right: 5px;">info</span>
+                        <strong>Versión <?= $this->params['appVersion'] ?? '1.0' ?></strong>
+                    </div>
+                    <div style="font-size: 10px; opacity: 0.7;">
+                        Sistema de Gestión de Alquileres
+                    </div>
+                </div>
+            </li>
         </ul>
         
         
