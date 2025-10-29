@@ -216,18 +216,38 @@ class PdfController extends Controller
                 'margin_left' => 15,
                 'margin_right' => 15,
                 'margin_top' => 20,
-                'margin_bottom' => 10,
-                'default_font' => 'dejavusans',
-                'tempDir' => $tempDir
+                'margin_bottom' => 20,
+                'default_font' => 'arial',
+                'tempDir' => $tempDir,
+                'autoScriptToLang' => true,
+                'autoLangToFont' => true,
+                'debug' => false
             ]);
             
-            // Generar HTML
-            $html = $this->renderPartial('_rental-pdf', [
+            // Generar HTML usando vista simplificada para debug
+            $html = $this->renderPartial('_rental-pdf-simple', [
                 'model' => $rental,
                 'companyInfo' => $companyInfo
             ], true);
             
+            // Log del HTML generado para debug
+            Yii::info('HTML generado para PDF asíncrono: ' . substr($html, 0, 500) . '...', 'pdf');
+            Yii::info('Tamaño del HTML: ' . strlen($html) . ' caracteres', 'pdf');
+            
+            // Verificar que el HTML no esté vacío
+            if (empty(trim($html))) {
+                throw new \Exception('El HTML generado está vacío');
+            }
+            
             $mpdf->WriteHTML($html);
+            
+            // Verificar que el PDF se generó correctamente
+            $pageCount = $mpdf->page;
+            Yii::info('Número de páginas generadas: ' . $pageCount, 'pdf');
+            
+            if ($pageCount == 0) {
+                throw new \Exception('El PDF no tiene páginas');
+            }
             
             // Generar nombre único del archivo
             $filename = 'Orden_Alquiler_' . $rental->rental_id . '_' . date('Y-m-d') . '_PDF2.pdf';
