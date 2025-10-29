@@ -467,24 +467,42 @@ let currentSearchTerm = '';
 
 // Función para cargar archivos del cliente
 function loadFiles(clientId = null, search = '') {
+    // Obtener clientId de múltiples fuentes si no se proporciona
     if (!clientId) {
-        // Obtener client_id del URL
-        const pathParts = window.location.pathname.split('/').filter(p => p);
-        const updateIndex = pathParts.indexOf('update');
+        // 1. Intentar obtener del atributo data del botón
+        const uploadBtn = document.getElementById('upload-file-btn');
+        if (uploadBtn && uploadBtn.dataset.clientId) {
+            clientId = uploadBtn.dataset.clientId;
+        }
         
-        if (updateIndex !== -1 && pathParts[updateIndex + 1]) {
-            clientId = pathParts[updateIndex + 1];
-        } else {
-            // Intentar obtener de la URL actual si estamos en view o update
-            const urlMatch = window.location.pathname.match(/\/client\/(update|view)\/(\d+)/);
-            if (urlMatch && urlMatch[2]) {
-                clientId = urlMatch[2];
+        // 2. Intentar obtener del URL
+        if (!clientId) {
+            const pathParts = window.location.pathname.split('/').filter(p => p);
+            const updateIndex = pathParts.indexOf('update');
+            
+            if (updateIndex !== -1 && pathParts[updateIndex + 1]) {
+                clientId = pathParts[updateIndex + 1];
+            } else {
+                // Intentar obtener de la URL actual si estamos en view o update
+                const urlMatch = window.location.pathname.match(/\/client\/(update|view)\/(\d+)/);
+                if (urlMatch && urlMatch[2]) {
+                    clientId = urlMatch[2];
+                }
             }
+        }
+        
+        // 3. Usar currentClientId si está disponible
+        if (!clientId && currentClientId) {
+            clientId = currentClientId;
         }
     }
     
-    if (!clientId) {
-        document.getElementById('files-container').innerHTML = '<div class="text-center text-muted py-5"><span class="material-symbols-outlined" style="font-size: 48px; display: block; margin-bottom: 16px;">error</span><p>No se pudo determinar el ID del cliente</p></div>';
+    // Convertir a número para validar
+    clientId = parseInt(clientId);
+    
+    if (!clientId || isNaN(clientId) || clientId <= 0) {
+        document.getElementById('files-container').innerHTML = '<div class="text-center text-muted py-5"><span class="material-symbols-outlined" style="font-size: 48px; display: block; margin-bottom: 16px;">error</span><p>No se pudo determinar el ID del cliente</p><small>URL: ' + window.location.pathname + '</small></div>';
+        console.error('Client ID no disponible o inválido:', clientId);
         return;
     }
     
@@ -493,11 +511,19 @@ function loadFiles(clientId = null, search = '') {
     
     const url = `/client/list-files/${clientId}${search ? '?search=' + encodeURIComponent(search) : ''}`;
     
+    console.log('Cargando archivos desde:', url);
+    
     document.getElementById('files-container').innerHTML = '<div class="text-center text-muted py-5"><div class="spinner-border" role="status"><span class="visually-hidden">Cargando...</span></div><p class="mt-3">Cargando archivos...</p></div>';
     
     fetch(url)
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
+            console.log('Archivos cargados:', data);
             if (data.success) {
                 displayFiles(data.data);
             } else {
@@ -505,7 +531,7 @@ function loadFiles(clientId = null, search = '') {
             }
         })
         .catch(error => {
-            console.error('Error:', error);
+            console.error('Error cargando archivos:', error);
             document.getElementById('files-container').innerHTML = `<div class="alert alert-danger"><span class="material-symbols-outlined">error</span> Error al cargar archivos: ${error.message}</div>`;
         });
 }
@@ -594,28 +620,47 @@ function formatFileSize(bytes) {
 
 // Función para subir archivo
 function uploadFile(clientId) {
-    // Obtener clientId si no se proporciona
+    // Obtener clientId de múltiples fuentes
     if (!clientId) {
-        // Intentar obtener del URL o del contexto
-        const pathParts = window.location.pathname.split('/').filter(p => p);
-        const updateIndex = pathParts.indexOf('update');
+        // 1. Intentar obtener del atributo data del botón
+        const uploadBtn = document.getElementById('upload-file-btn');
+        if (uploadBtn && uploadBtn.dataset.clientId) {
+            clientId = uploadBtn.dataset.clientId;
+        }
         
-        if (updateIndex !== -1 && pathParts[updateIndex + 1]) {
-            clientId = pathParts[updateIndex + 1];
-        } else {
-            // Intentar obtener de la URL actual si estamos en view o update
-            const urlMatch = window.location.pathname.match(/\/client\/(update|view)\/(\d+)/);
-            if (urlMatch && urlMatch[2]) {
-                clientId = urlMatch[2];
+        // 2. Intentar obtener del URL
+        if (!clientId) {
+            const pathParts = window.location.pathname.split('/').filter(p => p);
+            const updateIndex = pathParts.indexOf('update');
+            
+            if (updateIndex !== -1 && pathParts[updateIndex + 1]) {
+                clientId = pathParts[updateIndex + 1];
+            } else {
+                // Intentar obtener de la URL actual si estamos en view o update
+                const urlMatch = window.location.pathname.match(/\/client\/(update|view)\/(\d+)/);
+                if (urlMatch && urlMatch[2]) {
+                    clientId = urlMatch[2];
+                }
             }
+        }
+        
+        // 3. Intentar obtener de currentClientId
+        if (!clientId && currentClientId) {
+            clientId = currentClientId;
         }
     }
     
-    if (!clientId || clientId === 'undefined' || clientId === 'null') {
+    // Convertir a número para validar
+    clientId = parseInt(clientId);
+    
+    if (!clientId || isNaN(clientId) || clientId <= 0) {
         showNotification('❌ Error: No se pudo determinar el ID del cliente. Por favor, recarga la página.', 'danger');
-        console.error('Client ID no disponible:', clientId);
+        console.error('Client ID no disponible o inválido:', clientId);
+        console.log('URL actual:', window.location.pathname);
         return;
     }
+    
+    console.log('Usando Client ID:', clientId);
     
     const fileInput = document.getElementById('file-input');
     const fileNameInput = document.getElementById('file-name-input');
