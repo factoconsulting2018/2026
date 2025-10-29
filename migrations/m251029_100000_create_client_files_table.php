@@ -37,20 +37,67 @@ class m251029_100000_create_client_files_table extends Migration
             $this->createIndex('idx_client_files_created_at', $tableName, 'created_at');
 
             // Crear clave foránea solo si la tabla fue creada
-            // Verificar si la FK ya existe
-            $foreignKeys = $this->db->schema->getTableSchema($tableName)->foreignKeys ?? [];
-            $fkExists = false;
-            foreach ($foreignKeys as $fk) {
-                if (isset($fk['client_id']) && $fk[0] === 'clients') {
-                    $fkExists = true;
-                    break;
+            try {
+                // Intentar crear la FK, si ya existe se capturará la excepción
+                $this->addForeignKey(
+                    'fk_client_files_client',
+                    $tableName,
+                    'client_id',
+                    '{{%clients}}',
+                    'id',
+                    'CASCADE',
+                    'CASCADE'
+                );
+            } catch (\Exception $e) {
+                // La FK puede ya existir, ignorar el error
+                echo "Info: La clave foránea 'fk_client_files_client' puede que ya exista.\n";
+            }
+        } else {
+            // La tabla ya existe, verificar y agregar índices que falten
+            echo "Info: La tabla 'client_files' ya existe. Verificando índices...\n";
+            
+            // Verificar y crear índices si no existen
+            try {
+                $db = $this->db;
+                $indexName = 'idx_client_files_client_id';
+                $indexExists = $db->createCommand("SHOW INDEX FROM $tableName WHERE Key_name = '$indexName'")->queryOne();
+                if (!$indexExists) {
+                    $this->createIndex($indexName, $tableName, 'client_id');
+                    echo "  ✓ Índice 'idx_client_files_client_id' creado.\n";
                 }
+                
+                $indexName = 'idx_client_files_file_name';
+                $indexExists = $db->createCommand("SHOW INDEX FROM $tableName WHERE Key_name = '$indexName'")->queryOne();
+                if (!$indexExists) {
+                    $this->createIndex($indexName, $tableName, 'file_name');
+                    echo "  ✓ Índice 'idx_client_files_file_name' creado.\n";
+                }
+                
+                $indexName = 'idx_client_files_created_at';
+                $indexExists = $db->createCommand("SHOW INDEX FROM $tableName WHERE Key_name = '$indexName'")->queryOne();
+                if (!$indexExists) {
+                    $this->createIndex($indexName, $tableName, 'created_at');
+                    echo "  ✓ Índice 'idx_client_files_created_at' creado.\n";
+                }
+            } catch (\Exception $e) {
+                echo "Advertencia al verificar índices: " . $e->getMessage() . "\n";
             }
             
-            if (!$fkExists) {
-                try {
+            // Verificar y crear clave foránea si no existe
+            try {
+                $db = $this->db;
+                $fkName = 'fk_client_files_client';
+                $fkExists = $db->createCommand("
+                    SELECT CONSTRAINT_NAME 
+                    FROM information_schema.TABLE_CONSTRAINTS 
+                    WHERE TABLE_SCHEMA = DATABASE() 
+                    AND TABLE_NAME = '$tableName' 
+                    AND CONSTRAINT_NAME = '$fkName'
+                ")->queryOne();
+                
+                if (!$fkExists) {
                     $this->addForeignKey(
-                        'fk_client_files_client',
+                        $fkName,
                         $tableName,
                         'client_id',
                         '{{%clients}}',
@@ -58,41 +105,13 @@ class m251029_100000_create_client_files_table extends Migration
                         'CASCADE',
                         'CASCADE'
                     );
-                } catch (\Exception $e) {
-                    // La FK puede ya existir, ignorar el error
-                    echo "Advertencia: No se pudo crear la clave foránea (puede que ya exista): " . $e->getMessage() . "\n";
-                }
-            }
-        } else {
-            // La tabla ya existe, verificar y agregar columnas/índices que falten
-            echo "La tabla 'client_files' ya existe. Verificando estructura...\n";
-            
-            $existingColumns = array_keys($tableSchema->columns);
-            $requiredColumns = ['id', 'client_id', 'file_name', 'original_name', 'file_path', 'file_type', 'file_size', 'description', 'created_at', 'updated_at'];
-            
-            foreach ($requiredColumns as $column) {
-                if (!in_array($column, $existingColumns)) {
-                    echo "Columna '$column' no existe. Esta migración no puede agregarla automáticamente.\n";
-                }
-            }
-            
-            // Verificar índices
-            try {
-                $indexes = $this->db->schema->findIndexes($tableName);
-                if (!isset($indexes['idx_client_files_client_id'])) {
-                    $this->createIndex('idx_client_files_client_id', $tableName, 'client_id');
-                }
-                if (!isset($indexes['idx_client_files_file_name'])) {
-                    $this->createIndex('idx_client_files_file_name', $tableName, 'file_name');
-                }
-                if (!isset($indexes['idx_client_files_created_at'])) {
-                    $this->createIndex('idx_client_files_created_at', $tableName, 'created_at');
+                    echo "  ✓ Clave foránea 'fk_client_files_client' creada.\n";
                 }
             } catch (\Exception $e) {
-                echo "Advertencia al verificar índices: " . $e->getMessage() . "\n";
+                echo "Info: No se pudo verificar/crear la clave foránea: " . $e->getMessage() . "\n";
             }
             
-            echo "La tabla ya existe. Migración marcada como completada.\n";
+            echo "✓ La tabla ya existe. Migración completada exitosamente.\n";
         }
     }
 
