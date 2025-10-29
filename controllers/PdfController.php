@@ -183,6 +183,151 @@ class PdfController extends Controller
     }
 
     /**
+     * Generar PDF de forma asíncrona (retorna JSON)
+     */
+    public function actionGenerateMpdfAsync($id)
+    {
+        // Configurar respuesta JSON
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        
+        try {
+            $rental = $this->findRental($id);
+            $companyInfo = CompanyConfig::getCompanyInfo();
+            
+            // Cargar mPDF
+            require_once Yii::getAlias('@vendor/autoload.php');
+            
+            // Crear directorio para PDFs asíncronos
+            $pdfDir = Yii::getAlias('@app') . '/runtime/pdfs';
+            if (!is_dir($pdfDir)) {
+                mkdir($pdfDir, 0777, true);
+            }
+            
+            // Crear directorio temporal personalizado para mPDF
+            $tempDir = Yii::getAlias('@app') . '/runtime/mpdf_temp';
+            if (!is_dir($tempDir)) {
+                mkdir($tempDir, 0777, true);
+            }
+            
+            $mpdf = new \Mpdf\Mpdf([
+                'mode' => 'utf-8',
+                'format' => 'A4',
+                'orientation' => 'P',
+                'margin_left' => 15,
+                'margin_right' => 15,
+                'margin_top' => 20,
+                'margin_bottom' => 10,
+                'default_font' => 'dejavusans',
+                'tempDir' => $tempDir
+            ]);
+            
+            // Generar HTML
+            $html = $this->renderPartial('_rental-pdf', [
+                'model' => $rental,
+                'companyInfo' => $companyInfo
+            ], true);
+            
+            $mpdf->WriteHTML($html);
+            
+            // Generar nombre único del archivo
+            $filename = 'Orden_Alquiler_' . $rental->rental_id . '_' . date('Y-m-d') . '_PDF2.pdf';
+            $filepath = $pdfDir . '/' . $filename;
+            
+            // Guardar PDF en disco
+            $mpdf->Output($filepath, 'F');
+            
+            return [
+                'success' => true,
+                'filename' => $filename,
+                'downloadUrl' => '/pdf/download-async-pdf?id=' . $id
+            ];
+            
+        } catch (\Exception $e) {
+            Yii::error('Error generando PDF asíncrono: ' . $e->getMessage(), 'pdf');
+            return [
+                'success' => false,
+                'message' => 'Error al generar el PDF: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Verificar estado del PDF asíncrono
+     */
+    public function actionCheckPdfStatus($id)
+    {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        
+        $rental = $this->findRental($id);
+        $filename = 'Orden_Alquiler_' . $rental->rental_id . '_' . date('Y-m-d') . '_PDF2.pdf';
+        $filepath = Yii::getAlias('@app') . '/runtime/pdfs/' . $filename;
+        
+        return [
+            'ready' => file_exists($filepath),
+            'downloadUrl' => '/pdf/download-async-pdf?id=' . $id
+        ];
+    }
+
+    /**
+     * Descargar PDF generado asíncronamente
+     */
+    public function actionDownloadAsyncPdf($id)
+    {
+        // Limpiar TODOS los buffers de salida ANTES de cualquier cosa
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+        
+        // Desactivar completamente el output buffering
+        @ini_set('output_buffering', 0);
+        @ini_set('zlib.output_compression', 0);
+        @ini_set('zlib.output_compression_level', 0);
+        
+        // Desactivar compresión de Apache si está disponible
+        if (function_exists('apache_setenv')) {
+            @apache_setenv('no-gzip', 1);
+            @apache_setenv('no-gzip', '1');
+        }
+        
+        $rental = $this->findRental($id);
+        $filename = 'Orden_Alquiler_' . $rental->rental_id . '_' . date('Y-m-d') . '_PDF2.pdf';
+        $filepath = Yii::getAlias('@app') . '/runtime/pdfs/' . $filename;
+        
+        if (!file_exists($filepath)) {
+            throw new NotFoundHttpException('El archivo PDF no existe. Por favor, genere el PDF primero.');
+        }
+        
+        // Usar headers nativos de PHP para evitar interferencia de Cloudflare
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Content-Length: ' . filesize($filepath));
+        header('Cache-Control: no-cache, no-store, must-revalidate');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+        header('X-Content-Type-Options: nosniff');
+        header('X-Frame-Options: DENY');
+        
+        // Leer y enviar archivo
+        $handle = fopen($filepath, 'rb');
+        if ($handle === false) {
+            throw new \Exception('No se puede abrir el archivo PDF.');
+        }
+        
+        // Enviar archivo en chunks para archivos grandes
+        while (!feof($handle)) {
+            echo fread($handle, 8192);
+            flush();
+        }
+        
+        fclose($handle);
+        
+        // Limpiar archivo después de descargar
+        unlink($filepath);
+        
+        exit;
+    }
+
+    /**
      * Generar PDF de una orden de alquiler (método original para compatibilidad)
      */
     public function actionRentalOrder($id)

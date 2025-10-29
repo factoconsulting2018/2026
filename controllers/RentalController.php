@@ -118,13 +118,6 @@ class RentalController extends Controller
     {
         $model = $this->findModel($id);
         
-        // Verificar si se debe mostrar preview del PDF
-        $showPreview = Yii::$app->request->get('showPreview');
-        if ($showPreview === '1') {
-            // Redirigir a la vista de preview
-            return $this->redirect(['/order/index', 'showPdfPreview' => $id]);
-        }
-        
         return $this->render('view', [
 'model' => $model,
         ]);
@@ -151,8 +144,8 @@ class RentalController extends Controller
                 
                 Yii::$app->session->setFlash('success', '✅ Alquiler creado exitosamente.');
                 
-                // Redirigir a la vista con flag para mostrar preview del PDF
-                return $this->redirect(['view', 'id' => $model->id, 'showPreview' => '1']);
+                // Redirigir a la vista normal
+                return $this->redirect(['view', 'id' => $model->id]);
             } else {
                 // Debug: Log de errores de validación
                 Yii::info('DEBUG - Errores de validación: ' . json_encode($model->errors), 'rental');
