@@ -219,9 +219,13 @@ class PdfController extends Controller
                 'margin_bottom' => 20,
                 'default_font' => 'arial',
                 'tempDir' => $tempDir,
-                'autoScriptToLang' => true,
-                'autoLangToFont' => true,
-                'debug' => false
+                'autoScriptToLang' => false,
+                'autoLangToFont' => false,
+                'debug' => false,
+                'simpleTables' => true,
+                'useSubstitutions' => false,
+                'shrink_tables_to_fit' => 1,
+                'max_colH_correction' => 1.8
             ]);
             
             // Generar HTML usando vista simplificada para debug
@@ -239,7 +243,12 @@ class PdfController extends Controller
                 throw new \Exception('El HTML generado está vacío');
             }
             
-            $mpdf->WriteHTML($html);
+            // Limpiar HTML de caracteres problemáticos
+            $html = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $html);
+            $html = str_replace(["\r\n", "\r"], "\n", $html);
+            
+            // Escribir HTML al PDF con configuración específica
+            $mpdf->WriteHTML($html, \Mpdf\HTMLParserMode::HTML_BODY);
             
             // Verificar que el PDF se generó correctamente
             $pageCount = $mpdf->page;
