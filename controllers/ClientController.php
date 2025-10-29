@@ -34,6 +34,10 @@ class ClientController extends Controller
                 'class' => VerbFilter::class,
                 'actions' => [
                     'delete' => ['POST'],
+                    'upload-file' => ['POST'],
+                    'delete-file' => ['POST'],
+                    'list-files' => ['GET', 'POST'],
+                    'download-file' => ['GET'],
                 ],
             ],
         ];

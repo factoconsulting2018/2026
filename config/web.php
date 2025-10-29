@@ -93,6 +93,14 @@ $config = [
                 'api/reports/clients' => 'reports/api-clients',
                 'api/reports/metrics' => 'reports/api-metrics',
                 'api/reports/sales-by-client' => 'reports/api-sales-by-client',
+                // Rutas para archivos de clientes
+                'client/upload-file/<id:\d+>' => 'client/upload-file',
+                'client/list-files/<id:\d+>' => 'client/list-files',
+                'client/delete-file/<id:\d+>' => 'client/delete-file',
+                'client/download-file/<id:\d+>' => 'client/download-file',
+                // Rutas genéricas al final (catch-all)
+                '<controller:\w+>/<action:\w+>/<id:\d+>' => '<controller>/<action>',
+                '<controller:\w+>/<action:\w+>' => '<controller>/<action>',
             ],
         ],
     ],
