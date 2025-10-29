@@ -14,6 +14,12 @@ $this->params['breadcrumbs'][] = $this->title;
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h1><span class="material-symbols-outlined" style="font-size: 36px; vertical-align: middle; margin-right: 8px; color: #3fa9f5;">dashboard</span>Panel de Control</h1>
+            <div style="margin-top: -8px; margin-bottom: 8px;">
+                <span style="font-size: 14px; color: #6c757d; font-weight: 500;">
+                    <span class="material-symbols-outlined" style="font-size: 16px; vertical-align: middle; margin-right: 5px;">info</span>
+                    Versión <?= Yii::$app->params['appVersion'] ?? '1.6' ?>
+                </span>
+            </div>
             <p class="lead">Bienvenido al sistema de gestión de alquiler de vehículos</p>
         </div>
     </div>
