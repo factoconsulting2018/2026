@@ -139,8 +139,10 @@ class ClientController extends Controller
             
             if ($model->save()) {
                 Yii::$app->session->setFlash('success', '✅ Cliente creado exitosamente');
+                Yii::info('Cliente creado exitosamente con ID: ' . $model->id, 'client');
                 return $this->redirect(['view', 'id' => $model->id]);
             } else {
+                Yii::error('Error al crear cliente: ' . json_encode($model->errors), 'client');
                 // Verificar si el error es de cédula duplicada
                 $hasCedulaError = false;
                 if (isset($model->errors['cedula_fisica'])) {
@@ -195,9 +197,11 @@ class ClientController extends Controller
             
             if ($model->save()) {
                 Yii::$app->session->setFlash('success', '✅ Cliente actualizado exitosamente');
+                Yii::info('Cliente actualizado exitosamente con ID: ' . $model->id, 'client');
                 return $this->redirect(['view', 'id' => $model->id]);
             } else {
-                Yii::$app->session->setFlash('error', '❌ Error al actualizar cliente');
+                Yii::error('Error al actualizar cliente ID ' . $model->id . ': ' . json_encode($model->errors), 'client');
+                Yii::$app->session->setFlash('error', '❌ Error al actualizar cliente: ' . json_encode($model->errors));
             }
         }
 

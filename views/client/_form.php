@@ -594,6 +594,20 @@ $this->registerCssFile('/css/client-form.css');
                         </div>
                     </div>
 
+                    <!-- Overlay de Loading para Subida de Archivos -->
+                    <div id="file-upload-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; justify-content: center; align-items: center; flex-direction: column;">
+                        <div class="text-center bg-white p-5 rounded shadow-lg" style="max-width: 400px; margin: auto;">
+                            <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+                                <span class="visually-hidden">Subiendo...</span>
+                            </div>
+                            <h5 class="mb-2">Subiendo archivo...</h5>
+                            <p class="text-muted mb-3">Por favor, espere mientras se procesa el archivo.</p>
+                            <div class="progress" style="height: 6px;">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%"></div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Lista de Archivos -->
                     <div id="files-container">
                         <div class="text-center text-muted py-5">

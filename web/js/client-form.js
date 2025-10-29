@@ -195,6 +195,119 @@ function showNotification(message, type = 'info') {
     }, 5000);
 }
 
+// Función para mostrar alerta de éxito (modal Bootstrap)
+function showSuccessAlert(title, message) {
+    // Remover modales anteriores si existen
+    const existingModal = document.getElementById('file-upload-success-modal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.id = 'file-upload-success-modal';
+    modal.setAttribute('data-bs-backdrop', 'static');
+    modal.setAttribute('data-bs-keyboard', 'false');
+    modal.innerHTML = `
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-success">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">
+                        <span class="material-symbols-outlined me-2" style="font-size: 24px; vertical-align: middle;">check_circle</span>
+                        ${title}
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-0">${message}</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-success" data-bs-dismiss="modal">
+                        <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">done</span>
+                        Aceptar
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    const bsModal = new bootstrap.Modal(modal);
+    bsModal.show();
+    
+    // Remover del DOM después de cerrar
+    modal.addEventListener('hidden.bs.modal', function() {
+        modal.remove();
+    });
+    
+    // También mostrar notificación flotante
+    showNotification(title + ': ' + message, 'success');
+}
+
+// Función para mostrar alerta de error (modal Bootstrap)
+function showErrorAlert(title, message, details = null) {
+    // Remover modales anteriores si existen
+    const existingModal = document.getElementById('file-upload-error-modal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.id = 'file-upload-error-modal';
+    modal.setAttribute('data-bs-backdrop', 'static');
+    modal.setAttribute('data-bs-keyboard', 'false');
+    
+    let detailsHtml = '';
+    if (details && typeof details === 'string') {
+        detailsHtml = `
+            <hr>
+            <details class="mt-3">
+                <summary class="text-muted" style="cursor: pointer;">Ver detalles técnicos</summary>
+                <pre class="mt-2 p-2 bg-light border rounded" style="font-size: 11px; max-height: 200px; overflow-y: auto;">${details.substring(0, 1000)}</pre>
+            </details>
+        `;
+    }
+    
+    modal.innerHTML = `
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-danger">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">
+                        <span class="material-symbols-outlined me-2" style="font-size: 24px; vertical-align: middle;">error</span>
+                        ${title}
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-danger mb-0">
+                        <strong>Error:</strong> ${message}
+                    </div>
+                    ${detailsHtml}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">
+                        <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">close</span>
+                        Cerrar
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    const bsModal = new bootstrap.Modal(modal);
+    bsModal.show();
+    
+    // Remover del DOM después de cerrar
+    modal.addEventListener('hidden.bs.modal', function() {
+        modal.remove();
+    });
+    
+    // También mostrar notificación flotante
+    showNotification(title + ': ' + message, 'danger');
+}
+
 function validarFormulario() {
     const cedula = document.getElementById('cedula-input').value.trim();
     const nombre = document.getElementById('nombre-input').value.trim();
@@ -716,6 +829,28 @@ function uploadFile(clientId) {
     uploadBtn.disabled = true;
     uploadBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Subiendo...';
     
+    // Deshabilitar campos del formulario
+    fileInput.disabled = true;
+    fileNameInput.disabled = true;
+    if (descriptionInput) {
+        descriptionInput.disabled = true;
+    }
+    
+    // Mostrar overlay de loading
+    const uploadOverlay = document.getElementById('file-upload-overlay');
+    if (uploadOverlay) {
+        uploadOverlay.style.display = 'flex';
+        uploadOverlay.style.position = 'fixed';
+        uploadOverlay.style.top = '0';
+        uploadOverlay.style.left = '0';
+        uploadOverlay.style.width = '100%';
+        uploadOverlay.style.height = '100%';
+        uploadOverlay.style.background = 'rgba(0,0,0,0.7)';
+        uploadOverlay.style.zIndex = '9999';
+        uploadOverlay.style.justifyContent = 'center';
+        uploadOverlay.style.alignItems = 'center';
+    }
+    
     // Construir URL correcta
     const baseUrl = window.location.origin;
     const uploadUrl = `${baseUrl}/client/upload-file/${clientId}`;
@@ -760,11 +895,24 @@ function uploadFile(clientId) {
     })
     .then(data => {
         console.log('Datos recibidos:', data);
+        
+        // Ocultar overlay
+        if (uploadOverlay) {
+            uploadOverlay.style.display = 'none';
+        }
+        
+        // Restaurar botón y campos
         uploadBtn.disabled = false;
         uploadBtn.innerHTML = originalText;
+        fileInput.disabled = false;
+        fileNameInput.disabled = false;
+        if (descriptionInput) {
+            descriptionInput.disabled = false;
+        }
         
         if (data.success) {
-            showNotification('✅ ' + data.message, 'success');
+            // Mostrar alerta de éxito con Bootstrap
+            showSuccessAlert('✅ ' + data.message, 'El archivo se ha subido exitosamente.');
             
             // Limpiar formulario
             fileInput.value = '';
@@ -775,17 +923,36 @@ function uploadFile(clientId) {
             
             // Recargar lista de archivos
             if (clientId) {
-                loadFiles(clientId, currentSearchTerm);
+                setTimeout(() => {
+                    loadFiles(clientId, currentSearchTerm);
+                }, 500);
             }
         } else {
-            showNotification('❌ ' + (data.message || 'Error al subir el archivo'), 'danger');
+            // Mostrar alerta de error con detalles
+            const errorMessage = data.message || 'Error al subir el archivo';
+            const errorDetails = data.error_details || null;
+            showErrorAlert('❌ Error al subir archivo', errorMessage, errorDetails);
         }
     })
     .catch(error => {
         console.error('Error completo:', error);
+        
+        // Ocultar overlay
+        if (uploadOverlay) {
+            uploadOverlay.style.display = 'none';
+        }
+        
+        // Restaurar botón y campos
         uploadBtn.disabled = false;
         uploadBtn.innerHTML = originalText;
-        showNotification('❌ Error al subir el archivo: ' + error.message, 'danger');
+        fileInput.disabled = false;
+        fileNameInput.disabled = false;
+        if (descriptionInput) {
+            descriptionInput.disabled = false;
+        }
+        
+        // Mostrar alerta de error
+        showErrorAlert('❌ Error al subir el archivo', error.message, null);
     });
 }
 
