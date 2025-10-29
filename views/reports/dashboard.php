@@ -430,9 +430,10 @@ let updateTimer = null;
 
 // Función para formatear números como moneda
 function formatCurrency(amount) {
-    return '₡' + new Intl.NumberFormat('es-CR', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
+    return '₡' + new Intl.NumberFormat('en-US', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+        useGrouping: true
     }).format(amount);
 }
 
