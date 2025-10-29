@@ -8,19 +8,82 @@ $car = $model->car;
 <head>
     <meta charset="UTF-8">
     <style>
-        body { font-family: Arial, sans-serif; font-size: 10px; margin: 0; padding: 20px; }
-        .header { margin-bottom: 15px; }
-        .company-info { width: 100%; margin-bottom: 10px; }
-        .company-name { font-size: 18px; font-weight: bold; font-style: italic; margin-bottom: 5px; }
-        .company-legal { font-size: 12px; margin-bottom: 10px; }
-        .company-address { font-size: 10px; margin-bottom: 10px; }
-        .order-title { font-size: 12px; font-weight: bold; margin: 15px 0; }
-        .section-title { font-size: 10px; font-weight: bold; margin-top: 15px; margin-bottom: 5px; }
-        .info-row { margin-bottom: 3px; }
-        .vehicle-table { width: 100%; border-collapse: collapse; margin-top: 10px; border: 1px solid #000; }
-        .vehicle-table td { border: 1px solid #000; padding: 5px; text-align: left; font-size: 10px; }
-        .vehicle-header { font-weight: bold; text-align: center; }
-        .total-row { font-weight: bold; }
+        @page { 
+            margin: 20mm 15mm;
+            size: A4 portrait;
+        }
+        body { 
+            font-family: Arial, sans-serif; 
+            font-size: 10px; 
+            margin: 0; 
+            padding: 0;
+            line-height: 1.3;
+            page-break-after: avoid;
+        }
+        .header { 
+            margin-bottom: 15px; 
+            page-break-after: avoid;
+        }
+        .company-info { 
+            width: 100%; 
+            margin-bottom: 10px; 
+            page-break-after: avoid;
+        }
+        .company-name { 
+            font-size: 18px; 
+            font-weight: bold; 
+            font-style: italic; 
+            margin-bottom: 5px; 
+        }
+        .company-legal { 
+            font-size: 12px; 
+            margin-bottom: 10px; 
+        }
+        .company-address { 
+            font-size: 10px; 
+            margin-bottom: 10px; 
+        }
+        .order-title { 
+            font-size: 12px; 
+            font-weight: bold; 
+            margin: 15px 0; 
+            page-break-after: avoid;
+        }
+        .section-title { 
+            font-size: 10px; 
+            font-weight: bold; 
+            margin-top: 15px; 
+            margin-bottom: 5px; 
+            page-break-after: avoid;
+        }
+        .info-row { 
+            margin-bottom: 3px; 
+            page-break-inside: avoid;
+        }
+        .vehicle-table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 10px; 
+            border: 1px solid #000; 
+            page-break-inside: avoid;
+        }
+        .vehicle-table td { 
+            border: 1px solid #000; 
+            padding: 5px; 
+            text-align: left; 
+            font-size: 10px; 
+        }
+        .vehicle-header { 
+            font-weight: bold; 
+            text-align: center; 
+        }
+        .total-row { 
+            font-weight: bold; 
+        }
+        * {
+            page-break-after: auto;
+            page-break-inside: auto;
+        }
     </style>
 </head>
 <body>

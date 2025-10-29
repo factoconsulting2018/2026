@@ -225,11 +225,16 @@ class PdfController extends Controller
                 'simpleTables' => true,
                 'useSubstitutions' => false,
                 'shrink_tables_to_fit' => 1,
-                'max_colH_correction' => 1.8
+                'max_colH_correction' => 1.8,
+                'mirrorMargins' => false,
+                'use_kwt' => false,
+                'showImageErrors' => false,
+                'img_dpi' => 96,
+                'dpi' => 96,
             ]);
             
-            // Generar HTML usando vista simplificada para debug
-            $html = $this->renderPartial('_rental-pdf-simple', [
+            // Generar HTML usando la vista completa del PDF
+            $html = $this->renderPartial('_rental-pdf', [
                 'model' => $rental,
                 'companyInfo' => $companyInfo
             ], true);
@@ -247,6 +252,10 @@ class PdfController extends Controller
             $html = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $html);
             $html = str_replace(["\r\n", "\r"], "\n", $html);
             
+            // Limpiar espacios en blanco excesivos que pueden causar páginas vacías
+            $html = preg_replace('/\n{3,}/', "\n\n", $html);
+            $html = preg_replace('/\s{4,}/', ' ', $html);
+            
             // Escribir HTML al PDF con configuración específica
             $mpdf->WriteHTML($html, \Mpdf\HTMLParserMode::HTML_BODY);
             
@@ -256,6 +265,12 @@ class PdfController extends Controller
             
             if ($pageCount == 0) {
                 throw new \Exception('El PDF no tiene páginas');
+            }
+            
+            // Validar que no haya demasiadas páginas (máximo 5 páginas para una orden normal)
+            if ($pageCount > 5) {
+                Yii::warning('PDF generado con ' . $pageCount . ' páginas, que es más de lo esperado. Revisar HTML.', 'pdf');
+                // No lanzar excepción, solo log de advertencia
             }
             
             // Generar nombre único del archivo
@@ -947,14 +962,26 @@ class PdfController extends Controller
                 'margin_left' => 15,
                 'margin_right' => 15,
                 'margin_top' => 20,
-                'margin_bottom' => 10,
-                'default_font' => 'dejavusans',
-                'tempDir' => $tempDir
+                'margin_bottom' => 20,
+                'default_font' => 'arial',
+                'tempDir' => $tempDir,
+                'autoScriptToLang' => false,
+                'autoLangToFont' => false,
+                'debug' => false,
+                'simpleTables' => true,
+                'useSubstitutions' => false,
+                'shrink_tables_to_fit' => 1,
+                'max_colH_correction' => 1.8,
+                'mirrorMargins' => false,
+                'use_kwt' => false,
+                'showImageErrors' => false,
+                'img_dpi' => 96,
+                'dpi' => 96,
             ]);
             
             Yii::info('mPDF inicializado correctamente', 'pdf');
             
-            // Generar HTML
+            // Generar HTML usando la vista completa del PDF
             $html = $this->renderPartial('_rental-pdf', [
                 'model' => $rental,
                 'companyInfo' => $companyInfo
@@ -962,8 +989,34 @@ class PdfController extends Controller
             
             Yii::info('HTML generado. Tamaño: ' . strlen($html) . ' bytes', 'pdf');
             
+            // Verificar que el HTML no esté vacío
+            if (empty(trim($html))) {
+                throw new \Exception('El HTML generado está vacío');
+            }
+            
+            // Limpiar HTML de caracteres problemáticos
+            $html = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $html);
+            $html = str_replace(["\r\n", "\r"], "\n", $html);
+            
+            // Limpiar espacios en blanco excesivos que pueden causar páginas vacías
+            $html = preg_replace('/\n{3,}/', "\n\n", $html);
+            $html = preg_replace('/\s{4,}/', ' ', $html);
+            
             // Escribir HTML al PDF
-            $mpdf->WriteHTML($html);
+            $mpdf->WriteHTML($html, \Mpdf\HTMLParserMode::HTML_BODY);
+            
+            // Verificar número de páginas
+            $pageCount = $mpdf->page;
+            Yii::info('Número de páginas generadas: ' . $pageCount, 'pdf');
+            
+            if ($pageCount == 0) {
+                throw new \Exception('El PDF no tiene páginas');
+            }
+            
+            // Validar que no haya demasiadas páginas
+            if ($pageCount > 5) {
+                Yii::warning('PDF generado con ' . $pageCount . ' páginas, que es más de lo esperado. Revisar HTML.', 'pdf');
+            }
             
             Yii::info('HTML escrito en mPDF', 'pdf');
             
@@ -1039,18 +1092,48 @@ class PdfController extends Controller
                 'debug' => false,
                 'simpleTables' => true,
                 'useSubstitutions' => false,
+                'shrink_tables_to_fit' => 1,
+                'max_colH_correction' => 1.8,
+                'mirrorMargins' => false,
+                'use_kwt' => false,
+                'showImageErrors' => false,
+                'img_dpi' => 96,
+                'dpi' => 96,
             ]);
             
-            $html = $this->renderPartial('_rental-pdf-simple', [
+            // Generar HTML usando la vista completa del PDF
+            $html = $this->renderPartial('_rental-pdf', [
                 'model' => $rental,
                 'companyInfo' => $companyInfo
             ], true);
             
-            // Limpiar HTML
+            // Verificar que el HTML no esté vacío
+            if (empty(trim($html))) {
+                throw new \Exception('El HTML generado está vacío');
+            }
+            
+            // Limpiar HTML de caracteres problemáticos
             $html = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $html);
             $html = str_replace(["\r\n", "\r"], "\n", $html);
             
+            // Limpiar espacios en blanco excesivos que pueden causar páginas vacías
+            $html = preg_replace('/\n{3,}/', "\n\n", $html);
+            $html = preg_replace('/\s{4,}/', ' ', $html);
+            
             $mpdf->WriteHTML($html, \Mpdf\HTMLParserMode::HTML_BODY);
+            
+            // Verificar número de páginas
+            $pageCount = $mpdf->page;
+            Yii::info('Número de páginas generadas para ZIP: ' . $pageCount, 'pdf');
+            
+            if ($pageCount == 0) {
+                throw new \Exception('El PDF no tiene páginas');
+            }
+            
+            // Validar que no haya demasiadas páginas
+            if ($pageCount > 5) {
+                Yii::warning('PDF generado con ' . $pageCount . ' páginas para ZIP, que es más de lo esperado.', 'pdf');
+            }
             
             // Guardar PDF temporalmente
             $pdfDir = Yii::getAlias('@app') . '/runtime/pdfs';
