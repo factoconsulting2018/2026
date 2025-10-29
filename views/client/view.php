@@ -48,108 +48,89 @@ $this->params['breadcrumbs'][] = $this->title;
                 </div>
             </div>
 
-            <!-- Gestor de la biblioteca -->
+            <!-- Biblioteca de Archivos -->
             <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0">📚 Gestor de la Biblioteca</h5>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">📚 Biblioteca de Archivos</h5>
+                    <button class="btn btn-sm btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#upload-form-collapse" aria-expanded="false" aria-controls="upload-form-collapse">
+                        <span class="material-symbols-outlined" style="font-size: 16px; vertical-align: middle; margin-right: 4px;">upload_file</span>
+                        Subir Archivo
+                    </button>
                 </div>
                 <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="d-flex align-items-center mb-3">
-                                <span class="material-symbols-outlined me-2" style="font-size: 24px; color: #007bff;">folder_open</span>
-                                <div>
-                                    <h6 class="mb-0">Documentos del Cliente</h6>
-                                    <small class="text-muted">Gestiona archivos y documentos</small>
-                                </div>
-                            </div>
-                            <div class="d-grid gap-2">
-                                <button class="btn btn-outline-primary btn-sm" onclick="uploadDocument()">
-                                    <span class="material-symbols-outlined" style="font-size: 16px; vertical-align: middle; margin-right: 4px;">upload</span>
-                                    Subir Documento
-                                </button>
-                                <button class="btn btn-outline-info btn-sm" onclick="viewDocuments()">
-                                    <span class="material-symbols-outlined" style="font-size: 16px; vertical-align: middle; margin-right: 4px;">visibility</span>
-                                    Ver Documentos
-                                </button>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="d-flex align-items-center mb-3">
-                                <span class="material-symbols-outlined me-2" style="font-size: 24px; color: #28a745;">description</span>
-                                <div>
-                                    <h6 class="mb-0">Contratos y Acuerdos</h6>
-                                    <small class="text-muted">Documentos legales y contractuales</small>
-                                </div>
-                            </div>
-                            <div class="d-grid gap-2">
-                                <button class="btn btn-outline-success btn-sm" onclick="createContract()">
-                                    <span class="material-symbols-outlined" style="font-size: 16px; vertical-align: middle; margin-right: 4px;">add</span>
-                                    Nuevo Contrato
-                                </button>
-                                <button class="btn btn-outline-warning btn-sm" onclick="viewContracts()">
-                                    <span class="material-symbols-outlined" style="font-size: 16px; vertical-align: middle; margin-right: 4px;">list</span>
-                                    Ver Contratos
-                                </button>
+                    <!-- Formulario de Subida (Colapsable) -->
+                    <div class="collapse mb-4" id="upload-form-collapse">
+                        <div class="card" style="background: #f8f9fa;">
+                            <div class="card-body">
+                                <h6 class="mb-3">
+                                    <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">upload_file</span>
+                                    Subir Nuevo Archivo
+                                </h6>
+                                <form id="file-upload-form" enctype="multipart/form-data">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Archivo *</label>
+                                            <input type="file" class="form-control" id="file-input" name="file" accept=".pdf,.png,.jpg,.jpeg,.xlsx,.xls,.docx,.doc" required>
+                                            <small class="form-text text-muted">Formatos permitidos: PDF, PNG, JPG, XLSX, DOCX (máximo 10MB)</small>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Nombre del Archivo *</label>
+                                            <input type="text" class="form-control" id="file-name-input" placeholder="Ej: Contrato 2025" required>
+                                            <small class="form-text text-muted">Nombre personalizado para identificar el archivo</small>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-12 mb-3">
+                                            <label class="form-label">Descripción (Opcional)</label>
+                                            <textarea class="form-control" id="file-description-input" rows="2" placeholder="Descripción adicional del archivo"></textarea>
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn btn-primary" id="upload-file-btn" data-client-id="<?= $model->id ?>" onclick="uploadFile()">
+                                        <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">upload</span>
+                                        Subir Archivo
+                                    </button>
+                                </form>
                             </div>
                         </div>
                     </div>
-                    
-                    <!-- Lista de documentos recientes -->
-                    <div class="mt-4">
-                        <h6 class="text-muted mb-3">📄 Documentos Recientes</h6>
-                        <div class="list-group list-group-flush">
-                            <div class="list-group-item d-flex justify-content-between align-items-center">
-                                <div class="d-flex align-items-center">
-                                    <span class="material-symbols-outlined me-2" style="font-size: 20px; color: #dc3545;">picture_as_pdf</span>
-                                    <div>
-                                        <div class="fw-bold">Contrato_Alquiler_001</div>
-                                        <small class="text-muted">Subido hace 2 días • PDF</small>
-                                    </div>
-                                </div>
-                                <div class="btn-group btn-group-sm">
-                                    <button class="btn btn-outline-primary btn-sm" onclick="downloadDocument('Contrato_Alquiler_001.pdf')">
-                                        <span class="material-symbols-outlined" style="font-size: 14px;">download</span>
-                                    </button>
-                                    <button class="btn btn-outline-danger btn-sm" onclick="deleteDocument('Contrato_Alquiler_001.pdf')">
-                                        <span class="material-symbols-outlined" style="font-size: 14px;">delete</span>
-                                    </button>
-                                </div>
+
+                    <!-- Buscador de Archivos -->
+                    <div class="mb-3">
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <span class="material-symbols-outlined">search</span>
+                            </span>
+                            <input type="text" class="form-control" id="file-search-input" placeholder="Buscar archivos por nombre o descripción...">
+                            <button class="btn btn-outline-secondary" type="button" onclick="searchFiles()">
+                                Buscar
+                            </button>
+                            <button class="btn btn-outline-secondary" type="button" onclick="clearFileSearch()" title="Limpiar búsqueda">
+                                <span class="material-symbols-outlined">clear</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Overlay de Loading para Subida de Archivos -->
+                    <div id="file-upload-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; justify-content: center; align-items: center; flex-direction: column;">
+                        <div class="text-center bg-white p-5 rounded shadow-lg" style="max-width: 400px; margin: auto;">
+                            <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+                                <span class="visually-hidden">Subiendo...</span>
                             </div>
-                            <div class="list-group-item d-flex justify-content-between align-items-center">
-                                <div class="d-flex align-items-center">
-                                    <span class="material-symbols-outlined me-2" style="font-size: 20px; color: #007bff;">description</span>
-                                    <div>
-                                        <div class="fw-bold">Cedula_Identidad_Cliente</div>
-                                        <small class="text-muted">Subido hace 1 semana • PDF</small>
-                                    </div>
-                                </div>
-                                <div class="btn-group btn-group-sm">
-                                    <button class="btn btn-outline-primary btn-sm" onclick="downloadDocument('Cedula_Identidad_Cliente.pdf')">
-                                        <span class="material-symbols-outlined" style="font-size: 14px;">download</span>
-                                    </button>
-                                    <button class="btn btn-outline-danger btn-sm" onclick="deleteDocument('Cedula_Identidad_Cliente.pdf')">
-                                        <span class="material-symbols-outlined" style="font-size: 14px;">delete</span>
-                                    </button>
-                                </div>
+                            <h5 class="mb-2">Subiendo archivo...</h5>
+                            <p class="text-muted mb-3">Por favor, espere mientras se procesa el archivo.</p>
+                            <div class="progress" style="height: 6px;">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%"></div>
                             </div>
-                            <div class="list-group-item d-flex justify-content-between align-items-center">
-                                <div class="d-flex align-items-center">
-                                    <span class="material-symbols-outlined me-2" style="font-size: 20px; color: #28a745;">image</span>
-                                    <div>
-                                        <div class="fw-bold">Licencia_Conducir_Frontal</div>
-                                        <small class="text-muted">Subido hace 2 semanas • JPG</small>
-                                    </div>
-                                </div>
-                                <div class="btn-group btn-group-sm">
-                                    <button class="btn btn-outline-primary btn-sm" onclick="downloadDocument('Licencia_Conducir_Frontal.jpg')">
-                                        <span class="material-symbols-outlined" style="font-size: 14px;">download</span>
-                                    </button>
-                                    <button class="btn btn-outline-danger btn-sm" onclick="deleteDocument('Licencia_Conducir_Frontal.jpg')">
-                                        <span class="material-symbols-outlined" style="font-size: 14px;">delete</span>
-                                    </button>
-                                </div>
+                        </div>
+                    </div>
+
+                    <!-- Lista de Archivos -->
+                    <div id="files-container">
+                        <div class="text-center text-muted py-5">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Cargando...</span>
                             </div>
+                            <p class="mt-3">Cargando archivos...</p>
                         </div>
                     </div>
                 </div>
@@ -243,6 +224,21 @@ $this->params['breadcrumbs'][] = $this->title;
 </div>
 
 <?php
-// Cargar el archivo JavaScript externo para el gestor de biblioteca
-$this->registerJsFile('@web/js/library-manager.js', ['depends' => [\yii\bootstrap5\BootstrapPluginAsset::class]]);
+// Cargar el archivo JavaScript externo para la biblioteca de archivos
+$this->registerJsFile('@web/js/client-form.js', ['depends' => [yii\web\JqueryAsset::class]]);
+
+// Inicializar carga de archivos al cargar la página
+$this->registerJs("
+    // Inicializar currentClientId cuando se carga la página
+    if (typeof currentClientId === 'undefined') {
+        window.currentClientId = {$model->id};
+    }
+    
+    // Cargar archivos del cliente al inicializar
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof loadFiles === 'function') {
+            loadFiles({$model->id}, '');
+        }
+    });
+", \yii\web\View::POS_READY);
 ?>
