@@ -678,18 +678,39 @@ function uploadFile(clientId) {
     console.log('Subiendo archivo a:', uploadUrl);
     console.log('Client ID:', clientId);
     
+    // Obtener token CSRF si está disponible
+    const csrfToken = document.querySelector('meta[name="csrf-token"]') 
+        ? document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        : (typeof yii !== 'undefined' && yii.getCsrfToken) 
+            ? yii.getCsrfToken() 
+            : null;
+    
     fetch(uploadUrl, {
         method: 'POST',
         body: formData,
         headers: {
             'X-Requested-With': 'XMLHttpRequest'
-        }
+        },
+        credentials: 'same-origin'
     })
     .then(response => {
         console.log('Respuesta recibida:', response.status, response.statusText);
+        
+        // Si la respuesta no es exitosa, intentar obtener el error del cuerpo
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            return response.text().then(text => {
+                console.error('Error del servidor:', text);
+                let errorData;
+                try {
+                    errorData = JSON.parse(text);
+                } catch (e) {
+                    errorData = { success: false, message: `Error del servidor (${response.status}): ${text.substring(0, 200)}` };
+                }
+                throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+            });
         }
+        
+        // Si es exitosa, parsear JSON
         return response.json();
     })
     .then(data => {

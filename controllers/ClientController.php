@@ -308,9 +308,15 @@ class ClientController extends Controller
      */
     public function actionUploadFile($id)
     {
+        // Desactivar validación CSRF para esta acción (archivos se suben via AJAX)
+        $this->enableCsrfValidation = false;
+        
         Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
         
         try {
+            // Log para debugging
+            Yii::info('Iniciando subida de archivo para cliente ID: ' . $id, 'client');
+            
             $client = $this->findModel($id);
             
             $file = UploadedFile::getInstanceByName('file');
@@ -355,7 +361,18 @@ class ClientController extends Controller
             // Crear directorio si no existe
             $uploadDir = Yii::getAlias('@app/web/uploads/clients/' . $client->id);
             if (!is_dir($uploadDir)) {
-                mkdir($uploadDir, 0777, true);
+                if (!@mkdir($uploadDir, 0777, true)) {
+                    $error = error_get_last();
+                    throw new \Exception('Error al crear directorio: ' . ($error['message'] ?? 'Permiso denegado'));
+                }
+            }
+            
+            // Verificar permisos de escritura
+            if (!is_writable($uploadDir)) {
+                @chmod($uploadDir, 0777);
+                if (!is_writable($uploadDir)) {
+                    throw new \Exception('El directorio no tiene permisos de escritura: ' . $uploadDir);
+                }
             }
             
             // Generar nombre único para el archivo
@@ -408,10 +425,20 @@ class ClientController extends Controller
             ];
             
         } catch (\Exception $e) {
-            Yii::error('Error subiendo archivo de cliente: ' . $e->getMessage(), 'client');
+            $errorMessage = $e->getMessage();
+            $errorTrace = $e->getTraceAsString();
+            
+            Yii::error('Error subiendo archivo de cliente ID ' . $id . ': ' . $errorMessage, 'client');
+            Yii::error('Stack trace: ' . $errorTrace, 'client');
+            
+            // Log de información adicional para debugging
+            Yii::error('POST data: ' . json_encode(Yii::$app->request->post()), 'client');
+            Yii::error('FILES data: ' . json_encode($_FILES), 'client');
+            
             return [
                 'success' => false,
-                'message' => 'Error: ' . $e->getMessage()
+                'message' => 'Error: ' . $errorMessage,
+                'error_details' => YII_DEBUG ? $errorTrace : null
             ];
         }
     }
