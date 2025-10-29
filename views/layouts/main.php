@@ -472,7 +472,14 @@ $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => Yii
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link <?= Yii::$app->controller->id === 'reports' ? 'active' : '' ?>" 
+                <a class="nav-link <?= Yii::$app->controller->id === 'reports' && Yii::$app->controller->action->id === 'dashboard' ? 'active' : '' ?>" 
+                   href="<?= \yii\helpers\Url::to(['/reports/dashboard']) ?>">
+                    <span class="nav-icon material-symbols-outlined">bar_chart</span>
+                    <span class="nav-text">Estadísticas</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link <?= Yii::$app->controller->id === 'reports' && Yii::$app->controller->action->id !== 'dashboard' ? 'active' : '' ?>" 
                    href="<?= \yii\helpers\Url::to(['/reports/index']) ?>">
                     <span class="nav-icon material-symbols-outlined">assessment</span>
                     <span class="nav-text">Reportes</span>

@@ -1148,4 +1148,315 @@ class ReportsController extends Controller
         }
     }
 
+    /**
+     * Dashboard de Estadísticas
+     */
+    public function actionDashboard()
+    {
+        $this->layout = 'main';
+        return $this->render('dashboard');
+    }
+
+    /**
+     * API REST: Obtener todos los alquileres/rentas para Power BI y Dashboard
+     */
+    public function actionApiRentals()
+    {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        
+        try {
+            $startDate = Yii::$app->request->get('start_date');
+            $endDate = Yii::$app->request->get('end_date');
+            $estadoPago = Yii::$app->request->get('estado_pago');
+            $empresa = Yii::$app->request->get('empresa');
+            
+            $query = Rental::find()->with(['client', 'car']);
+            
+            if ($startDate) {
+                $query->andWhere(['>=', 'created_at', $startDate]);
+            }
+            if ($endDate) {
+                $query->andWhere(['<=', 'created_at', $endDate]);
+            }
+            if ($estadoPago) {
+                $query->andWhere(['estado_pago' => $estadoPago]);
+            }
+            
+            $rentals = $query->orderBy(['created_at' => SORT_DESC])->all();
+            
+            $data = [];
+            foreach ($rentals as $rental) {
+                $rentalEmpresa = $rental->car && $rental->car->empresa ? $rental->car->empresa : 'Facto Rent a Car';
+                if ($empresa && $rentalEmpresa !== $empresa) {
+                    continue;
+                }
+                
+                $data[] = [
+                    'id' => $rental->id,
+                    'rental_id' => $rental->rental_id ?: ('R' . str_pad($rental->id, 6, '0', STR_PAD_LEFT)),
+                    'client_id' => $rental->client_id,
+                    'client_name' => $rental->client ? $rental->client->full_name : null,
+                    'client_cedula' => $rental->client ? $rental->client->cedula_fisica : null,
+                    'car_id' => $rental->car_id,
+                    'car_name' => $rental->car ? $rental->car->nombre : null,
+                    'car_plate' => $rental->car ? $rental->car->placa : null,
+                    'fecha_inicio' => $rental->fecha_inicio,
+                    'fecha_final' => $rental->fecha_final,
+                    'cantidad_dias' => (int)($rental->cantidad_dias ?? 0),
+                    'precio_por_dia' => (float)($rental->precio_por_dia ?? 0),
+                    'total_precio' => (float)($rental->total_precio ?? 0),
+                    'estado_pago' => $rental->estado_pago ?? 'pendiente',
+                    'comprobante_pago' => $rental->comprobante_pago ?? null,
+                    'ejecutivo' => $rental->ejecutivo ?? null,
+                    'empresa' => $rentalEmpresa,
+                    'created_at' => $rental->created_at,
+                    'updated_at' => $rental->updated_at,
+                    'anio' => $rental->created_at ? date('Y', strtotime($rental->created_at)) : null,
+                    'mes' => $rental->created_at ? date('m', strtotime($rental->created_at)) : null,
+                    'mes_nombre' => $rental->created_at ? date('F', strtotime($rental->created_at)) : null,
+                    'dia_semana' => $rental->created_at ? date('N', strtotime($rental->created_at)) : null,
+                ];
+            }
+            
+            return [
+                'success' => true,
+                'count' => count($data),
+                'data' => $data,
+                'filters_applied' => [
+                    'start_date' => $startDate,
+                    'end_date' => $endDate,
+                    'estado_pago' => $estadoPago,
+                    'empresa' => $empresa,
+                ]
+            ];
+            
+        } catch (\Exception $e) {
+            Yii::error('Error en API Rentals: ' . $e->getMessage(), 'api');
+            Yii::$app->response->statusCode = 500;
+            return [
+                'success' => false,
+                'error' => 'Error al obtener datos: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * API REST: Obtener todos los clientes
+     */
+    public function actionApiClients()
+    {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        
+        try {
+            $status = Yii::$app->request->get('status', 'active');
+            
+            $query = Client::find();
+            if ($status) {
+                $query->where(['status' => $status]);
+            }
+            
+            $clients = $query->orderBy(['created_at' => SORT_DESC])->all();
+            
+            $data = [];
+            foreach ($clients as $client) {
+                $data[] = [
+                    'id' => $client->id,
+                    'full_name' => $client->full_name,
+                    'cedula_fisica' => $client->cedula_fisica ?? null,
+                    'telefono' => $client->telefono ?? null,
+                    'whatsapp' => $client->whatsapp ?? null,
+                    'email' => $client->email ?? null,
+                    'address' => $client->address ?? null,
+                    'status' => $client->status ?? 'active',
+                    'created_at' => $client->created_at,
+                ];
+            }
+            
+            return [
+                'success' => true,
+                'count' => count($data),
+                'data' => $data
+            ];
+            
+        } catch (\Exception $e) {
+            Yii::error('Error en API Clients: ' . $e->getMessage(), 'api');
+            Yii::$app->response->statusCode = 500;
+            return [
+                'success' => false,
+                'error' => 'Error al obtener datos: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * API REST: Métricas y resumen para Dashboard
+     */
+    public function actionApiMetrics()
+    {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        
+        try {
+            $startDate = Yii::$app->request->get('start_date');
+            $endDate = Yii::$app->request->get('end_date');
+            
+            $query = Rental::find();
+            
+            if ($startDate) {
+                $query->andWhere(['>=', 'created_at', $startDate]);
+            }
+            if ($endDate) {
+                $query->andWhere(['<=', 'created_at', $endDate]);
+            }
+            
+            $allRentals = $query->all();
+            
+            $metrics = [
+                'total_rentals' => count($allRentals),
+                'total_revenue' => (float)array_sum(array_column($allRentals, 'total_precio')),
+                'rentals_by_status' => [],
+                'rentals_by_empresa' => [],
+                'rentals_by_month' => [],
+                'rentals_by_year' => [],
+                'average_rental_amount' => 0,
+                'total_active_clients' => (int)Client::find()->where(['status' => 'active'])->count(),
+            ];
+            
+            foreach ($allRentals as $rental) {
+                $estado = $rental->estado_pago ?? 'pendiente';
+                $metrics['rentals_by_status'][$estado] = ($metrics['rentals_by_status'][$estado] ?? 0) + 1;
+                
+                $empresa = 'Facto Rent a Car';
+                if ($rental->car && $rental->car->empresa) {
+                    $empresa = $rental->car->empresa;
+                }
+                if (!isset($metrics['rentals_by_empresa'][$empresa])) {
+                    $metrics['rentals_by_empresa'][$empresa] = [
+                        'count' => 0,
+                        'revenue' => 0
+                    ];
+                }
+                $metrics['rentals_by_empresa'][$empresa]['count']++;
+                $metrics['rentals_by_empresa'][$empresa]['revenue'] += $rental->total_precio;
+                
+                if ($rental->created_at) {
+                    $mes = date('Y-m', strtotime($rental->created_at));
+                    if (!isset($metrics['rentals_by_month'][$mes])) {
+                        $metrics['rentals_by_month'][$mes] = [
+                            'count' => 0,
+                            'revenue' => 0
+                        ];
+                    }
+                    $metrics['rentals_by_month'][$mes]['count']++;
+                    $metrics['rentals_by_month'][$mes]['revenue'] += $rental->total_precio;
+                    
+                    $anio = date('Y', strtotime($rental->created_at));
+                    if (!isset($metrics['rentals_by_year'][$anio])) {
+                        $metrics['rentals_by_year'][$anio] = [
+                            'count' => 0,
+                            'revenue' => 0
+                        ];
+                    }
+                    $metrics['rentals_by_year'][$anio]['count']++;
+                    $metrics['rentals_by_year'][$anio]['revenue'] += $rental->total_precio;
+                }
+            }
+            
+            if ($metrics['total_rentals'] > 0) {
+                $metrics['average_rental_amount'] = $metrics['total_revenue'] / $metrics['total_rentals'];
+            }
+            
+            return [
+                'success' => true,
+                'data' => $metrics,
+                'period' => [
+                    'start_date' => $startDate,
+                    'end_date' => $endDate
+                ]
+            ];
+            
+        } catch (\Exception $e) {
+            Yii::error('Error en API Metrics: ' . $e->getMessage(), 'api');
+            Yii::$app->response->statusCode = 500;
+            return [
+                'success' => false,
+                'error' => 'Error al obtener métricas: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * API REST: Ventas agrupadas por cliente
+     */
+    public function actionApiSalesByClient()
+    {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        
+        try {
+            $startDate = Yii::$app->request->get('start_date');
+            $endDate = Yii::$app->request->get('end_date');
+            $limit = Yii::$app->request->get('limit', 10);
+            
+            $query = Rental::find()
+                ->with(['client', 'car'])
+                ->orderBy(['client_id' => SORT_ASC, 'created_at' => SORT_DESC]);
+            
+            if ($startDate) {
+                $query->andWhere(['>=', 'created_at', $startDate]);
+            }
+            if ($endDate) {
+                $query->andWhere(['<=', 'created_at', $endDate]);
+            }
+            
+            $rentals = $query->all();
+            
+            $salesByClient = [];
+            foreach ($rentals as $rental) {
+                $clientId = $rental->client_id;
+                if (!isset($salesByClient[$clientId])) {
+                    $salesByClient[$clientId] = [
+                        'client_id' => $clientId,
+                        'client_name' => $rental->client ? $rental->client->full_name : 'Sin Cliente',
+                        'client_cedula' => $rental->client ? $rental->client->cedula_fisica : null,
+                        'total_rentals' => 0,
+                        'total_amount' => 0,
+                        'average_rental' => 0,
+                    ];
+                }
+                
+                $salesByClient[$clientId]['total_rentals']++;
+                $salesByClient[$clientId]['total_amount'] += $rental->total_precio;
+            }
+            
+            foreach ($salesByClient as $clientId => &$clientData) {
+                if ($clientData['total_rentals'] > 0) {
+                    $clientData['average_rental'] = $clientData['total_amount'] / $clientData['total_rentals'];
+                }
+            }
+            
+            // Ordenar por monto total descendente
+            uasort($salesByClient, function($a, $b) {
+                return $b['total_amount'] <=> $a['total_amount'];
+            });
+            
+            // Limitar resultados si se especifica
+            if ($limit > 0) {
+                $salesByClient = array_slice($salesByClient, 0, $limit, true);
+            }
+            
+            return [
+                'success' => true,
+                'count' => count($salesByClient),
+                'data' => array_values($salesByClient)
+            ];
+            
+        } catch (\Exception $e) {
+            Yii::error('Error en API SalesByClient: ' . $e->getMessage(), 'api');
+            Yii::$app->response->statusCode = 500;
+            return [
+                'success' => false,
+                'error' => 'Error al obtener datos: ' . $e->getMessage()
+            ];
+        }
+    }
+
 }

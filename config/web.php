@@ -88,6 +88,11 @@ $config = [
                 'pdf/download-zip/<id:\d+>' => 'pdf/download-zip',
                 'order2/<action:\w+>' => 'order2/<action>',
                 'order2' => 'order2/index',
+                // API REST para Dashboard y Power BI
+                'api/reports/rentals' => 'reports/api-rentals',
+                'api/reports/clients' => 'reports/api-clients',
+                'api/reports/metrics' => 'reports/api-metrics',
+                'api/reports/sales-by-client' => 'reports/api-sales-by-client',
             ],
         ],
     ],
