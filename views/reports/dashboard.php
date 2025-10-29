@@ -24,6 +24,7 @@ $this->registerJsFile('https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.um
     border-radius: 12px;
     margin-bottom: 24px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    position: relative;
 }
 
 .dashboard-header h1 {
@@ -39,6 +40,30 @@ $this->registerJsFile('https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.um
     margin-top: 8px;
     font-size: 14px;
     opacity: 0.9;
+}
+
+.dark-mode-toggle {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    background: rgba(255, 255, 255, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    font-size: 24px;
+}
+
+.dark-mode-toggle:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 /* KPI Cards */
@@ -265,6 +290,65 @@ $this->registerJsFile('https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.um
     display: flex;
 }
 
+/* Dark Mode Styles */
+.dashboard-container.dark-mode {
+    background: #1a1a1a;
+}
+
+.dashboard-container.dark-mode .kpi-card {
+    background: #2d2d2d;
+    color: #e0e0e0;
+}
+
+.dashboard-container.dark-mode .kpi-card-title {
+    color: #b0b0b0;
+}
+
+.dashboard-container.dark-mode .kpi-card-value {
+    color: #ffffff;
+}
+
+.dashboard-container.dark-mode .chart-card {
+    background: #2d2d2d;
+    color: #e0e0e0;
+}
+
+.dashboard-container.dark-mode .chart-card-title {
+    color: #ffffff;
+}
+
+.dashboard-container.dark-mode .chart-card-header {
+    border-bottom-color: #404040;
+}
+
+.dashboard-container.dark-mode .table-card {
+    background: #2d2d2d;
+    color: #e0e0e0;
+}
+
+.dashboard-container.dark-mode .table-card-title {
+    color: #ffffff;
+}
+
+.dashboard-container.dark-mode .table-card-header {
+    border-bottom-color: #404040;
+}
+
+.dashboard-container.dark-mode .top-clients-table th {
+    background: #1f1f1f;
+    color: #e0e0e0;
+    border-bottom-color: #404040;
+}
+
+.dashboard-container.dark-mode .top-clients-table td {
+    color: #e0e0e0;
+    border-bottom-color: #404040;
+}
+
+.dashboard-container.dark-mode .top-clients-table tr:hover {
+    background: #3a3a3a;
+}
+
 @media (max-width: 768px) {
     .charts-grid {
         grid-template-columns: 1fr;
@@ -277,15 +361,26 @@ $this->registerJsFile('https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.um
     .chart-container {
         height: 250px;
     }
+    
+    .dark-mode-toggle {
+        top: 16px;
+        right: 16px;
+        width: 40px;
+        height: 40px;
+        font-size: 20px;
+    }
 }
 </style>
 
-<div class="dashboard-container">
+<div class="dashboard-container" id="dashboard-container">
     <div class="dashboard-header">
         <h1>
             <span class="material-symbols-outlined">bar_chart</span>
             Dashboard de Estadísticas
         </h1>
+        <button class="dark-mode-toggle" id="dark-mode-toggle" title="Cambiar modo oscuro/claro">
+            <span class="material-symbols-outlined" id="dark-mode-icon">dark_mode</span>
+        </button>
         <div class="last-update">
             <span class="material-symbols-outlined" style="font-size: 16px; vertical-align: middle;">schedule</span>
             <span id="last-update-time">Cargando...</span>
@@ -478,6 +573,16 @@ function updateKPICards(metrics) {
     document.getElementById('kpi-active-clients').textContent = metrics.total_active_clients.toLocaleString();
 }
 
+// Función para obtener colores según el modo actual
+function getChartColors() {
+    const isDarkMode = document.getElementById('dashboard-container').classList.contains('dark-mode');
+    return {
+        textColor: isDarkMode ? '#e0e0e0' : '#495057',
+        gridColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+        borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)'
+    };
+}
+
 // Función para actualizar gráfico de ventas mensuales
 function updateMonthlySalesChart(metrics) {
     const monthlyData = metrics.rentals_by_month;
@@ -490,6 +595,8 @@ function updateMonthlySalesChart(metrics) {
         const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
         return monthNames[parseInt(month) - 1] + ' ' + year;
     });
+    
+    const colors = getChartColors();
     
     if (monthlySalesChart) {
         monthlySalesChart.destroy();
@@ -536,9 +643,13 @@ function updateMonthlySalesChart(metrics) {
                     position: 'left',
                     beginAtZero: true,
                     ticks: {
+                        color: colors.textColor,
                         callback: function(value) {
                             return formatCurrency(value);
                         }
+                    },
+                    grid: {
+                        color: colors.gridColor
                     }
                 },
                 y1: {
@@ -546,9 +657,20 @@ function updateMonthlySalesChart(metrics) {
                     display: true,
                     position: 'right',
                     beginAtZero: true,
+                    ticks: {
+                        color: colors.textColor
+                    },
                     grid: {
                         drawOnChartArea: false,
                     },
+                },
+                x: {
+                    ticks: {
+                        color: colors.textColor
+                    },
+                    grid: {
+                        color: colors.gridColor
+                    }
                 }
             }
         }
@@ -591,6 +713,9 @@ function updateStatusChart(metrics) {
             plugins: {
                 legend: {
                     position: 'bottom',
+                    labels: {
+                        color: getChartColors().textColor
+                    }
                 },
                 tooltip: {
                     callbacks: {
@@ -645,6 +770,9 @@ function updateEmpresaChart(metrics) {
             plugins: {
                 legend: {
                     position: 'top',
+                    labels: {
+                        color: getChartColors().textColor
+                    }
                 },
                 tooltip: {
                     mode: 'index',
@@ -663,16 +791,31 @@ function updateEmpresaChart(metrics) {
                 y: {
                     beginAtZero: true,
                     ticks: {
+                        color: getChartColors().textColor,
                         callback: function(value) {
                             return formatCurrency(value);
                         }
+                    },
+                    grid: {
+                        color: getChartColors().gridColor
                     }
                 },
                 y1: {
                     beginAtZero: true,
                     position: 'right',
+                    ticks: {
+                        color: getChartColors().textColor
+                    },
                     grid: {
                         drawOnChartArea: false,
+                    }
+                },
+                x: {
+                    ticks: {
+                        color: getChartColors().textColor
+                    },
+                    grid: {
+                        color: getChartColors().gridColor
                     }
                 }
             }
@@ -753,8 +896,57 @@ async function loadDashboardData() {
     }
 }
 
+// Funcionalidad de Modo Oscuro
+function initDarkMode() {
+    const container = document.getElementById('dashboard-container');
+    const toggle = document.getElementById('dark-mode-toggle');
+    const icon = document.getElementById('dark-mode-icon');
+    
+    // Cargar preferencia guardada
+    const savedMode = localStorage.getItem('dashboard-dark-mode');
+    const isDarkMode = savedMode === 'true';
+    
+    // Aplicar modo inicial
+    if (isDarkMode) {
+        container.classList.add('dark-mode');
+        icon.textContent = 'light_mode';
+        icon.title = 'Cambiar a modo claro';
+    } else {
+        container.classList.remove('dark-mode');
+        icon.textContent = 'dark_mode';
+        icon.title = 'Cambiar a modo oscuro';
+    }
+    
+    // Manejar clic en el botón
+    toggle.addEventListener('click', function() {
+        const isCurrentlyDark = container.classList.contains('dark-mode');
+        
+        if (isCurrentlyDark) {
+            // Cambiar a modo claro
+            container.classList.remove('dark-mode');
+            icon.textContent = 'dark_mode';
+            icon.title = 'Cambiar a modo oscuro';
+            localStorage.setItem('dashboard-dark-mode', 'false');
+        } else {
+            // Cambiar a modo oscuro
+            container.classList.add('dark-mode');
+            icon.textContent = 'light_mode';
+            icon.title = 'Cambiar a modo claro';
+            localStorage.setItem('dashboard-dark-mode', 'true');
+        }
+        
+        // Actualizar gráficos para que se adapten al nuevo modo
+        // Recargar datos para regenerar gráficos con nuevos colores
+        loadDashboardData();
+    });
+}
+
 // Inicializar dashboard cuando la página carga
 document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar modo oscuro
+    initDarkMode();
+    
+    // Cargar datos
     loadDashboardData();
     
     // Configurar actualización automática
