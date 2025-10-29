@@ -56,25 +56,34 @@ class m251029_100000_create_client_files_table extends Migration
             // La tabla ya existe, verificar y agregar índices que falten
             echo "Info: La tabla 'client_files' ya existe. Verificando índices...\n";
             
+            // Obtener el nombre real de la tabla (sin prefijos)
+            $realTableName = $this->db->schema->getRawTableName($tableName);
+            
             // Verificar y crear índices si no existen
             try {
                 $db = $this->db;
                 $indexName = 'idx_client_files_client_id';
-                $indexExists = $db->createCommand("SHOW INDEX FROM $tableName WHERE Key_name = '$indexName'")->queryOne();
+                $indexExists = $db->createCommand("SHOW INDEX FROM `$realTableName` WHERE Key_name = :name", [
+                    ':name' => $indexName
+                ])->queryOne();
                 if (!$indexExists) {
                     $this->createIndex($indexName, $tableName, 'client_id');
                     echo "  ✓ Índice 'idx_client_files_client_id' creado.\n";
                 }
                 
                 $indexName = 'idx_client_files_file_name';
-                $indexExists = $db->createCommand("SHOW INDEX FROM $tableName WHERE Key_name = '$indexName'")->queryOne();
+                $indexExists = $db->createCommand("SHOW INDEX FROM `$realTableName` WHERE Key_name = :name", [
+                    ':name' => $indexName
+                ])->queryOne();
                 if (!$indexExists) {
                     $this->createIndex($indexName, $tableName, 'file_name');
                     echo "  ✓ Índice 'idx_client_files_file_name' creado.\n";
                 }
                 
                 $indexName = 'idx_client_files_created_at';
-                $indexExists = $db->createCommand("SHOW INDEX FROM $tableName WHERE Key_name = '$indexName'")->queryOne();
+                $indexExists = $db->createCommand("SHOW INDEX FROM `$realTableName` WHERE Key_name = :name", [
+                    ':name' => $indexName
+                ])->queryOne();
                 if (!$indexExists) {
                     $this->createIndex($indexName, $tableName, 'created_at');
                     echo "  ✓ Índice 'idx_client_files_created_at' creado.\n";
@@ -87,13 +96,18 @@ class m251029_100000_create_client_files_table extends Migration
             try {
                 $db = $this->db;
                 $fkName = 'fk_client_files_client';
+                $dbName = $db->createCommand("SELECT DATABASE()")->queryScalar();
                 $fkExists = $db->createCommand("
                     SELECT CONSTRAINT_NAME 
                     FROM information_schema.TABLE_CONSTRAINTS 
-                    WHERE TABLE_SCHEMA = DATABASE() 
-                    AND TABLE_NAME = '$tableName' 
-                    AND CONSTRAINT_NAME = '$fkName'
-                ")->queryOne();
+                    WHERE TABLE_SCHEMA = :schema 
+                    AND TABLE_NAME = :table 
+                    AND CONSTRAINT_NAME = :name
+                ", [
+                    ':schema' => $dbName,
+                    ':table' => $realTableName,
+                    ':name' => $fkName
+                ])->queryOne();
                 
                 if (!$fkExists) {
                     $this->addForeignKey(
