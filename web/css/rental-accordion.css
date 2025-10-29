@@ -323,15 +323,45 @@
     opacity: 1 !important;
 }
 
+/* Estilos específicos para botón PDF2 negro */
+.action-icon.pdf2-icon {
+    color: #000000 !important;
+    border-color: #000000 !important;
+    background-color: transparent !important;
+}
+
+.action-icon.pdf2-icon:hover {
+    background-color: #000000 !important;
+    color: #ffffff !important;
+    transform: scale(1.05);
+}
+
+.action-icon.pdf2-icon .material-symbols-outlined {
+    color: #000000 !important;
+    font-size: 22px !important;
+}
+
+.action-icon.pdf2-icon:hover .material-symbols-outlined {
+    color: #ffffff !important;
+}
+
 .pdf2-icon {
-    color: #000000;
-    border-color: #000000;
+    color: #000000 !important;
+    border-color: #000000 !important;
 }
 
 .pdf2-icon:hover {
-    background-color: #000000;
-    color: #ffffff;
+    background-color: #000000 !important;
+    color: #ffffff !important;
     transform: scale(1.05);
+}
+
+.pdf2-icon .material-symbols-outlined {
+    color: #000000 !important;
+}
+
+.pdf2-icon:hover .material-symbols-outlined {
+    color: #ffffff !important;
 }
 
 .delete-icon {
