@@ -1097,11 +1097,6 @@ $this->registerCss('
                                            onclick="downloadPdfDirect(this.href); return false;">
                                             <span class="material-symbols-outlined">description</span>
                                         </a>
-                                        <a href="<?= Url::to(['/pdf/generate-mpdf', 'id' => $model->id]) ?>" class="action-btn pdf2-btn" 
-                                           title="Generar y Descargar PDF2 (mPDF)"
-                                           onclick="downloadPdfDirect(this.href); return false;">
-                                            <span class="material-symbols-outlined">file_present</span>
-                                        </a>
                                         <a href="<?= Url::to(['delete', 'id' => $model->id]) ?>" class="action-btn delete-btn" 
                                            title="Cancelar Alquiler"
                                            data-confirm="¿Estás seguro de cancelar este alquiler?" 
@@ -1319,11 +1314,6 @@ $this->registerCss('
                                    title="Descargar PDF de Orden (TCPDF)" 
                                    onclick="downloadPdfDirect(this.href); return false;">
                                     <span class="material-symbols-outlined">description</span>
-                                </a>
-                                <a href="<?= Url::to(['/pdf/generate-mpdf', 'id' => $model->id]) ?>" class="action-btn pdf2-btn" 
-                                   title="Generar y Descargar PDF2 (mPDF)"
-                                   onclick="downloadPdfDirect(this.href); return false;">
-                                    <span class="material-symbols-outlined">file_present</span>
                                 </a>
                                 <a href="<?= $deleteUrl ?>" class="action-btn delete-btn" 
                                    title="Cancelar Alquiler"
