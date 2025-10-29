@@ -13,6 +13,105 @@ $this->registerJsFile('/js/client-form.js', ['depends' => [yii\web\JqueryAsset::
 $this->registerCssFile('/css/client-form.css');
 ?>
 
+<style>
+/* Estilos para tabs con colores */
+#clientTabs .nav-link {
+    border: none;
+    color: #6c757d;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+/* Tab Información Personal - Gris */
+#personal-tab {
+    background-color: #e9ecef;
+    color: #495057;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+
+#personal-tab:hover {
+    background-color: #dee2e6;
+    color: #212529;
+}
+
+#personal-tab.active {
+    background-color: #6c757d !important;
+    color: #ffffff !important;
+    border-color: #6c757d;
+}
+
+/* Tab Información Tributaria - Amarillo */
+#tributaria-tab {
+    background-color: #fff3cd;
+    color: #856404;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+
+#tributaria-tab:hover {
+    background-color: #ffeaa7;
+    color: #856404;
+}
+
+#tributaria-tab.active {
+    background-color: #ffc107 !important;
+    color: #212529 !important;
+    border-color: #ffc107;
+}
+
+/* Tab Configuración - Rojo */
+#config-tab {
+    background-color: #f8d7da;
+    color: #721c24;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+
+#config-tab:hover {
+    background-color: #f5c6cb;
+    color: #721c24;
+}
+
+#config-tab.active {
+    background-color: #dc3545 !important;
+    color: #ffffff !important;
+    border-color: #dc3545;
+}
+
+/* Tab Biblioteca - Azul (mantener consistencia) */
+#biblioteca-tab {
+    background-color: #d1ecf1;
+    color: #0c5460;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+
+#biblioteca-tab:hover {
+    background-color: #bee5eb;
+    color: #0c5460;
+}
+
+#biblioteca-tab.active {
+    background-color: #17a2b8 !important;
+    color: #ffffff !important;
+    border-color: #17a2b8;
+}
+
+/* Ajustes para mejor visualización */
+.nav-tabs {
+    border-bottom: 2px solid #dee2e6;
+}
+
+.nav-tabs .nav-item {
+    margin-right: 4px;
+}
+
+.nav-tabs .nav-link.active {
+    border-bottom: 2px solid transparent;
+}
+</style>
+
 <div class="client-form">
 
     <?php $form = ActiveForm::begin([
