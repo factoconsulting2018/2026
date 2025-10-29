@@ -79,7 +79,7 @@ $this->registerCssFile('/css/client-form.css');
     border-color: #dc3545;
 }
 
-/* Tab Biblioteca - Azul (mantener consistencia) */
+/* Tab Biblioteca de Archivos - Azul (mantener consistencia) */
 #biblioteca-tab {
     background-color: #d1ecf1;
     color: #0c5460;
@@ -144,14 +144,12 @@ $this->registerCssFile('/css/client-form.css');
                 Configuración
             </button>
         </li>
-        <?php if (!$model->isNewRecord): ?>
         <li class="nav-item" role="presentation">
             <button class="nav-link" id="biblioteca-tab" data-bs-toggle="tab" data-bs-target="#biblioteca-pane" type="button" role="tab" aria-controls="biblioteca-pane" aria-selected="false">
                 <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">folder</span>
-                Biblioteca
+                Biblioteca de Archivos
             </button>
         </li>
-        <?php endif; ?>
     </ul>
 
     <div class="tab-content" id="clientTabContent">
@@ -511,17 +509,39 @@ $this->registerCssFile('/css/client-form.css');
         </div>
         <!-- Fin Tab 3: Configuración -->
 
-        <!-- Tab 4: Biblioteca (solo para clientes existentes) -->
-        <?php if (!$model->isNewRecord): ?>
+        <!-- Tab 4: Biblioteca de Archivos -->
         <div class="tab-pane fade" id="biblioteca-pane" role="tabpanel" aria-labelledby="biblioteca-tab">
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <span class="material-symbols-outlined" style="font-size: 20px; vertical-align: middle; margin-right: 8px; color: #3fa9f5;">folder</span>
-                        Biblioteca de Archivos
-                    </h5>
+            <?php if ($model->isNewRecord): ?>
+                <!-- Mensaje cuando el cliente aún no ha sido creado -->
+                <div class="card mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="card-title mb-0">
+                            <span class="material-symbols-outlined" style="font-size: 20px; vertical-align: middle; margin-right: 8px;">info</span>
+                            Biblioteca de Archivos
+                        </h5>
+                    </div>
+                    <div class="card-body text-center py-5">
+                        <span class="material-symbols-outlined" style="font-size: 64px; color: #17a2b8; display: block; margin-bottom: 16px;">cloud_upload</span>
+                        <h5>Guarda el cliente primero</h5>
+                        <p class="text-muted">
+                            Para poder subir archivos, primero debes guardar el cliente. Una vez guardado, podrás agregar documentos, imágenes y otros archivos desde este tab.
+                        </p>
+                        <div class="alert alert-info mt-3">
+                            <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 8px;">lightbulb</span>
+                            <strong>Tip:</strong> Completa y guarda la información del cliente en los otros tabs, luego regresa aquí para agregar archivos.
+                        </div>
+                    </div>
                 </div>
-                <div class="card-body">
+            <?php else: ?>
+                <!-- Contenido completo cuando el cliente ya existe -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <span class="material-symbols-outlined" style="font-size: 20px; vertical-align: middle; margin-right: 8px; color: #3fa9f5;">folder</span>
+                            Biblioteca de Archivos
+                        </h5>
+                    </div>
+                    <div class="card-body">
                     <!-- Buscador de Archivos -->
                     <div class="row mb-4">
                         <div class="col-md-6">
@@ -582,10 +602,10 @@ $this->registerCssFile('/css/client-form.css');
                         </div>
                     </div>
                 </div>
-            </div>
+                </div>
+            <?php endif; ?>
         </div>
-        <!-- Fin Tab 4: Biblioteca -->
-        <?php endif; ?>
+        <!-- Fin Tab 4: Biblioteca de Archivos -->
     </div>
     <!-- Fin Sistema de Tabs -->
 
