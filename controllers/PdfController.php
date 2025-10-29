@@ -97,9 +97,21 @@ class PdfController extends Controller
      */
     public function actionDownloadRental($id)
     {
-        // Limpiar buffers ANTES de todo
-        if (ob_get_length()) @ob_end_clean();
-        while (ob_get_level() > 0) @ob_end_clean();
+        // Limpiar TODOS los buffers de salida ANTES de cualquier cosa
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+        
+        // Desactivar completamente el output buffering
+        @ini_set('output_buffering', 0);
+        @ini_set('zlib.output_compression', 0);
+        @ini_set('zlib.output_compression_level', 0);
+        
+        // Desactivar compresión de Apache si está disponible
+        if (function_exists('apache_setenv')) {
+            @apache_setenv('no-gzip', 1);
+            @apache_setenv('no-gzip', '1');
+        }
         
         $rental = $this->findRental($id);
         $filename = 'Orden_Alquiler_' . $rental->rental_id . '_' . date('Y-m-d') . '.pdf';
@@ -109,33 +121,30 @@ class PdfController extends Controller
             throw new NotFoundHttpException('El archivo PDF no existe. Por favor, genere el PDF primero.');
         }
         
-        // Desactivar cualquier compresión
-        if (function_exists('apache_setenv')) {
-            @apache_setenv('no-gzip', 1);
-        }
-        @ini_set('zlib.output_compression', 0);
-        @ini_set('output_buffering', 0);
+        // Usar headers nativos de PHP para evitar interferencia de Cloudflare
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Content-Length: ' . filesize($filepath));
+        header('Cache-Control: no-cache, no-store, must-revalidate');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+        header('X-Content-Type-Options: nosniff');
+        header('X-Frame-Options: DENY');
         
-        // Usar response de Yii
-        Yii::$app->response->format = \yii\web\Response::FORMAT_RAW;
-        Yii::$app->response->headers->removeAll();
-        
-        // Headers
-        Yii::$app->response->headers->set('Content-Type', 'application/pdf');
-        Yii::$app->response->headers->set('Content-Disposition', 'attachment; filename="' . $filename . '"');
-        Yii::$app->response->headers->set('Content-Length', filesize($filepath));
-        
-        // Leer archivo
+        // Leer y enviar archivo
         $handle = fopen($filepath, 'rb');
         if ($handle === false) {
             throw new \Exception('No se puede abrir el archivo PDF.');
         }
         
-        Yii::$app->response->stream = $handle;
-        Yii::$app->response->send();
-        fclose($handle);
+        // Enviar archivo en chunks para archivos grandes
+        while (!feof($handle)) {
+            echo fread($handle, 8192);
+            flush();
+        }
         
-        Yii::$app->end();
+        fclose($handle);
+        exit;
     }
 
     /**
