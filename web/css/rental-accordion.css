@@ -324,8 +324,14 @@
 }
 
 .pdf2-icon {
-    color: #6F42C1;
-    border-color: #6F42C1;
+    color: #000000;
+    border-color: #000000;
+}
+
+.pdf2-icon:hover {
+    background-color: #000000;
+    color: #ffffff;
+    transform: scale(1.05);
 }
 
 .delete-icon {
