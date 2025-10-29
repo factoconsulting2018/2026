@@ -211,6 +211,15 @@ class Client extends ActiveRecord
     }
 
     /**
+     * Obtiene los archivos del cliente
+     * @return \yii\db\ActiveQuery
+     */
+    public function getFiles()
+    {
+        return $this->hasMany(ClientFile::class, ['client_id' => 'id']);
+    }
+
+    /**
      * Formatea el número de WhatsApp
      * @param string $number
      * @return string

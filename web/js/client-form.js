@@ -433,4 +433,285 @@ document.addEventListener('DOMContentLoaded', function() {
             convertirAMayusculas(this);
         });
     }
+
+    // Inicializar biblioteca de archivos si el tab existe
+    const bibliotecaTab = document.getElementById('biblioteca-tab');
+    if (bibliotecaTab) {
+        // Cargar archivos cuando se haga clic en el tab
+        bibliotecaTab.addEventListener('shown.bs.tab', function() {
+            loadFiles();
+        });
+        
+        // También cargar si el tab ya está activo al cargar la página
+        const bibliotecaPane = document.getElementById('biblioteca-pane');
+        if (bibliotecaPane && bibliotecaPane.classList.contains('active')) {
+            loadFiles();
+        }
+    }
+
+    // Permitir búsqueda con Enter
+    const fileSearchInput = document.getElementById('file-search-input');
+    if (fileSearchInput) {
+        fileSearchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchFiles();
+            }
+        });
+    }
 });
+
+// ==================== FUNCIONES DE BIBLIOTECA DE ARCHIVOS ====================
+
+let currentClientId = null;
+let currentSearchTerm = '';
+
+// Función para cargar archivos del cliente
+function loadFiles(clientId = null, search = '') {
+    if (!clientId) {
+        // Obtener client_id del URL
+        const pathParts = window.location.pathname.split('/').filter(p => p);
+        const updateIndex = pathParts.indexOf('update');
+        
+        if (updateIndex !== -1 && pathParts[updateIndex + 1]) {
+            clientId = pathParts[updateIndex + 1];
+        } else {
+            // Intentar obtener de la URL actual si estamos en view o update
+            const urlMatch = window.location.pathname.match(/\/client\/(update|view)\/(\d+)/);
+            if (urlMatch && urlMatch[2]) {
+                clientId = urlMatch[2];
+            }
+        }
+    }
+    
+    if (!clientId) {
+        document.getElementById('files-container').innerHTML = '<div class="text-center text-muted py-5"><span class="material-symbols-outlined" style="font-size: 48px; display: block; margin-bottom: 16px;">error</span><p>No se pudo determinar el ID del cliente</p></div>';
+        return;
+    }
+    
+    currentClientId = clientId;
+    currentSearchTerm = search;
+    
+    const url = `/client/list-files/${clientId}${search ? '?search=' + encodeURIComponent(search) : ''}`;
+    
+    document.getElementById('files-container').innerHTML = '<div class="text-center text-muted py-5"><div class="spinner-border" role="status"><span class="visually-hidden">Cargando...</span></div><p class="mt-3">Cargando archivos...</p></div>';
+    
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayFiles(data.data);
+            } else {
+                document.getElementById('files-container').innerHTML = `<div class="alert alert-danger"><span class="material-symbols-outlined">error</span> ${data.message || 'Error al cargar archivos'}</div>`;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('files-container').innerHTML = `<div class="alert alert-danger"><span class="material-symbols-outlined">error</span> Error al cargar archivos: ${error.message}</div>`;
+        });
+}
+
+// Función para mostrar archivos en la lista
+function displayFiles(files) {
+    const container = document.getElementById('files-container');
+    
+    if (!files || files.length === 0) {
+        container.innerHTML = '<div class="text-center text-muted py-5"><span class="material-symbols-outlined" style="font-size: 48px; display: block; margin-bottom: 16px;">folder_off</span><p>No hay archivos subidos aún</p></div>';
+        return;
+    }
+    
+    let html = '<div class="row">';
+    
+    files.forEach(file => {
+        const fileIcon = getFileIcon(file.file_type);
+        const createdDate = new Date(file.created_at).toLocaleDateString('es-CR', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        
+        html += `
+            <div class="col-md-6 col-lg-4 mb-3">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex align-items-start mb-2">
+                            <span class="material-symbols-outlined me-2" style="font-size: 32px; color: #3fa9f5;">${file.icon || fileIcon}</span>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1" title="${file.file_name}">${file.file_name}</h6>
+                                <small class="text-muted d-block">${file.original_name}</small>
+                                ${file.description ? `<small class="text-muted d-block mt-1">${file.description}</small>` : ''}
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <small class="text-muted">
+                                <span class="material-symbols-outlined" style="font-size: 14px; vertical-align: middle;">schedule</span>
+                                ${createdDate}
+                            </small>
+                            <small class="text-muted">${file.formatted_size || formatFileSize(file.file_size)}</small>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-white">
+                        <div class="btn-group w-100" role="group">
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="downloadFile(${file.id})" title="Descargar">
+                                <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle;">download</span>
+                                Descargar
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteFile(${file.id})" title="Eliminar">
+                                <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle;">delete</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+// Función para obtener icono según tipo de archivo
+function getFileIcon(fileType) {
+    if (!fileType) return 'description';
+    
+    if (fileType.includes('pdf')) return 'picture_as_pdf';
+    if (fileType.includes('image')) return 'image';
+    if (fileType.includes('word') || fileType.includes('document')) return 'description';
+    if (fileType.includes('excel') || fileType.includes('spreadsheet')) return 'table_chart';
+    
+    return 'description';
+}
+
+// Función para formatear tamaño de archivo
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+}
+
+// Función para subir archivo
+function uploadFile(clientId) {
+    const fileInput = document.getElementById('file-input');
+    const fileNameInput = document.getElementById('file-name-input');
+    const descriptionInput = document.getElementById('file-description-input');
+    
+    if (!fileInput.files || fileInput.files.length === 0) {
+        showNotification('❌ Por favor seleccione un archivo', 'warning');
+        return;
+    }
+    
+    if (!fileNameInput.value.trim()) {
+        showNotification('❌ Por favor ingrese un nombre para el archivo', 'warning');
+        fileNameInput.focus();
+        return;
+    }
+    
+    const file = fileInput.files[0];
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    
+    if (file.size > maxSize) {
+        showNotification('❌ El archivo es demasiado grande. Tamaño máximo: 10MB', 'danger');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('file_name', fileNameInput.value.trim());
+    formData.append('description', descriptionInput.value.trim());
+    
+    // Mostrar loading
+    const uploadBtn = document.querySelector('#file-upload-form button[type="button"]');
+    const originalText = uploadBtn.innerHTML;
+    uploadBtn.disabled = true;
+    uploadBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Subiendo...';
+    
+    fetch(`/client/upload-file/${clientId}`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        uploadBtn.disabled = false;
+        uploadBtn.innerHTML = originalText;
+        
+        if (data.success) {
+            showNotification('✅ ' + data.message, 'success');
+            
+            // Limpiar formulario
+            fileInput.value = '';
+            fileNameInput.value = '';
+            descriptionInput.value = '';
+            
+            // Recargar lista de archivos
+            loadFiles(clientId, currentSearchTerm);
+        } else {
+            showNotification('❌ ' + (data.message || 'Error al subir el archivo'), 'danger');
+        }
+    })
+    .catch(error => {
+        uploadBtn.disabled = false;
+        uploadBtn.innerHTML = originalText;
+        console.error('Error:', error);
+        showNotification('❌ Error al subir el archivo: ' + error.message, 'danger');
+    });
+}
+
+// Función para buscar archivos
+function searchFiles() {
+    const searchInput = document.getElementById('file-search-input');
+    const searchTerm = searchInput.value.trim();
+    
+    if (currentClientId) {
+        loadFiles(currentClientId, searchTerm);
+    }
+}
+
+// Función para limpiar búsqueda
+function clearFileSearch() {
+    document.getElementById('file-search-input').value = '';
+    if (currentClientId) {
+        loadFiles(currentClientId, '');
+    }
+}
+
+// Función para descargar archivo
+function downloadFile(fileId) {
+    window.location.href = `/client/download-file/${fileId}`;
+}
+
+// Función para eliminar archivo
+function deleteFile(fileId) {
+    if (!confirm('¿Está seguro de que desea eliminar este archivo? Esta acción no se puede deshacer.')) {
+        return;
+    }
+    
+    fetch(`/client/delete-file/${fileId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('✅ ' + data.message, 'success');
+            // Recargar lista de archivos
+            if (currentClientId) {
+                loadFiles(currentClientId, currentSearchTerm);
+            }
+        } else {
+            showNotification('❌ ' + (data.message || 'Error al eliminar el archivo'), 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('❌ Error al eliminar el archivo: ' + error.message, 'danger');
+    });
+}

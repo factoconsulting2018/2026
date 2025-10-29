@@ -17,7 +17,7 @@ $this->registerCssFile('/css/client-form.css');
 
     <?php $form = ActiveForm::begin([
         'id' => 'client-form',
-        'options' => ['class' => 'form-horizontal'],
+        'options' => ['class' => 'form-horizontal', 'enctype' => 'multipart/form-data'],
         'fieldConfig' => [
             'template' => "<div class='row mb-3'><div class='col-sm-3'>{label}</div><div class='col-sm-9'>{input}{error}</div></div>",
             'labelOptions' => ['class' => 'form-label'],
@@ -25,6 +25,39 @@ $this->registerCssFile('/css/client-form.css');
         ],
     ]); ?>
 
+    <!-- Sistema de Tabs -->
+    <ul class="nav nav-tabs mb-4" id="clientTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="personal-tab" data-bs-toggle="tab" data-bs-target="#personal-pane" type="button" role="tab" aria-controls="personal-pane" aria-selected="true">
+                <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">person</span>
+                Información Personal
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="tributaria-tab" data-bs-toggle="tab" data-bs-target="#tributaria-pane" type="button" role="tab" aria-controls="tributaria-pane" aria-selected="false">
+                <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">account_balance</span>
+                Información Tributaria
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="config-tab" data-bs-toggle="tab" data-bs-target="#config-pane" type="button" role="tab" aria-controls="config-pane" aria-selected="false">
+                <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">settings</span>
+                Configuración
+            </button>
+        </li>
+        <?php if (!$model->isNewRecord): ?>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="biblioteca-tab" data-bs-toggle="tab" data-bs-target="#biblioteca-pane" type="button" role="tab" aria-controls="biblioteca-pane" aria-selected="false">
+                <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">folder</span>
+                Biblioteca
+            </button>
+        </li>
+        <?php endif; ?>
+    </ul>
+
+    <div class="tab-content" id="clientTabContent">
+        <!-- Tab 1: Información Personal -->
+        <div class="tab-pane fade show active" id="personal-pane" role="tabpanel" aria-labelledby="personal-tab">
     <!-- Sección Personal -->
     <div class="card mb-4">
         <div class="card-header">
@@ -163,7 +196,11 @@ $this->registerCssFile('/css/client-form.css');
             </div>
         </div>
     </div>
+        </div>
+        <!-- Fin Tab 1: Información Personal -->
 
+        <!-- Tab 2: Información Tributaria -->
+        <div class="tab-pane fade" id="tributaria-pane" role="tabpanel" aria-labelledby="tributaria-tab">
     <!-- Sección Tributaria -->
     <div class="card mb-4">
         <div class="card-header">
@@ -275,7 +312,11 @@ $this->registerCssFile('/css/client-form.css');
             </div>
         </div>
     </div>
+        </div>
+        <!-- Fin Tab 2: Información Tributaria -->
 
+        <!-- Tab 3: Configuración -->
+        <div class="tab-pane fade" id="config-pane" role="tabpanel" aria-labelledby="config-tab">
     <!-- Sección Configuración -->
     <div class="card mb-4">
         <div class="card-header">
@@ -368,6 +409,86 @@ $this->registerCssFile('/css/client-form.css');
             </div>
         </div>
     </div>
+        </div>
+        <!-- Fin Tab 3: Configuración -->
+
+        <!-- Tab 4: Biblioteca (solo para clientes existentes) -->
+        <?php if (!$model->isNewRecord): ?>
+        <div class="tab-pane fade" id="biblioteca-pane" role="tabpanel" aria-labelledby="biblioteca-tab">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <span class="material-symbols-outlined" style="font-size: 20px; vertical-align: middle; margin-right: 8px; color: #3fa9f5;">folder</span>
+                        Biblioteca de Archivos
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Buscador de Archivos -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <span class="material-symbols-outlined">search</span>
+                                </span>
+                                <input type="text" class="form-control" id="file-search-input" placeholder="Buscar archivos por nombre o descripción...">
+                                <button class="btn btn-outline-secondary" type="button" onclick="searchFiles()">
+                                    Buscar
+                                </button>
+                                <button class="btn btn-outline-secondary" type="button" onclick="clearFileSearch()" title="Limpiar búsqueda">
+                                    <span class="material-symbols-outlined">clear</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Formulario de Subida -->
+                    <div class="card mb-4" style="background: #f8f9fa;">
+                        <div class="card-body">
+                            <h6 class="mb-3">
+                                <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">upload_file</span>
+                                Subir Nuevo Archivo
+                            </h6>
+                            <form id="file-upload-form" enctype="multipart/form-data">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Archivo *</label>
+                                        <input type="file" class="form-control" id="file-input" name="file" accept=".pdf,.png,.jpg,.jpeg,.xlsx,.xls,.docx,.doc" required>
+                                        <small class="form-text text-muted">Formatos permitidos: PDF, PNG, JPG, XLSX, DOCX (máximo 10MB)</small>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Nombre del Archivo *</label>
+                                        <input type="text" class="form-control" id="file-name-input" placeholder="Ej: Contrato 2025" required>
+                                        <small class="form-text text-muted">Nombre personalizado para identificar el archivo</small>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-12 mb-3">
+                                        <label class="form-label">Descripción (Opcional)</label>
+                                        <textarea class="form-control" id="file-description-input" rows="2" placeholder="Descripción adicional del archivo"></textarea>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-primary" onclick="uploadFile(<?= $model->id ?>)">
+                                    <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">upload</span>
+                                    Subir Archivo
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Lista de Archivos -->
+                    <div id="files-container">
+                        <div class="text-center text-muted py-5">
+                            <span class="material-symbols-outlined" style="font-size: 48px; display: block; margin-bottom: 16px;">cloud_upload</span>
+                            <p>Cargando archivos...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Fin Tab 4: Biblioteca -->
+        <?php endif; ?>
+    </div>
+    <!-- Fin Sistema de Tabs -->
 
     <!-- Resultados de Hacienda -->
     <div id="hacienda-loading" class="alert alert-info" style="display: none;">

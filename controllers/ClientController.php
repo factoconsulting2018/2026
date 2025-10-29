@@ -5,6 +5,7 @@ use Yii;
 use app\models\Client;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
+use yii\web\UploadedFile;
 use yii\filters\AccessControl;
 use yii\filters\VerbFilter;
 use yii\data\ActiveDataProvider;
@@ -294,6 +295,254 @@ class ClientController extends Controller
                 'message' => 'Error al eliminar: ' . $e->getMessage()
             ];
         }
+    }
+
+    /**
+     * Subir archivo para un cliente
+     * @param int $id ID del cliente
+     * @return array JSON
+     */
+    public function actionUploadFile($id)
+    {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        
+        try {
+            $client = $this->findModel($id);
+            
+            $file = UploadedFile::getInstanceByName('file');
+            $file_name = Yii::$app->request->post('file_name');
+            $description = Yii::$app->request->post('description');
+            
+            if (!$file) {
+                return [
+                    'success' => false,
+                    'message' => 'No se proporcionó ningún archivo'
+                ];
+            }
+            
+            // Validar tipo de archivo
+            $allowedTypes = [
+                'application/pdf',
+                'image/png',
+                'image/jpeg',
+                'image/jpg',
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // XLSX
+                'application/vnd.ms-excel', // XLS
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // DOCX
+                'application/msword' // DOC
+            ];
+            
+            if (!in_array($file->type, $allowedTypes)) {
+                return [
+                    'success' => false,
+                    'message' => 'Tipo de archivo no permitido. Solo se permiten: PDF, PNG, JPG, XLSX, DOCX'
+                ];
+            }
+            
+            // Validar tamaño (máximo 10MB)
+            $maxSize = 10 * 1024 * 1024; // 10MB
+            if ($file->size > $maxSize) {
+                return [
+                    'success' => false,
+                    'message' => 'El archivo es demasiado grande. Tamaño máximo: 10MB'
+                ];
+            }
+            
+            // Crear directorio si no existe
+            $uploadDir = Yii::getAlias('@app/web/uploads/clients/' . $client->id);
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir, 0777, true);
+            }
+            
+            // Generar nombre único para el archivo
+            $extension = $file->extension;
+            $uniqueName = uniqid('file_', true) . '.' . $extension;
+            $filePath = 'uploads/clients/' . $client->id . '/' . $uniqueName;
+            $fullPath = Yii::getAlias('@app/web/' . $filePath);
+            
+            // Guardar archivo
+            if (!$file->saveAs($fullPath)) {
+                return [
+                    'success' => false,
+                    'message' => 'Error al guardar el archivo'
+                ];
+            }
+            
+            // Crear registro en base de datos
+            $clientFile = new \app\models\ClientFile();
+            $clientFile->client_id = $client->id;
+            $clientFile->file_name = $file_name ?: $file->baseName;
+            $clientFile->original_name = $file->name;
+            $clientFile->file_path = $filePath;
+            $clientFile->file_type = $file->type;
+            $clientFile->file_size = $file->size;
+            $clientFile->description = $description;
+            
+            if (!$clientFile->save()) {
+                @unlink($fullPath); // Eliminar archivo si falla el guardado
+                return [
+                    'success' => false,
+                    'message' => 'Error al guardar el registro: ' . json_encode($clientFile->errors)
+                ];
+            }
+            
+            return [
+                'success' => true,
+                'message' => 'Archivo subido exitosamente',
+                'file' => [
+                    'id' => $clientFile->id,
+                    'file_name' => $clientFile->file_name,
+                    'original_name' => $clientFile->original_name,
+                    'file_type' => $clientFile->file_type,
+                    'file_size' => $clientFile->file_size,
+                    'formatted_size' => $clientFile->getFormattedSize(),
+                    'description' => $clientFile->description,
+                    'url' => $clientFile->getUrl(),
+                    'icon' => $clientFile->getFileIcon(),
+                    'created_at' => $clientFile->created_at
+                ]
+            ];
+            
+        } catch (\Exception $e) {
+            Yii::error('Error subiendo archivo de cliente: ' . $e->getMessage(), 'client');
+            return [
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Listar archivos de un cliente
+     * @param int $id ID del cliente
+     * @return array JSON
+     */
+    public function actionListFiles($id)
+    {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        
+        try {
+            $client = $this->findModel($id);
+            $search = Yii::$app->request->get('search');
+            
+            $query = \app\models\ClientFile::find()
+                ->where(['client_id' => $client->id]);
+            
+            if ($search) {
+                $query->andWhere([
+                    'or',
+                    ['like', 'file_name', $search],
+                    ['like', 'original_name', $search],
+                    ['like', 'description', $search]
+                ]);
+            }
+            
+            $files = $query->orderBy(['created_at' => SORT_DESC])->all();
+            
+            $data = [];
+            foreach ($files as $file) {
+                $data[] = [
+                    'id' => $file->id,
+                    'file_name' => $file->file_name,
+                    'original_name' => $file->original_name,
+                    'file_type' => $file->file_type,
+                    'file_size' => $file->file_size,
+                    'formatted_size' => $file->getFormattedSize(),
+                    'description' => $file->description,
+                    'url' => $file->getUrl(),
+                    'icon' => $file->getFileIcon(),
+                    'created_at' => $file->created_at
+                ];
+            }
+            
+            return [
+                'success' => true,
+                'count' => count($data),
+                'data' => $data
+            ];
+            
+        } catch (\Exception $e) {
+            Yii::error('Error listando archivos de cliente: ' . $e->getMessage(), 'client');
+            return [
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Eliminar archivo de cliente
+     * @param int $id ID del archivo
+     * @return array JSON
+     */
+    public function actionDeleteFile($id)
+    {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        
+        try {
+            $file = \app\models\ClientFile::findOne($id);
+            
+            if (!$file) {
+                return [
+                    'success' => false,
+                    'message' => 'Archivo no encontrado'
+                ];
+            }
+            
+            if ($file->delete()) {
+                return [
+                    'success' => true,
+                    'message' => 'Archivo eliminado exitosamente'
+                ];
+            } else {
+                return [
+                    'success' => false,
+                    'message' => 'Error al eliminar el archivo'
+                ];
+            }
+            
+        } catch (\Exception $e) {
+            Yii::error('Error eliminando archivo: ' . $e->getMessage(), 'client');
+            return [
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Descargar archivo de cliente
+     * @param int $id ID del archivo
+     */
+    public function actionDownloadFile($id)
+    {
+        $file = \app\models\ClientFile::findOne($id);
+        
+        if (!$file) {
+            throw new NotFoundHttpException('Archivo no encontrado');
+        }
+        
+        $filePath = Yii::getAlias('@app/web/' . $file->file_path);
+        
+        if (!file_exists($filePath)) {
+            throw new NotFoundHttpException('El archivo no existe en el servidor');
+        }
+        
+        // Limpiar buffers
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+        
+        // Enviar archivo
+        header('Content-Type: ' . $file->file_type);
+        header('Content-Disposition: attachment; filename="' . $file->original_name . '"');
+        header('Content-Length: ' . $file->file_size);
+        header('Cache-Control: no-cache, must-revalidate');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+        
+        readfile($filePath);
+        exit;
     }
 
     /**
