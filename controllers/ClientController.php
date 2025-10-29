@@ -334,8 +334,8 @@ class ClientController extends Controller
                 ];
             }
             
-            // Validar tipo de archivo
-            $allowedTypes = [
+            // Validar tipo de archivo (validación más flexible por extensión también)
+            $allowedMimeTypes = [
                 'application/pdf',
                 'image/png',
                 'image/jpeg',
@@ -343,13 +343,24 @@ class ClientController extends Controller
                 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // XLSX
                 'application/vnd.ms-excel', // XLS
                 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // DOCX
-                'application/msword' // DOC
+                'application/msword', // DOC
+                'application/octet-stream' // Para algunos archivos que el navegador no identifica correctamente
             ];
             
-            if (!in_array($file->type, $allowedTypes)) {
+            $allowedExtensions = ['pdf', 'png', 'jpg', 'jpeg', 'xlsx', 'xls', 'docx', 'doc'];
+            
+            // Validar por tipo MIME
+            $mimeValid = in_array($file->type, $allowedMimeTypes);
+            
+            // Validar por extensión como fallback
+            $extensionValid = in_array(strtolower($file->extension), $allowedExtensions);
+            
+            Yii::info('Validando archivo - Tipo MIME: ' . $file->type . ', Extensión: ' . $file->extension, 'client');
+            
+            if (!$mimeValid && !$extensionValid) {
                 return [
                     'success' => false,
-                    'message' => 'Tipo de archivo no permitido. Solo se permiten: PDF, PNG, JPG, XLSX, DOCX'
+                    'message' => 'Tipo de archivo no permitido. Tipo recibido: ' . $file->type . '. Solo se permiten: PDF, PNG, JPG, XLSX, DOCX'
                 ];
             }
             
@@ -401,15 +412,22 @@ class ClientController extends Controller
             $clientFile->file_path = $filePath;
             $clientFile->file_type = $file->type;
             $clientFile->file_size = $file->size;
-            $clientFile->description = $description;
+            $clientFile->description = $description ?: null;
+            
+            Yii::info('Intentando guardar registro en BD - Client ID: ' . $client->id . ', File: ' . $file->name, 'client');
             
             if (!$clientFile->save()) {
                 @unlink($fullPath); // Eliminar archivo si falla el guardado
+                $errors = json_encode($clientFile->errors);
+                Yii::error('Error al guardar registro ClientFile: ' . $errors, 'client');
                 return [
                     'success' => false,
-                    'message' => 'Error al guardar el registro: ' . json_encode($clientFile->errors)
+                    'message' => 'Error al guardar el registro en la base de datos: ' . $errors,
+                    'errors' => $clientFile->errors
                 ];
             }
+            
+            Yii::info('Registro guardado exitosamente - File ID: ' . $clientFile->id, 'client');
             
             return [
                 'success' => true,

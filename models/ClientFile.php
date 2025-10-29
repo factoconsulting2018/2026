@@ -36,10 +36,10 @@ class ClientFile extends ActiveRecord
     public function rules()
     {
         return [
-            [['client_id', 'file_name', 'file_path', 'file_type'], 'required'],
+            [['client_id', 'file_name', 'original_name', 'file_path', 'file_type', 'file_size'], 'required'],
             [['client_id', 'file_size'], 'integer'],
             [['created_at', 'updated_at'], 'safe'],
-            [['file_name', 'original_name', 'file_path', 'description'], 'string', 'max' => 255],
+            [['file_name', 'original_name', 'file_path', 'description'], 'string', 'max' => 500],
             [['file_type'], 'string', 'max' => 100],
             [['client_id'], 'exist', 'skipOnError' => true, 'targetClass' => Client::class, 'targetAttribute' => ['client_id' => 'id']],
         ];
