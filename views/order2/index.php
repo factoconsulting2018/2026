@@ -8,7 +8,7 @@ use yii\helpers\Url;
 use yii\grid\GridView;
 use yii\widgets\Pjax;
 
-$this->title = 'Gestión de Órdenes1';
+$this->title = 'Gestión de Órdenes 2';
 $this->params['breadcrumbs'][] = $this->title;
 
 // Registrar CSS para colores de estado y acordeón
@@ -782,7 +782,7 @@ $this->registerCss('
 <div class="rental-index">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1><span class="material-symbols-outlined" style="font-size: 32px; vertical-align: middle; margin-right: 8px;">shopping_cart</span><?= Html::encode($this->title) ?></h1>
-        <?= Html::a('<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">add</span>Nueva Orden', ['/rental/create'], ['class' => 'btn btn-success']) ?>
+        <?= Html::a('<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">add</span>Nueva Orden', ['create'], ['class' => 'btn btn-success']) ?>
     </div>
 
     <!-- Sistema de Tabs -->

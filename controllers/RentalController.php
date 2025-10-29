@@ -142,7 +142,10 @@ class RentalController extends Controller
                 // Generar PDF automáticamente al crear la orden
                 $this->generateOrderPdf($model->id);
                 
-                Yii::$app->session->setFlash('success', '✅ Alquiler creado exitosamente.');
+                // Generar ZIP automáticamente en background (sin bloquear)
+                $this->generateOrderZip($model->id);
+                
+                Yii::$app->session->setFlash('success', '✅ Alquiler creado exitosamente. El archivo ZIP se está generando en segundo plano.');
                 
                 // Redirigir a la vista normal
                 return $this->redirect(['view', 'id' => $model->id]);
@@ -758,6 +761,30 @@ class RentalController extends Controller
             $pdf->Output($filepath, 'F');
         } catch (\Exception $e) {
             Yii::error('Error generating PDF: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Generar ZIP con PDF de la orden en segundo plano
+     */
+    private function generateOrderZip($rentalId)
+    {
+        // Generar ZIP en background usando una llamada HTTP asíncrona
+        // Esto no bloquea la respuesta al usuario
+        try {
+            $url = \yii\helpers\Url::to(['/pdf/generate-zip-async', 'id' => $rentalId], true);
+            
+            // Hacer llamada HTTP asíncrona en background
+            $ch = curl_init($url);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 1); // Timeout muy corto, no esperar respuesta
+            curl_setopt($ch, CURLOPT_NOSIGNAL, 1);
+            curl_exec($ch);
+            curl_close($ch);
+            
+            Yii::info('ZIP generation initiated for rental ID: ' . $rentalId, 'rental');
+        } catch (\Exception $e) {
+            Yii::error('Error initiating ZIP generation: ' . $e->getMessage(), 'rental');
         }
     }
     

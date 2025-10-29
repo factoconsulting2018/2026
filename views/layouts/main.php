@@ -458,6 +458,13 @@ $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => Yii
                 </a>
             </li>
             <li class="nav-item">
+                <a class="nav-link <?= Yii::$app->controller->id === 'order2' ? 'active' : '' ?>" 
+                   href="<?= \yii\helpers\Url::to(['/order2/index']) ?>">
+                    <span class="nav-icon material-symbols-outlined">receipt_long</span>
+                    <span class="nav-text">Órdenes 2</span>
+                </a>
+            </li>
+            <li class="nav-item">
                 <a class="nav-link <?= Yii::$app->controller->id === 'client' ? 'active' : '' ?>" 
                    href="<?= \yii\helpers\Url::to(['/client/index']) ?>">
                     <span class="nav-icon material-symbols-outlined">group</span>

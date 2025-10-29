@@ -796,7 +796,12 @@ class PdfController extends Controller
      */
     protected function findRental($id)
     {
+        // Intentar encontrar en Rental primero
         if (($model = Rental::findOne($id)) !== null) {
+            return $model;
+        }
+        // Si no se encuentra, intentar en Order (ambos apuntan a la tabla rentals)
+        if (($model = Order::findOne($id)) !== null) {
             return $model;
         }
         throw new NotFoundHttpException('El alquiler solicitado no existe.');
@@ -991,5 +996,176 @@ class PdfController extends Controller
             Yii::error('Stack trace: ' . $e->getTraceAsString(), 'pdf');
             throw new NotFoundHttpException('Error al generar el PDF: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Generar ZIP con PDF asíncronamente
+     */
+    public function actionGenerateZipAsync($id)
+    {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        
+        try {
+            $rental = $this->findRental($id);
+            $companyInfo = CompanyConfig::getCompanyInfo();
+            
+            require_once Yii::getAlias('@vendor/autoload.php');
+            
+            // Crear directorio para ZIPs
+            $zipDir = Yii::getAlias('@app') . '/runtime/zips';
+            if (!is_dir($zipDir)) {
+                mkdir($zipDir, 0777, true);
+            }
+            
+            // Crear directorio temporal para mPDF
+            $tempDir = Yii::getAlias('@app') . '/runtime/mpdf_temp';
+            if (!is_dir($tempDir)) {
+                mkdir($tempDir, 0777, true);
+            }
+            
+            // Generar PDF
+            $mpdf = new \Mpdf\Mpdf([
+                'mode' => 'utf-8',
+                'format' => 'A4',
+                'orientation' => 'P',
+                'margin_left' => 15,
+                'margin_right' => 15,
+                'margin_top' => 20,
+                'margin_bottom' => 20,
+                'default_font' => 'arial',
+                'tempDir' => $tempDir,
+                'autoScriptToLang' => false,
+                'autoLangToFont' => false,
+                'debug' => false,
+                'simpleTables' => true,
+                'useSubstitutions' => false,
+            ]);
+            
+            $html = $this->renderPartial('_rental-pdf-simple', [
+                'model' => $rental,
+                'companyInfo' => $companyInfo
+            ], true);
+            
+            // Limpiar HTML
+            $html = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $html);
+            $html = str_replace(["\r\n", "\r"], "\n", $html);
+            
+            $mpdf->WriteHTML($html, \Mpdf\HTMLParserMode::HTML_BODY);
+            
+            // Guardar PDF temporalmente
+            $pdfDir = Yii::getAlias('@app') . '/runtime/pdfs';
+            if (!is_dir($pdfDir)) {
+                mkdir($pdfDir, 0777, true);
+            }
+            
+            $pdfFilename = 'Orden_Alquiler_' . $rental->rental_id . '_' . date('Y-m-d') . '_PDF2.pdf';
+            $pdfFilepath = $pdfDir . '/' . $pdfFilename;
+            $mpdf->Output($pdfFilepath, 'F');
+            
+            // Crear ZIP
+            $zipFilename = 'Orden_Alquiler_' . $rental->rental_id . '_' . date('Y-m-d') . '.zip';
+            $zipFilepath = $zipDir . '/' . $zipFilename;
+            
+            $zip = new \ZipArchive();
+            if ($zip->open($zipFilepath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) === TRUE) {
+                $zip->addFile($pdfFilepath, $pdfFilename);
+                $zip->close();
+                
+                // Eliminar PDF temporal
+                @unlink($pdfFilepath);
+                
+                return [
+                    'success' => true,
+                    'filename' => $zipFilename,
+                    'downloadUrl' => '/pdf/download-zip?id=' . $id
+                ];
+            } else {
+                throw new \Exception('No se puede crear el archivo ZIP');
+            }
+            
+        } catch (\Exception $e) {
+            Yii::error('Error generando ZIP asíncrono: ' . $e->getMessage(), 'pdf');
+            return [
+                'success' => false,
+                'message' => 'Error al generar el ZIP: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Descargar ZIP con PDF
+     */
+    public function actionDownloadZip($id)
+    {
+        // Limpiar TODOS los buffers de salida
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+        
+        @ini_set('output_buffering', 0);
+        @ini_set('zlib.output_compression', 0);
+        @ini_set('zlib.output_compression_level', 0);
+        
+        if (function_exists('apache_setenv')) {
+            @apache_setenv('no-gzip', 1);
+            @apache_setenv('no-gzip', '1');
+        }
+        
+        $rental = $this->findRental($id);
+        $zipFilename = 'Orden_Alquiler_' . $rental->rental_id . '_' . date('Y-m-d') . '.zip';
+        $zipFilepath = Yii::getAlias('@app') . '/runtime/zips/' . $zipFilename;
+        
+        if (!file_exists($zipFilepath)) {
+            // Si no existe, generar ahora
+            $result = $this->actionGenerateZipAsync($id);
+            if (!$result['success']) {
+                throw new NotFoundHttpException('Error al generar el ZIP: ' . $result['message']);
+            }
+            // Re-intentar después de generar
+            if (!file_exists($zipFilepath)) {
+                throw new NotFoundHttpException('El archivo ZIP no existe después de generarlo');
+            }
+        }
+        
+        // Headers para descarga de ZIP
+        header('Content-Type: application/zip');
+        header('Content-Disposition: attachment; filename="' . $zipFilename . '"');
+        header('Content-Length: ' . filesize($zipFilepath));
+        header('Cache-Control: no-cache, no-store, must-revalidate');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+        header('X-Content-Type-Options: nosniff');
+        header('X-Frame-Options: DENY');
+        
+        // Leer y enviar archivo
+        $handle = fopen($zipFilepath, 'rb');
+        if ($handle === false) {
+            throw new \Exception('No se puede abrir el archivo ZIP.');
+        }
+        
+        while (!feof($handle)) {
+            echo fread($handle, 8192);
+            flush();
+        }
+        
+        fclose($handle);
+        exit;
+    }
+
+    /**
+     * Verificar si ZIP existe
+     */
+    public function actionCheckZipStatus($id)
+    {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        
+        $rental = $this->findRental($id);
+        $zipFilename = 'Orden_Alquiler_' . $rental->rental_id . '_' . date('Y-m-d') . '.zip';
+        $zipFilepath = Yii::getAlias('@app') . '/runtime/zips/' . $zipFilename;
+        
+        return [
+            'ready' => file_exists($zipFilepath),
+            'downloadUrl' => '/pdf/download-zip?id=' . $id
+        ];
     }
 }
