@@ -1093,12 +1093,13 @@ $this->registerCss('
                                             <span class="material-symbols-outlined">share</span>
                                         </button>
                                         <a href="<?= Url::to(['/pdf/rental-order', 'id' => $model->id]) ?>" class="action-btn pdf-btn" 
-                                           title="Descargar PDF de Orden (TCPDF)" download target="_blank">
+                                           title="Descargar PDF de Orden (TCPDF)" 
+                                           onclick="downloadPdfDirect(this.href); return false;">
                                             <span class="material-symbols-outlined">description</span>
                                         </a>
                                         <a href="<?= Url::to(['/pdf/generate-mpdf', 'id' => $model->id]) ?>" class="action-btn pdf2-btn" 
                                            title="Generar y Descargar PDF2 (mPDF)"
-                                           target="_blank">
+                                           onclick="downloadPdfDirect(this.href); return false;">
                                             <span class="material-symbols-outlined">file_present</span>
                                         </a>
                                         <a href="<?= Url::to(['delete', 'id' => $model->id]) ?>" class="action-btn delete-btn" 
@@ -1315,12 +1316,13 @@ $this->registerCss('
                                     <span class="material-symbols-outlined">share</span>
                                 </button>
                                 <a href="<?= Url::to(['/pdf/rental-order', 'id' => $model->id]) ?>" class="action-btn pdf-btn" 
-                                   title="Descargar PDF de Orden (TCPDF)" download target="_blank">
+                                   title="Descargar PDF de Orden (TCPDF)" 
+                                   onclick="downloadPdfDirect(this.href); return false;">
                                     <span class="material-symbols-outlined">description</span>
                                 </a>
                                 <a href="<?= Url::to(['/pdf/generate-mpdf', 'id' => $model->id]) ?>" class="action-btn pdf2-btn" 
                                    title="Generar y Descargar PDF2 (mPDF)"
-                                   target="_blank">
+                                   onclick="downloadPdfDirect(this.href); return false;">
                                     <span class="material-symbols-outlined">file_present</span>
                                 </a>
                                 <a href="<?= $deleteUrl ?>" class="action-btn delete-btn" 
@@ -2130,6 +2132,23 @@ function renderCarMiniCalendar(carData, monthStr) {
     
     html += '</div>';
     return html;
+}
+
+// Función para descargar PDF directamente sin mostrar preview
+function downloadPdfDirect(url) {
+    // Crear un elemento <a> temporal para forzar descarga
+    var link = document.createElement('a');
+    link.href = url;
+    link.download = ''; // Forzar descarga
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Recargar la página después de un breve delay
+    setTimeout(function() {
+        window.location.reload();
+    }, 1000);
 }
 </script>
 

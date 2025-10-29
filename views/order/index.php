@@ -2675,11 +2675,25 @@ function checkPdfReady(rentalId, downloadUrl, modal) {
                     clearInterval(interval);
                     updateProgress(100);
                     
-                    // Descargar automáticamente
+                    // Descargar automáticamente sin mostrar preview
                     setTimeout(function() {
-                        window.location.href = downloadUrl;
+                        // Crear un elemento <a> temporal para forzar descarga
+                        var link = document.createElement('a');
+                        link.href = downloadUrl;
+                        link.download = ''; // Forzar descarga
+                        link.style.display = 'none';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        
+                        // Ocultar modal y recargar página
                         modal.hide();
                         updateProgress(0);
+                        
+                        // Recargar la página después de un breve delay
+                        setTimeout(function() {
+                            window.location.reload();
+                        }, 1000);
                     }, 500);
                 } else if (attempts >= maxAttempts) {
                     clearInterval(interval);
