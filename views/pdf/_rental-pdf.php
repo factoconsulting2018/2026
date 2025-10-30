@@ -2,6 +2,25 @@
 $rentalId = $model->rental_id ?: ('R' . str_pad($model->id, 6, '0', STR_PAD_LEFT));
 $client = $model->client;
 $car = $model->car;
+
+// Formateador de fechas en español con día de la semana y hora en 12h am/pm
+if (!function_exists('formatDatetimeEs')) {
+    function formatDatetimeEs(string $datetime): string {
+        try {
+            $dt = new DateTime($datetime);
+        } catch (Exception $e) {
+            return $datetime; // fallback
+        }
+        $dias = [1 => 'Lunes', 2 => 'Martes', 3 => 'Miércoles', 4 => 'Jueves', 5 => 'Viernes', 6 => 'Sábado', 7 => 'Domingo'];
+        $meses = [1 => 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+        $diaSemana = $dias[(int)$dt->format('N')] ?? '';
+        $dia = $dt->format('d');
+        $mes = $meses[(int)$dt->format('n')] ?? '';
+        $anio = $dt->format('Y');
+        $hora = strtolower($dt->format('h:i a')); // 12h con am/pm en minúscula
+        return "$diaSemana $dia de $mes de $anio $hora";
+    }
+}
 ?>
 <!DOCTYPE html>
 <html>
@@ -113,17 +132,14 @@ $car = $model->car;
     <div class="section-title">ENTREGA DEL VEHÍCULO</div>
     <div class="info-row">
         <span class="info-label">Fecha de alquiler:</span> 
-        <?= date('d/m/Y', strtotime($model->fecha_inicio)) ?>
+        <?= formatDatetimeEs($model->fecha_inicio . ' ' . $model->hora_inicio) ?>
     </div>
     <div class="info-row">
         <span class="info-label">Fecha recoge vehículo:</span> 
         <?php if ($model->correapartir_enabled && $model->fecha_correapartir): ?>
-            <?php
-            $fechaCorreapartir = new DateTime($model->fecha_correapartir);
-            echo $fechaCorreapartir->format('d/m/Y') . ' ' . $fechaCorreapartir->format('h:i A');
-            ?>
+            <?= formatDatetimeEs($model->fecha_correapartir) ?>
         <?php else: ?>
-            <?= date('d/m/Y H:i', strtotime($model->fecha_inicio . ' ' . $model->hora_inicio)) ?>
+            <?= formatDatetimeEs($model->fecha_inicio . ' ' . $model->hora_inicio) ?>
         <?php endif; ?>
     </div>
     <div class="info-row">
@@ -134,7 +150,7 @@ $car = $model->car;
     <div class="section-title">DEVOLUCIÓN DEL VEHÍCULO</div>
     <div class="info-row">
         <span class="info-label">Fecha de entrega:</span> 
-        <?= date('d/m/Y H:i', strtotime($model->fecha_final . ' ' . $model->hora_final)) ?>
+        <?= formatDatetimeEs($model->fecha_final . ' ' . $model->hora_final) ?>
     </div>
     <div class="info-row">
         <span class="info-label">Lugar:</span> 
