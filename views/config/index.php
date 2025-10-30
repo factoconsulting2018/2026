@@ -394,6 +394,17 @@ $conditionsModel = new \app\models\CompanyConfig();
                                                         </div>
                                                     </div>
                                                 </div>
+
+<style>
+/* Colores para tabs de Configuración */
+#info-tab { background-color: #f1f3f5; color: #212529; }
+#files-tab { background-color: #e7f5ff; color: #0b7285; }
+#clients-tab { background-color: #fff3bf; color: #7f5f01; }
+#preview-tab { background-color: #ffe3e3; color: #c92a2a; }
+
+.nav-tabs .nav-link { margin-right: 6px; border-radius: 6px 6px 0 0; }
+.nav-tabs .nav-link.active { font-weight: 600; border-color: #dee2e6 #dee2e6 #fff; }
+</style>
                                             </div>
                                             </div>
                                         </div>

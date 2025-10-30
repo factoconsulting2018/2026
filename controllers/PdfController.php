@@ -71,10 +71,12 @@ class PdfController extends Controller
         $html = $this->generateRentalOrderHtml($rental, $companyInfo);
         $pdf->writeHTML($html, true, false, true, false, '');
         
-        // Agregar segunda página con condiciones si existe
-        if ($companyInfo['conditions']) {
+        // Agregar segunda página con condiciones (prioridad: alquiler > global > archivo)
+        $customConditions = $rental->custom_conditions_html ?? '';
+        $globalConditions = CompanyConfig::getConfig('rental_conditions_html', '');
+        if (!empty($customConditions) || !empty($globalConditions) || $companyInfo['conditions']) {
             $pdf->AddPage();
-            $conditionsHtml = $this->generateConditionsHtml($companyInfo);
+            $conditionsHtml = $this->generateConditionsHtml($companyInfo, $customConditions ?: $globalConditions);
             $pdf->writeHTML($conditionsHtml, true, false, true, false, '');
         }
         
