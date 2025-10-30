@@ -568,7 +568,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     /**
-     * Calcula cantidad_dias basándose en fecha_final - fecha_inicio
+     * Calcula cantidad_dias o horas basándose en fecha_final - fecha_inicio
+     * Si es el mismo día, calcula horas entre hora_inicio y hora_final
      */
     function calcularDiasDesdeFechas() {
         if (calculando) return;
@@ -581,7 +582,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const inicio = new Date(fechaIni);
             const fin = new Date(fechaFin);
             
-            // Validar que fecha_final >= fecha_inicio
+            // Validar que fecha_final >= fecha_inicio (permitir igual para alquileres por horas)
             if (fin < inicio) {
                 alert('La fecha final no puede ser anterior a la fecha de inicio');
                 fechaFinal.value = '';
@@ -589,10 +590,45 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            const diffTime = fin - inicio;
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 porque incluye ambos días
-            cantidadDias.value = diffDays > 0 ? diffDays : 1;
-            cantidadDias.min = 1;
+            // Si fecha_inicio = fecha_final (mismo día): calcular horas
+            if (fechaIni === fechaFin) {
+                // Obtener horas desde campos ocultos
+                const horaInicioOculta = document.getElementById('rental-hora_inicio');
+                const horaFinalOculta = document.getElementById('rental-hora_final');
+                
+                if (horaInicioOculta && horaFinalOculta && horaInicioOculta.value && horaFinalOculta.value) {
+                    const horaIni = horaInicioOculta.value.split(':');
+                    const horaFin = horaFinalOculta.value.split(':');
+                    
+                    const horaIniDate = new Date(`${fechaIni}T${horaInicioOculta.value}:00`);
+                    const horaFinDate = new Date(`${fechaFin}T${horaFinalOculta.value}:00`);
+                    
+                    // Validar que hora_final > hora_inicio
+                    if (horaFinDate <= horaIniDate) {
+                        alert('La hora final debe ser posterior a la hora de inicio cuando es el mismo día');
+                        calculando = false;
+                        return;
+                    }
+                    
+                    // Calcular diferencia en horas
+                    const diffMs = horaFinDate - horaIniDate;
+                    const diffHours = Math.ceil(diffMs / (1000 * 60 * 60)); // Redondear hacia arriba
+                    
+                    // Guardar horas en cantidad_dias (mínimo 1 hora)
+                    cantidadDias.value = diffHours > 0 ? diffHours : 1;
+                    cantidadDias.min = 1;
+                } else {
+                    // Si no hay horas, establecer 1 hora por defecto
+                    cantidadDias.value = 1;
+                    cantidadDias.min = 1;
+                }
+            } else {
+                // Alquiler por días - calcular días como antes
+                const diffTime = fin - inicio;
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 porque incluye ambos días
+                cantidadDias.value = diffDays > 0 ? diffDays : 1;
+                cantidadDias.min = 1;
+            }
         }
         
         calculando = false;
@@ -614,14 +650,72 @@ document.addEventListener('DOMContentLoaded', function() {
         fechaFinal.min = today;
         fechaFinal.addEventListener('change', function() {
             calcularDiasDesdeFechas();
+            actualizarLabelCantidad();
         });
     }
     
     if (cantidadDias) {
         cantidadDias.addEventListener('input', function() {
-            calcularFechaFinalDesdeDias();
+            // Solo calcular fecha_final si NO es alquiler por horas (mismo día)
+            const fechaIni = fechaInicio.value;
+            const fechaFin = fechaFinal.value;
+            if (fechaIni && fechaFin && fechaIni !== fechaFin) {
+                calcularFechaFinalDesdeDias();
+            }
+            actualizarLabelCantidad();
         });
     }
+    
+    /**
+     * Actualiza el label de cantidad_dias para mostrar "horas" o "días" según corresponda
+     */
+    function actualizarLabelCantidad() {
+        const fechaIni = fechaInicio.value;
+        const fechaFin = fechaFinal.value;
+        const labelCantidad = document.querySelector('label[for="rental-cantidad_dias"]');
+        
+        if (labelCantidad) {
+            if (fechaIni && fechaFin && fechaIni === fechaFin) {
+                labelCantidad.textContent = 'Cantidad de Horas *';
+            } else {
+                labelCantidad.textContent = 'Cantidad de Días *';
+            }
+        }
+    }
+    
+    // Actualizar label cuando cambien las fechas
+    if (fechaInicio) {
+        fechaInicio.addEventListener('change', function() {
+            actualizarLabelCantidad();
+        });
+    }
+    
+    // Actualizar label cuando cambien las horas (para recalcular en mismo día)
+    const horaInicioHours = document.getElementById('hora-inicio-hours');
+    const horaInicioMinutes = document.getElementById('hora-inicio-minutes');
+    const horaInicioPeriod = document.getElementById('hora-inicio-period');
+    const horaFinalHours = document.getElementById('hora-final-hours');
+    const horaFinalMinutes = document.getElementById('hora-final-minutes');
+    const horaFinalPeriod = document.getElementById('hora-final-period');
+    
+    ['hora-inicio-hours', 'hora-inicio-minutes', 'hora-inicio-period', 'hora-final-hours', 'hora-final-minutes', 'hora-final-period'].forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.addEventListener('change', function() {
+                // Esperar un momento para que se actualice el campo oculto
+                setTimeout(function() {
+                    const fechaIni = fechaInicio.value;
+                    const fechaFin = fechaFinal.value;
+                    if (fechaIni && fechaFin && fechaIni === fechaFin) {
+                        calcularDiasDesdeFechas();
+                    }
+                }, 100);
+            });
+        }
+    });
+    
+    // Actualizar label inicialmente
+    actualizarLabelCantidad();
     
     // Calcular fecha final inicialmente si hay valores
     setTimeout(function() {

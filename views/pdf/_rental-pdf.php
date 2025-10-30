@@ -9,69 +9,69 @@ $car = $model->car;
     <meta charset="UTF-8">
     <style>
         @page { 
-            margin: 20mm 15mm;
+            margin: 15mm 15mm;
             size: A4 portrait;
         }
         body { 
             font-family: Arial, sans-serif; 
-            font-size: 10px; 
+            font-size: 9px; 
             margin: 0; 
             padding: 0;
-            line-height: 1.3;
+            line-height: 1.2;
             page-break-after: avoid;
         }
         .header { 
-            margin-bottom: 15px; 
+            margin-bottom: 8px; 
             page-break-after: avoid;
         }
         .company-info { 
             width: 100%; 
-            margin-bottom: 10px; 
+            margin-bottom: 6px; 
             page-break-after: avoid;
         }
         .company-name { 
-            font-size: 18px; 
+            font-size: 16px; 
             font-weight: bold; 
             font-style: italic; 
-            margin-bottom: 5px; 
+            margin-bottom: 2px; 
         }
         .company-legal { 
-            font-size: 12px; 
-            margin-bottom: 10px; 
+            font-size: 11px; 
+            margin-bottom: 4px; 
         }
         .company-address { 
-            font-size: 10px; 
-            margin-bottom: 10px; 
+            font-size: 9px; 
+            margin-bottom: 6px; 
         }
         .order-title { 
-            font-size: 12px; 
+            font-size: 11px; 
             font-weight: bold; 
-            margin: 15px 0; 
+            margin: 8px 0; 
             page-break-after: avoid;
         }
         .section-title { 
             font-size: 10px; 
             font-weight: bold; 
-            margin-top: 15px; 
-            margin-bottom: 5px; 
+            margin-top: 8px; 
+            margin-bottom: 3px; 
             page-break-after: avoid;
         }
         .info-row { 
-            margin-bottom: 3px; 
+            margin-bottom: 2px; 
             page-break-inside: avoid;
         }
         .vehicle-table { 
             width: 100%; 
             border-collapse: collapse; 
-            margin-top: 10px; 
+            margin-top: 6px; 
             border: 1px solid #000; 
             page-break-inside: avoid;
         }
         .vehicle-table td { 
             border: 1px solid #000; 
-            padding: 5px; 
+            padding: 4px; 
             text-align: left; 
-            font-size: 10px; 
+            font-size: 9px; 
         }
         .vehicle-header { 
             font-weight: bold; 
@@ -148,8 +148,13 @@ $car = $model->car;
         <tr>
             <td class="vehicle-header" colspan="5">Tipo de Vehículo: <?= htmlspecialchars($car ? ($car->nombre . ' - ' . ($car->cantidad_pasajeros ?: 5) . ' pasajeros') : 'N/A') ?></td>
         </tr>
+        <?php
+        // Determinar si es alquiler por horas (mismo día) o por días
+        $isPorHoras = ($model->fecha_inicio === $model->fecha_final || strtotime($model->fecha_inicio) === strtotime($model->fecha_final));
+        $unidad = $isPorHoras ? 'horas' : 'días';
+        ?>
         <tr>
-            <td colspan="5" style="text-align: center;">Cantidad de días: <?= str_pad($model->cantidad_dias, 2, '0', STR_PAD_LEFT) ?></td>
+            <td colspan="5" style="text-align: center;">Cantidad de <?= $unidad ?>: <?= str_pad($model->cantidad_dias, 2, '0', STR_PAD_LEFT) ?></td>
         </tr>
         <tr>
             <td colspan="5" style="text-align: center;">Cantidad de vehículos: 1 unidad</td>
@@ -157,7 +162,7 @@ $car = $model->car;
         <tr class="total-row">
             <td>Precio:</td>
             <td>¢<?= number_format($model->precio_por_dia, 0) ?></td>
-            <td>1 Unidad x <?= str_pad($model->cantidad_dias, 2, '0', STR_PAD_LEFT) ?></td>
+            <td>1 Unidad x <?= str_pad($model->cantidad_dias, 2, '0', STR_PAD_LEFT) ?> <?= $unidad ?></td>
             <td style="text-align: right;">Total:</td>
             <td style="text-align: right;">¢<?= number_format($model->total_precio ?? 0, 0) ?></td>
         </tr>

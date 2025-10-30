@@ -155,14 +155,25 @@ class Rental extends ActiveRecord
             }
             
             // Calcular fecha_final automáticamente cuando hay fecha_inicio y cantidad_dias
+            // Solo si fecha_inicio ≠ fecha_final (no es alquiler por horas)
             if (!empty($this->fecha_inicio) && !empty($this->cantidad_dias) && $this->cantidad_dias > 0) {
-                try {
-                    $fechaInicio = new \DateTime($this->fecha_inicio);
-                    $fechaInicio->add(new \DateInterval('P' . $this->cantidad_dias . 'D'));
-                    $this->fecha_final = $fechaInicio->format('Y-m-d');
-                } catch (\Exception $e) {
-                    // Si hay error en el cálculo de fechas, mantener fecha_final como está
-                    Yii::warning('Error al calcular fecha_final: ' . $e->getMessage());
+                // Si fecha_final ya está establecida y es igual a fecha_inicio, no calcular (es alquiler por horas)
+                if (!empty($this->fecha_final) && ($this->fecha_inicio === $this->fecha_final)) {
+                    // Es alquiler por horas, no modificar fecha_final
+                } else {
+                    // Es alquiler por días, calcular fecha_final
+                    try {
+                        $fechaInicio = new \DateTime($this->fecha_inicio);
+                        // Si cantidad_dias representa horas (número pequeño, típicamente < 24), no calcular como días
+                        // Pero si no hay fecha_final establecida, calcularla
+                        if (empty($this->fecha_final) || $this->cantidad_dias >= 24) {
+                            $fechaInicio->add(new \DateInterval('P' . ($this->cantidad_dias >= 24 ? ($this->cantidad_dias / 24) : $this->cantidad_dias) . 'D'));
+                            $this->fecha_final = $fechaInicio->format('Y-m-d');
+                        }
+                    } catch (\Exception $e) {
+                        // Si hay error en el cálculo de fechas, mantener fecha_final como está
+                        Yii::warning('Error al calcular fecha_final: ' . $e->getMessage());
+                    }
                 }
             }
             
@@ -408,17 +419,47 @@ class Rental extends ActiveRecord
                 return;
             }
 
-            // Verificar que la fecha de fin sea posterior a la de inicio
-            if (strtotime($this->fecha_final) <= strtotime($this->fecha_inicio)) {
-                $this->addError($attribute, 'La fecha de fin debe ser posterior a la fecha de inicio.');
+            // Verificar que la fecha de fin no sea anterior a la de inicio (permitir igual para alquileres por horas)
+            if (strtotime($this->fecha_final) < strtotime($this->fecha_inicio)) {
+                $this->addError($attribute, 'La fecha de fin no puede ser anterior a la fecha de inicio.');
                 return;
             }
 
-            // Actualizar cantidad de días automáticamente
-            $start = new \DateTime($this->fecha_inicio);
-            $end = new \DateTime($this->fecha_final);
-            $diff = $start->diff($end);
-            $this->cantidad_dias = $diff->days + 1; // +1 para incluir el día de inicio
+            // Si fecha_inicio = fecha_final (mismo día): calcular horas
+            if ($this->fecha_inicio === $this->fecha_final || strtotime($this->fecha_final) === strtotime($this->fecha_inicio)) {
+                // Alquiler por horas - calcular horas entre hora_inicio y hora_final
+                if (!empty($this->hora_inicio) && !empty($this->hora_final)) {
+                    try {
+                        $horaInicio = new \DateTime($this->fecha_inicio . ' ' . $this->hora_inicio);
+                        $horaFinal = new \DateTime($this->fecha_final . ' ' . $this->hora_final);
+                        
+                        // Validar que hora_final sea posterior a hora_inicio
+                        if ($horaFinal <= $horaInicio) {
+                            $this->addError($attribute, 'La hora final debe ser posterior a la hora de inicio cuando es el mismo día.');
+                            return;
+                        }
+                        
+                        // Calcular diferencia en horas
+                        $diff = $horaInicio->diff($horaFinal);
+                        $horas = ($diff->days * 24) + $diff->h + ($diff->i / 60); // Incluir minutos como fracción
+                        $this->cantidad_dias = (int)ceil($horas); // Redondear hacia arriba a horas enteras
+                        
+                        // Si es menos de 1 hora, establecer como 1 hora mínima
+                        if ($this->cantidad_dias < 1) {
+                            $this->cantidad_dias = 1;
+                        }
+                    } catch (\Exception $e) {
+                        // Si hay error, no calcular automáticamente
+                        Yii::warning('Error al calcular horas: ' . $e->getMessage());
+                    }
+                }
+            } else {
+                // Alquiler por días - calcular días como antes
+                $start = new \DateTime($this->fecha_inicio);
+                $end = new \DateTime($this->fecha_final);
+                $diff = $start->diff($end);
+                $this->cantidad_dias = $diff->days + 1; // +1 para incluir el día de inicio
+            }
         }
     }
 
