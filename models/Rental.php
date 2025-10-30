@@ -75,7 +75,7 @@ class Rental extends ActiveRecord
             [['precio_por_dia'], 'number'], // Removido total_precio porque es columna generada
             [['rental_id', 'lugar_entrega', 'lugar_retiro', 'estado_pago', 'ejecutivo', 'ejecutivo_otro'], 'string', 'max' => 255],
             [['comprobante_pago'], 'string', 'max' => 500],
-            [['condiciones_especiales', 'choferes_autorizados'], 'string'],
+            [['condiciones_especiales', 'choferes_autorizados', 'custom_conditions_html'], 'string'],
             [['estado_pago'], 'in', 'range' => ['pendiente', 'pagado', 'reservado', 'cancelado']],
             [['fecha_inicio', 'fecha_final'], 'validateDates'],
             // Mover la validación de disponibilidad al final para que se ejecute después de calcular fecha_final

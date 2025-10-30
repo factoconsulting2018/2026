@@ -222,6 +222,11 @@ $this->params['breadcrumbs'][] = 'Actualizar';
                         'placeholder' => 'Condiciones especiales del alquiler...'
                     ]) ?>
 
+                    <?= $form->field($model, 'custom_conditions_html')->textarea([
+                        'rows' => 10,
+                        'placeholder' => 'Condiciones del alquiler (HTML) solo para esta orden. Si lo dejas vacío, se usará el HTML global de Configuración.',
+                    ])->label('Condiciones personalizadas (HTML) – Página 2 del PDF') ?>
+
                     <?= $form->field($model, 'comprobante_pago')->textInput([
                         'placeholder' => 'Número de comprobante de pago'
                     ]) ?>
