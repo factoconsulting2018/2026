@@ -46,44 +46,104 @@ $this->params['breadcrumbs'][] = $this->title;
                     </h5>
                 </div>
                 <div class="card-body">
+                    <!-- Fila 1: Fechas de inicio, final y cantidad de días -->
                     <div class="row">
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <?= $form->field($model, 'fecha_inicio')->input('date', [
                                 'required' => true,
-                                'value' => $model->fecha_inicio ?: date('Y-m-d')
+                                'value' => $model->fecha_inicio ?: date('Y-m-d'),
+                                'id' => 'rental-fecha_inicio'
                             ]) ?>
                         </div>
-                        <div class="col-md-3">
-                            <?= $form->field($model, 'hora_inicio')->input('time', [
-                                'value' => $model->hora_inicio ?: '09:00'
+                        <div class="col-md-4">
+                            <?= $form->field($model, 'fecha_final')->input('date', [
+                                'required' => true,
+                                'id' => 'rental-fecha_final'
                             ]) ?>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <?= $form->field($model, 'cantidad_dias')->input('number', [
                                 'min' => 1,
                                 'value' => $model->cantidad_dias ?: 3,
-                                'required' => true
+                                'required' => true,
+                                'id' => 'rental-cantidad_dias'
                             ]) ?>
                         </div>
-                        <div class="col-md-3">
+                    </div>
+                    
+                    <!-- Fila 2: Horas en formato 12h -->
+                    <div class="row">
+                        <div class="col-md-6">
                             <div class="form-group mb-3">
-                                <label class="form-label fw-bold">Fecha Final</label>
-                                <input type="text" id="fecha-final-preview" class="form-control" readonly 
-                                       placeholder="Se calculará automáticamente" 
-                                       style="background-color: #f8f9fa;">
-                                <small class="form-text text-muted" id="fecha-final-help">Se calcula automáticamente: Fecha de inicio + Cantidad de días</small>
-                                <!-- Campo oculto para enviar fecha_final calculada -->
-                                <input type="hidden" id="rental-fecha_final" name="Rental[fecha_final]" value="">
+                                <label class="form-label fw-bold">Hora de Inicio</label>
+                                <div class="row g-2">
+                                    <div class="col-4">
+                                        <select class="form-select" id="hora-inicio-hours">
+                                            <?php
+                                            for ($i = 1; $i <= 12; $i++) {
+                                                echo '<option value="' . $i . '">' . $i . '</option>';
+                                            }
+                                            ?>
+                                        </select>
+                                    </div>
+                                    <div class="col-4">
+                                        <select class="form-select" id="hora-inicio-minutes">
+                                            <?php
+                                            for ($i = 0; $i < 60; $i++) {
+                                                $min = str_pad($i, 2, '0', STR_PAD_LEFT);
+                                                echo '<option value="' . $min . '">' . $min . '</option>';
+                                            }
+                                            ?>
+                                        </select>
+                                    </div>
+                                    <div class="col-4">
+                                        <select class="form-select" id="hora-inicio-period">
+                                            <option value="AM">AM</option>
+                                            <option value="PM">PM</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <input type="hidden" id="rental-hora_inicio" name="Rental[hora_inicio]" value="<?= $model->hora_inicio ?: '09:00' ?>">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label class="form-label fw-bold">Hora Final</label>
+                                <div class="row g-2">
+                                    <div class="col-4">
+                                        <select class="form-select" id="hora-final-hours">
+                                            <?php
+                                            for ($i = 1; $i <= 12; $i++) {
+                                                echo '<option value="' . $i . '">' . $i . '</option>';
+                                            }
+                                            ?>
+                                        </select>
+                                    </div>
+                                    <div class="col-4">
+                                        <select class="form-select" id="hora-final-minutes">
+                                            <?php
+                                            for ($i = 0; $i < 60; $i++) {
+                                                $min = str_pad($i, 2, '0', STR_PAD_LEFT);
+                                                echo '<option value="' . $min . '">' . $min . '</option>';
+                                            }
+                                            ?>
+                                        </select>
+                                    </div>
+                                    <div class="col-4">
+                                        <select class="form-select" id="hora-final-period">
+                                            <option value="AM">AM</option>
+                                            <option value="PM">PM</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <input type="hidden" id="rental-hora_final" name="Rental[hora_final]" value="<?= $model->hora_final ?: '18:00' ?>">
                             </div>
                         </div>
                     </div>
+                    
+                    <!-- Fila 3: Estado de disponibilidad -->
                     <div class="row">
-                        <div class="col-md-6">
-                            <?= $form->field($model, 'hora_final')->input('time', [
-                                'value' => $model->hora_final ?: '18:00'
-                            ]) ?>
-                        </div>
-                        <div class="col-md-6">
+                        <div class="col-md-12">
                             <div class="form-group mb-3">
                                 <label class="form-label fw-bold">Estado de Disponibilidad</label>
                                 <div id="availability-status" class="form-control" style="background-color: #f8f9fa; min-height: 38px; display: flex; align-items: center;">
@@ -287,11 +347,138 @@ $this->params['breadcrumbs'][] = $this->title;
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Calcular automáticamente el precio total y fecha final
+    // ==========================================
+    // FUNCIONES DE CONVERSIÓN 12H ↔ 24H
+    // ==========================================
+    
+    /**
+     * Convierte hora de formato 24h a formato 12h
+     * @param {string} hora24 - Hora en formato "HH:mm" (ej: "14:30")
+     * @returns {object} - {hora: 2, minutos: 30, periodo: "PM"}
+     */
+    function convertir24hA12h(hora24) {
+        if (!hora24 || !hora24.includes(':')) {
+            return {hora: 12, minutos: 0, periodo: 'AM'};
+        }
+        
+        const [horas, minutos] = hora24.split(':').map(Number);
+        let hora12 = horas;
+        let periodo = 'AM';
+        
+        if (horas === 0) {
+            hora12 = 12;
+            periodo = 'AM';
+        } else if (horas === 12) {
+            hora12 = 12;
+            periodo = 'PM';
+        } else if (horas > 12) {
+            hora12 = horas - 12;
+            periodo = 'PM';
+        }
+        
+        return {
+            hora: hora12,
+            minutos: minutos || 0,
+            periodo: periodo
+        };
+    }
+    
+    /**
+     * Convierte hora de formato 12h a formato 24h
+     * @param {number} hora - Hora 1-12
+     * @param {number} minutos - Minutos 0-59
+     * @param {string} periodo - "AM" o "PM"
+     * @returns {string} - Hora en formato "HH:mm" (ej: "14:30")
+     */
+    function convertir12hA24h(hora, minutos, periodo) {
+        let horas24 = hora;
+        
+        if (periodo === 'AM') {
+            if (hora === 12) {
+                horas24 = 0;
+            }
+        } else { // PM
+            if (hora !== 12) {
+                horas24 = hora + 12;
+            }
+        }
+        
+        const horasStr = String(horas24).padStart(2, '0');
+        const minutosStr = String(minutos).padStart(2, '0');
+        
+        return `${horasStr}:${minutosStr}`;
+    }
+    
+    /**
+     * Actualiza el campo oculto de hora cuando cambian los selectores
+     * @param {string} prefix - "hora-inicio" o "hora-final"
+     */
+    function actualizarHoraOculta(prefix) {
+        const horasSelect = document.getElementById(`${prefix}-hours`);
+        const minutosSelect = document.getElementById(`${prefix}-minutes`);
+        const periodoSelect = document.getElementById(`${prefix}-period`);
+        const campoOculto = document.getElementById(`rental-${prefix === 'hora-inicio' ? 'hora_inicio' : 'hora_final'}`);
+        
+        if (horasSelect && minutosSelect && periodoSelect && campoOculto) {
+            const hora24 = convertir12hA24h(
+                parseInt(horasSelect.value),
+                parseInt(minutosSelect.value),
+                periodoSelect.value
+            );
+            campoOculto.value = hora24;
+        }
+    }
+    
+    /**
+     * Inicializa los selectores de hora 12h con el valor del campo oculto
+     * @param {string} prefix - "hora-inicio" o "hora-final"
+     * @param {string} hora24 - Hora en formato 24h
+     */
+    function inicializarHora12h(prefix, hora24) {
+        const hora12 = convertir24hA12h(hora24);
+        const horasSelect = document.getElementById(`${prefix}-hours`);
+        const minutosSelect = document.getElementById(`${prefix}-minutes`);
+        const periodoSelect = document.getElementById(`${prefix}-period`);
+        
+        if (horasSelect && minutosSelect && periodoSelect) {
+            horasSelect.value = hora12.hora;
+            periodoSelect.value = hora12.periodo;
+            
+            minutosSelect.value = String(hora12.minutos).padStart(2, '0');
+        }
+    }
+    
+    // Inicializar campos de hora 12h
+    const horaInicioOculta = document.getElementById('rental-hora_inicio');
+    const horaFinalOculta = document.getElementById('rental-hora_final');
+    
+    if (horaInicioOculta) {
+        inicializarHora12h('hora-inicio', horaInicioOculta.value || '09:00');
+    }
+    
+    if (horaFinalOculta) {
+        inicializarHora12h('hora-final', horaFinalOculta.value || '18:00');
+    }
+    
+    // Event listeners para actualizar campos ocultos cuando cambian selectores
+    ['hora-inicio', 'hora-final'].forEach(prefix => {
+        ['hours', 'minutes', 'period'].forEach(tipo => {
+            const selector = document.getElementById(`${prefix}-${tipo}`);
+            if (selector) {
+                selector.addEventListener('change', function() {
+                    actualizarHoraOculta(prefix);
+                });
+            }
+        });
+    });
+    
+    // ==========================================
+    // CÁLCULO DE PRECIO TOTAL
+    // ==========================================
+    
     const cantidadDias = document.getElementById('rental-cantidad_dias');
     const precioPorDia = document.getElementById('rental-precio_por_dia');
     const totalPreview = document.getElementById('total-preview');
-    const fechaFinalPreview = document.getElementById('fecha-final-preview');
     
     function calcularTotal() {
         const dias = parseFloat(cantidadDias.value) || 0;
@@ -304,64 +491,113 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    function calcularFechaFinal() {
-        const fechaIni = fechaInicio.value;
-        const dias = parseInt(cantidadDias.value) || 0;
-        const fechaFinalHelp = document.getElementById('fecha-final-help');
-        
-        if (fechaIni && dias > 0) {
-            const fecha = new Date(fechaIni);
-            fecha.setDate(fecha.getDate() + dias);
-            const fechaFormateada = fecha.toISOString().split('T')[0];
-            
-            // Formatear fecha para mostrar de manera legible
-            const fechaLegible = new Date(fechaFormateada).toLocaleDateString('es-ES', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            });
-            
-            fechaFinalPreview.value = fechaFormateada;
-            
-            // Actualizar texto de ayuda con fecha específica
-            if (fechaFinalHelp) {
-                fechaFinalHelp.innerHTML = `📅 <strong>Fecha calculada:</strong> ${fechaLegible} (${fechaFormateada})`;
-            }
-            
-            // Actualizar también el campo oculto
-            const fechaFinalHidden = document.getElementById('rental-fecha_final');
-            if (fechaFinalHidden) {
-                fechaFinalHidden.value = fechaFormateada;
-            }
-        } else {
-            fechaFinalPreview.value = '';
-            const fechaFinalHidden = document.getElementById('rental-fecha_final');
-            if (fechaFinalHidden) {
-                fechaFinalHidden.value = '';
-            }
-            
-            // Restaurar texto de ayuda original
-            if (fechaFinalHelp) {
-                fechaFinalHelp.innerHTML = 'Se calcula automáticamente: Fecha de inicio + Cantidad de días';
-            }
-        }
-    }
-    
     if (cantidadDias && precioPorDia && totalPreview) {
         cantidadDias.addEventListener('input', calcularTotal);
         precioPorDia.addEventListener('input', calcularTotal);
-        // Calcular inicialmente
         calcularTotal();
     }
     
-    if (cantidadDias && fechaInicio && fechaFinalPreview) {
-        cantidadDias.addEventListener('input', calcularFechaFinal);
-        fechaInicio.addEventListener('input', calcularFechaFinal);
-        // Calcular inicialmente
-        calcularFechaFinal();
+    // ==========================================
+    // CÁLCULO BIDIRECCIONAL: FECHA FINAL ↔ CANTIDAD DE DÍAS
+    // ==========================================
+    
+    const fechaInicio = document.getElementById('rental-fecha_inicio');
+    const fechaFinal = document.getElementById('rental-fecha_final');
+    
+    // Bandera para prevenir loops infinitos
+    let calculando = false;
+    
+    /**
+     * Calcula fecha_final basándose en fecha_inicio + cantidad_dias
+     */
+    function calcularFechaFinalDesdeDias() {
+        if (calculando) return;
+        calculando = true;
+        
+        const fechaIni = fechaInicio.value;
+        const dias = parseInt(cantidadDias.value) || 0;
+        
+        if (fechaIni && dias > 0) {
+            const fecha = new Date(fechaIni);
+            fecha.setDate(fecha.getDate() + dias - 1); // -1 porque si inicio y fin son el mismo día = 1 día
+            const fechaFormateada = fecha.toISOString().split('T')[0];
+            fechaFinal.value = fechaFormateada;
+        } else if (!fechaIni || dias <= 0) {
+            fechaFinal.value = '';
+        }
+        
+        calculando = false;
     }
     
-    // Mostrar/ocultar campo de correapartir
+    /**
+     * Calcula cantidad_dias basándose en fecha_final - fecha_inicio
+     */
+    function calcularDiasDesdeFechas() {
+        if (calculando) return;
+        calculando = true;
+        
+        const fechaIni = fechaInicio.value;
+        const fechaFin = fechaFinal.value;
+        
+        if (fechaIni && fechaFin) {
+            const inicio = new Date(fechaIni);
+            const fin = new Date(fechaFin);
+            
+            // Validar que fecha_final >= fecha_inicio
+            if (fin < inicio) {
+                alert('La fecha final no puede ser anterior a la fecha de inicio');
+                fechaFinal.value = '';
+                calculando = false;
+                return;
+            }
+            
+            const diffTime = fin - inicio;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 porque incluye ambos días
+            cantidadDias.value = diffDays > 0 ? diffDays : 1;
+            cantidadDias.min = 1;
+        }
+        
+        calculando = false;
+    }
+    
+    // Establecer fecha mínima como hoy
+    const today = new Date().toISOString().split('T')[0];
+    if (fechaInicio) {
+        fechaInicio.min = today;
+        if (!fechaInicio.value) {
+            fechaInicio.value = today;
+        }
+        fechaInicio.addEventListener('change', function() {
+            calcularFechaFinalDesdeDias();
+        });
+    }
+    
+    if (fechaFinal) {
+        fechaFinal.min = today;
+        fechaFinal.addEventListener('change', function() {
+            calcularDiasDesdeFechas();
+        });
+    }
+    
+    if (cantidadDias) {
+        cantidadDias.addEventListener('input', function() {
+            calcularFechaFinalDesdeDias();
+        });
+    }
+    
+    // Calcular fecha final inicialmente si hay valores
+    setTimeout(function() {
+        if (fechaInicio && fechaInicio.value && cantidadDias && cantidadDias.value) {
+            calcularFechaFinalDesdeDias();
+        } else if (fechaInicio && fechaInicio.value && fechaFinal && fechaFinal.value) {
+            calcularDiasDesdeFechas();
+        }
+    }, 100);
+    
+    // ==========================================
+    // MOSTRAR/OCULTAR CAMPO CORREAPARTIR
+    // ==========================================
+    
     const correapartirCheckbox = document.getElementById('rental-correapartir_enabled');
     const correapartirField = document.querySelector('input[name="Rental[fecha_correapartir]"]');
     
@@ -373,40 +609,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
-    // Establecer fecha mínima como hoy y configurar campos de fecha
-    const today = new Date().toISOString().split('T')[0];
-    const fechaInicio = document.getElementById('rental-fecha_inicio');
-    const fechaFinal = document.getElementById('rental-fecha_final');
-    
-    // Configurar campo de fecha de inicio
-    if (fechaInicio) {
-        fechaInicio.min = today;
-        // Forzar que la fecha de inicio sea hoy
-        fechaInicio.value = today;
-        
-        // Debug
-        console.log('Fecha de hoy:', today);
-        console.log('Valor del campo fecha_inicio:', fechaInicio.value);
-        alert('Fecha establecida: ' + fechaInicio.value);
-        
-        // Event listener para recalcular fecha final
-        fechaInicio.addEventListener('change', function() {
-            calcularFechaFinal();
-        });
-    }
-    
-    // Configurar campo de fecha final
-    if (fechaFinal) {
-        fechaFinal.min = today;
-    }
-    
-    // Calcular fecha final inicialmente
-    setTimeout(function() {
-        if (fechaInicio && fechaInicio.value) {
-            calcularFechaFinal();
-        }
-    }, 100);
 });
 </script>
 
@@ -470,13 +672,7 @@ document.addEventListener('DOMContentLoaded', function() {
 document.addEventListener('DOMContentLoaded', function() {
     const carSelect = document.getElementById('rental-car_id');
     const startDateInput = document.getElementById('rental-fecha_inicio');
-    const endDateInput = document.getElementById('rental-fecha_final');
-    const availabilityStatus = document.createElement('div');
-    availabilityStatus.className = 'availability-status';
-    availabilityStatus.id = 'availability-status';
-    
-    // Insertar el div de estado después del campo de fecha final
-    endDateInput.parentNode.appendChild(availabilityStatus);
+    const availabilityStatus = document.getElementById('availability-status');
     
     let checkTimeout;
     let filterTimeout;
@@ -540,7 +736,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function checkAvailability() {
         const carId = carSelect.value;
         const startDate = startDateInput.value;
-        const endDate = endDateInput.value;
+        const endDate = document.getElementById('rental-fecha_final').value;
         
         if (!carId || !startDate || !endDate) {
             availabilityStatus.style.display = 'none';
@@ -602,13 +798,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     startDateInput.addEventListener('change', function() {
-        // Auto-calcular fecha final si no está establecida
-        if (!endDateInput.value && this.value) {
-            const startDate = new Date(this.value);
-            startDate.setDate(startDate.getDate() + 1);
-            endDateInput.value = startDate.toISOString().split('T')[0];
-        }
-        
         // Filtrar vehículos disponibles para la nueva fecha
         clearTimeout(filterTimeout);
         filterTimeout = setTimeout(filterAvailableCars, 300);
@@ -617,7 +806,7 @@ document.addEventListener('DOMContentLoaded', function() {
         checkTimeout = setTimeout(checkAvailability, 500);
     });
     
-    // También filtrar cuando cambie la cantidad de días
+    // También filtrar cuando cambie la cantidad de días o fecha final
     document.getElementById('rental-cantidad_dias').addEventListener('change', function() {
         if (startDateInput.value) {
             clearTimeout(filterTimeout);
@@ -628,7 +817,7 @@ document.addEventListener('DOMContentLoaded', function() {
         checkTimeout = setTimeout(checkAvailability, 500);
     });
     
-    endDateInput.addEventListener('change', function() {
+    document.getElementById('rental-fecha_final').addEventListener('change', function() {
         clearTimeout(checkTimeout);
         checkTimeout = setTimeout(checkAvailability, 500);
     });
@@ -636,7 +825,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Establecer fecha mínima como hoy
     const today = new Date().toISOString().split('T')[0];
     startDateInput.min = today;
-    endDateInput.min = today;
+    document.getElementById('rental-fecha_final').min = today;
     
     // Auto-filtrar y verificar al cargar la página si hay valores
     setTimeout(() => {
@@ -789,5 +978,14 @@ document.addEventListener('DOMContentLoaded', function() {
     
     #fecha-final-help strong {
         color: #1976d2;
+    }
+    
+    /* Estilos para campos de hora 12h */
+    .hora-12h-wrapper .form-select {
+        font-size: 0.9rem;
+    }
+    
+    .form-group label.fw-bold {
+        margin-bottom: 0.5rem;
     }
 </style>
