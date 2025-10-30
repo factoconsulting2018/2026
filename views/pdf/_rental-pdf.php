@@ -130,17 +130,19 @@ if (!function_exists('formatDatetimeEs')) {
     </div>
     
     <div class="section-title">ENTREGA DEL VEHÍCULO</div>
+    <?php if ($model->correapartir_enabled && $model->fecha_correapartir): ?>
+    <div class="info-row">
+        <span class="info-label">Correapartir (Cortesía) desde:</span> 
+        <?= formatDatetimeEs($model->fecha_correapartir) ?>
+    </div>
+    <?php endif; ?>
     <div class="info-row">
         <span class="info-label">Fecha de alquiler:</span> 
         <?= formatDatetimeEs($model->fecha_inicio . ' ' . $model->hora_inicio) ?>
     </div>
     <div class="info-row">
         <span class="info-label">Fecha recoge vehículo:</span> 
-        <?php if ($model->correapartir_enabled && $model->fecha_correapartir): ?>
-            <?= formatDatetimeEs($model->fecha_correapartir) ?>
-        <?php else: ?>
-            <?= formatDatetimeEs($model->fecha_inicio . ' ' . $model->hora_inicio) ?>
-        <?php endif; ?>
+        <?= formatDatetimeEs($model->fecha_final . ' ' . $model->hora_final) ?>
     </div>
     <div class="info-row">
         <span class="info-label">Lugar:</span> 
