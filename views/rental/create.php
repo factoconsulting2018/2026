@@ -809,10 +809,23 @@ document.addEventListener('DOMContentLoaded', function() {
             correapartirField.style.display = this.checked ? 'block' : 'none';
             
             if (this.checked) {
-                // Si no hay valor, establecer fecha mínima como hoy
                 const fechaInput = document.getElementById('correapartir-fecha');
+                const fechaInicio = document.getElementById('rental-fecha_inicio');
+                
                 if (fechaInput && !fechaInput.value) {
-                    fechaInput.min = new Date().toISOString().split('T')[0];
+                    // Si no hay valor, establecer fecha como un día antes de fecha_inicio
+                    if (fechaInicio && fechaInicio.value) {
+                        const fechaInicioDate = new Date(fechaInicio.value);
+                        fechaInicioDate.setDate(fechaInicioDate.getDate() - 1);
+                        fechaInput.value = fechaInicioDate.toISOString().split('T')[0];
+                        fechaInput.min = new Date().toISOString().split('T')[0];
+                        
+                        // Actualizar campo oculto con la nueva fecha (sin hora aún)
+                        actualizarCorreapartirOculta();
+                    } else {
+                        // Si no hay fecha_inicio, establecer fecha mínima como hoy
+                        fechaInput.min = new Date().toISOString().split('T')[0];
+                    }
                 }
                 inicializarCorreapartir12h();
             } else {
@@ -823,6 +836,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         });
+        
+        // También actualizar fecha correapartir cuando cambia fecha_inicio (si correapartir está habilitado)
+        if (fechaInicio) {
+            fechaInicio.addEventListener('change', function() {
+                if (correapartirCheckbox && correapartirCheckbox.checked) {
+                    const fechaInput = document.getElementById('correapartir-fecha');
+                    if (fechaInput && this.value) {
+                        const fechaInicioDate = new Date(this.value);
+                        fechaInicioDate.setDate(fechaInicioDate.getDate() - 1);
+                        fechaInput.value = fechaInicioDate.toISOString().split('T')[0];
+                        actualizarCorreapartirOculta();
+                    }
+                }
+            });
+        }
     }
     
     // Event listeners para actualizar campo oculto cuando cambian selectores
