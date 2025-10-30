@@ -744,9 +744,11 @@ class RentalController extends Controller
             // Generar contenido HTML
             $html = $this->generateRentalOrderHtml($rental, $companyInfo);
             
-            // Agregar condiciones si existen
-            if ($companyInfo['conditions']) {
-                $conditionsHtml = $this->generateConditionsHtml($companyInfo);
+            // Agregar condiciones como página 2
+            $customConditions = $rental->custom_conditions_html ?? '';
+            $globalConditions = \app\models\CompanyConfig::getConfig('rental_conditions_html', '');
+            if (!empty($customConditions) || !empty($globalConditions) || $companyInfo['conditions']) {
+                $conditionsHtml = $this->generateConditionsHtml($companyInfo, $customConditions ?: $globalConditions);
                 $html .= '<div style="page-break-before: always;"></div>' . $conditionsHtml;
             }
             
@@ -803,10 +805,10 @@ class RentalController extends Controller
     /**
      * Generar HTML para condiciones de alquiler
      */
-    private function generateConditionsHtml($companyInfo)
+    private function generateConditionsHtml($companyInfo, $customHtml = null)
     {
         $pdfController = new \app\controllers\PdfController('pdf', \Yii::$app);
-        return $pdfController->generateConditionsHtml($companyInfo);
+        return $pdfController->generateConditionsHtml($companyInfo, $customHtml);
     }
 }
 

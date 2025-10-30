@@ -407,58 +407,27 @@ $conditionsModel = new \app\models\CompanyConfig();
                         <!-- Tab de Archivos -->
                         <div class="tab-pane fade" id="files" role="tabpanel" aria-labelledby="files-tab">
                             <div class="row mt-4">
-                                <!-- Condiciones -->
                                 <div class="col-12">
                                     <div class="card">
                                         <div class="card-header">
-                                            <h5><i class="fas fa-file-pdf"></i> Condiciones de Alquiler</h5>
+                                            <h5 class="mb-0"><i class="fas fa-file-code"></i> Condiciones del Alquiler (HTML)</h5>
                                         </div>
                                         <div class="card-body">
-                                            <?php if ($companyInfo['conditions']): ?>
-                                                <div class="mb-3">
-                                                    <div class="alert alert-info">
-                                                        <i class="fas fa-file-pdf"></i> 
-                                                        Archivo de condiciones cargado
-                                                    </div>
-                                                </div>
-                                                <div class="d-flex gap-2">
-                                                    <?= Html::a('<i class="fas fa-download"></i> Descargar', ['config/download-conditions'], [
-                                                        'class' => 'btn btn-outline-info btn-sm'
-                                                    ]) ?>
-                                                    <?= Html::a('<i class="fas fa-trash"></i> Eliminar', ['config/delete-conditions'], [
-                                                        'class' => 'btn btn-outline-danger btn-sm',
-                                                        'data-confirm' => '¿Estás seguro de que deseas eliminar las condiciones?',
-                                                        'data-method' => 'post'
-                                                    ]) ?>
-                                                </div>
-                                            <?php else: ?>
-                                                <div class="text-center text-muted mb-3">
-                                                    <i class="fas fa-file-pdf fa-3x"></i>
-                                                    <p>No hay condiciones cargadas</p>
-                                                </div>
-                                            <?php endif; ?>
-
                                             <?php $form = ActiveForm::begin([
-                                                'action' => ['config/upload-conditions'],
-                                                'options' => ['enctype' => 'multipart/form-data']
+                                                'action' => ['config/update-conditions-html'],
+                                                'method' => 'post',
                                             ]); ?>
-
-                                            <div class="mb-3">
-                                                <?= $form->field($conditionsModel, 'conditionsFile')->fileInput([
-                                                    'accept' => '.pdf,.doc,.docx,.txt',
-                                                    'class' => 'form-control'
-                                                ])->label('Subir Condiciones') ?>
-                                                <small class="form-text text-muted">
-                                                    Formatos: PDF, DOC, DOCX, TXT. Tamaño máximo: 5MB
-                                                </small>
-                                            </div>
-
-                                            <div class="d-flex justify-content-end">
-                                                <?= Html::submitButton('<i class="fas fa-upload"></i> Subir Condiciones', [
-                                                    'class' => 'btn btn-primary'
-                                                ]) ?>
-                                            </div>
-
+                                                <div class="mb-3">
+                                                    <?= Html::textarea('conditions_html', \app\models\CompanyConfig::getConfig('rental_conditions_html', ''), [
+                                                        'class' => 'form-control',
+                                                        'rows' => 16,
+                                                        'placeholder' => 'Pega aquí el HTML de las condiciones del alquiler. Este contenido será la página 2 del PDF.'
+                                                    ]) ?>
+                                                    <small class="text-muted">Este contenido se insertará como segunda página en el PDF de rentas. Se acepta HTML básico.</small>
+                                                </div>
+                                                <div class="d-flex justify-content-end">
+                                                    <?= Html::submitButton('<i class="fas fa-save"></i> Guardar Condiciones (HTML)', ['class' => 'btn btn-primary']) ?>
+                                                </div>
                                             <?php ActiveForm::end(); ?>
                                         </div>
                                     </div>

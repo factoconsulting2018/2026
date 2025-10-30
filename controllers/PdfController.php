@@ -789,8 +789,19 @@ class PdfController extends Controller
     /**
      * Generar HTML para condiciones de alquiler
      */
-    public function generateConditionsHtml($companyInfo)
+    public function generateConditionsHtml($companyInfo, $customHtml = null)
     {
+        // Usar HTML personalizado si se provee
+        if (!empty($customHtml)) {
+            return '<style>body { font-family: Arial, sans-serif; font-size: 10px; }</style><div>' . $customHtml . '</div>';
+        }
+
+        // Usar HTML global desde configuración si existe
+        $globalHtml = \app\models\CompanyConfig::getConfig('rental_conditions_html', '');
+        if (!empty($globalHtml)) {
+            return '<style>body { font-family: Arial, sans-serif; font-size: 10px; }</style><div>' . $globalHtml . '</div>';
+        }
+
         $html = '
         <style>
             body { font-family: Arial, sans-serif; font-size: 10px; }

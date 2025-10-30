@@ -96,6 +96,20 @@ class ConfigController extends Controller
     }
 
     /**
+     * Guardar condiciones del alquiler en HTML (configuración global)
+     */
+    public function actionUpdateConditionsHtml()
+    {
+        if (!Yii::$app->request->isPost) {
+            return $this->redirect(['index']);
+        }
+        $html = Yii::$app->request->post('conditions_html', '');
+        \app\models\CompanyConfig::setConfig('rental_conditions_html', $html, 'Condiciones de alquiler (HTML)');
+        Yii::$app->session->setFlash('success', 'Condiciones del alquiler (HTML) actualizadas.');
+        return $this->redirect(['index']);
+    }
+
+    /**
      * Subir logo
      */
     public function actionUploadLogo()
