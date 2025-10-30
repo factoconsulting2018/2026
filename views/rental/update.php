@@ -218,14 +218,9 @@ $this->params['breadcrumbs'][] = 'Actualizar';
                 </div>
                 <div class="card-body">
                     <?= $form->field($model, 'condiciones_especiales')->textarea([
-                        'rows' => 4,
-                        'placeholder' => 'Condiciones especiales del alquiler...'
-                    ]) ?>
-
-                    <?= $form->field($model, 'custom_conditions_html')->textarea([
                         'rows' => 10,
-                        'placeholder' => 'Condiciones del alquiler (HTML) solo para esta orden. Si lo dejas vacío, se usará el HTML global de Configuración.',
-                    ])->label('Condiciones personalizadas (HTML) – Página 2 del PDF') ?>
+                        'placeholder' => 'Condiciones del alquiler (HTML) solo para esta orden. Si lo dejas vacío, se usará el HTML global de Configuración.'
+                    ])->label('Condiciones de la Renta (HTML) – Página 2 del PDF') ?>
 
                     <?= $form->field($model, 'comprobante_pago')->textInput([
                         'placeholder' => 'Número de comprobante de pago'

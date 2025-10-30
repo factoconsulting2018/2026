@@ -744,8 +744,8 @@ class RentalController extends Controller
             // Generar contenido HTML
             $html = $this->generateRentalOrderHtml($rental, $companyInfo);
             
-            // Agregar condiciones como página 2
-            $customConditions = $rental->custom_conditions_html ?? '';
+            // Agregar condiciones como página 2 (usar condiciones_especiales como HTML por orden)
+            $customConditions = $rental->condiciones_especiales ?? '';
             $globalConditions = \app\models\CompanyConfig::getConfig('rental_conditions_html', '');
             if (!empty($customConditions) || !empty($globalConditions) || $companyInfo['conditions']) {
                 $conditionsHtml = $this->generateConditionsHtml($companyInfo, $customConditions ?: $globalConditions);

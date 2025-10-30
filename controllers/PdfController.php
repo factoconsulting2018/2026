@@ -72,7 +72,7 @@ class PdfController extends Controller
         $pdf->writeHTML($html, true, false, true, false, '');
         
         // Agregar segunda página con condiciones (prioridad: alquiler > global > archivo)
-        $customConditions = $rental->custom_conditions_html ?? '';
+        $customConditions = $rental->condiciones_especiales ?? '';
         $globalConditions = CompanyConfig::getConfig('rental_conditions_html', '');
         if (!empty($customConditions) || !empty($globalConditions) || $companyInfo['conditions']) {
             $pdf->AddPage();
