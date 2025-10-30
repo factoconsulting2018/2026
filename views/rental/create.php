@@ -70,6 +70,52 @@ $this->params['breadcrumbs'][] = $this->title;
                             ]) ?>
                         </div>
                     </div>
+
+                    <!-- Correapartir: opcional, después de Cantidad de días -->
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-check mt-3">
+                                <?= Html::activeCheckbox($model, 'correapartir_enabled', [
+                                    'class' => 'form-check-input',
+                                    'label' => 'Habilitar Correapartir (opcional)',
+                                    'labelOptions' => ['class' => 'form-check-label']
+                                ]) ?>
+                            </div>
+
+                            <div class="form-group mb-3" id="correapartir-datetime-field" style="display: none;">
+                                <label class="form-label fw-bold">Fecha y Hora de Correapartir</label>
+                                <div class="row mb-2">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Fecha</label>
+                                        <input type="date" class="form-control" id="correapartir-fecha">
+                                        <div class="invalid-feedback"></div>
+                                    </div>
+                                </div>
+                                <div class="row g-2">
+                                    <div class="col-4">
+                                        <label class="form-label">Hora</label>
+                                        <select class="form-select" id="correapartir-hours">
+                                            <?php for ($i = 1; $i <= 12; $i++) { echo '<option value="' . $i . '">' . $i . '</option>'; } ?>
+                                        </select>
+                                    </div>
+                                    <div class="col-4">
+                                        <label class="form-label">Minutos</label>
+                                        <select class="form-select" id="correapartir-minutes">
+                                            <?php for ($i = 0; $i < 60; $i++) { $min = str_pad($i, 2, '0', STR_PAD_LEFT); echo '<option value="' . $min . '">' . $min . '</option>'; } ?>
+                                        </select>
+                                    </div>
+                                    <div class="col-4">
+                                        <label class="form-label">Periodo</label>
+                                        <select class="form-select" id="correapartir-period">
+                                            <option value="AM">AM</option>
+                                            <option value="PM">PM</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <input type="hidden" id="rental-fecha_correapartir" name="Rental[fecha_correapartir]" value="<?= $model->fecha_correapartir ?? '' ?>">
+                            </div>
+                        </div>
+                    </div>
                     
                     <!-- Fila 2: Horas en formato 12h -->
                     <div class="row">
@@ -177,13 +223,18 @@ $this->params['breadcrumbs'][] = $this->title;
                         [
                             'prompt' => 'Seleccionar vehículo...',
                             'class' => 'form-select',
-                            'required' => true
+                            'required' => true,
+                            'oninvalid' => "this.setCustomValidity('Debes seleccionar un vehículo.')",
+                            'oninput' => "this.setCustomValidity('')"
                         ]
                     ) ?>
 
                     <?= $form->field($model, 'precio_por_dia')->input('number', [
                         'step' => '0.01',
-                        'min' => 0
+                        'min' => 0,
+                        'required' => true,
+                        'oninvalid' => "this.setCustomValidity('Ingresa un precio por día válido (0 o mayor).')",
+                        'oninput' => "this.setCustomValidity('')"
                     ]) ?>
 
                     <div class="form-group mb-3">
@@ -215,7 +266,9 @@ $this->params['breadcrumbs'][] = $this->title;
                         [
                             'prompt' => 'Seleccionar cliente...',
                             'class' => 'form-select',
-                            'required' => true
+                            'required' => true,
+                            'oninvalid' => "this.setCustomValidity('Debes seleccionar un cliente.')",
+                            'oninput' => "this.setCustomValidity('')"
                         ]
                     ) ?>
 
@@ -311,55 +364,6 @@ $this->params['breadcrumbs'][] = $this->title;
                         'placeholder' => 'Número de comprobante de pago'
                     ]) ?>
 
-                    <div class="form-check mt-3">
-                        <?= Html::activeCheckbox($model, 'correapartir_enabled', [
-                            'class' => 'form-check-input',
-                            'label' => 'Habilitar Correapartir',
-                            'labelOptions' => ['class' => 'form-check-label']
-                        ]) ?>
-                    </div>
-
-                    <!-- Campo Correapartir (oculto inicialmente) -->
-                    <div class="form-group mb-3" id="correapartir-datetime-field" style="display: none;">
-                        <label class="form-label fw-bold">Fecha y Hora de Correapartir</label>
-                        <div class="row mb-2">
-                            <div class="col-md-6">
-                                <label class="form-label">Fecha</label>
-                                <input type="date" class="form-control" id="correapartir-fecha" required>
-                            </div>
-                        </div>
-                        <div class="row g-2">
-                            <div class="col-4">
-                                <label class="form-label">Hora</label>
-                                <select class="form-select" id="correapartir-hours">
-                                    <?php
-                                    for ($i = 1; $i <= 12; $i++) {
-                                        echo '<option value="' . $i . '">' . $i . '</option>';
-                                    }
-                                    ?>
-                                </select>
-                            </div>
-                            <div class="col-4">
-                                <label class="form-label">Minutos</label>
-                                <select class="form-select" id="correapartir-minutes">
-                                    <?php
-                                    for ($i = 0; $i < 60; $i++) {
-                                        $min = str_pad($i, 2, '0', STR_PAD_LEFT);
-                                        echo '<option value="' . $min . '">' . $min . '</option>';
-                                    }
-                                    ?>
-                                </select>
-                            </div>
-                            <div class="col-4">
-                                <label class="form-label">Periodo</label>
-                                <select class="form-select" id="correapartir-period">
-                                    <option value="AM">AM</option>
-                                    <option value="PM">PM</option>
-                                </select>
-                            </div>
-                        </div>
-                        <input type="hidden" id="rental-fecha_correapartir" name="Rental[fecha_correapartir]" value="<?= $model->fecha_correapartir ?? '' ?>">
-                    </div>
                 </div>
             </div>
         </div>
@@ -841,11 +845,21 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
                 inicializarCorreapartir12h();
+                // Hacer requerida la fecha de correapartir cuando está habilitado
+                if (fechaInput) {
+                    fechaInput.setAttribute('required', 'required');
+                    fechaInput.oninvalid = function(){ this.setCustomValidity('Selecciona una fecha de correapartir o desactiva la opción.'); };
+                    fechaInput.oninput = function(){ this.setCustomValidity(''); };
+                }
             } else {
                 // Limpiar campo oculto si se deshabilita
                 const campoOculto = document.getElementById('rental-fecha_correapartir');
                 if (campoOculto) {
                     campoOculto.value = '';
+                }
+                const fechaInput = document.getElementById('correapartir-fecha');
+                if (fechaInput) {
+                    fechaInput.removeAttribute('required');
                 }
             }
         });
