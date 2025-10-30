@@ -111,9 +111,8 @@ $car = $model->car;
     </div>
     
     <?php if ($model->correapartir_enabled && $model->fecha_correapartir): ?>
-    <div class="section-title">CORREAPARTIR</div>
     <div class="info-row">
-        <span class="info-label">Fecha y hora de correapartir:</span> 
+        <span class="info-label">Correapartir (Cortesía) desde:</span> 
         <?php
         $fechaCorreapartir = new DateTime($model->fecha_correapartir);
         echo $fechaCorreapartir->format('d/m/Y') . ' ' . $fechaCorreapartir->format('h:i A');
