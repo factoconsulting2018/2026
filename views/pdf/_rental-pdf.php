@@ -110,6 +110,17 @@ $car = $model->car;
         <?= htmlspecialchars($client ? $client->cedula_fisica : 'N/A') ?>
     </div>
     
+    <?php if ($model->correapartir_enabled && $model->fecha_correapartir): ?>
+    <div class="section-title">CORREAPARTIR</div>
+    <div class="info-row">
+        <span class="info-label">Fecha y hora de correapartir:</span> 
+        <?php
+        $fechaCorreapartir = new DateTime($model->fecha_correapartir);
+        echo $fechaCorreapartir->format('d/m/Y') . ' ' . $fechaCorreapartir->format('h:i A');
+        ?>
+    </div>
+    <?php endif; ?>
+    
     <div class="section-title">ENTREGA DEL VEHÍCULO</div>
     <div class="info-row">
         <span class="info-label">Fecha de alquiler:</span> 
