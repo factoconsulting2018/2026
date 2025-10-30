@@ -597,11 +597,15 @@ class PdfController extends Controller
         <div class="section-title">ENTREGA DEL VEHÍCULO:</div>
         <div class="info-row">
             <span class="info-label">Fecha de alquiler:</span> 
-            <span class="info-value">' . $this->formatDateSpanish($rental->fecha_inicio) . '</span>
+            <span class="info-value">' . $this->formatDateTimeSafe($rental->fecha_inicio, $rental->hora_inicio) . '</span>
         </div>
         <div class="info-row">
             <span class="info-label">Fecha recoge vehículo:</span> 
-            <span class="info-value">' . $this->formatDateTimeSafe($rental->fecha_inicio, $rental->hora_inicio) . '</span>
+            <span class="info-value">' . (
+                ($rental->correapartir_enabled && !empty($rental->fecha_correapartir))
+                    ? $this->formatDateTimeSpanish($rental->fecha_correapartir)
+                    : $this->formatDateTimeSafe($rental->fecha_inicio, $rental->hora_inicio)
+            ) . '</span>
         </div>
         <div class="info-row">
             <span class="info-label">Lugar:</span> 
@@ -893,7 +897,7 @@ class PdfController extends Controller
         $dia = date('d', $timestamp);
         $mes = $meses[(int)date('m', $timestamp)];
         $año = date('Y', $timestamp);
-        $hora = date('H:i', $timestamp);
+        $hora = strtolower(date('h:i a', $timestamp));
         
         return $diaSemana . ' ' . $dia . ' de ' . $mes . ' de ' . $año . ' ' . $hora;
     }

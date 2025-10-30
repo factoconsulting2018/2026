@@ -793,8 +793,11 @@ class RentalController extends Controller
      */
     private function generateRentalOrderHtml($rental, $companyInfo)
     {
-        $pdfController = new \app\controllers\PdfController('pdf', \Yii::$app);
-        return $pdfController->generateRentalOrderHtml($rental, $companyInfo);
+        // Unificar generación: usar la vista _rental-pdf para todas las órdenes
+        return $this->renderPartial('@app/views/pdf/_rental-pdf', [
+            'model' => $rental,
+            'companyInfo' => $companyInfo,
+        ], true);
     }
     
     /**
