@@ -57,7 +57,7 @@ $this->params['breadcrumbs'][] = $this->title;
                         </div>
                         <div class="col-md-4">
                             <?= $form->field($model, 'fecha_final')->input('date', [
-                                'required' => true,
+                                // No requerido; se calcula automáticamente y es opcional si es por horas
                                 'id' => 'rental-fecha_final'
                             ]) ?>
                         </div>
@@ -725,6 +725,19 @@ document.addEventListener('DOMContentLoaded', function() {
             calcularDiasDesdeFechas();
         }
     }, 100);
+
+    // Asegurar valores antes de enviar el formulario (fecha_final opcional)
+    const crearForm = document.querySelector('form.rental-form');
+    if (crearForm) {
+        crearForm.addEventListener('submit', function() {
+            if (fechaInicio && fechaInicio.value && fechaFinal && !fechaFinal.value) {
+                calcularFechaFinalDesdeDias();
+                if (!fechaFinal.value) {
+                    fechaFinal.value = fechaInicio.value; // fallback para no bloquear
+                }
+            }
+        });
+    }
     
     // ==========================================
     // MANEJO DE CORREAPARTIR FORMATO 12H
