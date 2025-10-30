@@ -34,6 +34,8 @@ use yii\db\ActiveRecord;
  */
 class Rental extends ActiveRecord
 {
+    // Campo virtual de compatibilidad: algunas vistas antiguas envían este nombre
+    public $custom_conditions_html;
     /**
      * {@inheritdoc}
      */
@@ -75,7 +77,8 @@ class Rental extends ActiveRecord
             [['precio_por_dia'], 'number'], // Removido total_precio porque es columna generada
             [['rental_id', 'lugar_entrega', 'lugar_retiro', 'estado_pago', 'ejecutivo', 'ejecutivo_otro'], 'string', 'max' => 255],
             [['comprobante_pago'], 'string', 'max' => 500],
-            [['condiciones_especiales', 'choferes_autorizados', 'custom_conditions_html'], 'string'],
+            [['condiciones_especiales', 'choferes_autorizados'], 'string'],
+            [['custom_conditions_html'], 'string'],
             [['estado_pago'], 'in', 'range' => ['pendiente', 'pagado', 'reservado', 'cancelado']],
             [['fecha_inicio', 'fecha_final'], 'validateDates'],
             // Mover la validación de disponibilidad al final para que se ejecute después de calcular fecha_final
@@ -149,6 +152,10 @@ class Rental extends ActiveRecord
     public function beforeSave($insert)
     {
         if (parent::beforeSave($insert)) {
+            // Compatibilidad: mapear custom_conditions_html -> condiciones_especiales si llega desde formularios antiguos
+            if (!empty($this->custom_conditions_html) && empty($this->condiciones_especiales)) {
+                $this->condiciones_especiales = $this->custom_conditions_html;
+            }
             // Generar rental_id si es nuevo
             if ($insert && empty($this->rental_id)) {
                 $this->rental_id = $this->generateRentalId();
