@@ -110,16 +110,6 @@ $car = $model->car;
         <?= htmlspecialchars($client ? $client->cedula_fisica : 'N/A') ?>
     </div>
     
-    <?php if ($model->correapartir_enabled && $model->fecha_correapartir): ?>
-    <div class="info-row">
-        <span class="info-label">Correapartir (Cortesía) desde:</span> 
-        <?php
-        $fechaCorreapartir = new DateTime($model->fecha_correapartir);
-        echo $fechaCorreapartir->format('d/m/Y') . ' ' . $fechaCorreapartir->format('h:i A');
-        ?>
-    </div>
-    <?php endif; ?>
-    
     <div class="section-title">ENTREGA DEL VEHÍCULO</div>
     <div class="info-row">
         <span class="info-label">Fecha de alquiler:</span> 
@@ -127,7 +117,14 @@ $car = $model->car;
     </div>
     <div class="info-row">
         <span class="info-label">Fecha recoge vehículo:</span> 
-        <?= date('d/m/Y H:i', strtotime($model->fecha_inicio . ' ' . $model->hora_inicio)) ?>
+        <?php if ($model->correapartir_enabled && $model->fecha_correapartir): ?>
+            <?php
+            $fechaCorreapartir = new DateTime($model->fecha_correapartir);
+            echo $fechaCorreapartir->format('d/m/Y') . ' ' . $fechaCorreapartir->format('h:i A');
+            ?>
+        <?php else: ?>
+            <?= date('d/m/Y H:i', strtotime($model->fecha_inicio . ' ' . $model->hora_inicio)) ?>
+        <?php endif; ?>
     </div>
     <div class="info-row">
         <span class="info-label">Lugar:</span> 
