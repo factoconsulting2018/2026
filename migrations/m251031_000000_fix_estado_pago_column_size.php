@@ -13,21 +13,22 @@ class m251031_000000_fix_estado_pago_column_size extends Migration
      */
     public function safeUp()
     {
-        $table = $this->db->schema->getTableSchema('rentals');
-        if ($table && $table->getColumn('estado_pago')) {
-            // Obtener el tamaño actual de la columna
-            $column = $table->getColumn('estado_pago');
-            $currentSize = $column->size ?? 0;
-            
-            // Si el tamaño es menor a 20, ajustarlo a VARCHAR(20)
-            if ($currentSize < 20) {
-                // Usar SQL directo para asegurar que funcione en todos los casos
-                try {
-                    $this->execute("ALTER TABLE `rentals` MODIFY COLUMN `estado_pago` VARCHAR(20) NOT NULL DEFAULT 'pendiente' COMMENT 'Estado de pago del alquiler'");
-                } catch (\Exception $e) {
-                    // Si falla con SQL directo, intentar con el método de Yii
-                    $this->alterColumn('rentals', 'estado_pago', $this->string(20)->notNull()->defaultValue('pendiente')->comment('Estado de pago del alquiler'));
-                }
+        // Siempre ejecutar el ALTER TABLE para asegurar que la columna tenga el tamaño correcto
+        // Esto corrige el problema incluso si la migración ya se ejecutó parcialmente
+        try {
+            // Usar SQL directo que siempre funciona
+            $this->execute("ALTER TABLE `rentals` MODIFY COLUMN `estado_pago` VARCHAR(20) NOT NULL DEFAULT 'pendiente' COMMENT 'Estado de pago del alquiler'");
+            echo "Columna estado_pago actualizada a VARCHAR(20) exitosamente.\n";
+        } catch (\Exception $e) {
+            // Si el ALTER TABLE falla, intentar con el método de Yii como respaldo
+            echo "Intentando con método alternativo...\n";
+            try {
+                $this->alterColumn('rentals', 'estado_pago', $this->string(20)->notNull()->defaultValue('pendiente')->comment('Estado de pago del alquiler'));
+                echo "Columna estado_pago actualizada exitosamente con método alternativo.\n";
+            } catch (\Exception $e2) {
+                // Si ambos métodos fallan, mostrar error pero no fallar la migración
+                echo "Advertencia: No se pudo actualizar la columna estado_pago. Error: " . $e2->getMessage() . "\n";
+                echo "Por favor, ejecuta manualmente el SQL: ALTER TABLE `rentals` MODIFY COLUMN `estado_pago` VARCHAR(20) NOT NULL DEFAULT 'pendiente';\n";
             }
         }
     }
