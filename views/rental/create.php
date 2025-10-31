@@ -237,6 +237,26 @@ $this->params['breadcrumbs'][] = $this->title;
                         'oninput' => "this.setCustomValidity('')"
                     ]) ?>
 
+                    <!-- Checkbox 1/2 día -->
+                    <div class="form-check mt-3 mb-3" style="background-color: #e3f2fd; border: 2px solid #2196f3; border-radius: 8px; padding: 12px;">
+                        <?= Html::activeCheckbox($model, 'medio_dia_enabled', [
+                            'class' => 'form-check-input',
+                            'id' => 'rental-medio_dia_enabled',
+                            'label' => '1/2 día (opcional)',
+                            'labelOptions' => ['class' => 'form-check-label', 'style' => 'font-weight: 600; color: #1565c0;']
+                        ]) ?>
+                    </div>
+
+                    <!-- Campo de valor medio día (se muestra solo cuando está activado) -->
+                    <div class="form-group mb-3" id="medio-dia-valor-field" style="display: none;">
+                        <?= $form->field($model, 'medio_dia_valor')->input('number', [
+                            'step' => '0.01',
+                            'min' => 0,
+                            'id' => 'rental-medio_dia_valor',
+                            'placeholder' => '0.00'
+                        ]) ?>
+                    </div>
+
                     <div class="form-group mb-3">
                         <label class="form-label fw-bold">Precio Total</label>
                         <input type="text" id="total-preview" class="form-control" readonly 
@@ -547,6 +567,14 @@ document.addEventListener('DOMContentLoaded', function() {
             total = dias * precio;
         }
         
+        // Agregar valor del medio día si está habilitado
+        const medioDiaEnabled = document.getElementById('rental-medio_dia_enabled');
+        const medioDiaValor = document.getElementById('rental-medio_dia_valor');
+        if (medioDiaEnabled && medioDiaEnabled.checked && medioDiaValor) {
+            const valorMedioDia = parseFloat(medioDiaValor.value) || 0;
+            total += valorMedioDia;
+        }
+        
         if (total > 0) {
             totalPreview.value = '₡' + total.toLocaleString('es-CR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
         } else {
@@ -563,6 +591,28 @@ document.addEventListener('DOMContentLoaded', function() {
         if (fechaFinal) {
             fechaFinal.addEventListener('change', calcularTotal);
         }
+        
+        // Agregar listeners para medio día
+        const medioDiaEnabled = document.getElementById('rental-medio_dia_enabled');
+        const medioDiaValor = document.getElementById('rental-medio_dia_valor');
+        const medioDiaValorField = document.getElementById('medio-dia-valor-field');
+        if (medioDiaEnabled) {
+            // Inicializar estado al cargar
+            if (medioDiaValorField) {
+                medioDiaValorField.style.display = medioDiaEnabled.checked ? 'block' : 'none';
+            }
+            
+            medioDiaEnabled.addEventListener('change', function() {
+                if (medioDiaValorField) {
+                    medioDiaValorField.style.display = this.checked ? 'block' : 'none';
+                }
+                calcularTotal();
+            });
+        }
+        if (medioDiaValor) {
+            medioDiaValor.addEventListener('input', calcularTotal);
+        }
+        
         calcularTotal();
     }
     

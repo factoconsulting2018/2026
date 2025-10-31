@@ -174,10 +174,22 @@ if (!function_exists('formatDatetimeEs')) {
         <tr>
             <td colspan="5" style="text-align: center;">Cantidad de vehículos: 1 unidad</td>
         </tr>
-        <tr class="total-row">
+        <tr>
             <td>Precio:</td>
             <td>¢<?= number_format($model->precio_por_dia, 0) ?></td>
             <td>1 Unidad x <?= str_pad($model->cantidad_dias, 2, '0', STR_PAD_LEFT) ?> <?= $unidad ?></td>
+            <td style="text-align: right;">Subtotal:</td>
+            <td style="text-align: right;">¢<?= number_format($model->cantidad_dias * $model->precio_por_dia, 0) ?></td>
+        </tr>
+        <?php if (!empty($model->medio_dia_enabled) && $model->medio_dia_valor > 0): ?>
+        <tr>
+            <td colspan="3">1/2 día</td>
+            <td style="text-align: right;">Medio día:</td>
+            <td style="text-align: right;">¢<?= number_format($model->medio_dia_valor, 0) ?></td>
+        </tr>
+        <?php endif; ?>
+        <tr class="total-row">
+            <td colspan="3"></td>
             <td style="text-align: right;">Total:</td>
             <td style="text-align: right;">¢<?= number_format($model->total_precio ?? 0, 0) ?></td>
         </tr>

@@ -96,12 +96,32 @@ $this->params['breadcrumbs'][] = 'Actualizar';
                         'min' => 0
                     ]) ?>
 
+                    <!-- Checkbox 1/2 día -->
+                    <div class="form-check mt-3 mb-3" style="background-color: #e3f2fd; border: 2px solid #2196f3; border-radius: 8px; padding: 12px;">
+                        <?= Html::activeCheckbox($model, 'medio_dia_enabled', [
+                            'class' => 'form-check-input',
+                            'id' => 'rental-medio_dia_enabled',
+                            'label' => '1/2 día (opcional)',
+                            'labelOptions' => ['class' => 'form-check-label', 'style' => 'font-weight: 600; color: #1565c0;']
+                        ]) ?>
+                    </div>
+
+                    <!-- Campo de valor medio día (se muestra solo cuando está activado) -->
+                    <div class="form-group mb-3" id="medio-dia-valor-field" style="display: <?= $model->medio_dia_enabled ? 'block' : 'none' ?>;">
+                        <?= $form->field($model, 'medio_dia_valor')->input('number', [
+                            'step' => '0.01',
+                            'min' => 0,
+                            'id' => 'rental-medio_dia_valor',
+                            'placeholder' => '0.00'
+                        ]) ?>
+                    </div>
+
                     <div class="form-group mb-3">
                         <label class="form-label fw-bold">Precio Total</label>
                         <input type="text" id="total-preview" class="form-control" readonly 
                                placeholder="Se calculará automáticamente" 
                                style="background-color: #f8f9fa;">
-                        <small class="form-text text-muted">Se calcula automáticamente: Cantidad de días × Precio por día</small>
+                        <small class="form-text text-muted">Se calcula automáticamente: <span id="precio-calculo-texto">Cantidad de días × Precio por día</span></small>
                     </div>
                 </div>
             </div>
@@ -273,9 +293,32 @@ document.addEventListener('DOMContentLoaded', function() {
     const fechaFinalPreview = document.getElementById('fecha-final-preview');
     
     function calcularTotal() {
-        const dias = parseFloat(cantidadDias.value) || 0;
         const precio = parseFloat(precioPorDia.value) || 0;
-        const total = dias * precio;
+        let total = 0;
+        
+        // Verificar si es alquiler por horas (mismo día)
+        const fechaIni = fechaInicio.value;
+        const fechaFinalInput = document.getElementById('rental-fecha_final');
+        const fechaFin = fechaFinalInput ? fechaFinalInput.value : '';
+        const esPorHoras = fechaIni && fechaFin && fechaIni === fechaFin;
+        
+        if (esPorHoras) {
+            // Si es por horas, el precio total es igual al precio por día (fijo)
+            total = precio;
+        } else {
+            // Si es por días, calcular normalmente: cantidad_dias × precio_por_dia
+            const dias = parseFloat(cantidadDias.value) || 0;
+            total = dias * precio;
+        }
+        
+        // Agregar valor del medio día si está habilitado
+        const medioDiaEnabled = document.getElementById('rental-medio_dia_enabled');
+        const medioDiaValor = document.getElementById('rental-medio_dia_valor');
+        if (medioDiaEnabled && medioDiaEnabled.checked && medioDiaValor) {
+            const valorMedioDia = parseFloat(medioDiaValor.value) || 0;
+            total += valorMedioDia;
+        }
+        
         if (total > 0) {
             totalPreview.value = '₡' + total.toLocaleString('es-CR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
         } else {
@@ -317,11 +360,58 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
+    /**
+     * Actualiza el texto de ayuda del cálculo de precio
+     */
+    function actualizarTextoAyudaPrecio() {
+        const fechaIni = fechaInicio.value;
+        const fechaFinalInput = document.getElementById('rental-fecha_final');
+        const fechaFin = fechaFinalInput ? fechaFinalInput.value : '';
+        const esPorHoras = fechaIni && fechaFin && fechaIni === fechaFin;
+        const precioCalculoTexto = document.getElementById('precio-calculo-texto');
+        
+        if (precioCalculoTexto) {
+            if (esPorHoras) {
+                precioCalculoTexto.textContent = 'Precio fijo por horas (independiente de la cantidad de horas)';
+            } else {
+                precioCalculoTexto.textContent = 'Cantidad de días × Precio por día';
+            }
+        }
+        
+        // Recalcular precio cuando cambie el tipo de alquiler
+        calcularTotal();
+    }
+    
     if (cantidadDias && precioPorDia && totalPreview) {
         cantidadDias.addEventListener('input', calcularTotal);
         precioPorDia.addEventListener('input', calcularTotal);
+        if (fechaInicio) {
+            fechaInicio.addEventListener('change', actualizarTextoAyudaPrecio);
+        }
+        const fechaFinalInput = document.getElementById('rental-fecha_final');
+        if (fechaFinalInput) {
+            fechaFinalInput.addEventListener('change', actualizarTextoAyudaPrecio);
+        }
+        
+        // Agregar listeners para medio día
+        const medioDiaEnabled = document.getElementById('rental-medio_dia_enabled');
+        const medioDiaValor = document.getElementById('rental-medio_dia_valor');
+        if (medioDiaEnabled) {
+            medioDiaEnabled.addEventListener('change', function() {
+                const campoValor = document.getElementById('medio-dia-valor-field');
+                if (campoValor) {
+                    campoValor.style.display = this.checked ? 'block' : 'none';
+                }
+                calcularTotal();
+            });
+        }
+        if (medioDiaValor) {
+            medioDiaValor.addEventListener('input', calcularTotal);
+        }
+        
         // Calcular inicialmente
         calcularTotal();
+        actualizarTextoAyudaPrecio();
     }
     
     if (cantidadDias && fechaInicio && fechaFinalPreview) {

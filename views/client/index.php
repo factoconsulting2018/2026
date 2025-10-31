@@ -20,6 +20,35 @@ $this->params['breadcrumbs'][] = $this->title;
         <?= Html::a('<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">add</span>Nuevo Cliente', ['create'], ['class' => 'btn btn-success']) ?>
     </div>
 
+    <?php
+    // Mostrar flash messages
+    $session = Yii::$app->session;
+    
+    if ($session->hasFlash('success')): ?>
+        <div class="alert alert-success alert-dismissible fade show" role="alert" style="position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px;">
+            <span class="material-symbols-outlined" style="font-size: 20px; vertical-align: middle; margin-right: 8px;">check_circle</span>
+            <?= Html::encode($session->getFlash('success')) ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        <script>
+            // Auto-remover después de 3 segundos
+            setTimeout(function() {
+                const alert = document.querySelector('.alert-success');
+                if (alert) {
+                    alert.remove();
+                }
+            }, 3000);
+        </script>
+    <?php endif; ?>
+    
+    <?php if ($session->hasFlash('error')): ?>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert" style="position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px;">
+            <span class="material-symbols-outlined" style="font-size: 20px; vertical-align: middle; margin-right: 8px;">error</span>
+            <?= Html::encode($session->getFlash('error')) ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    <?php endif; ?>
+
     <div class="card mb-4">
         <div class="card-body">
             <form method="get" class="row g-3">

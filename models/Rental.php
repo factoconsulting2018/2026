@@ -22,6 +22,8 @@ use yii\db\ActiveRecord;
  * @property string $lugar_retiro
  * @property int $cantidad_dias
  * @property float $precio_por_dia
+ * @property int $medio_dia_enabled
+ * @property float $medio_dia_valor
  * @property float $total_precio
  * @property string $condiciones_especiales
  * @property string $choferes_autorizados
@@ -72,9 +74,9 @@ class Rental extends ActiveRecord
     {
         return [
             [['client_id', 'car_id', 'fecha_inicio', 'cantidad_dias'], 'required'],
-            [['client_id', 'car_id', 'correapartir_enabled', 'cantidad_dias'], 'integer'],
+            [['client_id', 'car_id', 'correapartir_enabled', 'medio_dia_enabled', 'cantidad_dias'], 'integer'],
             [['fecha_inicio', 'fecha_final', 'hora_inicio', 'hora_final', 'fecha_correapartir', 'created_at', 'updated_at'], 'safe'],
-            [['precio_por_dia'], 'number'], // Removido total_precio porque es columna generada
+            [['precio_por_dia', 'medio_dia_valor'], 'number'], // Removido total_precio porque es columna generada
             [['rental_id', 'lugar_entrega', 'lugar_retiro', 'estado_pago', 'ejecutivo', 'ejecutivo_otro'], 'string', 'max' => 255],
             [['comprobante_pago'], 'string', 'max' => 500],
             [['condiciones_especiales', 'choferes_autorizados'], 'string'],
@@ -106,6 +108,8 @@ class Rental extends ActiveRecord
             'lugar_retiro' => 'Lugar de Retiro',
             'cantidad_dias' => 'Cantidad de Días',
             'precio_por_dia' => 'Precio por Día',
+            'medio_dia_enabled' => '1/2 Día',
+            'medio_dia_valor' => 'Valor Medio Día',
             'total_precio' => 'Precio Total',
             'condiciones_especiales' => 'Condiciones Especiales',
             'choferes_autorizados' => 'Choferes Autorizados',
@@ -284,7 +288,14 @@ class Rental extends ActiveRecord
      */
     public function calculateTotalPrice()
     {
-        return $this->cantidad_dias * $this->precio_por_dia;
+        $total = $this->cantidad_dias * $this->precio_por_dia;
+        
+        // Si está habilitado el medio día, agregar su valor
+        if (!empty($this->medio_dia_enabled) && $this->medio_dia_valor > 0) {
+            $total += $this->medio_dia_valor;
+        }
+        
+        return $total;
     }
 
     /**
