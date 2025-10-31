@@ -138,6 +138,10 @@ class ClientController extends Controller
             }
             
             if ($model->save()) {
+                // Limpiar cualquier mensaje flash previo
+                Yii::$app->session->removeFlash('error');
+                Yii::$app->session->removeFlash('cedula_duplicate');
+                
                 Yii::$app->session->setFlash('success', 'Creado con éxito!');
                 Yii::info('Cliente creado exitosamente con ID: ' . $model->id, 'client');
                 return $this->redirect(['index']);
