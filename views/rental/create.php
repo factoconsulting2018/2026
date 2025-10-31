@@ -355,10 +355,10 @@ $this->params['breadcrumbs'][] = $this->title;
                     </h5>
                 </div>
                 <div class="card-body">
-                    <?= $form->field($model, 'condiciones_especiales')->textarea([
-                        'rows' => 4,
-                        'placeholder' => 'Condiciones especiales del alquiler...'
-                    ]) ?>
+                    <div class="alert alert-info">
+                        La página 2 (Condiciones de la Renta) se toma del HTML global al crear la orden.
+                        Podrás editarla de forma personalizada después de crear la orden en la pantalla de edición.
+                    </div>
 
                     <?= $form->field($model, 'comprobante_pago')->textInput([
                         'placeholder' => 'Número de comprobante de pago'
