@@ -242,7 +242,7 @@ $this->params['breadcrumbs'][] = $this->title;
                         <input type="text" id="total-preview" class="form-control" readonly 
                                placeholder="Se calculará automáticamente" 
                                style="background-color: #f8f9fa;">
-                        <small class="form-text text-muted">Se calcula automáticamente: Cantidad de días × Precio por día</small>
+                        <small class="form-text text-muted">Se calcula automáticamente: <span id="precio-calculo-texto">Cantidad de días × Precio por día</span></small>
                     </div>
                 </div>
             </div>
@@ -515,6 +515,13 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // ==========================================
+    // DEFINIR VARIABLES DE FECHA (ANTES DE USARLAS)
+    // ==========================================
+    
+    const fechaInicio = document.getElementById('rental-fecha_inicio');
+    const fechaFinal = document.getElementById('rental-fecha_final');
+    
+    // ==========================================
     // CÁLCULO DE PRECIO TOTAL
     // ==========================================
     
@@ -523,9 +530,23 @@ document.addEventListener('DOMContentLoaded', function() {
     const totalPreview = document.getElementById('total-preview');
     
     function calcularTotal() {
-        const dias = parseFloat(cantidadDias.value) || 0;
         const precio = parseFloat(precioPorDia.value) || 0;
-        const total = dias * precio;
+        let total = 0;
+        
+        // Verificar si es alquiler por horas (mismo día)
+        const fechaIni = fechaInicio ? fechaInicio.value : '';
+        const fechaFin = fechaFinal ? fechaFinal.value : '';
+        const esPorHoras = fechaIni && fechaFin && fechaIni === fechaFin;
+        
+        if (esPorHoras) {
+            // Si es por horas, el precio total es igual al precio por día (fijo)
+            total = precio;
+        } else {
+            // Si es por días, calcular normalmente: cantidad_dias × precio_por_dia
+            const dias = parseFloat(cantidadDias.value) || 0;
+            total = dias * precio;
+        }
+        
         if (total > 0) {
             totalPreview.value = '₡' + total.toLocaleString('es-CR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
         } else {
@@ -536,15 +557,18 @@ document.addEventListener('DOMContentLoaded', function() {
     if (cantidadDias && precioPorDia && totalPreview) {
         cantidadDias.addEventListener('input', calcularTotal);
         precioPorDia.addEventListener('input', calcularTotal);
+        if (fechaInicio) {
+            fechaInicio.addEventListener('change', calcularTotal);
+        }
+        if (fechaFinal) {
+            fechaFinal.addEventListener('change', calcularTotal);
+        }
         calcularTotal();
     }
     
     // ==========================================
     // CÁLCULO BIDIRECCIONAL: FECHA FINAL ↔ CANTIDAD DE DÍAS
     // ==========================================
-    
-    const fechaInicio = document.getElementById('rental-fecha_inicio');
-    const fechaFinal = document.getElementById('rental-fecha_final');
     
     // Bandera para prevenir loops infinitos
     let calculando = false;
@@ -672,18 +696,34 @@ document.addEventListener('DOMContentLoaded', function() {
     
     /**
      * Actualiza el label de cantidad_dias para mostrar "horas" o "días" según corresponda
+     * También actualiza el texto de ayuda del cálculo de precio
      */
     function actualizarLabelCantidad() {
         const fechaIni = fechaInicio.value;
         const fechaFin = fechaFinal.value;
         const labelCantidad = document.querySelector('label[for="rental-cantidad_dias"]');
+        const precioCalculoTexto = document.getElementById('precio-calculo-texto');
+        const esPorHoras = fechaIni && fechaFin && fechaIni === fechaFin;
         
         if (labelCantidad) {
-            if (fechaIni && fechaFin && fechaIni === fechaFin) {
+            if (esPorHoras) {
                 labelCantidad.textContent = 'Cantidad de Horas *';
             } else {
                 labelCantidad.textContent = 'Cantidad de Días *';
             }
+        }
+        
+        if (precioCalculoTexto) {
+            if (esPorHoras) {
+                precioCalculoTexto.textContent = 'Precio fijo por horas (independiente de la cantidad de horas)';
+            } else {
+                precioCalculoTexto.textContent = 'Cantidad de días × Precio por día';
+            }
+        }
+        
+        // Recalcular precio cuando cambie el tipo de alquiler
+        if (precioPorDia && precioPorDia.value) {
+            calcularTotal();
         }
     }
     
