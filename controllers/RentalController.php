@@ -211,14 +211,10 @@ class RentalController extends Controller
         try {
             $model = $this->findModel($id);
             
-            // Usar el mismo método que funciona en actionUpdate y actionUpdatePaymentStatus
-            // Cargar el modelo, asignar el valor y guardar con save(false)
-            $model->estado_pago = 'cancelado';
-            
-            // Guardar sin validaciones (igual que actionUpdatePaymentStatus)
-            if (!$model->save(false)) {
-                $errors = $model->getFirstErrors();
-                throw new \Exception('No se pudo actualizar el estado del alquiler: ' . implode(', ', $errors));
+            // Usar updateAttributes para actualizar SOLO estado_pago sin tocar otros campos
+            // Esto evita que Yii2 intente actualizar campos sucios como fecha_inicio, fecha_final, etc.
+            if (!$model->updateAttributes(['estado_pago' => 'cancelado'])) {
+                throw new \Exception('No se pudo actualizar el estado del alquiler');
             }
             
             // Liberar el carro
