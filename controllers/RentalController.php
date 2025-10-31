@@ -211,15 +211,14 @@ class RentalController extends Controller
         try {
             $model = $this->findModel($id);
             
-            // Usar updateAll para actualizar solo estado_pago y evitar problemas con otros campos
-            // Esto evita el error de "Data truncated" y problemas con campos calculados
-            $affected = Rental::updateAll(
-                ['estado_pago' => 'cancelado'],
-                ['id' => $id]
-            );
+            // Usar el mismo método que funciona en actionUpdate y actionUpdatePaymentStatus
+            // Cargar el modelo, asignar el valor y guardar con save(false)
+            $model->estado_pago = 'cancelado';
             
-            if ($affected === false) {
-                throw new \Exception('No se pudo actualizar el estado del alquiler');
+            // Guardar sin validaciones (igual que actionUpdatePaymentStatus)
+            if (!$model->save(false)) {
+                $errors = $model->getFirstErrors();
+                throw new \Exception('No se pudo actualizar el estado del alquiler: ' . implode(', ', $errors));
             }
             
             // Liberar el carro
