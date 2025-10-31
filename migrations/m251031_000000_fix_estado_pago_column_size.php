@@ -21,7 +21,13 @@ class m251031_000000_fix_estado_pago_column_size extends Migration
             
             // Si el tamaño es menor a 20, ajustarlo a VARCHAR(20)
             if ($currentSize < 20) {
-                $this->alterColumn('rentals', 'estado_pago', $this->string(20)->notNull()->defaultValue('pendiente')->comment('Estado de pago del alquiler'));
+                // Usar SQL directo para asegurar que funcione en todos los casos
+                try {
+                    $this->execute("ALTER TABLE `rentals` MODIFY COLUMN `estado_pago` VARCHAR(20) NOT NULL DEFAULT 'pendiente' COMMENT 'Estado de pago del alquiler'");
+                } catch (\Exception $e) {
+                    // Si falla con SQL directo, intentar con el método de Yii
+                    $this->alterColumn('rentals', 'estado_pago', $this->string(20)->notNull()->defaultValue('pendiente')->comment('Estado de pago del alquiler'));
+                }
             }
         }
     }
