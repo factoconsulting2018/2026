@@ -58,7 +58,13 @@ class Client extends ActiveRecord
             [['actividad_economica_codigo'], 'string', 'max' => 50],
             [['actividad_economica_descripcion'], 'string', 'max' => 500],
             ['email', 'email', 'skipOnEmpty' => true],
-            ['cedula_fisica', 'unique', 'message' => 'La cédula física "{value}" ya está registrada en el sistema'],
+            ['cedula_fisica', 'unique', 'targetClass' => self::class, 'filter' => function ($query) {
+                // Excluir el registro actual cuando se está actualizando
+                if (!$this->isNewRecord && $this->id) {
+                    $query->andWhere(['!=', 'id', $this->id]);
+                }
+                return $query;
+            }, 'message' => 'La cédula física "{value}" ya está registrada en el sistema'],
         ];
     }
 
