@@ -211,25 +211,24 @@ class RentalController extends Controller
         try {
             $model = $this->findModel($id);
             
-            // Usar updateAttributes para actualizar SOLO estado_pago sin tocar otros campos
-            // Esto evita que Yii2 intente actualizar campos sucios como fecha_inicio, fecha_final, etc.
-            if (!$model->updateAttributes(['estado_pago' => 'cancelado'])) {
-                throw new \Exception('No se pudo actualizar el estado del alquiler');
-            }
-            
-            // Liberar el carro
+            // Liberar el carro antes de eliminar
             if ($model->car) {
                 $model->car->status = 'disponible';
                 if (!$model->car->save(false)) {
                     throw new \Exception('Error al liberar el vehículo');
                 }
             }
+            
+            // Eliminar el registro de la base de datos
+            if (!$model->delete()) {
+                throw new \Exception('No se pudo eliminar el alquiler');
+            }
 
             $transaction->commit();
-            Yii::$app->session->setFlash('success', '🗑️ Alquiler cancelado exitosamente');
+            Yii::$app->session->setFlash('success', '🗑️ Alquiler eliminado exitosamente');
         } catch (\Exception $e) {
             $transaction->rollBack();
-            Yii::$app->session->setFlash('error', '❌ Error al cancelar el alquiler: ' . $e->getMessage());
+            Yii::$app->session->setFlash('error', '❌ Error al eliminar el alquiler: ' . $e->getMessage());
             Yii::error('Error en actionDelete: ' . $e->getMessage(), 'rental');
         }
         
