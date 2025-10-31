@@ -207,17 +207,35 @@ class RentalController extends Controller
 
     public function actionDelete($id)
     {
-        $model = $this->findModel($id);
-        $model->estado_pago = 'cancelado';
-        $model->save(false);
-        
-        // Liberar el carro
-        if ($model->car) {
-            $model->car->status = 'disponible';
-            $model->car->save(false);
-        }
+        $transaction = Yii::$app->db->beginTransaction();
+        try {
+            $model = $this->findModel($id);
+            
+            // Asegurar que estado_pago tenga el valor correcto
+            $model->estado_pago = 'cancelado';
+            
+            // Validar antes de guardar
+            if (!$model->save(false)) {
+                $errors = $model->getFirstErrors();
+                throw new \Exception('Error al actualizar el estado: ' . implode(', ', $errors));
+            }
+            
+            // Liberar el carro
+            if ($model->car) {
+                $model->car->status = 'disponible';
+                if (!$model->car->save(false)) {
+                    throw new \Exception('Error al liberar el vehículo');
+                }
+            }
 
-        Yii::$app->session->setFlash('success', '🗑️ Alquiler cancelado exitosamente');
+            $transaction->commit();
+            Yii::$app->session->setFlash('success', '🗑️ Alquiler cancelado exitosamente');
+        } catch (\Exception $e) {
+            $transaction->rollBack();
+            Yii::$app->session->setFlash('error', '❌ Error al cancelar el alquiler: ' . $e->getMessage());
+            Yii::error('Error en actionDelete: ' . $e->getMessage(), 'rental');
+        }
+        
         return $this->redirect(['index']);
     }
 
