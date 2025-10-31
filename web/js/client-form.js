@@ -352,85 +352,88 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Validación del formulario
+    // Validación del formulario y envío con AJAX
     if (clientForm) {
         clientForm.addEventListener('submit', function(e) {
+            e.preventDefault(); // Prevenir submit por defecto
+            
             if (!validarFormulario()) {
-                e.preventDefault();
                 return false;
             }
             
             // Mostrar loading en el botón de envío
             const submitBtn = this.querySelector('button[type="submit"]');
+            const form = this;
+            
             if (submitBtn) {
                 submitBtn.disabled = true;
                 submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Guardando...';
             }
             
-            // Interceptar la respuesta para manejar errores de cédula duplicada
-            const originalSubmit = this.submit;
-            this.submit = function() {
-                // Enviar formulario con AJAX para manejar la respuesta
-                e.preventDefault();
+            // Enviar formulario con AJAX para manejar la respuesta
+            const formData = new FormData(form);
+            
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                redirect: 'follow', // Seguir redirecciones automáticamente
+                headers: {
+                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                }
+            })
+            .then(response => {
+                // Si hay redirección o la URL final es el index, redirigir manualmente
+                if (response.redirected || response.url.includes('/client/index')) {
+                    window.location.href = '/client/index';
+                    return null;
+                }
                 
-                const formData = new FormData(this);
-                
-                fetch(this.action, {
-                    method: 'POST',
-                    body: formData,
-                    redirect: 'follow', // Seguir redirecciones automáticamente
-                    headers: {
-                        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    }
-                })
-                .then(response => {
-                    // Si hay redirección o la URL final es el index, redirigir manualmente
-                    // El servidor ya procesó todo correctamente (éxito o error)
-                    if (response.redirected || response.url.includes('/client/index')) {
-                        window.location.href = '/client/index';
-                        return;
-                    }
-                    
-                    // Si es una redirección HTTP (status 302/301), el navegador la manejará automáticamente
-                    if (response.status === 302 || response.status === 301) {
-                        // Seguir la redirección
-                        const location = response.headers.get('Location');
-                        if (location) {
-                            window.location.href = location;
-                            return;
-                        }
-                        // Si no hay Location header, asumir que va al index
-                        window.location.href = '/client/index';
-                        return;
-                    }
-                    
-                    return response.text();
-                })
-                .then(html => {
-                    if (!html) return; // Ya se manejó la redirección
-                    
-                    // Restaurar botón
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">save</span>Guardar Cliente';
-                    
-                    // Si la respuesta es la página de listado, significa que hubo redirección exitosa
-                    if (html.includes('Gestión de Clientes') || html.includes('client-index')) {
-                        // Redirigir al listado (el servidor ya configuró los mensajes flash correctos)
-                        window.location.href = '/client/index';
+                // Si es una redirección HTTP (status 302/301), seguir la redirección
+                if (response.status === 302 || response.status === 301) {
+                    const location = response.headers.get('Location');
+                    if (location) {
+                        window.location.href = location;
                     } else {
-                        // Es la página de creación con errores de validación - recargar para mostrarlos
-                        document.open();
-                        document.write(html);
-                        document.close();
+                        window.location.href = '/client/index';
                     }
-                })
-                .catch(error => {
-                    // Restaurar botón en caso de error
+                    return null;
+                }
+                
+                return response.text();
+            })
+            .then(html => {
+                if (!html) return; // Ya se manejó la redirección
+                
+                // Restaurar botón
+                if (submitBtn) {
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">save</span>Guardar Cliente';
-                    showNotification('❌ Error al guardar: ' + error.message, 'danger');
-                });
-            };
+                }
+                
+                // Verificar si la respuesta contiene un error de cédula duplicada
+                if (html.includes('ya está registrada') || html.includes('has already been taken') || html.includes('cedulaDuplicateModal')) {
+                    // En caso de cédula duplicada, redirigir directamente al listado (el servidor ya configuró el mensaje)
+                    window.location.href = '/client/index';
+                } else if (html.includes('Gestión de Clientes') || html.includes('client-index')) {
+                    // Si la respuesta es la página de listado, significa que se creó exitosamente
+                    window.location.href = '/client/index';
+                } else {
+                    // Es la página de creación con errores de validación - recargar para mostrarlos
+                    document.open();
+                    document.write(html);
+                    document.close();
+                }
+            })
+            .catch(error => {
+                // Restaurar botón en caso de error
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">save</span>Guardar Cliente';
+                }
+                showNotification('❌ Error al guardar: ' + error.message, 'danger');
+            });
+            
+            return false; // Prevenir submit adicional
         });
     }
     
