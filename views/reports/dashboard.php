@@ -34,6 +34,7 @@ $this->registerJsFile('https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.um
     display: flex;
     align-items: center;
     gap: 12px;
+    color: white;
 }
 
 .dashboard-header .last-update {
