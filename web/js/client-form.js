@@ -385,10 +385,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 })
                 .then(response => {
                     // Si hay redirección o la URL final es el index, redirigir manualmente
+                    // El servidor ya procesó todo correctamente (éxito o error)
                     if (response.redirected || response.url.includes('/client/index')) {
                         window.location.href = '/client/index';
                         return;
                     }
+                    
+                    // Si es una redirección HTTP (status 302/301), el navegador la manejará automáticamente
+                    if (response.status === 302 || response.status === 301) {
+                        // Seguir la redirección
+                        const location = response.headers.get('Location');
+                        if (location) {
+                            window.location.href = location;
+                            return;
+                        }
+                        // Si no hay Location header, asumir que va al index
+                        window.location.href = '/client/index';
+                        return;
+                    }
+                    
                     return response.text();
                 })
                 .then(html => {
@@ -398,15 +413,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">save</span>Guardar Cliente';
                     
-                    // Verificar si la respuesta contiene un error de cédula duplicada
-                    if (html.includes('ya está registrada') || html.includes('has already been taken') || html.includes('cedulaDuplicateModal')) {
-                        // En caso de cédula duplicada, redirigir directamente al listado (el servidor ya configuró el mensaje)
-                        window.location.href = '/client/index';
-                    } else if (html.includes('Gestión de Clientes') || html.includes('client-index')) {
-                        // Si la respuesta es la página de listado, significa que se creó exitosamente
+                    // Si la respuesta es la página de listado, significa que hubo redirección exitosa
+                    if (html.includes('Gestión de Clientes') || html.includes('client-index')) {
+                        // Redirigir al listado (el servidor ya configuró los mensajes flash correctos)
                         window.location.href = '/client/index';
                     } else {
-                        // Si no hay error y no es el listado, recargar la página con la respuesta
+                        // Es la página de creación con errores de validación - recargar para mostrarlos
                         document.open();
                         document.write(html);
                         document.close();
