@@ -354,12 +354,18 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Validación del formulario y envío con AJAX
     if (clientForm) {
+        console.log('Formulario de cliente encontrado, agregando event listener');
+        
         clientForm.addEventListener('submit', function(e) {
             e.preventDefault(); // Prevenir submit por defecto
+            console.log('Submit del formulario interceptado');
             
             if (!validarFormulario()) {
+                console.log('Validación del formulario falló');
                 return false;
             }
+            
+            console.log('Validación exitosa, enviando formulario');
             
             // Mostrar loading en el botón de envío
             const submitBtn = this.querySelector('button[type="submit"]');
@@ -371,34 +377,40 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             // Enviar formulario con AJAX para manejar la respuesta
+            // El FormData incluirá automáticamente todos los campos del formulario, incluido el CSRF token de Yii2
             const formData = new FormData(form);
             
-            fetch(form.action, {
+            console.log('Enviando formulario a:', form.action || '/client/create');
+            
+            fetch(form.action || '/client/create', {
                 method: 'POST',
                 body: formData,
                 redirect: 'follow', // Seguir redirecciones automáticamente
-                headers: {
-                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-                }
+                credentials: 'same-origin' // Incluir cookies/sesión
             })
             .then(response => {
-                // Si hay redirección o la URL final es el index, redirigir manualmente
-                if (response.redirected || response.url.includes('/client/index')) {
-                    window.location.href = '/client/index';
-                    return null;
-                }
+                console.log('Respuesta recibida:', response.status, response.url);
                 
-                // Si es una redirección HTTP (status 302/301), seguir la redirección
-                if (response.status === 302 || response.status === 301) {
-                    const location = response.headers.get('Location');
-                    if (location) {
-                        window.location.href = location;
-                    } else {
+                // Si hay redirección (detectada por la URL final o el status)
+                if (response.redirected || response.url.includes('/client/index') || response.url.includes('/client/view')) {
+                    // Si redirige al index, ir allí
+                    if (response.url.includes('/client/index')) {
                         window.location.href = '/client/index';
+                        return null;
                     }
-                    return null;
+                    // Si redirige a view, también ir al index (porque queremos el listado)
+                    if (response.url.includes('/client/view')) {
+                        window.location.href = '/client/index';
+                        return null;
+                    }
                 }
                 
+                // Si el status es OK (200), procesar el HTML
+                if (response.ok) {
+                    return response.text();
+                }
+                
+                // Para otros status, también intentar leer el texto
                 return response.text();
             })
             .then(html => {
@@ -425,12 +437,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             })
             .catch(error => {
+                console.error('Error al enviar formulario:', error);
+                
                 // Restaurar botón en caso de error
                 if (submitBtn) {
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">save</span>Guardar Cliente';
                 }
-                showNotification('❌ Error al guardar: ' + error.message, 'danger');
+                
+                // Mostrar error al usuario
+                showNotification('❌ Error al guardar: ' + (error.message || 'Error desconocido. Por favor, intenta nuevamente.'), 'danger');
             });
             
             return false; // Prevenir submit adicional
