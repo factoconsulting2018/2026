@@ -744,13 +744,11 @@ class RentalController extends Controller
             // Generar contenido HTML
             $html = $this->generateRentalOrderHtml($rental, $companyInfo);
             
-            // Agregar condiciones como página 2 (usar condiciones_especiales como HTML por orden)
+            // Agregar condiciones como página 2 (SIEMPRE se agrega, prioridad: personalizado > global > fallback por defecto)
             $customConditions = $rental->condiciones_especiales ?? '';
             $globalConditions = \app\models\CompanyConfig::getConfig('rental_conditions_html', '');
-            if (!empty($customConditions) || !empty($globalConditions) || $companyInfo['conditions']) {
-                $conditionsHtml = $this->generateConditionsHtml($companyInfo, $customConditions ?: $globalConditions);
-                $html .= '<div style="page-break-before: always;"></div>' . $conditionsHtml;
-            }
+            $conditionsHtml = $this->generateConditionsHtml($companyInfo, $customConditions ?: $globalConditions);
+            $html .= '<div style="page-break-before: always;"></div>' . $conditionsHtml;
             
             // Escribir HTML al PDF
             $pdf->WriteHTML($html);

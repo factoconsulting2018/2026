@@ -417,12 +417,12 @@ class PdfController extends Controller
         $html = $this->generateRentalOrderHtml($rental, $companyInfo);
         $pdf->writeHTML($html, true, false, true, false, '');
         
-        // Agregar segunda página con condiciones si existe
-        if ($companyInfo['conditions']) {
-            $pdf->AddPage();
-            $conditionsHtml = $this->generateConditionsHtml($companyInfo);
-            $pdf->writeHTML($conditionsHtml, true, false, true, false, '');
-        }
+        // Agregar segunda página con condiciones (SIEMPRE se agrega, prioridad: personalizado > global > fallback por defecto)
+        $pdf->AddPage();
+        $customConditions = $rental->condiciones_especiales ?? '';
+        $globalConditions = CompanyConfig::getConfig('rental_conditions_html', '');
+        $conditionsHtml = $this->generateConditionsHtml($companyInfo, $customConditions ?: $globalConditions);
+        $pdf->writeHTML($conditionsHtml, true, false, true, false, '');
         
         // Generar nombre del archivo
         $filename = 'Orden_Alquiler_' . $rental->rental_id . '_' . date('Y-m-d') . '.pdf';
@@ -804,19 +804,45 @@ class PdfController extends Controller
             return '<style>body { font-family: Arial, sans-serif; font-size: 10px; }</style><div>' . $globalHtml . '</div>';
         }
 
+        // Fallback: contenido por defecto "Reservación firme contra depósito"
         $html = '
         <style>
-            body { font-family: Arial, sans-serif; font-size: 10px; }
-            .conditions-title { font-size: 16px; font-weight: bold; color: #2c3e50; text-align: center; margin-bottom: 20px; }
-            .conditions-content { line-height: 1.6; }
+            body { font-family: Arial, sans-serif; font-size: 10px; line-height: 1.6; }
+            h2 { font-size: 14px; font-weight: bold; text-align: center; margin-bottom: 10px; }
+            h3 { font-size: 12px; font-weight: bold; margin-top: 12px; margin-bottom: 6px; }
+            h4 { font-size: 11px; font-weight: bold; margin-top: 10px; margin-bottom: 5px; }
+            ol { margin-left: 15px; padding-left: 10px; }
+            li { margin-bottom: 4px; }
         </style>
+        <div style="padding: 15px;">
+        <h2>Reservación firme contra depósito</h2>
+        <h3>Indicaciones Importantes:</h3>
         
-        <div class="conditions-title">CONDICIONES DE ALQUILER</div>
+        <h4>SOBRE EL RETIRO</h4>
+        <ol>
+            <li>Revise el estado del vehículo.</li>
+            <li>Revise el estado de la gasolina.</li>
+            <li>Recuerde firmar la hoja de la Orden de alquiler</li>
+            <li>Solicite las llaves e indicaciones sobre alarma y otros.</li>
+        </ol>
         
-        <div class="conditions-content">
-            <p>Las condiciones de alquiler se adjuntan como segunda página de esta orden.</p>
-            <p>Para consultar las condiciones completas, visite nuestro sitio web o contacte con nosotros.</p>
-        </div>
+        <h4>SOBRE LA ENTREGA</h4>
+        <ol>
+            <li>Recuerde entregar el vehículo con el tanque de gasolina lleno. En caso de no poder realizarlo indíquelo a la oficina se cobrará la gasolina + ¢15,000 iva.</li>
+            <li>Recuerde revisar el estado del vehículo antes de entregarlo.</li>
+            <li>En caso de emergencia o accidente debe llamar al 88781108 con Ing. Ronald.</li>
+            <li>En caso de rayones o siniestros debe cancelar el monto de $800 dólares en casos mayores como accidente u otros deberá cancelar $1,000.</li>
+            <li>Recuerde que el chofer siempre deberá tener licencia al día ya que es requisito para el alquiler y en temas de seguro del mismo.</li>
+            <li>El corre a partir aplica únicamente retirando el auto en nuestras instalaciones.</li>
+            <li>En caso de que se le realice un parte, este mismo debe ser cubierto por el responsable de la reservación.</li>
+            <li>Es indispensable que el conductor se encuentre presente en el lugar de los hechos en caso de un incidente vial. La cobertura del seguro no aplicará si el conductor no está presente cuando las autoridades de tránsito lleguen al sitio, ya que su ausencia anularía la validez de la póliza. Esta cláusula es fundamental para garantizar la correcta aplicación del seguro y la protección de ambas partes involucradas. De no cumplirse el cliente es responsable al 100% por invalidar la cláusula de cobertura del seguro del vehículo.</li>
+        </ol>
+        
+        <h4>SEGURIDAD:</h4>
+        <ol>
+            <li>Recuerde revisar el aire de las llantas y cinturones.</li>
+            <li>En ningún momento dejar las llaves dentro del auto, pues la mayoría de nuestros automóviles cuentan con cierre automático.</li>
+        </ol>
         </div>
         ';
         
