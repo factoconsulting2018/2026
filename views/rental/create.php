@@ -42,7 +42,7 @@ $this->params['breadcrumbs'][] = $this->title;
                             calendar_today
                         </span>
                         📅 Fechas del Alquiler
-                        <small class="float-end">Verificar disponibilidad del vehículo</small>
+                        <small class="float-end" style="color: white;">Verificar disponibilidad del vehículo</small>
                     </h5>
                 </div>
                 <div class="card-body">
@@ -209,10 +209,10 @@ $this->params['breadcrumbs'][] = $this->title;
             <div class="card">
                 <div class="card-header" style="background: linear-gradient(135deg, #22487a 0%, #0d001e 100%); color: white;">
                     <h5 class="card-title mb-0">
-                        <span class="material-symbols-outlined" style="font-size: 20px; vertical-align: middle; margin-right: 8px;">
+                        <span class="material-symbols-outlined" style="font-size: 20px; vertical-align: middle; margin-right: 8px; color: white;">
                             directions_car
                         </span>
-                        Información del Vehículo
+                        <span style="color: white;">Información del Vehículo</span>
                     </h5>
                 </div>
                 <div class="card-body">
@@ -252,10 +252,10 @@ $this->params['breadcrumbs'][] = $this->title;
             <div class="card">
                 <div class="card-header" style="background: linear-gradient(135deg, #22487a 0%, #0d001e 100%); color: white;">
                     <h5 class="card-title mb-0">
-                        <span class="material-symbols-outlined" style="font-size: 20px; vertical-align: middle; margin-right: 8px;">
+                        <span class="material-symbols-outlined" style="font-size: 20px; vertical-align: middle; margin-right: 8px; color: white;">
                             person
                         </span>
-                        Información del Cliente
+                        <span style="color: white;">Información del Cliente</span>
                     </h5>
                 </div>
                 <div class="card-body">
@@ -286,10 +286,10 @@ $this->params['breadcrumbs'][] = $this->title;
             <div class="card">
                 <div class="card-header" style="background: linear-gradient(135deg, #22487a 0%, #0d001e 100%); color: white;">
                     <h5 class="card-title mb-0">
-                        <span class="material-symbols-outlined" style="font-size: 20px; vertical-align: middle; margin-right: 8px;">
+                        <span class="material-symbols-outlined" style="font-size: 20px; vertical-align: middle; margin-right: 8px; color: white;">
                             location_on
                         </span>
-                        Ubicaciones
+                        <span style="color: white;">Ubicaciones</span>
                     </h5>
                 </div>
                 <div class="card-body">
@@ -348,10 +348,10 @@ $this->params['breadcrumbs'][] = $this->title;
             <div class="card">
                 <div class="card-header" style="background: linear-gradient(135deg, #22487a 0%, #0d001e 100%); color: white;">
                     <h5 class="card-title mb-0">
-                        <span class="material-symbols-outlined" style="font-size: 20px; vertical-align: middle; margin-right: 8px;">
+                        <span class="material-symbols-outlined" style="font-size: 20px; vertical-align: middle; margin-right: 8px; color: white;">
                             notes
                         </span>
-                        Información Adicional
+                        <span style="color: white;">Información Adicional</span>
                     </h5>
                 </div>
                 <div class="card-body">
