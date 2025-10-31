@@ -138,9 +138,9 @@ class ClientController extends Controller
             }
             
             if ($model->save()) {
-                Yii::$app->session->setFlash('success', '✅ Cliente creado exitosamente');
+                Yii::$app->session->setFlash('success', 'Creado con éxito!');
                 Yii::info('Cliente creado exitosamente con ID: ' . $model->id, 'client');
-                return $this->redirect(['view', 'id' => $model->id]);
+                return $this->redirect(['index']);
             } else {
                 Yii::error('Error al crear cliente: ' . json_encode($model->errors), 'client');
                 // Verificar si el error es de cédula duplicada
@@ -155,10 +155,9 @@ class ClientController extends Controller
                 }
                 
                 if ($hasCedulaError) {
-                    Yii::$app->session->setFlash('cedula_duplicate', [
-                        'cedula' => $model->cedula_fisica,
-                        'message' => 'La cédula ya existe en el sistema'
-                    ]);
+                    // En caso de cédula duplicada, redirigir al listado con mensaje
+                    Yii::$app->session->setFlash('error', 'La cédula ' . $model->cedula_fisica . ' ya está registrada en el sistema.');
+                    return $this->redirect(['index']);
                 } else {
                     Yii::$app->session->setFlash('error', '❌ Error al crear cliente: ' . json_encode($model->errors));
                 }

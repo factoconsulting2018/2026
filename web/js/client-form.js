@@ -378,22 +378,35 @@ document.addEventListener('DOMContentLoaded', function() {
                 fetch(this.action, {
                     method: 'POST',
                     body: formData,
+                    redirect: 'follow', // Seguir redirecciones automáticamente
                     headers: {
                         'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                     }
                 })
-                .then(response => response.text())
+                .then(response => {
+                    // Si hay redirección o la URL final es el index, redirigir manualmente
+                    if (response.redirected || response.url.includes('/client/index')) {
+                        window.location.href = '/client/index';
+                        return;
+                    }
+                    return response.text();
+                })
                 .then(html => {
+                    if (!html) return; // Ya se manejó la redirección
+                    
                     // Restaurar botón
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">save</span>Guardar Cliente';
                     
                     // Verificar si la respuesta contiene un error de cédula duplicada
-                    if (html.includes('ya está registrada') || html.includes('has already been taken')) {
-                        const cedula = document.getElementById('cedula-input').value.trim();
-                        showDuplicateCedulaModal(cedula, 'La cédula ya existe en el sistema');
+                    if (html.includes('ya está registrada') || html.includes('has already been taken') || html.includes('cedulaDuplicateModal')) {
+                        // En caso de cédula duplicada, redirigir directamente al listado (el servidor ya configuró el mensaje)
+                        window.location.href = '/client/index';
+                    } else if (html.includes('Gestión de Clientes') || html.includes('client-index')) {
+                        // Si la respuesta es la página de listado, significa que se creó exitosamente
+                        window.location.href = '/client/index';
                     } else {
-                        // Si no hay error, recargar la página con la respuesta
+                        // Si no hay error y no es el listado, recargar la página con la respuesta
                         document.open();
                         document.write(html);
                         document.close();
@@ -424,29 +437,11 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Verificar si hay un flash de cédula duplicada
-    checkForDuplicateCedula();
+    // Ya no se verifica modal de cédula duplicada - se maneja con redirección automática
 });
 
-// Función para verificar si hay un flash de cédula duplicada
-function checkForDuplicateCedula() {
-    // Esta función se ejecutará cuando la página se carga
-    // Si hay un flash message de cédula duplicada, mostrar el modal
-    const duplicateFlash = document.querySelector('[data-flash="cedula_duplicate"]');
-    if (duplicateFlash) {
-        const data = JSON.parse(duplicateFlash.textContent);
-        showDuplicateCedulaModal(data.cedula, data.message);
-    }
-}
-
-// Función para mostrar el modal de cédula duplicada
-function showDuplicateCedulaModal(cedula, message) {
-    currentDuplicateCedula = cedula;
-    document.getElementById('duplicate-cedula').textContent = cedula;
-    
-    const modal = new bootstrap.Modal(document.getElementById('cedulaDuplicateModal'));
-    modal.show();
-}
+// Funciones de modal de cédula duplicada eliminadas - ya no se usan
+// El sistema ahora redirige automáticamente al listado con mensaje de error
 
 // Función para mostrar el modal de confirmación de eliminación
 function mostrarModalEliminar() {
