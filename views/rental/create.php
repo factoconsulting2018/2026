@@ -74,11 +74,11 @@ $this->params['breadcrumbs'][] = $this->title;
                     <!-- Correapartir: opcional, después de Cantidad de días -->
                     <div class="row">
                         <div class="col-md-12">
-                            <div class="form-check mt-3">
+                            <div class="form-check mt-3" style="background-color: #d4edda; border: 2px solid #28a745; border-radius: 8px; padding: 12px;">
                                 <?= Html::activeCheckbox($model, 'correapartir_enabled', [
                                     'class' => 'form-check-input',
-                                    'label' => 'Habilitar Correapartir (opcional)',
-                                    'labelOptions' => ['class' => 'form-check-label']
+                                    'label' => 'Habilitar corre apartir (opcional)',
+                                    'labelOptions' => ['class' => 'form-check-label', 'style' => 'font-weight: 600; color: #155724;']
                                 ]) ?>
                             </div>
 
