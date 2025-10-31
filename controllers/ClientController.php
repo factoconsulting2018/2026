@@ -124,6 +124,12 @@ class ClientController extends Controller
         $model = new Client();
 
         if ($model->load(Yii::$app->request->post())) {
+            // Limpiar mensajes flash antes de procesar (por si acaso hay mensajes previos de intentos anteriores)
+            $flashTypes = ['success', 'error', 'warning', 'info', 'cedula_duplicate'];
+            foreach ($flashTypes as $type) {
+                Yii::$app->session->removeFlash($type);
+            }
+            
             // Procesar actividad económica
             $actividad = Yii::$app->request->post('actividad_economica');
             if (!empty($actividad) && strpos($actividad, ' - ') !== false) {
@@ -138,10 +144,7 @@ class ClientController extends Controller
             }
             
             if ($model->save()) {
-                // Limpiar cualquier mensaje flash previo
-                Yii::$app->session->removeFlash('error');
-                Yii::$app->session->removeFlash('cedula_duplicate');
-                
+                // Establecer mensaje de éxito (ya limpiamos arriba)
                 Yii::$app->session->setFlash('success', 'Creado con éxito!');
                 Yii::info('Cliente creado exitosamente con ID: ' . $model->id, 'client');
                 return $this->redirect(['index']);
