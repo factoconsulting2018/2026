@@ -310,23 +310,20 @@ if (empty($totalFinal) || $totalFinal == 0) {
     <!-- Información de pago -->
     <div class="payment-section">
         <div class="payment-title">💳 INFORMACIÓN DE PAGO</div>
-        <div class="payment-info">
-            <span class="payment-label">BCR®:</span>
-            IBAN: CR75015201001050506181
-        </div>
-        <div class="payment-info">
-            <span class="payment-label">BN®:</span>
-            IBAN: CR49015102020010977051
-        </div>
-        <div class="payment-info">
-            <span class="payment-label">SINPE MÓVIL:</span>
-            83670937
-        </div>
-        <div class="separator"></div>
-        <div class="payment-info" style="font-weight: bold; font-size: 10px; margin-top: 5px;">
-            <span class="payment-label">MONTO DE LA RESERVACIÓN:</span>
-            <span style="font-size: 11px;">¢<?= number_format($totalFinal, 0, '.', ',') ?></span>
-        </div>
+        <table style="width: 100%; border-collapse: collapse; margin-top: 5px;">
+            <tr>
+                <td style="padding: 4px 0; font-weight: bold; width: 120px; vertical-align: top;">BCR®:</td>
+                <td style="padding: 4px 0; vertical-align: top;">IBAN: CR75015201001050506181</td>
+            </tr>
+            <tr>
+                <td style="padding: 4px 0; font-weight: bold; vertical-align: top;">BN®:</td>
+                <td style="padding: 4px 0; vertical-align: top;">IBAN: CR49015102020010977051</td>
+            </tr>
+            <tr>
+                <td style="padding: 4px 0; font-weight: bold; vertical-align: top;">SINPE MÓVIL:</td>
+                <td style="padding: 4px 0; vertical-align: top;">83670937</td>
+            </tr>
+        </table>
     </div>
 </body>
 </html>
