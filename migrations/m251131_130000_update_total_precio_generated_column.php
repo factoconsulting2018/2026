@@ -38,11 +38,19 @@ class m251131_130000_update_total_precio_generated_column extends Migration
                     GENERATED ALWAYS AS (
                         (`cantidad_dias` * `precio_por_dia`) + 
                         IF(`medio_dia_enabled` = 1 AND `medio_dia_valor` > 0, `medio_dia_valor`, 0)
-                    ) STORED
+                    ) STORED NOT NULL
                 ");
             } else {
-                // Si no es generada, solo asegurarnos de que la columna existe con el tamaño correcto
-                $this->alterColumn('rentals', 'total_precio', $this->decimal(10, 2)->notNull()->defaultValue(0));
+                // Si no es generada, convertirla a columna generada
+                // Primero eliminar cualquier DEFAULT que pueda tener
+                $this->execute("
+                    ALTER TABLE `rentals` 
+                    MODIFY COLUMN `total_precio` DECIMAL(10,2) 
+                    GENERATED ALWAYS AS (
+                        (`cantidad_dias` * `precio_por_dia`) + 
+                        IF(`medio_dia_enabled` = 1 AND `medio_dia_valor` > 0, `medio_dia_valor`, 0)
+                    ) STORED NOT NULL
+                ");
             }
         }
     }
