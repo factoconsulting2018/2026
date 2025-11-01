@@ -390,46 +390,47 @@ document.addEventListener('DOMContentLoaded', function() {
             fetch(formAction, {
                 method: 'POST',
                 body: formData,
-                redirect: 'follow', // Seguir redirecciones automáticamente
+                redirect: 'manual', // Manejar redirecciones manualmente
                 credentials: 'same-origin' // Incluir cookies/sesión
             })
             .then(response => {
-                console.log('Respuesta recibida:', response.status, response.url, 'Redirected:', response.redirected);
+                console.log('Respuesta recibida:', response.status, response.type);
                 
-                // Si hay redirección (detectada por la URL final o el status)
-                if (response.redirected) {
-                    const finalUrl = response.url;
-                    console.log('Redirección detectada a:', finalUrl);
+                // Si es una redirección (status 301, 302, 303, 307, 308)
+                if (response.status >= 300 && response.status < 400) {
+                    const location = response.headers.get('Location') || response.url;
+                    console.log('Redirección detectada a:', location);
                     
-                    // Si redirige al index, ir allí
-                    if (finalUrl.includes('/client/index')) {
-                        window.location.href = '/client/index';
-                        return null;
-                    }
-                    // Si redirige a view (después de actualizar), ir a la vista del cliente
-                    if (finalUrl.includes('/client/view')) {
-                        window.location.href = finalUrl;
-                        return null;
-                    }
-                    // Para cualquier otra redirección, seguirla
-                    window.location.href = finalUrl;
-                    return null;
-                }
-                
-                // Si es una redirección HTTP explícita (status 302/301/303)
-                if (response.status === 302 || response.status === 301 || response.status === 303) {
-                    const location = response.headers.get('Location');
                     if (location) {
-                        console.log('Redirección HTTP a:', location);
-                        window.location.href = location;
+                        // Construir URL completa si es relativa
+                        const redirectUrl = location.startsWith('http') ? location : (window.location.origin + location);
+                        console.log('Redirigiendo a:', redirectUrl);
+                        
+                        // Si redirige al index, ir allí
+                        if (redirectUrl.includes('/client/index')) {
+                            window.location.href = '/client/index';
+                            return null;
+                        }
+                        // Si redirige a view (después de actualizar), ir a la vista del cliente
+                        if (redirectUrl.includes('/client/view')) {
+                            window.location.href = redirectUrl;
+                            return null;
+                        }
+                        // Para cualquier otra redirección, seguirla
+                        window.location.href = redirectUrl;
                         return null;
                     }
                 }
                 
                 // Si el status es OK (200), procesar el HTML
-                if (response.ok) {
+                if (response.ok || response.status === 200) {
                     return response.text();
                 }
+                
+                // Si hay un error HTTP, intentar leer el texto de la respuesta
+                return response.text().then(text => {
+                    throw new Error('Error HTTP ' + response.status + ': ' + text.substring(0, 200));
+                });
                 
                 // Para otros status, también intentar leer el texto
                 return response.text();
