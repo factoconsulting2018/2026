@@ -240,9 +240,9 @@ if (empty($totalFinal) || $totalFinal == 0) {
         <div class="company-name"><?= htmlspecialchars($companyInfo['name'] ?? 'FACTO RENT A CAR') ?></div>
         <div class="company-legal">FACTO AUTOS DE ALQUILER S.A</div>
         <div class="company-address">
-            3-101-880789<br>
-            San Ramón, Alajuela.<br>
-            Costa Rica
+            <span class="line">3-101-880789</span>
+            <span class="line">San Ramón, Alajuela</span>
+            <span class="line">Costa Rica</span>
         </div>
     </div>
     
