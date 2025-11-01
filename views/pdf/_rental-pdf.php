@@ -40,7 +40,7 @@ if (empty($totalFinal) || $totalFinal == 0) {
     <meta charset="UTF-8">
     <style>
         @page { 
-            margin: 12mm 15mm;
+            margin: 8mm 15mm;
             size: A4 portrait;
         }
         body { 
@@ -52,39 +52,42 @@ if (empty($totalFinal) || $totalFinal == 0) {
             color: #333;
         }
         .header-section {
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #000;
+            margin-bottom: 12px;
+            padding-bottom: 0;
+            margin-top: 0;
         }
         .company-name { 
             font-size: 20px; 
             font-weight: bold; 
             font-style: italic; 
-            margin-bottom: 8px; 
+            margin-bottom: 4px; 
+            margin-top: 0;
             color: #000;
             font-family: 'Times New Roman', Georgia, serif;
             text-align: left;
             letter-spacing: 0.5px;
-            line-height: 1.3;
+            line-height: 1.2;
         }
         .company-legal { 
             font-size: 12px; 
-            margin-bottom: 8px;
+            margin-bottom: 4px;
+            margin-top: 0;
             font-weight: normal;
             text-transform: uppercase;
             letter-spacing: 1px;
-            line-height: 1.4;
+            line-height: 1.3;
             text-align: left;
         }
         .company-address { 
             font-size: 10px; 
             margin-bottom: 0;
-            line-height: 1.6;
+            margin-top: 0;
+            line-height: 1.4;
             text-align: left;
         }
         .company-address .line {
             display: block;
-            margin-bottom: 2px;
+            margin-bottom: 1px;
         }
         .order-header {
             background-color: #f5f5f5;
@@ -241,7 +244,7 @@ if (empty($totalFinal) || $totalFinal == 0) {
         <div class="company-legal">FACTO AUTOS DE ALQUILER S.A</div>
         <div class="company-address">
             <span class="line">3-101-880789</span>
-            <span class="line">San Ramón, Alajuela</span>
+            <span class="line">San Ramón, Alajuela.</span>
             <span class="line">Costa Rica</span>
         </div>
     </div>

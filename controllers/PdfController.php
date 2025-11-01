@@ -518,18 +518,18 @@ class PdfController extends Controller
         
         $html = '
         <style>
-            @page { size: letter; margin: 0.75in; }
+            @page { size: letter; margin: 0.3in 0.75in; }
             body { font-family: "Times New Roman", Georgia, serif; font-size: 10px; line-height: 1.5; margin: 0; padding: 0; color: #333; }
             .document { max-width: 100%; }
-            .header { margin-bottom: 15px; }
+            .header { margin-bottom: 12px; margin-top: 0; }
             .header-table { width: 100%; border-collapse: collapse; }
             .header-table td { vertical-align: top; padding: 0; }
             .company-info { width: 70%; text-align: left; }
             .logo-container { width: 30%; text-align: right; }
-            .company-name { font-size: 20px; font-weight: bold; font-style: italic; margin-bottom: 8px; font-family: "Times New Roman", Georgia, serif; text-align: left; letter-spacing: 0.5px; line-height: 1.3; }
-            .company-legal { font-size: 12px; margin-bottom: 8px; font-weight: normal; text-transform: uppercase; letter-spacing: 1px; line-height: 1.4; text-align: left; }
-            .company-address { font-size: 10px; margin-bottom: 0; line-height: 1.6; text-align: left; }
-            .company-address .line { display: block; margin-bottom: 2px; }
+            .company-name { font-size: 20px; font-weight: bold; font-style: italic; margin-bottom: 4px; margin-top: 0; font-family: "Times New Roman", Georgia, serif; text-align: left; letter-spacing: 0.5px; line-height: 1.2; }
+            .company-legal { font-size: 12px; margin-bottom: 4px; margin-top: 0; font-weight: normal; text-transform: uppercase; letter-spacing: 1px; line-height: 1.3; text-align: left; }
+            .company-address { font-size: 10px; margin-bottom: 0; margin-top: 0; line-height: 1.4; text-align: left; }
+            .company-address .line { display: block; margin-bottom: 1px; }
             .logo { width: 90px; height: 90px; object-fit: contain; }
             .client-section {
                 background-color: #f9f9f9;
@@ -602,7 +602,7 @@ class PdfController extends Controller
                         <div class="company-legal">FACTO AUTOS DE ALQUILER S.A</div>
                         <div class="company-address">
                             <span class="line">3-101-880789</span>
-                            <span class="line">San Ramón, Alajuela</span>
+                            <span class="line">San Ramón, Alajuela.</span>
                             <span class="line">Costa Rica</span>
                         </div>
                     </td>
@@ -756,18 +756,18 @@ class PdfController extends Controller
         
         $html = '
         <style>
-            @page { size: letter; margin: 0.75in; }
+            @page { size: letter; margin: 0.3in 0.75in; }
             body { font-family: "Times New Roman", Georgia, serif; font-size: 10px; line-height: 1.5; margin: 0; padding: 0; color: #333; }
             .document { max-width: 100%; }
-            .header { margin-bottom: 15px; }
+            .header { margin-bottom: 12px; margin-top: 0; }
             .header-table { width: 100%; border-collapse: collapse; }
             .header-table td { vertical-align: top; padding: 0; }
             .company-info { width: 70%; text-align: left; }
             .logo-container { width: 30%; text-align: right; }
-            .company-name { font-size: 20px; font-weight: bold; font-style: italic; margin-bottom: 8px; font-family: "Times New Roman", Georgia, serif; text-align: left; letter-spacing: 0.5px; line-height: 1.3; }
-            .company-legal { font-size: 12px; margin-bottom: 8px; font-weight: normal; text-transform: uppercase; letter-spacing: 1px; line-height: 1.4; text-align: left; }
-            .company-address { font-size: 10px; margin-bottom: 0; line-height: 1.6; text-align: left; }
-            .company-address .line { display: block; margin-bottom: 2px; }
+            .company-name { font-size: 20px; font-weight: bold; font-style: italic; margin-bottom: 4px; margin-top: 0; font-family: "Times New Roman", Georgia, serif; text-align: left; letter-spacing: 0.5px; line-height: 1.2; }
+            .company-legal { font-size: 12px; margin-bottom: 4px; margin-top: 0; font-weight: normal; text-transform: uppercase; letter-spacing: 1px; line-height: 1.3; text-align: left; }
+            .company-address { font-size: 10px; margin-bottom: 0; margin-top: 0; line-height: 1.4; text-align: left; }
+            .company-address .line { display: block; margin-bottom: 1px; }
             .logo { width: 90px; height: 90px; object-fit: contain; }
             .order-info { margin-bottom: 15px; text-align: left; font-size: 10px; }
             .order-title { font-size: 10px; font-weight: normal; margin: 0; }
@@ -789,7 +789,7 @@ class PdfController extends Controller
                         <div class="company-legal">FACTO AUTOS DE ALQUILER S.A</div>
                         <div class="company-address">
                             <span class="line">3-101-880789</span>
-                            <span class="line">San Ramón, Alajuela</span>
+                            <span class="line">San Ramón, Alajuela.</span>
                             <span class="line">Costa Rica</span>
                         </div>
                     </td>
