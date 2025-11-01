@@ -576,13 +576,13 @@ class PdfController extends Controller
                 color: #333;
             }
         .vehicle-table { width: 100%; border-collapse: collapse; margin-top: 10px; border: 2px solid #000; background-color: #fff; }
-            .vehicle-table td { border: 1px solid #000; padding: 8px 6px; text-align: left; font-size: 10px; }
-            .vehicle-header { background-color: #22487a; color: #fff; font-weight: bold; text-align: center; font-size: 11px; padding: 10px 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+            .vehicle-table td { border: 1px solid #000; padding: 8px 6px; text-align: center; font-size: 10px; }
+            .vehicle-header { background-color: #22487a; color: #fff; font-weight: bold; text-align: center; font-size: 13px; padding: 12px 8px; text-transform: uppercase; letter-spacing: 0.8px; }
             .vehicle-quantity { text-align: center; background-color: #f0f0f0; font-weight: bold; }
             .price-detail-row { background-color: #fff; border-top: 1px dashed #ccc; }
-            .price-detail-row td { padding: 6px 8px; font-size: 10px; }
+            .price-detail-row td { padding: 6px 8px; font-size: 10px; text-align: center; }
             .total-row { background-color: #e8e8e8; border-top: 2px solid #000; font-weight: bold; }
-            .total-row td { padding: 10px 8px; font-size: 11px; }
+            .total-row td { padding: 10px 8px; font-size: 11px; text-align: center; }
             .total-row strong { text-transform: uppercase; letter-spacing: 0.5px; }
             .total-label { text-align: left; font-weight: bold; }
             .total-value { text-align: right; font-weight: bold; font-size: 13px; }
@@ -696,7 +696,7 @@ class PdfController extends Controller
         // Desglose: Cantidad días
         $html .= '
             <tr class="price-detail-row">
-                <td colspan="5" style="padding: 8px 10px;">
+                <td colspan="5" style="padding: 8px 10px; text-align: center;">
                     <strong>Cantidad días: ' . str_pad($rental->cantidad_dias, 2, '0', STR_PAD_LEFT) . ' días = ₡' . number_format($subtotalDias, 0, '.', ',') . '</strong>
                 </td>
             </tr>';
@@ -705,7 +705,7 @@ class PdfController extends Controller
         if ($medioDiaActivo) {
             $html .= '
             <tr class="price-detail-row">
-                <td colspan="5" style="padding: 8px 10px;">
+                <td colspan="5" style="padding: 8px 10px; text-align: center;">
                     <strong>1/2 día: ₡' . number_format($medioDiaValor, 0, '.', ',') . '</strong>
                 </td>
             </tr>';
@@ -714,10 +714,10 @@ class PdfController extends Controller
         // Total
         $html .= '
             <tr class="total-row">
-                <td colspan="3" style="text-align: left; padding-left: 15px;">
+                <td colspan="3" style="text-align: center;">
                     <strong>Monto Total de la Orden:</strong>
                 </td>
-                <td colspan="2" style="text-align: right; padding-right: 15px;">
+                <td colspan="2" style="text-align: center;">
                     <strong style="font-size: 13px;">₡' . number_format($rental->total_precio, 0, '.', ',') . ' colones</strong>
                 </td>
             </tr>

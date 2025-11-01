@@ -3,7 +3,7 @@
 // Se incrementa automáticamente con cada commit
 
 return [
-    'version' => '1.102',
-    'build' => '2025-10-31',
+    'version' => '1.104',
+    'build' => '2025-11-01',
     'description' => 'Sistema de Gestión de Alquileres - Facto Rent a Car'
 ];
