@@ -665,17 +665,13 @@ class PdfController extends Controller
                     <span class="info-label">Cédula:</span>
                     <span>' . htmlspecialchars($client ? $client->cedula_fisica : 'N/A') . '</span>
                 </div>
-                <div class="client-info-right">';
-        
-        if ($client && $client->telefono) {
-            $html .= '<span class="info-label">Teléfono:</span>
-                    <span>' . htmlspecialchars($client->telefono) . '</span>';
-        }
-        
-        $html .= '</div>
+                <div class="client-info-right">
+                    <span class="info-label">Teléfono:</span>
+                    <span>' . htmlspecialchars($client && !empty($client->whatsapp) ? $client->whatsapp : ($client && !empty($client->telefono) ? $client->telefono : 'N/A')) . '</span>
+                </div>
             </div>';
         
-        if ($rental->choferes_autorizados) {
+        if (!empty($rental->choferes_autorizados)) {
             $html .= '<div class="client-drivers">
                 <div class="client-drivers-label">Choferes Autorizados:</div>
                 <div class="client-drivers-content">' . nl2br(htmlspecialchars($rental->choferes_autorizados)) . '</div>

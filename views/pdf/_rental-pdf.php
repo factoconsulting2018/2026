@@ -305,13 +305,11 @@ if (empty($totalFinal) || $totalFinal == 0) {
                 <span><?= htmlspecialchars($client ? $client->cedula_fisica : 'N/A') ?></span>
             </div>
             <div class="client-info-right">
-                <?php if ($client && $client->telefono): ?>
                 <span class="client-label">Teléfono:</span>
-                <span><?= htmlspecialchars($client->telefono) ?></span>
-                <?php endif; ?>
+                <span><?= htmlspecialchars($client && !empty($client->whatsapp) ? $client->whatsapp : ($client && !empty($client->telefono) ? $client->telefono : 'N/A')) ?></span>
             </div>
         </div>
-        <?php if ($model->choferes_autorizados): ?>
+        <?php if (!empty($model->choferes_autorizados)): ?>
         <div class="client-drivers">
             <div class="client-drivers-label">Choferes Autorizados:</div>
             <div class="client-drivers-content"><?= nl2br(htmlspecialchars($model->choferes_autorizados)) ?></div>
