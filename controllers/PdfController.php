@@ -628,36 +628,42 @@ class PdfController extends Controller
                 <td class="vehicle-header" colspan="5">Tipo de Vehículo: ' . htmlspecialchars($car ? ($car->nombre . ' - ' . ($car->cantidad_pasajeros ?: 5) . ' pasajeros') : 'Vehículo no encontrado') . '</td>
             </tr>
             <tr>
-                <td class="vehicle-quantity" colspan="5">';
-        
-        // Agregar información del 1/2 día si está habilitado
-        $medioDiaEnabled = intval($rental->medio_dia_enabled ?? 0);
-        $medioDiaValor = floatval($rental->medio_dia_valor ?? 0);
-        $medioDiaActivo = ($medioDiaEnabled >= 1) && ($medioDiaValor > 0);
-        
-        $cantidadTexto = 'Cantidad de días: ' . str_pad($rental->cantidad_dias, 2, '0', STR_PAD_LEFT);
-        if ($medioDiaActivo) {
-            $cantidadTexto .= ' + 1/2 día (¢' . number_format($medioDiaValor, 0, '.', ',') . ')';
-        }
-        
-        $html .= htmlspecialchars($cantidadTexto) . '</td>
+                <td class="vehicle-quantity" colspan="5">Cantidad de días: ' . str_pad($rental->cantidad_dias, 2, '0', STR_PAD_LEFT) . '</td>
             </tr>
             <tr>
                 <td class="vehicle-quantity" colspan="5">Cantidad de vehículos: 1 unidad</td>
-            </tr>
-            <tr class="price-row">
-                <td>Precio:</td>
-                <td>¢' . number_format($rental->precio_por_dia, 0) . '</td>
-                <td>1 Unidad x ' . str_pad($rental->cantidad_dias, 2, '0', STR_PAD_LEFT);
+            </tr>';
         
-        // Agregar información del 1/2 día en la línea de precio
+        // Calcular valores para desglose
+        $medioDiaEnabled = intval($rental->medio_dia_enabled ?? 0);
+        $medioDiaValor = floatval($rental->medio_dia_valor ?? 0);
+        $medioDiaActivo = ($medioDiaEnabled >= 1) && ($medioDiaValor > 0);
+        $subtotalDias = $rental->cantidad_dias * $rental->precio_por_dia;
+        
+        // Desglose: Cantidad días
+        $html .= '
+            <tr class="price-row">
+                <td colspan="5" style="text-align: left; padding: 5px;">
+                    <strong>Cantidad días: ' . str_pad($rental->cantidad_dias, 2, '0', STR_PAD_LEFT) . ' días = ¢' . number_format($subtotalDias, 0, '.', ',') . '</strong>
+                </td>
+            </tr>';
+        
+        // Desglose: 1/2 día si está activo
         if ($medioDiaActivo) {
-            $html .= ' + 1/2 día (¢' . number_format($medioDiaValor, 0, '.', ',') . ')';
+            $html .= '
+            <tr class="price-row">
+                <td colspan="5" style="text-align: left; padding: 5px;">
+                    <strong>1/2 día: ¢' . number_format($medioDiaValor, 0, '.', ',') . '</strong>
+                </td>
+            </tr>';
         }
         
-        $html .= '</td>
+        // Total
+        $html .= '
+            <tr class="price-row">
+                <td colspan="3"></td>
                 <td class="total-label">Total:</td>
-                <td class="total-value">¢' . number_format($rental->total_precio, 0) . '</td>
+                <td class="total-value">¢' . number_format($rental->total_precio, 0, '.', ',') . '</td>
             </tr>
         </table>
         
