@@ -39,10 +39,34 @@ class ClientFile extends ActiveRecord
             [['client_id', 'file_name', 'original_name', 'file_path', 'file_type', 'file_size'], 'required'],
             [['client_id', 'file_size'], 'integer'],
             [['created_at', 'updated_at'], 'safe'],
-            [['file_name', 'original_name', 'file_path', 'description'], 'string', 'max' => 500],
+            [['file_name', 'original_name', 'file_path'], 'string', 'max' => 500],
             [['file_type'], 'string', 'max' => 100],
+            [['description'], 'string', 'max' => 500, 'skipOnEmpty' => true], // description es opcional
             [['client_id'], 'exist', 'skipOnError' => true, 'targetClass' => Client::class, 'targetAttribute' => ['client_id' => 'id']],
         ];
+    }
+    
+    /**
+     * Atributos permitidos para asignación masiva
+     */
+    public function attributes()
+    {
+        $attributes = parent::attributes();
+        // Asegurar que description esté en la lista de atributos disponibles
+        if (!in_array('description', $attributes)) {
+            $attributes[] = 'description';
+        }
+        // Asegurar que created_at y updated_at estén en la lista si existen en la tabla
+        $schema = static::getTableSchema();
+        if ($schema) {
+            if ($schema->getColumn('created_at') && !in_array('created_at', $attributes)) {
+                $attributes[] = 'created_at';
+            }
+            if ($schema->getColumn('updated_at') && !in_array('updated_at', $attributes)) {
+                $attributes[] = 'updated_at';
+            }
+        }
+        return $attributes;
     }
 
     /**
@@ -122,15 +146,22 @@ class ClientFile extends ActiveRecord
     }
 
     /**
-     * Antes de guardar, establecer timestamps
+     * Antes de guardar, establecer timestamps y manejar description
      */
     public function beforeSave($insert)
     {
         if (parent::beforeSave($insert)) {
-            if ($insert) {
-                $this->created_at = date('Y-m-d H:i:s');
+            // Si description es una cadena vacía, convertir a null
+            if (isset($this->description) && $this->description === '') {
+                $this->description = null;
             }
-            $this->updated_at = date('Y-m-d H:i:s');
+            
+            // NO asignar created_at ni updated_at manualmente
+            // La migración ya los define con:
+            // - created_at: CURRENT_TIMESTAMP (se asigna automáticamente en INSERT)
+            // - updated_at: CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP (se actualiza automáticamente)
+            // Dejar que MySQL los maneje automáticamente para evitar conflictos
+            
             return true;
         }
         return false;

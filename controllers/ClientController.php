@@ -353,10 +353,22 @@ class ClientController extends Controller
      */
     public function actionUploadFile($id)
     {
+        // Configurar respuesta JSON ANTES de cualquier validación
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        
         // Desactivar validación CSRF para esta acción (archivos se suben via AJAX)
         $this->enableCsrfValidation = false;
         
-        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        // Permitir cualquier método HTTP y desactivar validación CSRF a nivel de request
+        Yii::$app->request->enableCsrfValidation = false;
+        
+        // Log para debugging
+        Yii::info('=== INICIO actionUploadFile ===', 'client');
+        Yii::info('ID recibido: ' . $id, 'client');
+        Yii::info('Method: ' . Yii::$app->request->method, 'client');
+        Yii::info('Content-Type: ' . Yii::$app->request->contentType, 'client');
+        Yii::info('POST data: ' . json_encode(Yii::$app->request->post()), 'client');
+        Yii::info('FILES data: ' . json_encode($_FILES), 'client');
         
         try {
             // Log para debugging
@@ -487,6 +499,18 @@ class ClientController extends Controller
                 ]
             ];
             
+        } catch (\yii\web\BadRequestHttpException $e) {
+            // Error 400 específico de Yii2 (CSRF u otro problema de validación)
+            $errorMessage = $e->getMessage();
+            Yii::error('BadRequestHttpException subiendo archivo de cliente ID ' . $id . ': ' . $errorMessage, 'client');
+            Yii::error('POST data: ' . json_encode(Yii::$app->request->post()), 'client');
+            Yii::error('FILES data: ' . json_encode($_FILES), 'client');
+            
+            return [
+                'success' => false,
+                'message' => 'Error del servidor (400): ' . ($errorMessage ?: 'No se pudieron verificar los datos enviados.'),
+                'error_type' => 'BadRequestHttpException'
+            ];
         } catch (\Exception $e) {
             $errorMessage = $e->getMessage();
             $errorTrace = $e->getTraceAsString();

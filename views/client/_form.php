@@ -8,8 +8,20 @@ use yii\helpers\Url;
 /** @var app\models\Client $model */
 /** @var yii\widgets\ActiveForm $form */
 
+// Detectar si es actualización PRIMERO
+$isUpdate = !$model->isNewRecord;
+
 // Registrar el JavaScript y CSS externos
-$this->registerJsFile('/js/client-form.js', ['depends' => [yii\web\JqueryAsset::class]]);
+// Agregar timestamp para evitar caché del navegador
+if (!$isUpdate) {
+    // Solo cargar client-form.js para creación
+    $this->registerJsFile('/js/client-form.js?v=' . time(), ['depends' => [yii\web\JqueryAsset::class]]);
+} else {
+    // Para actualizaciones, cargar client-form.js PRIMERO (para tener las funciones de validación)
+    // Luego client-update.js para el submit
+    $this->registerJsFile('/js/client-form.js?v=' . time(), ['depends' => [yii\web\JqueryAsset::class]]);
+    $this->registerJsFile('/js/client-update.js?v=' . time(), ['depends' => [yii\web\JqueryAsset::class]]);
+}
 $this->registerCssFile('/css/client-form.css');
 ?>
 
@@ -114,15 +126,30 @@ $this->registerCssFile('/css/client-form.css');
 
 <div class="client-form">
 
-    <?php $form = ActiveForm::begin([
+    <?php 
+    // $isUpdate ya está definido arriba
+    $form = ActiveForm::begin([
         'id' => 'client-form',
         'options' => ['class' => 'form-horizontal', 'enctype' => 'multipart/form-data'],
+        'enableAjaxValidation' => false, // Deshabilitar validación AJAX
+        'enableClientValidation' => !$isUpdate, // Solo habilitar validación del cliente para creación
+        'validateOnSubmit' => !$isUpdate, // Deshabilitar validación en submit para actualizaciones
         'fieldConfig' => [
             'template' => "<div class='row mb-3'><div class='col-sm-3'>{label}</div><div class='col-sm-9'>{input}{error}</div></div>",
             'labelOptions' => ['class' => 'form-label'],
             'inputOptions' => ['class' => 'form-control'],
         ],
     ]); ?>
+
+    <!-- Mensaje de Error de Validación por Pestaña -->
+    <div id="form-validation-errors" class="alert alert-danger" style="display: none; margin-bottom: 20px;">
+        <h5 class="alert-heading">
+            <span class="material-symbols-outlined" style="font-size: 20px; vertical-align: middle; margin-right: 8px;">error</span>
+            Errores de Validación
+        </h5>
+        <p class="mb-2">Por favor, corrija los siguientes errores antes de continuar:</p>
+        <ul id="validation-errors-list" class="mb-0"></ul>
+    </div>
 
     <!-- Sistema de Tabs -->
     <ul class="nav nav-tabs mb-4" id="clientTabs" role="tablist">
@@ -184,7 +211,7 @@ $this->registerCssFile('/css/client-form.css');
                     ])->textInput(['maxlength' => true]) ?>
                 </div>
                 <div class="col-sm-3">
-                    <button type="button" class="btn btn-outline-primary" onclick="consultarHacienda()" id="consultar-btn">
+                    <button type="button" class="btn btn-outline-primary" id="consultar-btn">
                         <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">account_balance</span>
                         Consultar Hacienda
                     </button>
@@ -550,10 +577,10 @@ $this->registerCssFile('/css/client-form.css');
                                     <span class="material-symbols-outlined">search</span>
                                 </span>
                                 <input type="text" class="form-control" id="file-search-input" placeholder="Buscar archivos por nombre o descripción...">
-                                <button class="btn btn-outline-secondary" type="button" onclick="searchFiles()">
+                                <button class="btn btn-outline-secondary" type="button" id="search-files-btn">
                                     Buscar
                                 </button>
-                                <button class="btn btn-outline-secondary" type="button" onclick="clearFileSearch()" title="Limpiar búsqueda">
+                                <button class="btn btn-outline-secondary" type="button" id="clear-file-search-btn" title="Limpiar búsqueda">
                                     <span class="material-symbols-outlined">clear</span>
                                 </button>
                             </div>
@@ -570,13 +597,13 @@ $this->registerCssFile('/css/client-form.css');
                             <form id="file-upload-form" enctype="multipart/form-data">
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
-                                        <label class="form-label">Archivo *</label>
-                                        <input type="file" class="form-control" id="file-input" name="file" accept=".pdf,.png,.jpg,.jpeg,.xlsx,.xls,.docx,.doc" required>
+                                        <label class="form-label">Archivo</label>
+                                        <input type="file" class="form-control" id="file-input" name="file" accept=".pdf,.png,.jpg,.jpeg,.xlsx,.xls,.docx,.doc">
                                         <small class="form-text text-muted">Formatos permitidos: PDF, PNG, JPG, XLSX, DOCX (máximo 10MB)</small>
                                     </div>
                                     <div class="col-md-6 mb-3">
-                                        <label class="form-label">Nombre del Archivo *</label>
-                                        <input type="text" class="form-control" id="file-name-input" placeholder="Ej: Contrato 2025" required>
+                                        <label class="form-label">Nombre del Archivo</label>
+                                        <input type="text" class="form-control" id="file-name-input" placeholder="Ej: Contrato 2025">
                                         <small class="form-text text-muted">Nombre personalizado para identificar el archivo</small>
                                     </div>
                                 </div>
@@ -586,7 +613,7 @@ $this->registerCssFile('/css/client-form.css');
                                         <textarea class="form-control" id="file-description-input" rows="2" placeholder="Descripción adicional del archivo"></textarea>
                                     </div>
                                 </div>
-                                <button type="button" class="btn btn-primary" id="upload-file-btn" data-client-id="<?= $model->isNewRecord ? '' : $model->id ?>" onclick="uploadFile()">
+                                <button type="button" class="btn btn-primary" id="upload-file-btn" data-client-id="<?= $model->isNewRecord ? '' : $model->id ?>">
                                     <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">upload</span>
                                     Subir Archivo
                                 </button>
@@ -643,12 +670,19 @@ $this->registerCssFile('/css/client-form.css');
     <div class="row mb-3">
         <div class="col-sm-12">
             <div class="d-flex gap-2">
-                <?= Html::submitButton('<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">save</span>Guardar Cliente', [
-                    'class' => 'btn btn-primary',
-                    'style' => 'background: linear-gradient(135deg, #3fa9f5 0%, #22487a 100%); border: none;'
-                ]) ?>
+                <?php if ($isUpdate): ?>
+                    <!-- Para actualizaciones: usar botón HTML directo sin Yii2 -->
+                    <button type="submit" id="guardar-cliente-btn" class="btn btn-primary" style="background: linear-gradient(135deg, #3fa9f5 0%, #22487a 100%); border: none;">
+                        <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">save</span>Guardar Cliente
+                    </button>
+                <?php else: ?>
+                    <?= Html::submitButton('<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">save</span>Guardar Cliente', [
+                        'class' => 'btn btn-primary',
+                        'style' => 'background: linear-gradient(135deg, #3fa9f5 0%, #22487a 100%); border: none;'
+                    ]) ?>
+                <?php endif; ?>
                 
-                <button type="button" class="btn btn-outline-secondary" onclick="limpiarFormulario()">
+                <button type="button" class="btn btn-outline-secondary" id="limpiar-formulario-btn">
                     <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">clear</span>
                     Limpiar
                 </button>
@@ -716,11 +750,11 @@ $this->registerCssFile('/css/client-form.css');
                     <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">close</span>
                     Cancelar
                 </button>
-                <button type="button" class="btn btn-info" onclick="buscarClienteExistente()">
+                <button type="button" class="btn btn-info" id="buscar-cliente-existente-btn">
                     <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">search</span>
                     Buscar Cliente
                 </button>
-                <button type="button" class="btn btn-warning" onclick="mostrarModalEliminar()">
+                <button type="button" class="btn btn-warning" id="mostrar-modal-eliminar-btn">
                     <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">delete</span>
                     Eliminar Cliente
                 </button>
@@ -753,7 +787,7 @@ $this->registerCssFile('/css/client-form.css');
                     <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">close</span>
                     Cancelar
                 </button>
-                <button type="button" class="btn btn-danger" onclick="eliminarClientePorCedula()">
+                <button type="button" class="btn btn-danger" id="eliminar-cliente-por-cedula-btn">
                     <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">delete_forever</span>
                     Sí, Eliminar
                 </button>

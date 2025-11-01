@@ -9,7 +9,9 @@ $this->title = 'Actualizar Cliente: ' . $model->full_name;
 $this->params['breadcrumbs'][] = ['label' => 'Clientes', 'url' => ['index']];
 $this->params['breadcrumbs'][] = ['label' => $model->full_name, 'url' => ['view', 'id' => $model->id]];
 $this->params['breadcrumbs'][] = 'Actualizar';
+
 ?>
+
 <div class="client-update">
 
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -20,8 +22,10 @@ $this->params['breadcrumbs'][] = 'Actualizar';
         </div>
     </div>
 
+
     <?= $this->render('_form', [
         'model' => $model,
     ]) ?>
 
 </div>
+

@@ -47,11 +47,12 @@ class Client extends ActiveRecord
     {
         return [
             [['full_name', 'cedula_fisica'], 'required'],
-            [['es_aliado', 'es_cliente_facto'], 'integer'],
-            [['created_at', 'updated_at'], 'safe'],
-            [['client_id', 'nombre', 'apellido', 'full_name', 'cedula_fisica', 'email'], 'string', 'max' => 255],
+            [['es_aliado', 'es_cliente_facto', 'activo'], 'integer'],
+            [['created_at', 'updated_at', 'fecha_vencimiento_licencia', 'fecha_nacimiento'], 'safe'],
+            [['client_id', 'nombre', 'apellido', 'full_name', 'cedula_fisica', 'email', 'telefono', 'celular', 'imagen_foto', 'licencia_conducir'], 'string', 'max' => 255],
             [['whatsapp'], 'string', 'max' => 20],
-            [['address', 'notes', 'licencias_choferes'], 'string'],
+            [['notes', 'notas', 'licencias_choferes'], 'string'],
+            [['address', 'direccion'], 'safe'], // Permitir cualquier texto para direcciones
             [['status'], 'string', 'max' => 50],
             [['status'], 'in', 'range' => ['active', 'inactive']],
             [['tipo_identificacion', 'situacion_tributaria', 'regimen_tributario'], 'string', 'max' => 255],

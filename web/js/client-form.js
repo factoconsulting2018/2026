@@ -21,30 +21,120 @@ function consultarHacienda() {
         return;
     }
     
-    // Mostrar loading
-    document.getElementById('hacienda-loading').style.display = 'block';
-    document.getElementById('hacienda-result').style.display = 'none';
-    document.getElementById('hacienda-error').style.display = 'none';
-    document.getElementById('consultar-btn').disabled = true;
+    // Mostrar loading (verificar que los elementos existan)
+    const loadingEl = document.getElementById('hacienda-loading');
+    const resultEl = document.getElementById('hacienda-result');
+    const errorEl = document.getElementById('hacienda-error');
+    const consultarBtn = document.getElementById('consultar-btn');
+    
+    if (loadingEl) loadingEl.style.display = 'block';
+    if (resultEl) resultEl.style.display = 'none';
+    if (errorEl) errorEl.style.display = 'none';
+    if (consultarBtn) consultarBtn.disabled = true;
+    
+    // Obtener CSRF token de Yii2 (está en un campo oculto del formulario o en los headers)
+    let csrfToken = null;
+    const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+    if (csrfMeta) {
+        csrfToken = csrfMeta.getAttribute('content');
+    } else {
+        // Buscar el token en el formulario (Yii2 lo agrega como campo oculto)
+        const csrfInput = document.querySelector('input[name="_csrf"]') || 
+                          document.querySelector('input[name="csrf-token"]') ||
+                          document.querySelector('input[name="YII_CSRF_TOKEN"]');
+        if (csrfInput) {
+            csrfToken = csrfInput.value;
+        } else if (typeof yii !== 'undefined' && yii.getCsrfToken) {
+            // Usar el token de Yii2 si está disponible
+            csrfToken = yii.getCsrfToken();
+        }
+    }
+    
+    console.log('🔍 CSRF Token encontrado:', csrfToken ? '✅ Sí' : '❌ No');
+    
+    // Preparar headers
+    const headers = {
+        'Content-Type': 'application/json',
+    };
+    
+    // Agregar CSRF token si se encontró
+    if (csrfToken) {
+        headers['X-CSRF-Token'] = csrfToken;
+        // También incluir en el body para Yii2
+        headers['X-Requested-With'] = 'XMLHttpRequest';
+    }
+    
+    console.log('📤 Enviando petición a /hacienda/consultar con cédula:', cedula);
     
     // Realizar consulta AJAX
     fetch('/hacienda/consultar', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-        },
+        headers: headers,
+        credentials: 'same-origin', // Incluir cookies/sesión
         body: JSON.stringify({
             cedula: cedula
         })
     })
     .then(response => {
-        console.log('Respuesta recibida:', response.status);
-        return response.json();
+        console.log('📥 Respuesta recibida:', response.status, response.statusText);
+        console.log('📥 URL de respuesta:', response.url);
+        
+        // Clonar la respuesta para poder leerla múltiples veces si es necesario
+        const responseClone = response.clone();
+        
+        // Si hay un error HTTP, leer el texto primero
+        if (!response.ok) {
+            return response.text().then(text => {
+                console.error('❌ Error HTTP:', response.status);
+                console.error('❌ Respuesta del servidor:', text.substring(0, 500));
+                
+                // Intentar parsear como JSON
+                try {
+                    const errorData = JSON.parse(text);
+                    throw new Error(errorData.message || 'Error HTTP ' + response.status);
+                } catch (e) {
+                    // No es JSON, usar el texto
+                    throw new Error('Error HTTP ' + response.status + ': ' + text.substring(0, 200));
+                }
+            });
+        }
+        
+        // Verificar si la respuesta es JSON
+        const contentType = response.headers.get('content-type') || '';
+        console.log('📄 Content-Type:', contentType);
+        
+        if (!contentType.includes('application/json')) {
+            console.warn('⚠️ La respuesta no es JSON. Content-Type:', contentType);
+            return response.text().then(text => {
+                console.log('📄 Respuesta recibida (texto):', text.substring(0, 500));
+                
+                // Intentar parsear como JSON de todos modos (a veces el header está mal)
+                try {
+                    const jsonData = JSON.parse(text);
+                    console.log('✅ Se pudo parsear como JSON');
+                    return jsonData;
+                } catch (e) {
+                    throw new Error('La respuesta del servidor no es JSON. Tipo: ' + contentType);
+                }
+            });
+        }
+        
+        return response.json().catch(error => {
+            console.error('❌ Error al parsear JSON:', error);
+            // Intentar leer como texto y parsear manualmente
+            return responseClone.text().then(text => {
+                console.log('📄 Respuesta (texto):', text.substring(0, 500));
+                try {
+                    return JSON.parse(text);
+                } catch (e) {
+                    throw new Error('No se pudo parsear la respuesta como JSON: ' + text.substring(0, 200));
+                }
+            });
+        });
     })
     .then(data => {
         console.log('Datos recibidos:', data);
-        document.getElementById('hacienda-loading').style.display = 'none';
+        if (loadingEl) loadingEl.style.display = 'none';
         
         if (data.success && data.data) {
             // Llenar campos automáticamente
@@ -52,18 +142,34 @@ function consultarHacienda() {
             mostrarResultadoHacienda(data.data);
         } else {
             console.log('Error en respuesta:', data.message || 'Sin datos');
-            document.getElementById('hacienda-error').style.display = 'block';
+            if (errorEl) errorEl.style.display = 'block';
             showNotification('⚠️ ' + (data.message || 'No se encontró información en Hacienda'), 'warning');
         }
     })
     .catch(error => {
-        console.error('Error en consulta:', error);
-        document.getElementById('hacienda-loading').style.display = 'none';
-        document.getElementById('hacienda-error').style.display = 'block';
-        showNotification('❌ Error al consultar Hacienda: ' + error.message, 'danger');
+        console.error('❌ Error en consulta:', error);
+        if (loadingEl) loadingEl.style.display = 'none';
+        if (errorEl) errorEl.style.display = 'block';
+        
+        // Manejar diferentes tipos de errores
+        let errorMessage = 'Error desconocido';
+        
+        if (error.message) {
+            errorMessage = error.message;
+        } else if (typeof error === 'string') {
+            errorMessage = error;
+        }
+        
+        console.error('📛 Detalles del error:', {
+            error: error,
+            message: errorMessage,
+            stack: error.stack
+        });
+        
+        showNotification('❌ Error al consultar Hacienda: ' + errorMessage, 'danger');
     })
     .finally(() => {
-        document.getElementById('consultar-btn').disabled = false;
+        if (consultarBtn) consultarBtn.disabled = false;
     });
 }
 
@@ -81,47 +187,53 @@ function llenarCamposDesdeHacienda(data) {
     }
     
     // Tipo de identificación
-    if (data.tipoIdentificacion) {
-        document.getElementById('tipo-identificacion-input').value = data.tipoIdentificacion;
-        document.getElementById('tipo-identificacion-input').style.backgroundColor = '#e8f5e8';
+    const tipoIdentificacionInput = document.getElementById('tipo-identificacion-input');
+    if (data.tipoIdentificacion && tipoIdentificacionInput) {
+        tipoIdentificacionInput.value = data.tipoIdentificacion;
+        tipoIdentificacionInput.style.backgroundColor = '#e8f5e8';
         setTimeout(() => {
-            document.getElementById('tipo-identificacion-input').style.backgroundColor = '';
+            if (tipoIdentificacionInput) tipoIdentificacionInput.style.backgroundColor = '';
         }, 2000);
     }
     
     // Situación tributaria
-    if (data.situacionTributaria) {
-        document.getElementById('situacion-tributaria-input').value = data.situacionTributaria;
-        document.getElementById('situacion-tributaria-input').style.backgroundColor = '#e8f5e8';
+    const situacionTributariaInput = document.getElementById('situacion-tributaria-input');
+    if (data.situacionTributaria && situacionTributariaInput) {
+        situacionTributariaInput.value = data.situacionTributaria;
+        situacionTributariaInput.style.backgroundColor = '#e8f5e8';
         setTimeout(() => {
-            document.getElementById('situacion-tributaria-input').style.backgroundColor = '';
+            if (situacionTributariaInput) situacionTributariaInput.style.backgroundColor = '';
         }, 2000);
     }
     
     // Régimen tributario
-    if (data.regimenTributario) {
-        document.getElementById('regimen-tributario-input').value = data.regimenTributario;
-        document.getElementById('regimen-tributario-input').style.backgroundColor = '#e8f5e8';
+    const regimenTributarioInput = document.getElementById('regimen-tributario-input');
+    if (data.regimenTributario && regimenTributarioInput) {
+        regimenTributarioInput.value = data.regimenTributario;
+        regimenTributarioInput.style.backgroundColor = '#e8f5e8';
         setTimeout(() => {
-            document.getElementById('regimen-tributario-input').style.backgroundColor = '';
+            if (regimenTributarioInput) regimenTributarioInput.style.backgroundColor = '';
         }, 2000);
     }
     
     // Actividad económica
     if (data.actividadEconomica) {
         const actividad = data.actividadEconomica;
-        if (actividad.codigo) {
-            document.getElementById('actividad-codigo-input').value = actividad.codigo;
-            document.getElementById('actividad-codigo-input').style.backgroundColor = '#e8f5e8';
+        const codigoInput = document.getElementById('actividad-codigo-input');
+        const descripcionInput = document.getElementById('actividad-descripcion-input');
+        
+        if (actividad.codigo && codigoInput) {
+            codigoInput.value = actividad.codigo;
+            codigoInput.style.backgroundColor = '#e8f5e8';
             setTimeout(() => {
-                document.getElementById('actividad-codigo-input').style.backgroundColor = '';
+                if (codigoInput) codigoInput.style.backgroundColor = '';
             }, 2000);
         }
-        if (actividad.descripcion) {
-            document.getElementById('actividad-descripcion-input').value = actividad.descripcion;
-            document.getElementById('actividad-descripcion-input').style.backgroundColor = '#e8f5e8';
+        if (actividad.descripcion && descripcionInput) {
+            descripcionInput.value = actividad.descripcion;
+            descripcionInput.style.backgroundColor = '#e8f5e8';
             setTimeout(() => {
-                document.getElementById('actividad-descripcion-input').style.backgroundColor = '';
+                if (descripcionInput) descripcionInput.style.backgroundColor = '';
             }, 2000);
         }
     }
@@ -308,35 +420,186 @@ function showErrorAlert(title, message, details = null) {
     showNotification(title + ': ' + message, 'danger');
 }
 
-function validarFormulario() {
-    // Validar solo si los elementos existen (para evitar errores)
+// Función para validar formulario por pestañas
+function validarFormularioPorPestanas() {
+    const errors = [];
+    const tabsWithErrors = new Set();
+    
+    // Tab 1: Información Personal
+    const personalPane = document.getElementById('personal-pane');
+    if (personalPane) {
+        const personalErrors = validarTabPersonal();
+        if (personalErrors.length > 0) {
+            errors.push(...personalErrors);
+            tabsWithErrors.add('personal');
+        }
+    }
+    
+    // Tab 2: Información Tributaria (si es requerida)
+    const tributariaPane = document.getElementById('tributaria-pane');
+    if (tributariaPane) {
+        const tributariaErrors = validarTabTributaria();
+        if (tributariaErrors.length > 0) {
+            errors.push(...tributariaErrors);
+            tabsWithErrors.add('tributaria');
+        }
+    }
+    
+    // Tab 3: Configuración (si es requerida)
+    const configPane = document.getElementById('config-pane');
+    if (configPane) {
+        const configErrors = validarTabConfig();
+        if (configErrors.length > 0) {
+            errors.push(...configErrors);
+            tabsWithErrors.add('config');
+        }
+    }
+    
+    // Mostrar errores si existen
+    if (errors.length > 0) {
+        mostrarErroresValidacion(errors, tabsWithErrors);
+        return false;
+    } else {
+        ocultarErroresValidacion();
+        return true;
+    }
+}
+
+// Validar Tab Personal
+function validarTabPersonal() {
+    const errors = [];
     const cedulaInput = document.getElementById('cedula-input');
     const nombreInput = document.getElementById('nombre-input');
     
-    if (!cedulaInput || !nombreInput) {
-        console.warn('⚠️ Elementos de validación no encontrados, validación omitida');
-        return true; // Permitir envío si no se encuentran los elementos
+    if (!cedulaInput) {
+        console.warn('⚠️ Campo cédula no encontrado');
+    } else {
+        const cedula = cedulaInput.value.trim();
+        if (!cedula) {
+            errors.push({ tab: 'personal', field: 'cedula', message: 'La cédula física es requerida' });
+        } else if (!/^\d{9,10}$/.test(cedula)) {
+            errors.push({ tab: 'personal', field: 'cedula', message: 'La cédula debe tener entre 9 y 10 dígitos' });
+        }
     }
     
-    const cedula = cedulaInput.value.trim();
-    const nombre = nombreInput.value.trim();
-    
-    if (!cedula) {
-        showNotification('❌ La cédula es requerida', 'warning');
-        return false;
-    }
-    
-    if (!/^\d{9,10}$/.test(cedula)) {
-        showNotification('❌ La cédula debe tener entre 9 y 10 dígitos', 'warning');
-        return false;
-    }
-    
+    if (!nombreInput) {
+        console.warn('⚠️ Campo nombre completo no encontrado');
+    } else {
+        const nombre = nombreInput.value.trim();
     if (!nombre) {
-        showNotification('❌ El nombre completo es requerido', 'warning');
-        return false;
+            errors.push({ tab: 'personal', field: 'nombre', message: 'El nombre completo es requerido' });
+        }
     }
     
-    return true;
+    // Validar email si está presente
+    const emailInput = document.getElementById('email-input');
+    if (emailInput && emailInput.value.trim()) {
+        const email = emailInput.value.trim();
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            errors.push({ tab: 'personal', field: 'email', message: 'El email no es válido' });
+        }
+    }
+    
+    return errors;
+}
+
+// Validar Tab Tributaria
+function validarTabTributaria() {
+    const errors = [];
+    // Agregar validaciones específicas de información tributaria si es necesario
+    // Por ahora no hay campos requeridos en esta pestaña según el modelo
+    return errors;
+}
+
+// Validar Tab Configuración
+function validarTabConfig() {
+    const errors = [];
+    // Agregar validaciones específicas de configuración si es necesario
+    return errors;
+}
+
+// Mostrar errores de validación arriba del formulario
+function mostrarErroresValidacion(errors, tabsWithErrors) {
+    const errorContainer = document.getElementById('form-validation-errors');
+    const errorList = document.getElementById('validation-errors-list');
+    
+    if (!errorContainer || !errorList) {
+        console.warn('⚠️ Contenedor de errores no encontrado');
+        return;
+    }
+    
+    // Limpiar lista anterior
+    errorList.innerHTML = '';
+    
+    // Agregar errores agrupados por pestaña
+    const tabNames = {
+        'personal': 'Información Personal',
+        'tributaria': 'Información Tributaria',
+        'config': 'Configuración'
+    };
+    
+    const errorsByTab = {};
+    errors.forEach(error => {
+        if (!errorsByTab[error.tab]) {
+            errorsByTab[error.tab] = [];
+        }
+        errorsByTab[error.tab].push(error);
+    });
+    
+    // Crear lista de errores
+    Object.keys(errorsByTab).forEach(tab => {
+        const tabName = tabNames[tab] || tab;
+        const tabErrors = errorsByTab[tab];
+        
+        const tabLi = document.createElement('li');
+        tabLi.innerHTML = `<strong>${tabName}:</strong>`;
+        const tabUl = document.createElement('ul');
+        tabErrors.forEach(error => {
+            const errorLi = document.createElement('li');
+            errorLi.textContent = error.message;
+            tabUl.appendChild(errorLi);
+        });
+        tabLi.appendChild(tabUl);
+        errorList.appendChild(tabLi);
+    });
+    
+    // Mostrar contenedor de errores
+    errorContainer.style.display = 'block';
+    
+    // Resaltar pestañas con errores
+    tabsWithErrors.forEach(tab => {
+        const tabElement = document.getElementById(`${tab}-tab`);
+        if (tabElement) {
+            tabElement.style.borderBottom = '3px solid #dc3545';
+            tabElement.style.backgroundColor = '#f8d7da';
+        }
+    });
+    
+    // Scroll hasta el mensaje de error
+    errorContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// Ocultar errores de validación
+function ocultarErroresValidacion() {
+    const errorContainer = document.getElementById('form-validation-errors');
+    if (errorContainer) {
+        errorContainer.style.display = 'none';
+    }
+    
+    // Quitar resaltado de pestañas
+    ['personal', 'tributaria', 'config'].forEach(tab => {
+        const tabElement = document.getElementById(`${tab}-tab`);
+        if (tabElement) {
+            tabElement.style.borderBottom = '';
+            tabElement.style.backgroundColor = '';
+        }
+    });
+}
+
+// Función legacy para compatibilidad
+function validarFormulario() {
+    return validarFormularioPorPestanas();
 }
 
 // Variables globales para modales
@@ -344,8 +607,137 @@ let currentDuplicateCedula = '';
 
 // Event listeners
 document.addEventListener('DOMContentLoaded', function() {
+    try {
+        console.log('🚀 Inicializando client-form.js');
+        
     const cedulaInput = document.getElementById('cedula-input');
     const clientForm = document.getElementById('client-form');
+        
+        // Detectar si es actualización ANTES de cualquier otra cosa
+        const currentPath = window.location.pathname;
+        const isUpdate = currentPath.includes('/client/update/');
+        
+        console.log('📍 URL actual:', currentPath);
+        console.log('🔄 Es actualización?', isUpdate);
+        
+        // Para actualizaciones: NO interferir con submit pero SÍ inicializar biblioteca de archivos
+        if (isUpdate) {
+            console.log('✅ MODO ACTUALIZACIÓN: client-form.js NO interferirá con submit');
+            console.log('✅ Pero SÍ inicializará biblioteca de archivos y otros listeners');
+            // NO hacer return - continuar para inicializar biblioteca de archivos
+        }
+        
+        // Para CREACIÓN y ACTUALIZACIÓN: agregar listeners (excepto submit para actualizaciones)
+        if (isUpdate) {
+            console.log('📝 MODO ACTUALIZACIÓN: Agregando listeners de biblioteca (NO submit)');
+        } else {
+            console.log('📝 MODO CREACIÓN: Agregando todos los listeners');
+        }
+        
+        // Agregar listener al botón de consultar Hacienda
+        const consultarBtn = document.getElementById('consultar-btn');
+        if (consultarBtn) {
+            consultarBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                consultarHacienda();
+            });
+        }
+        
+        // Agregar listener al botón de limpiar formulario
+        const limpiarBtn = document.getElementById('limpiar-formulario-btn');
+        if (limpiarBtn) {
+            limpiarBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                limpiarFormulario();
+            });
+        }
+        
+        // Agregar listeners para otros botones
+        const searchFilesBtn = document.getElementById('search-files-btn');
+        if (searchFilesBtn) {
+            searchFilesBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (typeof searchFiles === 'function') searchFiles();
+            });
+        }
+        
+        const clearFileSearchBtn = document.getElementById('clear-file-search-btn');
+        if (clearFileSearchBtn) {
+            clearFileSearchBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (typeof clearFileSearch === 'function') clearFileSearch();
+            });
+        }
+        
+        // Listener para botón de subir archivo (puede estar en tab oculto)
+        // Intentar encontrar el botón con múltiples métodos
+        let uploadFileBtn = document.getElementById('upload-file-btn');
+        
+        if (!uploadFileBtn) {
+            // Intentar buscar por múltiples selectores
+            const selectors = [
+                '#file-upload-form #upload-file-btn',
+                '#file-upload-form button[type="button"]',
+                'button[id="upload-file-btn"]',
+                'button[data-client-id]',
+                '.btn-primary[id="upload-file-btn"]'
+            ];
+            
+            for (const selector of selectors) {
+                try {
+                    uploadFileBtn = document.querySelector(selector);
+                    if (uploadFileBtn) {
+                        console.log('✅ Botón encontrado con selector en DOMContentLoaded:', selector);
+                        break;
+                    }
+                } catch (e) {
+                    // Ignorar selectores inválidos
+                }
+            }
+        }
+        
+        if (uploadFileBtn) {
+            console.log('✅ Botón upload-file-btn encontrado en DOMContentLoaded, agregando listener');
+            uploadFileBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('🖱️ Click en botón Subir Archivo (desde DOMContentLoaded)');
+                if (typeof uploadFile === 'function') {
+                    console.log('✅ Función uploadFile disponible, llamando...');
+                    uploadFile();
+                } else {
+                    console.error('❌ Función uploadFile no está disponible');
+                    showNotification('❌ Error: Función de subida no disponible. Por favor, recarga la página.', 'danger');
+                }
+            });
+        } else {
+            console.warn('⚠️ Botón upload-file-btn no encontrado en DOMContentLoaded (puede estar en tab oculto)');
+            // Intentar agregarlo cuando se muestre el tab (ya se maneja en el listener del tab)
+        }
+        
+        const buscarClienteBtn = document.getElementById('buscar-cliente-existente-btn');
+        if (buscarClienteBtn) {
+            buscarClienteBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (typeof buscarClienteExistente === 'function') buscarClienteExistente();
+            });
+        }
+        
+        const mostrarModalEliminarBtn = document.getElementById('mostrar-modal-eliminar-btn');
+        if (mostrarModalEliminarBtn) {
+            mostrarModalEliminarBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (typeof mostrarModalEliminar === 'function') mostrarModalEliminar();
+            });
+        }
+        
+        const eliminarClienteBtn = document.getElementById('eliminar-cliente-por-cedula-btn');
+        if (eliminarClienteBtn) {
+            eliminarClienteBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (typeof eliminarClientePorCedula === 'function') eliminarClientePorCedula();
+            });
+        }
     
     // Auto-consulta después de 2 segundos de no escribir
     if (cedulaInput) {
@@ -361,46 +753,18 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Validación del formulario y envío con AJAX
-    if (clientForm) {
-        console.log('✅ Formulario de cliente encontrado');
-        
-        // Detectar si es actualización ANTES de agregar el listener
-        const currentPath = window.location.pathname;
-        const isUpdate = currentPath.includes('/client/update/');
-        
-        console.log('📍 URL actual:', currentPath);
-        console.log('🔄 Es actualización?', isUpdate);
-        
-        if (isUpdate) {
-            console.log('✅ MODO ACTUALIZACIÓN: El formulario se enviará normalmente (sin interceptar)');
-            console.log('✅ El botón "Guardar Cliente" funcionará sin validación JavaScript');
-            console.log('✅ La validación se realizará en el servidor');
-            
-            // Verificar que el botón existe
-            const submitBtn = clientForm.querySelector('button[type="submit"]');
-            console.log('🔍 Botón submit encontrado:', submitBtn ? '✅ SÍ' : '❌ NO');
-            
-            if (submitBtn) {
-                console.log('🔍 Botón submit ID:', submitBtn.id);
-                console.log('🔍 Botón submit texto:', submitBtn.textContent.trim());
-                console.log('🔍 Botón submit disabled:', submitBtn.disabled);
-            }
-            
-            // NO agregar ningún listener - dejar que el formulario se envíe normalmente
-            // El servidor validará los datos y mostrará errores si es necesario
-            console.log('✅ Listo para actualizar - sin interceptar submit');
-            console.log('✅ El formulario debería enviarse normalmente al hacer clic en "Guardar Cliente"');
-        } else {
+        // Validación del formulario y envío con AJAX (SOLO PARA CREACIÓN)
+        if (clientForm && !isUpdate) {
+            console.log('✅ Formulario de cliente encontrado (CREACIÓN)');
             console.log('📝 MODO CREACIÓN: Agregando event listener para AJAX (necesario para cédula duplicada)');
             
-            clientForm.addEventListener('submit', function(e) {
+        clientForm.addEventListener('submit', function(e) {
                 console.log('=== SUBMIT DEL FORMULARIO INTERCEPTADO (CREACIÓN) ===');
                 
                 const form = this;
                 const formAction = form.action || form.getAttribute('action') || '/client/create';
                 
-                if (!validarFormulario()) {
+                if (!validarFormularioPorPestanas()) {
                     console.log('Validación del formulario falló - PREVENIR ENVÍO');
                     e.preventDefault();
                     e.stopPropagation();
@@ -410,85 +774,85 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log('Validación exitosa - usando AJAX para creación');
                 e.preventDefault(); // Solo prevenir para creaciones
             
-                // Mostrar loading en el botón de envío
+            // Mostrar loading en el botón de envío
                 const submitBtn = form.querySelector('button[type="submit"]');
                 
-                if (submitBtn) {
-                    submitBtn.disabled = true;
-                    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Guardando...';
-                }
-                
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Guardando...';
+            }
+            
                 // Enviar formulario con AJAX para manejar la respuesta
                 // El FormData incluirá automáticamente todos los campos del formulario, incluido el CSRF token de Yii2
                 const formData = new FormData(form);
                 
                 console.log('Enviando formulario a:', formAction);
-            
-            fetch(formAction, {
-                method: 'POST',
-                body: formData,
-                redirect: 'follow', // Permitir que el navegador siga redirecciones
-                credentials: 'same-origin' // Incluir cookies/sesión
-            })
-            .then(response => {
-                console.log('Respuesta recibida:', response.status, response.type, response.url);
                 
-                // Si hay redirección (response.redirected o URL diferente)
-                if (response.redirected || response.url !== formAction) {
-                    const finalUrl = response.url || response.headers.get('Location');
-                    console.log('Redirección detectada a:', finalUrl);
+                fetch(formAction, {
+                    method: 'POST',
+                    body: formData,
+                    redirect: 'follow', // Permitir que el navegador siga redirecciones
+                    credentials: 'same-origin' // Incluir cookies/sesión
+                })
+                .then(response => {
+                    console.log('Respuesta recibida:', response.status, response.type, response.url);
                     
-                    if (finalUrl) {
-                        // Construir URL completa si es relativa
-                        let redirectUrl = finalUrl;
-                        if (!redirectUrl.startsWith('http')) {
-                            redirectUrl = redirectUrl.startsWith('/') ? 
-                                (window.location.origin + redirectUrl) : 
-                                (window.location.origin + '/' + redirectUrl);
+                    // Si hay redirección (response.redirected o URL diferente)
+                    if (response.redirected || response.url !== formAction) {
+                        const finalUrl = response.url || response.headers.get('Location');
+                        console.log('Redirección detectada a:', finalUrl);
+                        
+                        if (finalUrl) {
+                            // Construir URL completa si es relativa
+                            let redirectUrl = finalUrl;
+                            if (!redirectUrl.startsWith('http')) {
+                                redirectUrl = redirectUrl.startsWith('/') ? 
+                                    (window.location.origin + redirectUrl) : 
+                                    (window.location.origin + '/' + redirectUrl);
+                            }
+                            console.log('Redirigiendo a:', redirectUrl);
+                            window.location.href = redirectUrl;
+                            return null;
                         }
-                        console.log('Redirigiendo a:', redirectUrl);
-                        window.location.href = redirectUrl;
-                        return null;
                     }
-                }
-                
-                // Si es una redirección HTTP (status 301, 302, 303, 307, 308)
-                if (response.status >= 300 && response.status < 400) {
-                    const location = response.headers.get('Location');
-                    console.log('Redirección HTTP detectada:', location);
                     
-                    if (location) {
-                        let redirectUrl = location;
-                        if (!redirectUrl.startsWith('http')) {
-                            redirectUrl = redirectUrl.startsWith('/') ? 
-                                (window.location.origin + redirectUrl) : 
-                                (window.location.origin + '/' + redirectUrl);
+                    // Si es una redirección HTTP (status 301, 302, 303, 307, 308)
+                    if (response.status >= 300 && response.status < 400) {
+                        const location = response.headers.get('Location');
+                        console.log('Redirección HTTP detectada:', location);
+                        
+                        if (location) {
+                            let redirectUrl = location;
+                            if (!redirectUrl.startsWith('http')) {
+                                redirectUrl = redirectUrl.startsWith('/') ? 
+                                    (window.location.origin + redirectUrl) : 
+                                    (window.location.origin + '/' + redirectUrl);
+                            }
+                            console.log('Redirigiendo a:', redirectUrl);
+                            window.location.href = redirectUrl;
+                            return null;
                         }
-                        console.log('Redirigiendo a:', redirectUrl);
-                        window.location.href = redirectUrl;
-                        return null;
                     }
-                }
-                
-                // Si el status es OK (200), procesar el HTML
-                if (response.ok || response.status === 200) {
-                    return response.text();
-                }
-                
-                // Si hay un error HTTP, intentar leer el texto de la respuesta
-                return response.text().then(text => {
-                    throw new Error('Error HTTP ' + response.status + ': ' + text.substring(0, 200));
-                });
-            })
+                    
+                    // Si el status es OK (200), procesar el HTML
+                    if (response.ok || response.status === 200) {
+                        return response.text();
+                    }
+                    
+                    // Si hay un error HTTP, intentar leer el texto de la respuesta
+                    return response.text().then(text => {
+                        throw new Error('Error HTTP ' + response.status + ': ' + text.substring(0, 200));
+                    });
+                })
                 .then(html => {
                     if (!html) return; // Ya se manejó la redirección
                     
                     // Restaurar botón
                     if (submitBtn) {
-                        submitBtn.disabled = false;
-                        submitBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">save</span>Guardar Cliente';
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">save</span>Guardar Cliente';
                     }
-                        
+                    
                     // Verificar si la respuesta contiene un error de cédula duplicada
                     if (html.includes('ya está registrada') || html.includes('has already been taken') || html.includes('cedulaDuplicateModal')) {
                         // En caso de cédula duplicada, redirigir directamente al listado (el servidor ya configuró el mensaje)
@@ -509,20 +873,20 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     // Restaurar botón en caso de error
                     if (submitBtn) {
-                        submitBtn.disabled = false;
-                        submitBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">save</span>Guardar Cliente';
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">save</span>Guardar Cliente';
                     }
                     
                     // Mostrar error al usuario
                     showNotification('❌ Error al guardar: ' + (error.message || 'Error desconocido. Por favor, intenta nuevamente.'), 'danger');
                 });
             
-            return false; // Prevenir submit adicional
+                return false; // Prevenir submit adicional
         });
     }
     
-    // Formateo en tiempo real de la cédula
-    if (cedulaInput) {
+        // Formateo en tiempo real de la cédula (solo para creación)
+        if (cedulaInput && !isUpdate) {
         cedulaInput.addEventListener('input', function() {
             let value = this.value.replace(/\D/g, ''); // Solo números
             this.value = value;
@@ -536,7 +900,21 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Ya no se verifica modal de cédula duplicada - se maneja con redirección automática
+        if (isUpdate) {
+            console.log('✅ Listeners de biblioteca de archivos agregados para actualización');
+        } else {
+            console.log('✅ Todos los listeners de CREACIÓN agregados');
+        }
+    } catch (error) {
+        console.error('❌ ERROR CRÍTICO en client-form.js:', error);
+        console.error('Stack trace:', error.stack);
+        // Mostrar notificación al usuario si es posible
+        if (typeof showNotification === 'function') {
+            showNotification('❌ Error al inicializar el formulario. Por favor, recarga la página.', 'danger');
+        } else {
+            alert('❌ Error al inicializar el formulario. Por favor, recarga la página.');
+        }
+    }
 });
 
 // Funciones de modal de cédula duplicada eliminadas - ya no se usan
@@ -646,7 +1024,66 @@ document.addEventListener('DOMContentLoaded', function() {
     if (bibliotecaTab) {
         // Cargar archivos cuando se haga clic en el tab
         bibliotecaTab.addEventListener('shown.bs.tab', function() {
+            console.log('📚 Tab Biblioteca de Archivos activado');
             loadFiles();
+            
+            // Asegurar que el listener del botón esté agregado cuando el tab se muestra
+            // Usar un timeout más largo para asegurar que el DOM esté completamente renderizado
+            setTimeout(function() {
+                // Intentar múltiples métodos para encontrar el botón
+                let uploadFileBtn = document.getElementById('upload-file-btn');
+                
+                if (!uploadFileBtn) {
+                    // Buscar por múltiples selectores
+                    const selectors = [
+                        '#file-upload-form #upload-file-btn',
+                        '#file-upload-form button[type="button"]',
+                        'button[id="upload-file-btn"]',
+                        'button[data-client-id]'
+                    ];
+                    
+                    for (const selector of selectors) {
+                        uploadFileBtn = document.querySelector(selector);
+                        if (uploadFileBtn) {
+                            console.log('✅ Botón encontrado con selector alternativo:', selector);
+                            break;
+                        }
+                    }
+                }
+                
+                if (uploadFileBtn) {
+                    // Remover listeners anteriores si existen
+                    const newBtn = uploadFileBtn.cloneNode(true);
+                    uploadFileBtn.parentNode.replaceChild(newBtn, uploadFileBtn);
+                    uploadFileBtn = newBtn;
+                    
+                    if (!uploadFileBtn.hasAttribute('data-listener-added')) {
+                        console.log('✅ Agregando listener a botón upload-file-btn cuando tab se muestra');
+                        uploadFileBtn.setAttribute('data-listener-added', 'true');
+                        uploadFileBtn.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            console.log('🖱️ Click en botón Subir Archivo (desde tab listener)');
+                            if (typeof uploadFile === 'function') {
+                                uploadFile();
+                            } else {
+                                console.error('❌ Función uploadFile no disponible');
+                                showNotification('❌ Error: Función de subida no disponible', 'danger');
+                            }
+                        });
+                        console.log('✅ Listener agregado exitosamente al botón');
+                    } else {
+                        console.log('ℹ️ Listener ya agregado al botón upload-file-btn');
+                    }
+                } else {
+                    console.error('❌ Botón upload-file-btn aún no encontrado después de mostrar tab');
+                    console.error('Buscando en biblioteca-pane...');
+                    const bibliotecaPane = document.getElementById('biblioteca-pane');
+                    if (bibliotecaPane) {
+                        console.error('Contenido de biblioteca-pane:', bibliotecaPane.innerHTML.substring(0, 500));
+                    }
+                }
+            }, 200); // Aumentar timeout a 200ms para dar más tiempo al renderizado
         });
         
         // También cargar si el tab ya está activo al cargar la página
@@ -886,38 +1323,130 @@ function uploadFile(clientId) {
         return;
     }
     
-    if (!fileInput.files || fileInput.files.length === 0) {
-        showNotification('❌ Por favor seleccione un archivo', 'warning');
+    // Los campos de biblioteca de archivos NO son obligatorios
+    // Solo validar si el usuario intenta subir un archivo
+    const hasFile = fileInput.files && fileInput.files.length > 0;
+    
+    // Si no hay archivo ni nombre, informar al usuario pero no bloquear
+    if (!hasFile && !fileNameInput.value.trim()) {
+        showNotification('ℹ️ Para subir un archivo, seleccione un archivo y/o ingrese un nombre', 'info');
         return;
     }
     
-    if (!fileNameInput.value.trim()) {
-        showNotification('❌ Por favor ingrese un nombre para el archivo', 'warning');
-        fileNameInput.focus();
-        return;
-    }
-    
-    const file = fileInput.files[0];
-    const maxSize = 10 * 1024 * 1024; // 10MB
-    
-    if (file.size > maxSize) {
-        showNotification('❌ El archivo es demasiado grande. Tamaño máximo: 10MB', 'danger');
-        return;
+    // Si hay archivo, validar tamaño
+    if (hasFile) {
+        const file = fileInput.files[0];
+        const maxSize = 10 * 1024 * 1024; // 10MB
+        
+        if (file.size > maxSize) {
+            showNotification('❌ El archivo es demasiado grande. Tamaño máximo: 10MB', 'danger');
+            return;
+        }
     }
     
     const formData = new FormData();
-    formData.append('file', file);
-    formData.append('file_name', fileNameInput.value.trim());
-    formData.append('description', descriptionInput.value.trim());
     
-    // Mostrar loading
-    const uploadBtn = document.querySelector('#file-upload-form button[type="button"]');
+    // Solo agregar archivo si existe
+    if (hasFile) {
+        formData.append('file', fileInput.files[0]);
+    }
+    
+    // Agregar nombre y descripción solo si tienen valor
+    const fileName = fileNameInput.value.trim();
+    if (fileName) {
+        formData.append('file_name', fileName);
+    }
+    
+    const description = descriptionInput ? descriptionInput.value.trim() : '';
+    if (description) {
+        formData.append('description', description);
+    }
+    
+    // Agregar token CSRF al FormData (aunque esté deshabilitado en el servidor, mejor incluirlo)
+    const csrfInput = document.querySelector('input[name="_csrf"]') || 
+                      document.querySelector('input[name="csrf-token"]') ||
+                      document.querySelector('input[name="YII_CSRF_TOKEN"]');
+    if (csrfInput) {
+        formData.append('_csrf', csrfInput.value);
+        console.log('✅ Token CSRF agregado al FormData');
+    } else {
+        // Intentar obtener de meta tag
+        const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+        if (csrfMeta) {
+            formData.append('_csrf', csrfMeta.getAttribute('content'));
+            console.log('✅ Token CSRF agregado desde meta tag');
+        } else if (typeof yii !== 'undefined' && yii.getCsrfToken) {
+            const token = yii.getCsrfToken();
+            if (token) {
+                formData.append('_csrf', token);
+                console.log('✅ Token CSRF agregado desde yii.getCsrfToken()');
+            }
+        }
+    }
+    
+    // Mostrar loading - buscar botón por ID directamente
+    // IMPORTANTE: El botón puede estar en un tab oculto, así que buscar incluso si está oculto
+    let uploadBtn = document.getElementById('upload-file-btn');
     
     if (!uploadBtn) {
-        showNotification('❌ Error: No se encontró el botón de subir', 'danger');
-        console.error('Botón de upload no encontrado');
-        return;
+        // Fallback: intentar buscar por múltiples selectores (el botón puede estar en un tab oculto)
+        console.warn('⚠️ Botón no encontrado por ID, intentando selectores alternativos...');
+        
+        // Intentar varios selectores diferentes
+        const selectors = [
+            '#upload-file-btn',
+            'button#upload-file-btn',
+            '[id="upload-file-btn"]',
+            '#file-upload-form button[type="button"]',
+            '#file-upload-form #upload-file-btn',
+            'button[data-client-id]',
+            '.btn-primary[id="upload-file-btn"]'
+        ];
+        
+        let fallbackBtn = null;
+        for (const selector of selectors) {
+            try {
+                fallbackBtn = document.querySelector(selector);
+                if (fallbackBtn) {
+                    console.log('✅ Botón encontrado con selector:', selector);
+                    break;
+                }
+            } catch (e) {
+                console.warn('Selector inválido:', selector);
+            }
+        }
+        
+        if (fallbackBtn) {
+            uploadBtn = fallbackBtn;
+        } else {
+            // Último intento: buscar todos los botones y encontrar el que tenga el texto "Subir Archivo"
+            console.warn('⚠️ Buscando botón por texto "Subir Archivo"...');
+            const allButtons = Array.from(document.querySelectorAll('button'));
+            const uploadButtonByText = allButtons.find(btn => 
+                btn.textContent.includes('Subir Archivo') || 
+                btn.textContent.includes('Subir') ||
+                btn.id === 'upload-file-btn'
+            );
+            
+            if (uploadButtonByText) {
+                console.log('✅ Botón encontrado por texto');
+                uploadBtn = uploadButtonByText;
+            } else {
+                showNotification('❌ Error: No se encontró el botón de subir. Por favor, recarga la página.', 'danger');
+                console.error('❌ Botón de upload no encontrado con ningún método');
+                console.error('Total de botones en la página:', allButtons.length);
+                console.error('IDs de botones:', allButtons.map(b => b.id).filter(id => id));
+                console.error('Botones type="button":', allButtons.map(b => ({
+                    id: b.id, 
+                    text: b.textContent.trim().substring(0, 30),
+                    classes: b.className
+                })));
+                return;
+            }
+        }
     }
+    
+    console.log('✅ Botón de upload encontrado:', uploadBtn.id || 'sin ID', 'texto:', uploadBtn.textContent.trim().substring(0, 30));
     
     const originalText = uploadBtn.innerHTML;
     uploadBtn.disabled = true;

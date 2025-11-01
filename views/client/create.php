@@ -8,7 +8,9 @@ use yii\helpers\Html;
 $this->title = 'Crear Cliente';
 $this->params['breadcrumbs'][] = ['label' => 'Clientes', 'url' => ['index']];
 $this->params['breadcrumbs'][] = $this->title;
+
 ?>
+
 <div class="client-create">
 
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -37,8 +39,10 @@ $this->params['breadcrumbs'][] = $this->title;
         <div data-flash="cedula_duplicate" style="display: none;"><?= json_encode($cedulaData) ?></div>
     <?php endif; ?>
 
+
     <?= $this->render('_form', [
         'model' => $model,
     ]) ?>
 
 </div>
+

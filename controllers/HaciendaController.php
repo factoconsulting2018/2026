@@ -4,6 +4,7 @@ namespace app\controllers;
 use Yii;
 use yii\web\Controller;
 use yii\filters\AccessControl;
+use yii\filters\VerbFilter;
 use app\components\HaciendaApi;
 
 /**
@@ -24,6 +25,12 @@ class HaciendaController extends Controller
                         'allow' => true,
                         'roles' => ['@'],
                     ],
+                ],
+            ],
+            'verbs' => [
+                'class' => VerbFilter::class,
+                'actions' => [
+                    'consultar' => ['POST', 'GET'], // Permitir ambos métodos
                 ],
             ],
         ];
