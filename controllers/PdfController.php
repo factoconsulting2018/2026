@@ -537,6 +537,36 @@ class PdfController extends Controller
                 margin: 10px 0;
                 border-left: 3px solid #4CAF50;
             }
+            .client-info-row {
+                display: table;
+                width: 100%;
+                margin: 3px 0;
+                font-size: 10px;
+            }
+            .client-info-left {
+                display: table-cell;
+                width: 45%;
+                vertical-align: top;
+            }
+            .client-info-right {
+                display: table-cell;
+                width: 45%;
+                vertical-align: top;
+                padding-left: 20px;
+            }
+            .client-drivers {
+                margin-top: 5px;
+                font-size: 9px;
+            }
+            .client-drivers-label {
+                font-weight: bold;
+                text-transform: uppercase;
+                letter-spacing: 0.3px;
+                margin-bottom: 3px;
+            }
+            .client-drivers-content {
+                line-height: 1.4;
+            }
             .section-container {
                 margin: 12px 0;
                 padding: 8px;
@@ -630,15 +660,25 @@ class PdfController extends Controller
                 <span class="info-label">Nombre:</span>
                 <span>' . htmlspecialchars($client ? $client->full_name : 'Cliente no encontrado') . '</span>
             </div>
-            <div class="info-row">
-                <span class="info-label">Cédula:</span>
-                <span>' . htmlspecialchars($client ? $client->cedula_fisica : 'N/A') . '</span>
-            </div>';
+            <div class="client-info-row">
+                <div class="client-info-left">
+                    <span class="info-label">Cédula:</span>
+                    <span>' . htmlspecialchars($client ? $client->cedula_fisica : 'N/A') . '</span>
+                </div>
+                <div class="client-info-right">';
         
         if ($client && $client->telefono) {
-            $html .= '<div class="info-row">
-                <span class="info-label">Teléfono:</span>
-                <span>' . htmlspecialchars($client->telefono) . '</span>
+            $html .= '<span class="info-label">Teléfono:</span>
+                    <span>' . htmlspecialchars($client->telefono) . '</span>';
+        }
+        
+        $html .= '</div>
+            </div>';
+        
+        if ($rental->choferes_autorizados) {
+            $html .= '<div class="client-drivers">
+                <div class="client-drivers-label">Choferes Autorizados:</div>
+                <div class="client-drivers-content">' . nl2br(htmlspecialchars($rental->choferes_autorizados)) . '</div>
             </div>';
         }
         

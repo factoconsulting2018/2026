@@ -116,10 +116,40 @@ if (empty($totalFinal) || $totalFinal == 0) {
             margin: 3px 0;
             font-size: 10px;
         }
+        .client-info-row {
+            display: table;
+            width: 100%;
+            margin: 3px 0;
+            font-size: 10px;
+        }
+        .client-info-left {
+            display: table-cell;
+            width: 45%;
+            vertical-align: top;
+        }
+        .client-info-right {
+            display: table-cell;
+            width: 45%;
+            vertical-align: top;
+            padding-left: 20px;
+        }
         .client-label {
             font-weight: bold;
             display: inline-block;
-            width: 130px;
+            width: 100px;
+        }
+        .client-drivers {
+            margin-top: 5px;
+            font-size: 9px;
+        }
+        .client-drivers-label {
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            margin-bottom: 3px;
+        }
+        .client-drivers-content {
+            line-height: 1.4;
         }
         .section-container {
             margin: 12px 0;
@@ -269,14 +299,22 @@ if (empty($totalFinal) || $totalFinal == 0) {
             <span class="client-label">Nombre:</span>
             <span><?= htmlspecialchars($client ? $client->full_name : 'N/A') ?></span>
         </div>
-        <div class="client-info">
-            <span class="client-label">Cédula:</span>
-            <span><?= htmlspecialchars($client ? $client->cedula_fisica : 'N/A') ?></span>
+        <div class="client-info-row">
+            <div class="client-info-left">
+                <span class="client-label">Cédula:</span>
+                <span><?= htmlspecialchars($client ? $client->cedula_fisica : 'N/A') ?></span>
+            </div>
+            <div class="client-info-right">
+                <?php if ($client && $client->telefono): ?>
+                <span class="client-label">Teléfono:</span>
+                <span><?= htmlspecialchars($client->telefono) ?></span>
+                <?php endif; ?>
+            </div>
         </div>
-        <?php if ($client && $client->telefono): ?>
-        <div class="client-info">
-            <span class="client-label">Teléfono:</span>
-            <span><?= htmlspecialchars($client->telefono) ?></span>
+        <?php if ($model->choferes_autorizados): ?>
+        <div class="client-drivers">
+            <div class="client-drivers-label">Choferes Autorizados:</div>
+            <div class="client-drivers-content"><?= nl2br(htmlspecialchars($model->choferes_autorizados)) ?></div>
         </div>
         <?php endif; ?>
     </div>
