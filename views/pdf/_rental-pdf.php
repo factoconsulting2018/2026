@@ -60,7 +60,7 @@ if (empty($totalFinal) || $totalFinal == 0) {
             font-size: 20px; 
             font-weight: bold; 
             font-style: italic; 
-            margin-bottom: 4px; 
+            margin-bottom: 6px; 
             margin-top: 0;
             color: #000;
             font-family: 'Times New Roman', Georgia, serif;
@@ -70,7 +70,7 @@ if (empty($totalFinal) || $totalFinal == 0) {
         }
         .company-legal { 
             font-size: 12px; 
-            margin-bottom: 4px;
+            margin-bottom: 6px;
             margin-top: 0;
             font-weight: normal;
             text-transform: uppercase;
@@ -82,12 +82,12 @@ if (empty($totalFinal) || $totalFinal == 0) {
             font-size: 10px; 
             margin-bottom: 0;
             margin-top: 0;
-            line-height: 1.4;
+            line-height: 1.6;
             text-align: left;
         }
         .company-address .line {
             display: block;
-            margin-bottom: 1px;
+            margin-bottom: 3px;
         }
         .order-header {
             background-color: #f5f5f5;
@@ -251,7 +251,7 @@ if (empty($totalFinal) || $totalFinal == 0) {
     
     <!-- Información de la orden -->
     <div class="order-header">
-        Orden de Alquiler: <?= htmlspecialchars($rentalId) ?> - <?= htmlspecialchars($car ? $car->nombre : 'N/A') ?>
+        Orden de Alquiler: <span style="color: #dc3545; font-weight: bold;"><?= htmlspecialchars($rentalId) ?></span> - <?= htmlspecialchars($car ? $car->nombre : 'N/A') ?>
     </div>
     
     <!-- Información del cliente -->
