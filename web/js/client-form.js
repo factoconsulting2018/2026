@@ -431,9 +431,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 return response.text().then(text => {
                     throw new Error('Error HTTP ' + response.status + ': ' + text.substring(0, 200));
                 });
-                
-                // Para otros status, también intentar leer el texto
-                return response.text();
             })
             .then(html => {
                 if (!html) return; // Ya se manejó la redirección
