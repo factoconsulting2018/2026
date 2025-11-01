@@ -389,6 +389,30 @@ $this->params['breadcrumbs'][] = $this->title;
         </div>
     </div>
 
+    <!-- Cuadro Informe Total -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header" style="background: linear-gradient(135deg, #22487a 0%, #0d001e 100%); color: white;">
+                    <h5 class="card-title mb-0">
+                        <span class="material-symbols-outlined" style="font-size: 20px; vertical-align: middle; margin-right: 8px; color: white;">
+                            assignment
+                        </span>
+                        <span style="color: white;">Informe Total</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="informe-total" style="padding: 15px; border-radius: 8px; min-height: 50px;">
+                        <p class="mb-0" id="informe-mensaje" style="margin: 0;">
+                            <span style="color: #28a745;">✓ Verificando formulario...</span>
+                        </p>
+                        <ul id="informe-lista" style="margin-top: 10px; padding-left: 20px; display: none;">
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div class="form-group mt-4">
         <div class="d-flex gap-3">
@@ -979,6 +1003,236 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     });
+    
+    // ==========================================
+    // VALIDACIÓN DEL FORMULARIO - INFORME TOTAL
+    // ==========================================
+    
+    function validarFormularioCompleto() {
+        const errores = [];
+        const advertencias = [];
+        
+        // 1. Validar Cliente (requerido)
+        const cliente = document.getElementById('rental-client_id');
+        if (!cliente || !cliente.value || cliente.value === '') {
+            errores.push('Cliente: Debes seleccionar un cliente.');
+        }
+        
+        // 2. Validar Vehículo (requerido)
+        const vehiculo = document.getElementById('rental-car_id');
+        if (!vehiculo || !vehiculo.value || vehiculo.value === '') {
+            errores.push('Vehículo: Debes seleccionar un vehículo.');
+        }
+        
+        // 3. Validar Fecha de inicio (requerida)
+        const fechaInicio = document.getElementById('rental-fecha_inicio');
+        if (!fechaInicio || !fechaInicio.value) {
+            errores.push('Fecha de inicio: Debes seleccionar una fecha de inicio.');
+        }
+        
+        // 4. Validar Hora de inicio (requerida)
+        const horaInicio = document.getElementById('rental-hora_inicio');
+        if (!horaInicio || !horaInicio.value) {
+            errores.push('Hora de inicio: Debes seleccionar una hora de inicio.');
+        }
+        
+        // 5. Validar Fecha final (requerida)
+        const fechaFinal = document.getElementById('rental-fecha_final');
+        if (!fechaFinal || !fechaFinal.value) {
+            errores.push('Fecha final: Debes seleccionar una fecha final.');
+        }
+        
+        // 6. Validar Hora final (requerida)
+        const horaFinal = document.getElementById('rental-hora_final');
+        if (!horaFinal || !horaFinal.value) {
+            errores.push('Hora final: Debes seleccionar una hora final.');
+        }
+        
+        // 7. Validar Cantidad de días (requerido)
+        const cantidadDias = document.getElementById('rental-cantidad_dias');
+        if (!cantidadDias || !cantidadDias.value || parseInt(cantidadDias.value) <= 0) {
+            errores.push('Cantidad de días: Debes ingresar una cantidad de días válida (mayor a 0).');
+        }
+        
+        // 8. Validar Precio por día (requerido)
+        const precioPorDia = document.getElementById('rental-precio_por_dia');
+        if (!precioPorDia || !precioPorDia.value || parseFloat(precioPorDia.value) <= 0) {
+            errores.push('Precio por día: Debes ingresar un precio por día válido (mayor a 0).');
+        }
+        
+        // 9. Validar Lugar de entrega
+        const lugarEntrega = document.getElementById('rental-lugar_entrega');
+        if (!lugarEntrega || !lugarEntrega.value || lugarEntrega.value.trim() === '') {
+            advertencias.push('Lugar de entrega: Es recomendable especificar el lugar de entrega.');
+        }
+        
+        // 10. Validar Lugar de retiro
+        const lugarRetiro = document.getElementById('rental-lugar_retiro');
+        if (!lugarRetiro || !lugarRetiro.value || lugarRetiro.value.trim() === '') {
+            advertencias.push('Lugar de retiro: Es recomendable especificar el lugar de retiro.');
+        }
+        
+        // 11. Validar fechas: fecha final debe ser mayor o igual a fecha inicio
+        if (fechaInicio && fechaInicio.value && fechaFinal && fechaFinal.value) {
+            const fechaIni = new Date(fechaInicio.value);
+            const fechaFin = new Date(fechaFinal.value);
+            if (fechaFin < fechaIni) {
+                errores.push('Fechas: La fecha final no puede ser anterior a la fecha de inicio.');
+            }
+        }
+        
+        // 12. Validar corre apartir (OPCIONAL - no genera error)
+        const correApartirEnabled = document.getElementById('rental-correapartir_enabled');
+        if (correApartirEnabled && correApartirEnabled.checked) {
+            const fechaCorreApartir = document.getElementById('rental-fecha_correapartir');
+            if (!fechaCorreApartir || !fechaCorreApartir.value) {
+                advertencias.push('Corre apartir: Has habilitado corre apartir pero no has seleccionado una fecha.');
+            }
+        }
+        
+        // 13. Validar 1/2 día (OPCIONAL - no genera error)
+        const medioDiaEnabled = document.getElementById('rental-medio_dia_enabled');
+        if (medioDiaEnabled && medioDiaEnabled.checked) {
+            const medioDiaValor = document.getElementById('rental-medio_dia_valor');
+            if (!medioDiaValor || !medioDiaValor.value || parseFloat(medioDiaValor.value) <= 0) {
+                advertencias.push('1/2 día: Has habilitado 1/2 día pero no has ingresado un valor válido.');
+            }
+        }
+        
+        // Actualizar el informe total
+        actualizarInformeTotal(errores, advertencias);
+        
+        return errores.length === 0;
+    }
+    
+    function actualizarInformeTotal(errores, advertencias) {
+        const informeTotal = document.getElementById('informe-total');
+        const informeMensaje = document.getElementById('informe-mensaje');
+        const informeLista = document.getElementById('informe-lista');
+        
+        if (!informeTotal || !informeMensaje || !informeLista) {
+            return;
+        }
+        
+        // Limpiar lista anterior
+        informeLista.innerHTML = '';
+        
+        if (errores.length === 0 && advertencias.length === 0) {
+            // Todo está bien - mostrar en verde
+            informeTotal.style.backgroundColor = '#d4edda';
+            informeTotal.style.border = '2px solid #28a745';
+            informeMensaje.innerHTML = '<span style="color: #155724; font-weight: 600;">✓ Formulario completo y válido. Puedes proceder a crear el alquiler.</span>';
+            informeLista.style.display = 'none';
+        } else if (errores.length > 0) {
+            // Hay errores - mostrar en rojo
+            informeTotal.style.backgroundColor = '#f8d7da';
+            informeTotal.style.border = '2px solid #dc3545';
+            informeMensaje.innerHTML = '<span style="color: #721c24; font-weight: 600;">✗ Se encontraron ' + errores.length + ' error(es) que deben corregirse:</span>';
+            informeLista.style.display = 'block';
+            
+            errores.forEach(function(error) {
+                const li = document.createElement('li');
+                li.style.color = '#721c24';
+                li.style.marginBottom = '5px';
+                li.textContent = error;
+                informeLista.appendChild(li);
+            });
+            
+            // Agregar advertencias si las hay
+            if (advertencias.length > 0) {
+                const advertenciasTitle = document.createElement('li');
+                advertenciasTitle.style.color = '#856404';
+                advertenciasTitle.style.fontWeight = '600';
+                advertenciasTitle.style.marginTop = '10px';
+                advertenciasTitle.textContent = 'Advertencias:';
+                informeLista.appendChild(advertenciasTitle);
+                
+                advertencias.forEach(function(advertencia) {
+                    const li = document.createElement('li');
+                    li.style.color = '#856404';
+                    li.style.marginBottom = '5px';
+                    li.textContent = advertencia;
+                    informeLista.appendChild(li);
+                });
+            }
+        } else {
+            // Solo advertencias - mostrar en amarillo/naranja
+            informeTotal.style.backgroundColor = '#fff3cd';
+            informeTotal.style.border = '2px solid #ffc107';
+            informeMensaje.innerHTML = '<span style="color: #856404; font-weight: 600;">⚠ Formulario válido pero con ' + advertencias.length + ' advertencia(s):</span>';
+            informeLista.style.display = 'block';
+            
+            advertencias.forEach(function(advertencia) {
+                const li = document.createElement('li');
+                li.style.color = '#856404';
+                li.style.marginBottom = '5px';
+                li.textContent = advertencia;
+                informeLista.appendChild(li);
+            });
+        }
+    }
+    
+    // Agregar listeners a todos los campos del formulario para validación en tiempo real
+    const camposFormulario = [
+        'rental-client_id',
+        'rental-car_id',
+        'rental-fecha_inicio',
+        'rental-hora_inicio',
+        'rental-fecha_final',
+        'rental-hora_final',
+        'rental-cantidad_dias',
+        'rental-precio_por_dia',
+        'rental-lugar_entrega',
+        'rental-lugar_retiro',
+        'rental-correapartir_enabled',
+        'rental-fecha_correapartir',
+        'rental-medio_dia_enabled',
+        'rental-medio_dia_valor',
+        // Selectores de hora
+        'hora-inicio-hours',
+        'hora-inicio-minutes',
+        'hora-inicio-period',
+        'hora-final-hours',
+        'hora-final-minutes',
+        'hora-final-period'
+    ];
+    
+    camposFormulario.forEach(function(campoId) {
+        const campo = document.getElementById(campoId);
+        if (campo) {
+            campo.addEventListener('change', function() {
+                // Para los selectores de hora, esperar un momento para que se actualice el campo oculto
+                if (campoId.includes('hora-')) {
+                    setTimeout(validarFormularioCompleto, 100);
+                } else {
+                    validarFormularioCompleto();
+                }
+            });
+            campo.addEventListener('input', validarFormularioCompleto);
+            campo.addEventListener('blur', validarFormularioCompleto);
+        }
+    });
+    
+    // Validar al cargar la página
+    setTimeout(function() {
+        validarFormularioCompleto();
+    }, 500);
+    
+    // Validar antes de enviar el formulario
+    const form = document.querySelector('form.rental-form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            if (!validarFormularioCompleto()) {
+                e.preventDefault();
+                // Scroll al informe total
+                const informeTotal = document.getElementById('informe-total');
+                if (informeTotal) {
+                    informeTotal.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                return false;
+            }
+        });
+    }
 });
 </script>
 
