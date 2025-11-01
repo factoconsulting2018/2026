@@ -311,13 +311,13 @@ if (empty($totalFinal) || $totalFinal == 0) {
         <!-- Desglose de precios -->
         <tr class="price-detail-row">
             <td colspan="5" style="padding: 8px 10px;">
-                <strong>Cantidad días: <?= str_pad($model->cantidad_dias, 2, '0', STR_PAD_LEFT) ?> <?= $unidad ?> = ¢<?= number_format($subtotalDias, 0, '.', ',') ?></strong>
+                <strong>Cantidad días: <?= str_pad($model->cantidad_dias, 2, '0', STR_PAD_LEFT) ?> <?= $unidad ?> = ₡<?= number_format($subtotalDias, 0, '.', ',') ?></strong>
             </td>
         </tr>
         <?php if ($medioDiaActivo): ?>
         <tr class="price-detail-row">
             <td colspan="5" style="padding: 8px 10px;">
-                <strong>1/2 día: ¢<?= number_format($medioDiaValor, 0, '.', ',') ?></strong>
+                <strong>1/2 día: ₡<?= number_format($medioDiaValor, 0, '.', ',') ?></strong>
             </td>
         </tr>
         <?php endif; ?>
@@ -328,7 +328,7 @@ if (empty($totalFinal) || $totalFinal == 0) {
                 <strong>Monto Total de la Orden:</strong>
             </td>
             <td colspan="2" style="text-align: right; padding-right: 15px;">
-                <strong style="font-size: 13px;">¢<?= number_format($totalFinal, 0, '.', ',') ?> colones</strong>
+                <strong style="font-size: 13px;">₡<?= number_format($totalFinal, 0, '.', ',') ?> colones</strong>
             </td>
         </tr>
     </table>

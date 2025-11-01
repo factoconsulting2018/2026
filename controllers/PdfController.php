@@ -697,7 +697,7 @@ class PdfController extends Controller
         $html .= '
             <tr class="price-detail-row">
                 <td colspan="5" style="padding: 8px 10px;">
-                    <strong>Cantidad días: ' . str_pad($rental->cantidad_dias, 2, '0', STR_PAD_LEFT) . ' días = ¢' . number_format($subtotalDias, 0, '.', ',') . '</strong>
+                    <strong>Cantidad días: ' . str_pad($rental->cantidad_dias, 2, '0', STR_PAD_LEFT) . ' días = ₡' . number_format($subtotalDias, 0, '.', ',') . '</strong>
                 </td>
             </tr>';
         
@@ -706,7 +706,7 @@ class PdfController extends Controller
             $html .= '
             <tr class="price-detail-row">
                 <td colspan="5" style="padding: 8px 10px;">
-                    <strong>1/2 día: ¢' . number_format($medioDiaValor, 0, '.', ',') . '</strong>
+                    <strong>1/2 día: ₡' . number_format($medioDiaValor, 0, '.', ',') . '</strong>
                 </td>
             </tr>';
         }
@@ -718,7 +718,7 @@ class PdfController extends Controller
                     <strong>Monto Total de la Orden:</strong>
                 </td>
                 <td colspan="2" style="text-align: right; padding-right: 15px;">
-                    <strong style="font-size: 13px;">¢' . number_format($rental->total_precio, 0, '.', ',') . ' colones</strong>
+                    <strong style="font-size: 13px;">₡' . number_format($rental->total_precio, 0, '.', ',') . ' colones</strong>
                 </td>
             </tr>
         </table>
@@ -834,12 +834,12 @@ class PdfController extends Controller
             <tr>
                 <td>Artículo #' . $order->article_id . '</td>
                 <td>' . $order->quantity . '</td>
-                <td>¢' . number_format($order->unit_price, 0) . '</td>
-                <td>¢' . number_format($order->total_price, 0) . '</td>
+                <td>₡' . number_format($order->unit_price, 0) . '</td>
+                <td>₡' . number_format($order->total_price, 0) . '</td>
             </tr>
             <tr>
                 <td colspan="3"><strong>Total:</strong></td>
-                <td><strong>¢' . number_format($order->total_price, 0) . '</strong></td>
+                <td><strong>₡' . number_format($order->total_price, 0) . '</strong></td>
             </tr>
         </table>
         
@@ -909,7 +909,7 @@ class PdfController extends Controller
         
         <h4>SOBRE LA ENTREGA</h4>
         <ol>
-            <li>Recuerde entregar el vehículo con el tanque de gasolina lleno. En caso de no poder realizarlo indíquelo a la oficina se cobrará la gasolina + ¢15,000 iva.</li>
+            <li>Recuerde entregar el vehículo con el tanque de gasolina lleno. En caso de no poder realizarlo indíquelo a la oficina se cobrará la gasolina + ₡15,000 iva.</li>
             <li>Recuerde revisar el estado del vehículo antes de entregarlo.</li>
             <li>En caso de emergencia o accidente debe llamar al 88781108 con Ing. Ronald.</li>
             <li>En caso de rayones o siniestros debe cancelar el monto de $800 dólares en casos mayores como accidente u otros deberá cancelar $1,000.</li>
