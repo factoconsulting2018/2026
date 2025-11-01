@@ -628,7 +628,19 @@ class PdfController extends Controller
                 <td class="vehicle-header" colspan="5">Tipo de Vehículo: ' . htmlspecialchars($car ? ($car->nombre . ' - ' . ($car->cantidad_pasajeros ?: 5) . ' pasajeros') : 'Vehículo no encontrado') . '</td>
             </tr>
             <tr>
-                <td class="vehicle-quantity" colspan="5">Cantidad de días: ' . str_pad($rental->cantidad_dias, 2, '0', STR_PAD_LEFT) . '</td>
+                <td class="vehicle-quantity" colspan="5">';
+        
+        // Agregar información del 1/2 día si está habilitado
+        $medioDiaEnabled = intval($rental->medio_dia_enabled ?? 0);
+        $medioDiaValor = floatval($rental->medio_dia_valor ?? 0);
+        $medioDiaActivo = ($medioDiaEnabled >= 1) && ($medioDiaValor > 0);
+        
+        $cantidadTexto = 'Cantidad de días: ' . str_pad($rental->cantidad_dias, 2, '0', STR_PAD_LEFT);
+        if ($medioDiaActivo) {
+            $cantidadTexto .= ' + 1/2 día (¢' . number_format($medioDiaValor, 0, '.', ',') . ')';
+        }
+        
+        $html .= htmlspecialchars($cantidadTexto) . '</td>
             </tr>
             <tr>
                 <td class="vehicle-quantity" colspan="5">Cantidad de vehículos: 1 unidad</td>
@@ -636,7 +648,14 @@ class PdfController extends Controller
             <tr class="price-row">
                 <td>Precio:</td>
                 <td>¢' . number_format($rental->precio_por_dia, 0) . '</td>
-                <td>1 Unidad x ' . str_pad($rental->cantidad_dias, 2, '0', STR_PAD_LEFT) . '</td>
+                <td>1 Unidad x ' . str_pad($rental->cantidad_dias, 2, '0', STR_PAD_LEFT);
+        
+        // Agregar información del 1/2 día en la línea de precio
+        if ($medioDiaActivo) {
+            $html .= ' + 1/2 día (¢' . number_format($medioDiaValor, 0, '.', ',') . ')';
+        }
+        
+        $html .= '</td>
                 <td class="total-label">Total:</td>
                 <td class="total-value">¢' . number_format($rental->total_precio, 0) . '</td>
             </tr>
