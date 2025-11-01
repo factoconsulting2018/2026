@@ -13,6 +13,7 @@ use yii\data\ActiveDataProvider;
 use yii\web\UploadedFile;
 use yii\web\Response;
 use app\models\CarAvailability;
+use Mpdf\Mpdf;
 
 class RentalController extends Controller
 {
@@ -744,7 +745,7 @@ class RentalController extends Controller
             @ini_set('output_buffering', 0);
             
             // Crear PDF usando mPDF
-            require_once Yii::getAlias('@vendor/autoload.php');
+            // El autoloader de Composer ya está cargado por Yii2 en el entry point
             
             // Crear directorio temporal personalizado para mPDF
             $tempDir = Yii::getAlias('@app') . '/runtime/mpdf_temp';
@@ -752,7 +753,7 @@ class RentalController extends Controller
                 mkdir($tempDir, 0777, true);
             }
             
-            $pdf = new \Mpdf\Mpdf([
+            $pdf = new Mpdf([
                 'mode' => 'utf-8',
                 'format' => 'A4',
                 'orientation' => 'P',

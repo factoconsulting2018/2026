@@ -10,6 +10,7 @@ use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\AccessControl;
 use TCPDF;
+use Mpdf\Mpdf;
 
 /**
  * PdfController maneja la generación de PDFs para órdenes y alquileres
@@ -211,7 +212,7 @@ class PdfController extends Controller
                 mkdir($tempDir, 0777, true);
             }
             
-            $mpdf = new \Mpdf\Mpdf([
+            $mpdf = new Mpdf([
                 'mode' => 'utf-8',
                 'format' => 'A4',
                 'orientation' => 'P',
@@ -998,7 +999,7 @@ class PdfController extends Controller
             
             Yii::info('Generando PDF con mPDF para rental ID: ' . $id, 'pdf');
             
-            $mpdf = new \Mpdf\Mpdf([
+            $mpdf = new Mpdf([
                 'mode' => 'utf-8',
                 'format' => 'A4',
                 'orientation' => 'P',
@@ -1120,7 +1121,7 @@ class PdfController extends Controller
             }
             
             // Generar PDF
-            $mpdf = new \Mpdf\Mpdf([
+            $mpdf = new Mpdf([
                 'mode' => 'utf-8',
                 'format' => 'A4',
                 'orientation' => 'P',
