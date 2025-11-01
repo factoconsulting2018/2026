@@ -526,10 +526,10 @@ class PdfController extends Controller
             .header-table td { vertical-align: top; padding: 0; }
             .company-info { width: 70%; text-align: left; }
             .logo-container { width: 30%; text-align: right; }
-            .company-name { font-size: 20px; font-weight: bold; font-style: italic; margin-bottom: 6px; margin-top: 0; font-family: "Times New Roman", Georgia, serif; text-align: left; letter-spacing: 0.5px; line-height: 1.2; }
-            .company-legal { font-size: 12px; margin-bottom: 6px; margin-top: 0; font-weight: normal; text-transform: uppercase; letter-spacing: 1px; line-height: 1.3; text-align: left; }
-            .company-address { font-size: 10px; margin-bottom: 0; margin-top: 0; line-height: 1.6; text-align: left; }
-            .company-address .line { display: block; margin-bottom: 3px; }
+            .company-name { font-size: 20px; font-weight: bold; font-style: italic; margin-bottom: 0; margin-top: 0; padding-bottom: 0; font-family: "Times New Roman", Georgia, serif; text-align: left; letter-spacing: 0.5px; line-height: 1.1; }
+            .company-legal { font-size: 12px; margin-bottom: 0; margin-top: 0; padding-top: 0; padding-bottom: 0; font-weight: normal; text-transform: uppercase; letter-spacing: 1px; line-height: 1.2; text-align: left; }
+            .company-address { font-size: 10px; margin-bottom: 0; margin-top: 0; padding-top: 0; padding-bottom: 0; line-height: 1.2; text-align: left; }
+            .company-address .line { display: block; margin-bottom: 0; padding-bottom: 0; }
             .logo { width: 90px; height: 90px; object-fit: contain; }
             .client-section {
                 background-color: #f9f9f9;
@@ -765,10 +765,10 @@ class PdfController extends Controller
             .header-table td { vertical-align: top; padding: 0; }
             .company-info { width: 70%; text-align: left; }
             .logo-container { width: 30%; text-align: right; }
-            .company-name { font-size: 20px; font-weight: bold; font-style: italic; margin-bottom: 6px; margin-top: 0; font-family: "Times New Roman", Georgia, serif; text-align: left; letter-spacing: 0.5px; line-height: 1.2; }
-            .company-legal { font-size: 12px; margin-bottom: 6px; margin-top: 0; font-weight: normal; text-transform: uppercase; letter-spacing: 1px; line-height: 1.3; text-align: left; }
-            .company-address { font-size: 10px; margin-bottom: 0; margin-top: 0; line-height: 1.6; text-align: left; }
-            .company-address .line { display: block; margin-bottom: 3px; }
+            .company-name { font-size: 20px; font-weight: bold; font-style: italic; margin-bottom: 0; margin-top: 0; padding-bottom: 0; font-family: "Times New Roman", Georgia, serif; text-align: left; letter-spacing: 0.5px; line-height: 1.1; }
+            .company-legal { font-size: 12px; margin-bottom: 0; margin-top: 0; padding-top: 0; padding-bottom: 0; font-weight: normal; text-transform: uppercase; letter-spacing: 1px; line-height: 1.2; text-align: left; }
+            .company-address { font-size: 10px; margin-bottom: 0; margin-top: 0; padding-top: 0; padding-bottom: 0; line-height: 1.2; text-align: left; }
+            .company-address .line { display: block; margin-bottom: 0; padding-bottom: 0; }
             .logo { width: 90px; height: 90px; object-fit: contain; }
             .order-info { margin-bottom: 15px; text-align: left; font-size: 10px; }
             .order-title { font-size: 10px; font-weight: normal; margin: 0; }

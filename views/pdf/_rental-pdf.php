@@ -55,39 +55,46 @@ if (empty($totalFinal) || $totalFinal == 0) {
             margin-bottom: 12px;
             padding-bottom: 0;
             margin-top: 0;
+            padding-top: 0;
         }
         .company-name { 
             font-size: 20px; 
             font-weight: bold; 
             font-style: italic; 
-            margin-bottom: 6px; 
+            margin-bottom: 0; 
             margin-top: 0;
+            padding-bottom: 0;
             color: #000;
             font-family: 'Times New Roman', Georgia, serif;
             text-align: left;
             letter-spacing: 0.5px;
-            line-height: 1.2;
+            line-height: 1.1;
         }
         .company-legal { 
             font-size: 12px; 
-            margin-bottom: 6px;
+            margin-bottom: 0;
             margin-top: 0;
+            padding-top: 0;
+            padding-bottom: 0;
             font-weight: normal;
             text-transform: uppercase;
             letter-spacing: 1px;
-            line-height: 1.3;
+            line-height: 1.2;
             text-align: left;
         }
         .company-address { 
             font-size: 10px; 
             margin-bottom: 0;
             margin-top: 0;
-            line-height: 1.6;
+            padding-top: 0;
+            padding-bottom: 0;
+            line-height: 1.2;
             text-align: left;
         }
         .company-address .line {
             display: block;
-            margin-bottom: 3px;
+            margin-bottom: 0;
+            padding-bottom: 0;
         }
         .order-header {
             background-color: #f5f5f5;
