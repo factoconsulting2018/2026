@@ -377,9 +377,20 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('✅ El botón "Guardar Cliente" funcionará sin validación JavaScript');
             console.log('✅ La validación se realizará en el servidor');
             
+            // Verificar que el botón existe
+            const submitBtn = clientForm.querySelector('button[type="submit"]');
+            console.log('🔍 Botón submit encontrado:', submitBtn ? '✅ SÍ' : '❌ NO');
+            
+            if (submitBtn) {
+                console.log('🔍 Botón submit ID:', submitBtn.id);
+                console.log('🔍 Botón submit texto:', submitBtn.textContent.trim());
+                console.log('🔍 Botón submit disabled:', submitBtn.disabled);
+            }
+            
             // NO agregar ningún listener - dejar que el formulario se envíe normalmente
             // El servidor validará los datos y mostrará errores si es necesario
             console.log('✅ Listo para actualizar - sin interceptar submit');
+            console.log('✅ El formulario debería enviarse normalmente al hacer clic en "Guardar Cliente"');
         } else {
             console.log('📝 MODO CREACIÓN: Agregando event listener para AJAX (necesario para cédula duplicada)');
             
