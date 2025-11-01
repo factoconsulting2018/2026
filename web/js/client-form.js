@@ -354,50 +354,34 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Validación del formulario y envío con AJAX
     if (clientForm) {
-        console.log('Formulario de cliente encontrado, agregando event listener');
+        console.log('Formulario de cliente encontrado');
         
-        clientForm.addEventListener('submit', function(e) {
-            console.log('=== SUBMIT DEL FORMULARIO INTERCEPTADO ===');
+        // Detectar si es actualización ANTES de agregar el listener
+        const currentPath = window.location.pathname;
+        const isUpdate = currentPath.includes('/client/update/');
+        
+        console.log('URL actual:', currentPath);
+        console.log('Es actualización?', isUpdate);
+        
+        // Solo agregar listener para CREACIONES (necesitamos AJAX para manejar cédula duplicada)
+        // Para ACTUALIZACIONES, permitir que el formulario se envíe normalmente sin interceptar
+        if (!isUpdate) {
+            console.log('Agregando event listener para creación (AJAX necesario para cédula duplicada)');
             
-            // Obtener la URL correcta del formulario ANTES de validar
-            const form = this;
-            const formAction = form.action || form.getAttribute('action') || window.location.pathname;
-            const isUpdate = formAction.includes('/client/update/');
-            
-            console.log('URL del formulario:', formAction);
-            console.log('Es actualización?', isUpdate);
-            console.log('URL actual:', window.location.pathname);
-            
-            if (!validarFormulario()) {
-                console.log('Validación del formulario falló - PREVENIR ENVÍO');
-                e.preventDefault();
-                return false;
-            }
-            
-            console.log('Validación exitosa');
-            
-            // Para actualizaciones, permitir submit normal y solo mostrar loading
-            if (isUpdate) {
-                console.log('Es una actualización - PERMITIENDO SUBMIT NORMAL');
-                const submitBtn = form.querySelector('button[type="submit"]');
-                if (submitBtn) {
-                    submitBtn.disabled = true;
-                    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Actualizando...';
+            clientForm.addEventListener('submit', function(e) {
+                console.log('=== SUBMIT DEL FORMULARIO INTERCEPTADO (CREACIÓN) ===');
+                
+                const form = this;
+                
+                if (!validarFormulario()) {
+                    console.log('Validación del formulario falló - PREVENIR ENVÍO');
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
                 }
                 
-                // Verificar que el formulario tenga la acción correcta
-                console.log('Action del formulario antes de enviar:', form.action);
-                console.log('Method del formulario:', form.method);
-                console.log('Enctype del formulario:', form.enctype);
-                
-                // NO hacer preventDefault - permitir que el formulario se envíe normalmente
-                console.log('=== PERMITIENDO SUBMIT NORMAL (NO preventDefault) ===');
-                return true; // Esto permite que el submit continúe normalmente
-            }
-            
-            // Solo para creación, usar AJAX para manejar cédula duplicada
-            e.preventDefault(); // Prevenir submit por defecto solo para creación
-            console.log('Es una creación, usando AJAX');
+                console.log('Validación exitosa - usando AJAX para creación');
+                e.preventDefault(); // Solo prevenir para creaciones
             
             // Mostrar loading en el botón de envío
             const submitBtn = form.querySelector('button[type="submit"]');
