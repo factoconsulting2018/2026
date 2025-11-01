@@ -354,19 +354,39 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Validación del formulario y envío con AJAX
     if (clientForm) {
-        console.log('Formulario de cliente encontrado');
+        console.log('✅ Formulario de cliente encontrado');
         
         // Detectar si es actualización ANTES de agregar el listener
         const currentPath = window.location.pathname;
         const isUpdate = currentPath.includes('/client/update/');
         
-        console.log('URL actual:', currentPath);
-        console.log('Es actualización?', isUpdate);
+        console.log('📍 URL actual:', currentPath);
+        console.log('🔄 Es actualización?', isUpdate);
         
-        // Solo agregar listener para CREACIONES (necesitamos AJAX para manejar cédula duplicada)
-        // Para ACTUALIZACIONES, permitir que el formulario se envíe normalmente sin interceptar
-        if (!isUpdate) {
-            console.log('Agregando event listener para creación (AJAX necesario para cédula duplicada)');
+        if (isUpdate) {
+            console.log('✅ MODO ACTUALIZACIÓN: El formulario se enviará normalmente (sin interceptar)');
+            console.log('✅ El botón "Guardar Cliente" debería funcionar correctamente');
+            
+            // Agregar validación visual pero NO interceptar el submit
+            const submitBtn = clientForm.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.addEventListener('click', function(e) {
+                    console.log('🖱️ Botón Guardar Cliente clickeado');
+                    
+                    // Validar formulario antes de enviar (solo visual)
+                    if (!validarFormulario()) {
+                        console.log('❌ Validación falló - PREVENIR ENVÍO');
+                        e.preventDefault();
+                        return false;
+                    }
+                    
+                    console.log('✅ Validación pasó - PERMITIR ENVÍO NORMAL');
+                    // NO hacer preventDefault() - permitir que el formulario se envíe normalmente
+                    return true;
+                });
+            }
+        } else {
+            console.log('📝 MODO CREACIÓN: Agregando event listener para AJAX (necesario para cédula duplicada)');
             
             clientForm.addEventListener('submit', function(e) {
                 console.log('=== SUBMIT DEL FORMULARIO INTERCEPTADO (CREACIÓN) ===');
