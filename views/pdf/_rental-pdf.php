@@ -241,11 +241,12 @@ if (empty($totalFinal) || $totalFinal == 0) {
     <!-- Encabezado de la empresa -->
     <div class="header-section">
         <div class="company-name"><?= htmlspecialchars($companyInfo['name'] ?? 'FACTO RENT A CAR') ?></div>
-        <div class="company-legal">FACTO AUTOS DE ALQUILER S.A</div>
         <div class="company-address">
             <span class="line">3-101-880789</span>
-            <span class="line">San Ramón, Alajuela.</span>
-            <span class="line">Costa Rica</span>
+        </div>
+        <div class="company-legal">FACTO AUTOS DE ALQUILER S.A</div>
+        <div class="company-address">
+            <span class="line">San Ramón, Alajuela. Costa Rica</span>
         </div>
     </div>
     
