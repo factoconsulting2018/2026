@@ -48,14 +48,32 @@ $this->params['breadcrumbs'][] = $this->title;
                             'hora_inicio',
                             'fecha_final',
                             'hora_final',
-                            'cantidad_dias',
+                            [
+                                'attribute' => 'cantidad_dias',
+                                'value' => function($model) {
+                                    $texto = $model->cantidad_dias . ' días';
+                                    if ((!empty($model->medio_dia_enabled) || $model->medio_dia_enabled == 1) && !empty($model->medio_dia_valor) && $model->medio_dia_valor > 0) {
+                                        $texto .= ' + 1/2 día (¢' . number_format($model->medio_dia_valor, 0) . ')';
+                                    }
+                                    return $texto;
+                                },
+                            ],
                             [
                                 'attribute' => 'precio_por_dia',
                                 'value' => '₡' . number_format($model->precio_por_dia, 2),
                             ],
                             [
+                                'attribute' => 'medio_dia_enabled',
+                                'label' => '1/2 Día',
+                                'value' => function($model) {
+                                    if ((!empty($model->medio_dia_enabled) || $model->medio_dia_enabled == 1) && !empty($model->medio_dia_valor) && $model->medio_dia_valor > 0) {
+                                        return 'Sí (¢' . number_format($model->medio_dia_valor, 2) . ')';
+                                    }
+                                    return 'No';
+                                },
+                            ],
+                            [
                                 'attribute' => 'total_precio',
-                                'value' => '₡' . number_format($model->total_precio ?? 0, 2),
                                 'format' => 'raw',
                                 'value' => function($model) {
                                     $total = number_format($model->total_precio ?? 0, 2);
