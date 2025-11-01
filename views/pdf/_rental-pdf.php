@@ -170,43 +170,38 @@ if (!function_exists('formatDatetimeEs')) {
         ?>
         <?php
         // Construir texto de cantidad de días con 1/2 día si está habilitado
-        // Verificar si medio_dia_enabled es 1 (puede venir como string '1' o int 1)
-        $medioDiaHabilitado = (
-            $model->medio_dia_enabled == 1 || 
-            $model->medio_dia_enabled === '1' || 
-            $model->medio_dia_enabled === true ||
-            !empty($model->medio_dia_enabled)
-        );
-        $medioDiaValor = !empty($model->medio_dia_valor) ? floatval($model->medio_dia_valor) : 0;
-        $medioDiaActivo = $medioDiaHabilitado && $medioDiaValor > 0;
+        // Forzar conversión a entero/string para asegurar comparación correcta
+        $medioDiaEnabled = intval($model->medio_dia_enabled ?? 0);
+        $medioDiaValor = floatval($model->medio_dia_valor ?? 0);
         
+        // Verificar si está habilitado (1 o mayor)
+        $medioDiaActivo = ($medioDiaEnabled >= 1) && ($medioDiaValor > 0);
+        
+        // Construir el texto base
         $cantidadTexto = 'Cantidad de ' . $unidad . ': ' . str_pad($model->cantidad_dias, 2, '0', STR_PAD_LEFT);
+        
+        // Agregar información del 1/2 día si está activo
         if ($medioDiaActivo) {
-            $cantidadTexto .= ' + 1/2 día (¢' . number_format($medioDiaValor, 0) . ')';
+            $cantidadTexto .= ' + 1/2 día (¢' . number_format($medioDiaValor, 0, '.', ',') . ')';
         }
         ?>
         <tr>
-            <td colspan="5" style="text-align: center; font-weight: bold;"><?= htmlspecialchars($cantidadTexto) ?></td>
+            <td colspan="5" style="text-align: center; font-weight: bold; font-size: 10px; padding: 8px;">
+                <?= htmlspecialchars($cantidadTexto, ENT_QUOTES, 'UTF-8') ?>
+            </td>
         </tr>
         <tr>
             <td colspan="5" style="text-align: center;">Cantidad de vehículos: 1 unidad</td>
         </tr>
         <tr>
-            <td colspan="5" style="text-align: left; padding: 6px;">
-                <?= str_pad($model->cantidad_dias, 2, '0', STR_PAD_LEFT) ?> <?= $unidad ?> a ¢<?= number_format($model->precio_por_dia, 0) ?> 
-                <strong>(¢<?= number_format($model->cantidad_dias * $model->precio_por_dia, 0) ?>)</strong>
+            <td colspan="5" style="text-align: left; padding: 6px; font-size: 9px;">
+                <?= str_pad($model->cantidad_dias, 2, '0', STR_PAD_LEFT) ?> <?= $unidad ?> a ¢<?= number_format($model->precio_por_dia, 0, '.', ',') ?> 
+                <strong>(¢<?= number_format($model->cantidad_dias * $model->precio_por_dia, 0, '.', ',') ?>)</strong>
                 <?php 
-                // Verificar si medio_dia_enabled es 1 (puede venir como string '1' o int 1)
-                $medioDiaHabilitado = (
-                    $model->medio_dia_enabled == 1 || 
-                    $model->medio_dia_enabled === '1' || 
-                    $model->medio_dia_enabled === true ||
-                    !empty($model->medio_dia_enabled)
-                );
-                $medioDiaValor = !empty($model->medio_dia_valor) ? floatval($model->medio_dia_valor) : 0;
-                if ($medioDiaHabilitado && $medioDiaValor > 0): 
+                // Reutilizar las mismas variables calculadas arriba para consistencia
+                if ($medioDiaActivo): 
                 ?>
-                    + 1/2 día (<strong>¢<?= number_format($medioDiaValor, 0) ?></strong>)
+                    + 1/2 día (<strong>¢<?= number_format($medioDiaValor, 0, '.', ',') ?></strong>)
                 <?php endif; ?>
             </td>
         </tr>
