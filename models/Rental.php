@@ -199,6 +199,29 @@ class Rental extends ActiveRecord
         }
         return false;
     }
+    
+    /**
+     * Actualizar total_precio después de guardar usando SQL directo
+     * Esto es necesario porque total_precio está excluido de safeAttributes()
+     */
+    public function afterSave($insert, $changedAttributes)
+    {
+        parent::afterSave($insert, $changedAttributes);
+        
+        // Calcular total_precio (incluye medio_dia_valor si está habilitado)
+        $totalCalculado = $this->calculateTotalPrice();
+        
+        // Actualizar usando SQL directo para evitar problemas con safeAttributes()
+        Yii::$app->db->createCommand()
+            ->update('rentals', 
+                ['total_precio' => $totalCalculado], 
+                ['id' => $this->id]
+            )
+            ->execute();
+        
+        // Actualizar el atributo en el modelo para que esté sincronizado
+        $this->total_precio = $totalCalculado;
+    }
 
 
     /**
