@@ -372,6 +372,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log('=== SUBMIT DEL FORMULARIO INTERCEPTADO (CREACIÓN) ===');
                 
                 const form = this;
+                const formAction = form.action || form.getAttribute('action') || '/client/create';
                 
                 if (!validarFormulario()) {
                     console.log('Validación del formulario falló - PREVENIR ENVÍO');
@@ -383,20 +384,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log('Validación exitosa - usando AJAX para creación');
                 e.preventDefault(); // Solo prevenir para creaciones
             
-            // Mostrar loading en el botón de envío
-            const submitBtn = form.querySelector('button[type="submit"]');
-            
-            if (submitBtn) {
-                submitBtn.disabled = true;
-                const loadingText = isUpdate ? 'Actualizando...' : 'Guardando...';
-                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>' + loadingText;
-            }
-            
+                // Mostrar loading en el botón de envío
+                const submitBtn = form.querySelector('button[type="submit"]');
+                
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Guardando...';
+                }
+                
                 // Enviar formulario con AJAX para manejar la respuesta
-            // El FormData incluirá automáticamente todos los campos del formulario, incluido el CSRF token de Yii2
-            const formData = new FormData(form);
-            
-            console.log('Enviando formulario a:', formAction);
+                // El FormData incluirá automáticamente todos los campos del formulario, incluido el CSRF token de Yii2
+                const formData = new FormData(form);
+                
+                console.log('Enviando formulario a:', formAction);
             
             fetch(formAction, {
                 method: 'POST',
@@ -455,76 +455,41 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             })
                 .then(html => {
-                if (!html) return; // Ya se manejó la redirección
-                
-                // Detectar si es crear o actualizar para el texto del botón
-                const isUpdate = formAction.includes('/client/update/');
-                const buttonText = isUpdate ? 'Actualizar Cliente' : 'Guardar Cliente';
-                
-                    // Restaurar botón
-                if (submitBtn) {
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">save</span>' + buttonText;
-                }
+                    if (!html) return; // Ya se manejó la redirección
                     
+                    // Restaurar botón
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">save</span>Guardar Cliente';
+                    }
+                        
                     // Verificar si la respuesta contiene un error de cédula duplicada
-                if (html.includes('ya está registrada') || html.includes('has already been taken') || html.includes('cedulaDuplicateModal')) {
-                    // En caso de cédula duplicada, redirigir directamente al listado (el servidor ya configuró el mensaje)
-                    window.location.href = '/client/index';
-                } else if (html.includes('Gestión de Clientes') || html.includes('client-index')) {
-                    // Si la respuesta es la página de listado, significa que se creó exitosamente
-                    window.location.href = '/client/index';
-                } else if (html.includes('Actualizar Cliente:') || html.includes('client-update')) {
-                    // Si es la página de actualización, puede tener errores de validación o ser exitoso
-                    if (html.includes('Cliente actualizado exitosamente') || html.includes('success')) {
-                        // Actualización exitosa - redirigir a la vista
-                        if (isUpdate) {
-                            const clientIdMatch = formAction.match(/\/client\/update\/(\d+)/);
-                            if (clientIdMatch) {
-                                console.log('Redirigiendo a vista del cliente:', clientIdMatch[1]);
-                                window.location.href = '/client/view/' + clientIdMatch[1];
-                                return;
-                            }
-                        }
+                    if (html.includes('ya está registrada') || html.includes('has already been taken') || html.includes('cedulaDuplicateModal')) {
+                        // En caso de cédula duplicada, redirigir directamente al listado (el servidor ya configuró el mensaje)
                         window.location.href = '/client/index';
-                        return;
+                    } else if (html.includes('Gestión de Clientes') || html.includes('client-index')) {
+                        // Si la respuesta es la página de listado, significa que se creó exitosamente
+                        window.location.href = '/client/index';
                     } else {
-                        // Es la página de actualización con errores de validación - recargar para mostrarlos
-                        console.log('Hay errores de validación, recargando página');
+                        // Para cualquier otro caso, recargar la página con la respuesta
+                        console.log('Recargando página con respuesta HTML');
                         document.open();
                         document.write(html);
                         document.close();
-                        return;
                     }
-                } else if (html.includes('Cliente:') && html.includes('client-view')) {
-                    // Si llegamos aquí con HTML que incluye la vista, significa que ya se redirigió
-                    console.log('Página de vista detectada, ya se actualizó correctamente');
-                    // Recargar la página actual para mostrar los cambios
-                    window.location.reload();
-                    return;
-                } else {
-                    // Para cualquier otro caso, recargar la página con la respuesta
-                    console.log('Recargando página con respuesta HTML');
-                    document.open();
-                    document.write(html);
-                    document.close();
-                }
                 })
                 .catch(error => {
-                console.error('Error al enviar formulario:', error);
-                
-                // Restaurar botón en caso de error (isUpdate ya está definido arriba)
-                const buttonText = isUpdate ? 'Actualizar Cliente' : 'Guardar Cliente';
-                
+                    console.error('Error al enviar formulario:', error);
+                    
                     // Restaurar botón en caso de error
-                if (submitBtn) {
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">save</span>' + buttonText;
-                }
-                
-                // Mostrar error al usuario
-                showNotification('❌ Error al guardar: ' + (error.message || 'Error desconocido. Por favor, intenta nuevamente.'), 'danger');
-            });
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">save</span>Guardar Cliente';
+                    }
+                    
+                    // Mostrar error al usuario
+                    showNotification('❌ Error al guardar: ' + (error.message || 'Error desconocido. Por favor, intenta nuevamente.'), 'danger');
+                });
             
             return false; // Prevenir submit adicional
         });
