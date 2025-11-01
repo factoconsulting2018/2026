@@ -357,31 +357,42 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Formulario de cliente encontrado, agregando event listener');
         
         clientForm.addEventListener('submit', function(e) {
-            console.log('Submit del formulario interceptado');
+            console.log('=== SUBMIT DEL FORMULARIO INTERCEPTADO ===');
+            
+            // Obtener la URL correcta del formulario ANTES de validar
+            const form = this;
+            const formAction = form.action || form.getAttribute('action') || window.location.pathname;
+            const isUpdate = formAction.includes('/client/update/');
+            
+            console.log('URL del formulario:', formAction);
+            console.log('Es actualización?', isUpdate);
+            console.log('URL actual:', window.location.pathname);
             
             if (!validarFormulario()) {
-                console.log('Validación del formulario falló');
+                console.log('Validación del formulario falló - PREVENIR ENVÍO');
                 e.preventDefault();
                 return false;
             }
             
             console.log('Validación exitosa');
             
-            // Obtener la URL correcta del formulario (puede ser /client/create o /client/update/X)
-            const form = this;
-            const formAction = form.action || form.getAttribute('action') || window.location.pathname;
-            const isUpdate = formAction.includes('/client/update/');
-            
             // Para actualizaciones, permitir submit normal y solo mostrar loading
             if (isUpdate) {
-                console.log('Es una actualización, permitiendo submit normal');
+                console.log('Es una actualización - PERMITIENDO SUBMIT NORMAL');
                 const submitBtn = form.querySelector('button[type="submit"]');
                 if (submitBtn) {
                     submitBtn.disabled = true;
                     submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Actualizando...';
                 }
-                // Permitir que el formulario se envíe normalmente (no preventDefault)
-                return true;
+                
+                // Verificar que el formulario tenga la acción correcta
+                console.log('Action del formulario antes de enviar:', form.action);
+                console.log('Method del formulario:', form.method);
+                console.log('Enctype del formulario:', form.enctype);
+                
+                // NO hacer preventDefault - permitir que el formulario se envíe normalmente
+                console.log('=== PERMITIENDO SUBMIT NORMAL (NO preventDefault) ===');
+                return true; // Esto permite que el submit continúe normalmente
             }
             
             // Solo para creación, usar AJAX para manejar cédula duplicada

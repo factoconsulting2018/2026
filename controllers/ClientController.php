@@ -186,8 +186,15 @@ class ClientController extends Controller
     public function actionUpdate($id)
     {
         $model = $this->findModel($id);
+        
+        Yii::info('=== INICIO ACTUALIZACIÓN CLIENTE ID: ' . $id . ' ===', 'client');
+        Yii::info('POST recibido: ' . json_encode(Yii::$app->request->post()), 'client');
+        Yii::info('Estado inicial del modelo: ' . json_encode($model->attributes), 'client');
 
         if ($model->load(Yii::$app->request->post())) {
+            Yii::info('Modelo cargado con POST exitosamente', 'client');
+            Yii::info('Datos del modelo después de load: ' . json_encode($model->attributes), 'client');
+            
             // Limpiar mensajes flash antes de procesar (por si acaso hay mensajes previos de intentos anteriores)
             $flashTypes = ['success', 'error', 'warning', 'info', 'cedula_duplicate'];
             foreach ($flashTypes as $type) {
@@ -200,22 +207,43 @@ class ClientController extends Controller
                 $parts = explode(' - ', $actividad, 2);
                 $model->actividad_economica_codigo = trim($parts[0]);
                 $model->actividad_economica_descripcion = trim($parts[1]);
+                Yii::info('Actividad económica procesada: ' . $model->actividad_economica_codigo . ' - ' . $model->actividad_economica_descripcion, 'client');
             }
             
             // Formatear WhatsApp
             if (!empty($model->whatsapp)) {
+                $whatsappOriginal = $model->whatsapp;
                 $model->whatsapp = Client::formatWhatsApp($model->whatsapp);
+                Yii::info('WhatsApp formateado: ' . $whatsappOriginal . ' -> ' . $model->whatsapp, 'client');
+            }
+            
+            Yii::info('Validando modelo antes de guardar...', 'client');
+            if ($model->validate()) {
+                Yii::info('Validación exitosa', 'client');
+            } else {
+                Yii::error('Errores de validación: ' . json_encode($model->errors), 'client');
             }
             
             if ($model->save()) {
+                Yii::info('Modelo guardado exitosamente', 'client');
+                Yii::info('Datos finales del modelo: ' . json_encode($model->attributes), 'client');
+                
                 // Establecer mensaje de éxito (ya limpiamos arriba)
                 Yii::$app->session->setFlash('success', 'Cliente actualizado exitosamente');
                 Yii::info('Cliente actualizado exitosamente con ID: ' . $model->id, 'client');
+                Yii::info('=== FIN ACTUALIZACIÓN CLIENTE ID: ' . $id . ' (ÉXITO) ===', 'client');
                 return $this->redirect(['view', 'id' => $model->id]);
             } else {
-                Yii::error('Error al actualizar cliente ID ' . $model->id . ': ' . json_encode($model->errors), 'client');
+                Yii::error('ERROR: No se pudo guardar el modelo', 'client');
+                Yii::error('Errores del modelo: ' . json_encode($model->errors), 'client');
+                Yii::error('Datos del modelo que intentó guardarse: ' . json_encode($model->attributes), 'client');
                 Yii::$app->session->setFlash('error', '❌ Error al actualizar cliente: ' . json_encode($model->errors));
+                Yii::info('=== FIN ACTUALIZACIÓN CLIENTE ID: ' . $id . ' (ERROR) ===', 'client');
             }
+        } else {
+            Yii::error('ERROR: No se pudo cargar el modelo con POST', 'client');
+            Yii::error('POST recibido: ' . json_encode(Yii::$app->request->post()), 'client');
+            Yii::info('=== FIN ACTUALIZACIÓN CLIENTE ID: ' . $id . ' (NO SE CARGÓ POST) ===', 'client');
         }
 
         return $this->render('update', [
