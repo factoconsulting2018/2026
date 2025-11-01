@@ -381,7 +381,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>' + loadingText;
             }
             
-            // Enviar formulario con AJAX para manejar la respuesta
+                // Enviar formulario con AJAX para manejar la respuesta
             // El FormData incluirá automáticamente todos los campos del formulario, incluido el CSRF token de Yii2
             const formData = new FormData(form);
             
@@ -390,33 +390,44 @@ document.addEventListener('DOMContentLoaded', function() {
             fetch(formAction, {
                 method: 'POST',
                 body: formData,
-                redirect: 'manual', // Manejar redirecciones manualmente
+                redirect: 'follow', // Permitir que el navegador siga redirecciones
                 credentials: 'same-origin' // Incluir cookies/sesión
             })
             .then(response => {
-                console.log('Respuesta recibida:', response.status, response.type);
+                console.log('Respuesta recibida:', response.status, response.type, response.url);
                 
-                // Si es una redirección (status 301, 302, 303, 307, 308)
+                // Si hay redirección (response.redirected o URL diferente)
+                if (response.redirected || response.url !== formAction) {
+                    const finalUrl = response.url || response.headers.get('Location');
+                    console.log('Redirección detectada a:', finalUrl);
+                    
+                    if (finalUrl) {
+                        // Construir URL completa si es relativa
+                        let redirectUrl = finalUrl;
+                        if (!redirectUrl.startsWith('http')) {
+                            redirectUrl = redirectUrl.startsWith('/') ? 
+                                (window.location.origin + redirectUrl) : 
+                                (window.location.origin + '/' + redirectUrl);
+                        }
+                        console.log('Redirigiendo a:', redirectUrl);
+                        window.location.href = redirectUrl;
+                        return null;
+                    }
+                }
+                
+                // Si es una redirección HTTP (status 301, 302, 303, 307, 308)
                 if (response.status >= 300 && response.status < 400) {
-                    const location = response.headers.get('Location') || response.url;
-                    console.log('Redirección detectada a:', location);
+                    const location = response.headers.get('Location');
+                    console.log('Redirección HTTP detectada:', location);
                     
                     if (location) {
-                        // Construir URL completa si es relativa
-                        const redirectUrl = location.startsWith('http') ? location : (window.location.origin + location);
+                        let redirectUrl = location;
+                        if (!redirectUrl.startsWith('http')) {
+                            redirectUrl = redirectUrl.startsWith('/') ? 
+                                (window.location.origin + redirectUrl) : 
+                                (window.location.origin + '/' + redirectUrl);
+                        }
                         console.log('Redirigiendo a:', redirectUrl);
-                        
-                        // Si redirige al index, ir allí
-                        if (redirectUrl.includes('/client/index')) {
-                            window.location.href = '/client/index';
-                            return null;
-                        }
-                        // Si redirige a view (después de actualizar), ir a la vista del cliente
-                        if (redirectUrl.includes('/client/view')) {
-                            window.location.href = redirectUrl;
-                            return null;
-                        }
-                        // Para cualquier otra redirección, seguirla
                         window.location.href = redirectUrl;
                         return null;
                     }
@@ -432,62 +443,69 @@ document.addEventListener('DOMContentLoaded', function() {
                     throw new Error('Error HTTP ' + response.status + ': ' + text.substring(0, 200));
                 });
             })
-            .then(html => {
+                .then(html => {
                 if (!html) return; // Ya se manejó la redirección
                 
                 // Detectar si es crear o actualizar para el texto del botón
                 const isUpdate = formAction.includes('/client/update/');
                 const buttonText = isUpdate ? 'Actualizar Cliente' : 'Guardar Cliente';
                 
-                // Restaurar botón
+                    // Restaurar botón
                 if (submitBtn) {
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">save</span>' + buttonText;
                 }
-                
-                // Verificar si la respuesta contiene un error de cédula duplicada
+                    
+                    // Verificar si la respuesta contiene un error de cédula duplicada
                 if (html.includes('ya está registrada') || html.includes('has already been taken') || html.includes('cedulaDuplicateModal')) {
                     // En caso de cédula duplicada, redirigir directamente al listado (el servidor ya configuró el mensaje)
                     window.location.href = '/client/index';
                 } else if (html.includes('Gestión de Clientes') || html.includes('client-index')) {
                     // Si la respuesta es la página de listado, significa que se creó exitosamente
                     window.location.href = '/client/index';
-                } else if (html.includes('Actualizar Cliente:') || html.includes('client-update') || html.includes('client-view')) {
-                    // Si es la página de actualización o vista, puede ser una actualización exitosa que redirigió
-                    // O puede tener errores de validación
-                    if (html.includes('Cliente actualizado exitosamente') || html.includes('Cliente creado exitosamente')) {
-                        // Si hay mensaje de éxito pero no se redirigió, forzar redirección
+                } else if (html.includes('Actualizar Cliente:') || html.includes('client-update')) {
+                    // Si es la página de actualización, puede tener errores de validación o ser exitoso
+                    if (html.includes('Cliente actualizado exitosamente') || html.includes('success')) {
+                        // Actualización exitosa - redirigir a la vista
                         if (isUpdate) {
-                            // Después de actualizar, ir a la vista del cliente
                             const clientIdMatch = formAction.match(/\/client\/update\/(\d+)/);
                             if (clientIdMatch) {
+                                console.log('Redirigiendo a vista del cliente:', clientIdMatch[1]);
                                 window.location.href = '/client/view/' + clientIdMatch[1];
-                            } else {
-                                window.location.href = '/client/index';
+                                return;
                             }
-                        } else {
-                            window.location.href = '/client/index';
                         }
+                        window.location.href = '/client/index';
+                        return;
                     } else {
-                        // Es la página de creación/actualización con errores de validación - recargar para mostrarlos
+                        // Es la página de actualización con errores de validación - recargar para mostrarlos
+                        console.log('Hay errores de validación, recargando página');
                         document.open();
                         document.write(html);
                         document.close();
+                        return;
                     }
+                } else if (html.includes('Cliente:') && html.includes('client-view')) {
+                    // Si llegamos aquí con HTML que incluye la vista, significa que ya se redirigió
+                    console.log('Página de vista detectada, ya se actualizó correctamente');
+                    // Recargar la página actual para mostrar los cambios
+                    window.location.reload();
+                    return;
                 } else {
                     // Para cualquier otro caso, recargar la página con la respuesta
+                    console.log('Recargando página con respuesta HTML');
                     document.open();
                     document.write(html);
                     document.close();
                 }
-            })
-            .catch(error => {
+                })
+                .catch(error => {
                 console.error('Error al enviar formulario:', error);
                 
                 // Restaurar botón en caso de error (isUpdate ya está definido arriba)
                 const buttonText = isUpdate ? 'Actualizar Cliente' : 'Guardar Cliente';
                 
-                // Restaurar botón en caso de error
+                    // Restaurar botón en caso de error
                 if (submitBtn) {
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">save</span>' + buttonText;
