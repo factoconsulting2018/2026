@@ -200,7 +200,18 @@ class Rental extends ActiveRecord
         return false;
     }
     
-
+    /**
+     * Refrescar el modelo después de guardar para obtener el total_precio calculado
+     * por la columna generada de la base de datos
+     */
+    public function afterSave($insert, $changedAttributes)
+    {
+        parent::afterSave($insert, $changedAttributes);
+        
+        // Refrescar el modelo para obtener el valor calculado de total_precio
+        // Esto es necesario porque total_precio es una columna generada
+        $this->refresh();
+    }
 
     /**
      * Define qué atributos son seguros para asignación masiva

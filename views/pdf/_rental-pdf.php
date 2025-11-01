@@ -180,17 +180,25 @@ if (!function_exists('formatDatetimeEs')) {
                 <strong>(¢<?= number_format($model->cantidad_dias * $model->precio_por_dia, 0) ?>)</strong>
             </td>
         </tr>
-        <?php if (!empty($model->medio_dia_enabled) && $model->medio_dia_valor > 0): ?>
+        <?php if ((!empty($model->medio_dia_enabled) || $model->medio_dia_enabled == 1) && !empty($model->medio_dia_valor) && $model->medio_dia_valor > 0): ?>
         <tr>
             <td colspan="5" style="text-align: left; padding: 6px;">
                 + 1/2 día (<strong>¢<?= number_format($model->medio_dia_valor, 0) ?> colones</strong>)
             </td>
         </tr>
         <?php endif; ?>
+        <?php
+        // Calcular el total: usar total_precio de la columna generada si está disponible y > 0
+        // Si es 0 o null, calcular manualmente usando calculateTotalPrice()
+        $totalFinal = $model->total_precio;
+        if (empty($totalFinal) || $totalFinal == 0) {
+            $totalFinal = $model->calculateTotalPrice();
+        }
+        ?>
         <tr class="total-row">
             <td colspan="3" style="padding: 6px;"></td>
             <td style="text-align: right; padding: 6px;"><strong>Monto total de la orden:</strong></td>
-            <td style="text-align: right; padding: 6px;"><strong>¢<?= number_format($model->total_precio ?? 0, 0) ?> colones</strong></td>
+            <td style="text-align: right; padding: 6px;"><strong>¢<?= number_format($totalFinal, 0) ?> colones</strong></td>
         </tr>
     </table>
 </body>

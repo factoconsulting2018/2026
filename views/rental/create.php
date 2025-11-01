@@ -725,10 +725,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     cantidadDias.min = 1;
                 }
             } else {
-                // Alquiler por días - calcular días como antes
+                // Alquiler por días - calcular días correctamente
+                // Ejemplo: 20/12 a 22/12 debería ser 2 días (diferencia de días)
+                // Normalizar las fechas a medianoche para calcular correctamente
+                inicio.setHours(0, 0, 0, 0);
+                fin.setHours(0, 0, 0, 0);
                 const diffTime = fin - inicio;
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 porque incluye ambos días
-                cantidadDias.value = diffDays > 0 ? diffDays : 1;
+                // Calcular diferencia en días: del 20/12 al 22/12 = 2 días (no 3)
+                // Math.floor redondea hacia abajo, lo cual es correcto para diferencia de días
+                const diasCalculados = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                // Si es el mismo día, usar 1 día. Si hay diferencia, usar la diferencia exacta (sin sumar 1)
+                cantidadDias.value = diasCalculados >= 0 ? (diasCalculados === 0 ? 1 : diasCalculados) : 1;
                 cantidadDias.min = 1;
             }
         }

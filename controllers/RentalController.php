@@ -133,6 +133,9 @@ class RentalController extends Controller
             Yii::info('DEBUG - Modelo cargado - car_id: ' . $model->car_id . ', fecha_inicio: ' . $model->fecha_inicio . ', cantidad_dias: ' . $model->cantidad_dias, 'rental');
             
             if ($model->save()) {
+                // Refrescar el modelo para obtener el total_precio calculado por la columna generada
+                $model->refresh();
+                
                 // Actualizar estado del carro
                 if ($model->car) {
                     $model->car->status = 'alquilado';
@@ -186,6 +189,9 @@ class RentalController extends Controller
             }
             
             if ($model->save()) {
+                // Refrescar el modelo para obtener el total_precio calculado por la columna generada
+                $model->refresh();
+                
                 Yii::$app->session->setFlash('success', '✅ Alquiler actualizado exitosamente');
                 return $this->redirect(['view', 'id' => $model->id]);
             } else {
@@ -719,6 +725,9 @@ class RentalController extends Controller
             if (!$rental) {
                 return;
             }
+            
+            // Refrescar el modelo para obtener el total_precio calculado por la columna generada
+            $rental->refresh();
             
             $companyInfo = \app\models\CompanyConfig::getCompanyInfo();
             
