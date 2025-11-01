@@ -44,11 +44,11 @@ if (empty($totalFinal) || $totalFinal == 0) {
             size: A4 portrait;
         }
         body { 
-            font-family: Arial, sans-serif; 
+            font-family: 'Times New Roman', Georgia, serif; 
             font-size: 10px; 
             margin: 0; 
             padding: 0;
-            line-height: 1.4;
+            line-height: 1.5;
             color: #333;
         }
         .header-section {
@@ -62,16 +62,19 @@ if (empty($totalFinal) || $totalFinal == 0) {
             font-style: italic; 
             margin-bottom: 3px; 
             color: #000;
+            font-family: 'Times New Roman', Georgia, serif;
         }
         .company-legal { 
             font-size: 11px; 
             margin-bottom: 5px;
             font-weight: normal;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         .company-address { 
             font-size: 9px; 
             margin-bottom: 0;
-            line-height: 1.3;
+            line-height: 1.4;
         }
         .order-header {
             background-color: #f5f5f5;
@@ -80,6 +83,8 @@ if (empty($totalFinal) || $totalFinal == 0) {
             border-left: 4px solid #22487a;
             font-size: 11px;
             font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         .client-section {
             background-color: #f9f9f9;
@@ -109,6 +114,8 @@ if (empty($totalFinal) || $totalFinal == 0) {
             padding-bottom: 4px;
             border-bottom: 1px solid #ccc;
             color: #22487a;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         .info-row { 
             margin: 5px 0;
@@ -122,6 +129,12 @@ if (empty($totalFinal) || $totalFinal == 0) {
         }
         .info-value {
             color: #333;
+        }
+        .client-label {
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            font-size: 9px;
         }
         .vehicle-table { 
             width: 100%; 
@@ -143,6 +156,8 @@ if (empty($totalFinal) || $totalFinal == 0) {
             text-align: center;
             font-size: 11px;
             padding: 10px 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         .vehicle-quantity {
             text-align: center;
@@ -166,6 +181,10 @@ if (empty($totalFinal) || $totalFinal == 0) {
             padding: 10px 8px;
             font-size: 11px;
         }
+        .total-row strong {
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
         .payment-section {
             margin-top: 15px;
             padding: 10px;
@@ -179,6 +198,8 @@ if (empty($totalFinal) || $totalFinal == 0) {
             color: #22487a;
             border-bottom: 1px solid #22487a;
             padding-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         .payment-info {
             font-size: 9px;
@@ -193,6 +214,11 @@ if (empty($totalFinal) || $totalFinal == 0) {
         .separator {
             margin: 10px 0;
             border-top: 1px dashed #ccc;
+        }
+        .info-label {
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            font-size: 9px;
         }
     </style>
 </head>
@@ -210,12 +236,12 @@ if (empty($totalFinal) || $totalFinal == 0) {
     
     <!-- Información de la orden -->
     <div class="order-header">
-        ORDEN DE ALQUILER: <?= htmlspecialchars($rentalId) ?> - <?= htmlspecialchars($car ? $car->nombre : 'N/A') ?>
+        Orden de Alquiler: <?= htmlspecialchars($rentalId) ?> - <?= htmlspecialchars($car ? $car->nombre : 'N/A') ?>
     </div>
     
     <!-- Información del cliente -->
     <div class="client-section">
-        <div class="section-title">INFORMACIÓN DEL CLIENTE</div>
+        <div class="section-title">Información del Cliente</div>
         <div class="client-info">
             <span class="client-label">Nombre:</span>
             <span><?= htmlspecialchars($client ? $client->full_name : 'N/A') ?></span>
@@ -234,7 +260,7 @@ if (empty($totalFinal) || $totalFinal == 0) {
     
     <!-- Entrega del vehículo -->
     <div class="section-container">
-        <div class="section-title">📅 ENTREGA DEL VEHÍCULO</div>
+        <div class="section-title">Entrega del Vehículo</div>
         <?php if ($model->correapartir_enabled && $model->fecha_correapartir): ?>
         <div class="info-row">
             <span class="info-label">Correapartir (Cortesía):</span>
@@ -257,7 +283,7 @@ if (empty($totalFinal) || $totalFinal == 0) {
     
     <!-- Devolución del vehículo -->
     <div class="section-container">
-        <div class="section-title">🔄 DEVOLUCIÓN DEL VEHÍCULO</div>
+        <div class="section-title">Devolución del Vehículo</div>
         <div class="info-row">
             <span class="info-label">Fecha de entrega:</span>
             <span class="info-value"><?= formatDatetimeEs($model->fecha_final . ' ' . $model->hora_final) ?></span>
@@ -272,7 +298,7 @@ if (empty($totalFinal) || $totalFinal == 0) {
     <table class="vehicle-table">
         <tr>
             <td class="vehicle-header" colspan="5">
-                🚗 TIPO DE VEHÍCULO: <?= htmlspecialchars($car ? ($car->nombre . ' - ' . ($car->cantidad_pasajeros ?: 5) . ' pasajeros') : 'N/A') ?>
+                Tipo de Vehículo: <?= htmlspecialchars($car ? ($car->nombre . ' - ' . ($car->cantidad_pasajeros ?: 5) . ' pasajeros') : 'N/A') ?>
             </td>
         </tr>
         <tr>
@@ -299,7 +325,7 @@ if (empty($totalFinal) || $totalFinal == 0) {
         <!-- Total -->
         <tr class="total-row">
             <td colspan="3" style="text-align: left; padding-left: 15px;">
-                <strong>MONTO TOTAL DE LA ORDEN:</strong>
+                <strong>Monto Total de la Orden:</strong>
             </td>
             <td colspan="2" style="text-align: right; padding-right: 15px;">
                 <strong style="font-size: 13px;">¢<?= number_format($totalFinal, 0, '.', ',') ?> colones</strong>
@@ -309,7 +335,7 @@ if (empty($totalFinal) || $totalFinal == 0) {
     
     <!-- Información de pago -->
     <div class="payment-section">
-        <div class="payment-title">💳 INFORMACIÓN DE PAGO</div>
+        <div class="payment-title">Información de Pago</div>
         <table style="width: 100%; border-collapse: collapse; margin-top: 5px;">
             <tr>
                 <td style="padding: 4px 0; font-weight: bold; width: 120px; vertical-align: top;">BCR®:</td>

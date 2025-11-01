@@ -519,7 +519,7 @@ class PdfController extends Controller
         $html = '
         <style>
             @page { size: letter; margin: 0.75in; }
-            body { font-family: Arial, sans-serif; font-size: 10px; line-height: 1.3; margin: 0; padding: 0; color: #000; }
+            body { font-family: "Times New Roman", Georgia, serif; font-size: 10px; line-height: 1.5; margin: 0; padding: 0; color: #333; }
             .document { max-width: 100%; }
             .header { margin-bottom: 15px; }
             .header-table { width: 100%; border-collapse: collapse; }
@@ -549,6 +549,8 @@ class PdfController extends Controller
                 border-left: 4px solid #22487a;
                 font-size: 11px;
                 font-weight: bold;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
             }
             .section-title { 
                 font-size: 11px; 
@@ -557,6 +559,8 @@ class PdfController extends Controller
                 padding-bottom: 4px;
                 border-bottom: 1px solid #ccc;
                 color: #22487a;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
             }
             .info-row { 
                 margin: 5px 0;
@@ -573,16 +577,17 @@ class PdfController extends Controller
             }
         .vehicle-table { width: 100%; border-collapse: collapse; margin-top: 10px; border: 2px solid #000; background-color: #fff; }
             .vehicle-table td { border: 1px solid #000; padding: 8px 6px; text-align: left; font-size: 10px; }
-            .vehicle-header { background-color: #22487a; color: #fff; font-weight: bold; text-align: center; font-size: 11px; padding: 10px 6px; }
+            .vehicle-header { background-color: #22487a; color: #fff; font-weight: bold; text-align: center; font-size: 11px; padding: 10px 6px; text-transform: uppercase; letter-spacing: 0.5px; }
             .vehicle-quantity { text-align: center; background-color: #f0f0f0; font-weight: bold; }
             .price-detail-row { background-color: #fff; border-top: 1px dashed #ccc; }
             .price-detail-row td { padding: 6px 8px; font-size: 10px; }
             .total-row { background-color: #e8e8e8; border-top: 2px solid #000; font-weight: bold; }
             .total-row td { padding: 10px 8px; font-size: 11px; }
+            .total-row strong { text-transform: uppercase; letter-spacing: 0.5px; }
             .total-label { text-align: left; font-weight: bold; }
             .total-value { text-align: right; font-weight: bold; font-size: 13px; }
             .payment-section { margin-top: 15px; padding: 10px; background-color: #f5f5f5; border: 1px solid #ccc; }
-            .payment-title { font-size: 11px; font-weight: bold; margin-bottom: 8px; color: #22487a; border-bottom: 1px solid #22487a; padding-bottom: 4px; }
+            .payment-title { font-size: 11px; font-weight: bold; margin-bottom: 8px; color: #22487a; border-bottom: 1px solid #22487a; padding-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
             .payment-info { font-size: 9px; margin: 4px 0; line-height: 1.5; }
             .payment-label { font-weight: bold; display: inline-block; min-width: 100px; }
         </style>
@@ -615,10 +620,10 @@ class PdfController extends Controller
             </table>
         </div>
         <div class="order-header">
-            ORDEN DE ALQUILER: ' . htmlspecialchars($rentalId) . ' - ' . htmlspecialchars($car ? $car->nombre : 'Vehículo no encontrado') . '
+            Orden de Alquiler: ' . htmlspecialchars($rentalId) . ' - ' . htmlspecialchars($car ? $car->nombre : 'Vehículo no encontrado') . '
         </div>
         <div class="client-section">
-            <div class="section-title">INFORMACIÓN DEL CLIENTE</div>
+            <div class="section-title">Información del Cliente</div>
             <div class="info-row">
                 <span class="info-label">Nombre:</span>
                 <span>' . htmlspecialchars($client ? $client->full_name : 'Cliente no encontrado') . '</span>
@@ -637,7 +642,7 @@ class PdfController extends Controller
         
         $html .= '</div>
         <div class="section-container">
-            <div class="section-title">📅 ENTREGA DEL VEHÍCULO</div>';
+            <div class="section-title">Entrega del Vehículo</div>';
         
         if ($rental->correapartir_enabled && !empty($rental->fecha_correapartir)) {
             $html .= '<div class="info-row">
@@ -660,7 +665,7 @@ class PdfController extends Controller
             </div>
         </div>
         <div class="section-container">
-            <div class="section-title">🔄 DEVOLUCIÓN DEL VEHÍCULO</div>
+            <div class="section-title">Devolución del Vehículo</div>
             <div class="info-row">
                 <span class="info-label">Fecha de entrega:</span>
                 <span>' . $this->formatDateTimeSafe($rental->fecha_final, $rental->hora_final) . '</span>
@@ -673,7 +678,7 @@ class PdfController extends Controller
         <table class="vehicle-table">
             <tr>
                 <td class="vehicle-header" colspan="5">
-                    🚗 TIPO DE VEHÍCULO: ' . htmlspecialchars($car ? ($car->nombre . ' - ' . ($car->cantidad_pasajeros ?: 5) . ' pasajeros') : 'Vehículo no encontrado') . '
+                    Tipo de Vehículo: ' . htmlspecialchars($car ? ($car->nombre . ' - ' . ($car->cantidad_pasajeros ?: 5) . ' pasajeros') : 'Vehículo no encontrado') . '
                 </td>
             </tr>
             <tr>
@@ -710,7 +715,7 @@ class PdfController extends Controller
         $html .= '
             <tr class="total-row">
                 <td colspan="3" style="text-align: left; padding-left: 15px;">
-                    <strong>MONTO TOTAL DE LA ORDEN:</strong>
+                    <strong>Monto Total de la Orden:</strong>
                 </td>
                 <td colspan="2" style="text-align: right; padding-right: 15px;">
                     <strong style="font-size: 13px;">¢' . number_format($rental->total_precio, 0, '.', ',') . ' colones</strong>
@@ -719,7 +724,7 @@ class PdfController extends Controller
         </table>
         
         <div class="payment-section">
-            <div class="payment-title">💳 INFORMACIÓN DE PAGO</div>
+            <div class="payment-title">Información de Pago</div>
             <table style="width: 100%; border-collapse: collapse; margin-top: 5px;">
                 <tr>
                     <td style="padding: 4px 0; font-weight: bold; width: 120px; vertical-align: top;">BCR®:</td>
@@ -751,7 +756,7 @@ class PdfController extends Controller
         $html = '
         <style>
             @page { size: letter; margin: 0.75in; }
-            body { font-family: Arial, sans-serif; font-size: 10px; line-height: 1.3; margin: 0; padding: 0; color: #000; }
+            body { font-family: "Times New Roman", Georgia, serif; font-size: 10px; line-height: 1.5; margin: 0; padding: 0; color: #333; }
             .document { max-width: 100%; }
             .header { margin-bottom: 15px; }
             .header-table { width: 100%; border-collapse: collapse; }
@@ -871,7 +876,7 @@ class PdfController extends Controller
     {
         // Usar HTML personalizado si se provee
         if (!empty($customHtml)) {
-            return '<style>body { font-family: Arial, sans-serif; font-size: 10px; }</style><div>' . $customHtml . '</div>';
+            return '<style>body { font-family: "Times New Roman", Georgia, serif; font-size: 10px; }</style><div>' . $customHtml . '</div>';
         }
 
         // Usar HTML global desde configuración si existe
@@ -883,7 +888,7 @@ class PdfController extends Controller
         // Fallback: contenido por defecto "Reservación firme contra depósito"
         $html = '
         <style>
-            body { font-family: Arial, sans-serif; font-size: 10px; line-height: 1.6; }
+            body { font-family: "Times New Roman", Georgia, serif; font-size: 10px; line-height: 1.6; }
             h2 { font-size: 14px; font-weight: bold; text-align: center; margin-bottom: 10px; }
             h3 { font-size: 12px; font-weight: bold; margin-top: 12px; margin-bottom: 6px; }
             h4 { font-size: 11px; font-weight: bold; margin-top: 10px; margin-bottom: 5px; }
