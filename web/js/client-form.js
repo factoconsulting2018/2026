@@ -309,8 +309,17 @@ function showErrorAlert(title, message, details = null) {
 }
 
 function validarFormulario() {
-    const cedula = document.getElementById('cedula-input').value.trim();
-    const nombre = document.getElementById('nombre-input').value.trim();
+    // Validar solo si los elementos existen (para evitar errores)
+    const cedulaInput = document.getElementById('cedula-input');
+    const nombreInput = document.getElementById('nombre-input');
+    
+    if (!cedulaInput || !nombreInput) {
+        console.warn('⚠️ Elementos de validación no encontrados, validación omitida');
+        return true; // Permitir envío si no se encuentran los elementos
+    }
+    
+    const cedula = cedulaInput.value.trim();
+    const nombre = nombreInput.value.trim();
     
     if (!cedula) {
         showNotification('❌ La cédula es requerida', 'warning');
@@ -365,26 +374,12 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (isUpdate) {
             console.log('✅ MODO ACTUALIZACIÓN: El formulario se enviará normalmente (sin interceptar)');
-            console.log('✅ El botón "Guardar Cliente" debería funcionar correctamente');
+            console.log('✅ El botón "Guardar Cliente" funcionará sin validación JavaScript');
+            console.log('✅ La validación se realizará en el servidor');
             
-            // Agregar validación visual pero NO interceptar el submit
-            const submitBtn = clientForm.querySelector('button[type="submit"]');
-            if (submitBtn) {
-                submitBtn.addEventListener('click', function(e) {
-                    console.log('🖱️ Botón Guardar Cliente clickeado');
-                    
-                    // Validar formulario antes de enviar (solo visual)
-                    if (!validarFormulario()) {
-                        console.log('❌ Validación falló - PREVENIR ENVÍO');
-                        e.preventDefault();
-                        return false;
-                    }
-                    
-                    console.log('✅ Validación pasó - PERMITIR ENVÍO NORMAL');
-                    // NO hacer preventDefault() - permitir que el formulario se envíe normalmente
-                    return true;
-                });
-            }
+            // NO agregar ningún listener - dejar que el formulario se envíe normalmente
+            // El servidor validará los datos y mostrará errores si es necesario
+            console.log('✅ Listo para actualizar - sin interceptar submit');
         } else {
             console.log('📝 MODO CREACIÓN: Agregando event listener para AJAX (necesario para cédula duplicada)');
             
