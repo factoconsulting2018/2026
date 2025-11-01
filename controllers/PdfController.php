@@ -530,27 +530,61 @@ class PdfController extends Controller
             .company-legal { font-size: 12px; margin-bottom: 10px; }
             .company-address { font-size: 10px; margin-bottom: 10px; }
             .logo { width: 90px; height: 90px; object-fit: contain; }
-            .order-info { margin-bottom: 15px; text-align: left; font-size: 10px; }
-            .order-title { font-size: 10px; font-weight: normal; margin: 0; }
-            .section-title { font-size: 10px; font-weight: bold; margin-top: 15px; margin-bottom: 5px; text-align: left; }
-            .info-row { margin-bottom: 3px; }
-            .info-label { font-weight: normal; }
-            .info-value { font-weight: normal; }
-            .vehicle-table { width: 100%; border-collapse: collapse; margin-top: 10px; border: 1px solid #000; }
-            .vehicle-table td { border: 1px solid #000; padding: 5px; text-align: left; font-size: 10px; }
-            .vehicle-header { font-weight: bold; text-align: center; }
-            .vehicle-quantity { text-align: center; }
-            .price-row td { text-align: left; }
-            .total-label { text-align: right; font-weight: bold; }
-            .total-value { text-align: right; font-weight: bold; }
-            .bank-section { margin-top: 15px; }
-            .bank-title { font-size: 10px; font-weight: bold; margin-bottom: 5px; }
-            .bank-info { font-size: 10px; margin-bottom: 3px; }
-            .bank-name { font-weight: bold; }
-            .reservation-info { margin-top: 15px; font-size: 10px; }
-            .reservation-item { margin-bottom: 3px; }
-            .reservation-label { font-weight: bold; }
-            .reservation-value { font-weight: bold; }
+            .client-section {
+                background-color: #f9f9f9;
+                padding: 8px 10px;
+                margin: 10px 0;
+                border-left: 3px solid #4CAF50;
+            }
+            .section-container {
+                margin: 12px 0;
+                padding: 8px;
+                border: 1px solid #ddd;
+                background-color: #fafafa;
+            }
+            .order-header {
+                background-color: #f5f5f5;
+                padding: 8px 10px;
+                margin: 12px 0 10px 0;
+                border-left: 4px solid #22487a;
+                font-size: 11px;
+                font-weight: bold;
+            }
+            .section-title { 
+                font-size: 11px; 
+                font-weight: bold; 
+                margin-bottom: 8px;
+                padding-bottom: 4px;
+                border-bottom: 1px solid #ccc;
+                color: #22487a;
+            }
+            .info-row { 
+                margin: 5px 0;
+                font-size: 10px;
+                padding: 3px 0;
+            }
+            .info-label { 
+                font-weight: bold;
+                display: inline-block;
+                width: 140px;
+            }
+            .info-value {
+                color: #333;
+            }
+        .vehicle-table { width: 100%; border-collapse: collapse; margin-top: 10px; border: 2px solid #000; background-color: #fff; }
+            .vehicle-table td { border: 1px solid #000; padding: 8px 6px; text-align: left; font-size: 10px; }
+            .vehicle-header { background-color: #22487a; color: #fff; font-weight: bold; text-align: center; font-size: 11px; padding: 10px 6px; }
+            .vehicle-quantity { text-align: center; background-color: #f0f0f0; font-weight: bold; }
+            .price-detail-row { background-color: #fff; border-top: 1px dashed #ccc; }
+            .price-detail-row td { padding: 6px 8px; font-size: 10px; }
+            .total-row { background-color: #e8e8e8; border-top: 2px solid #000; font-weight: bold; }
+            .total-row td { padding: 10px 8px; font-size: 11px; }
+            .total-label { text-align: left; font-weight: bold; }
+            .total-value { text-align: right; font-weight: bold; font-size: 13px; }
+            .payment-section { margin-top: 15px; padding: 10px; background-color: #f5f5f5; border: 1px solid #ccc; }
+            .payment-title { font-size: 11px; font-weight: bold; margin-bottom: 8px; color: #22487a; border-bottom: 1px solid #22487a; padding-bottom: 4px; }
+            .payment-info { font-size: 9px; margin: 4px 0; line-height: 1.5; }
+            .payment-label { font-weight: bold; display: inline-block; min-width: 100px; }
         </style>
         
         <div class="document">
@@ -580,58 +614,72 @@ class PdfController extends Controller
                 </tr>
             </table>
         </div>
-        <div class="order-info">
-            <div class="order-title">
-                Orden: ' . htmlspecialchars($rentalId) . ' - ' . htmlspecialchars($car ? $car->nombre : 'Vehículo no encontrado') . '
+        <div class="order-header">
+            ORDEN DE ALQUILER: ' . htmlspecialchars($rentalId) . ' - ' . htmlspecialchars($car ? $car->nombre : 'Vehículo no encontrado') . '
+        </div>
+        <div class="client-section">
+            <div class="section-title">INFORMACIÓN DEL CLIENTE</div>
+            <div class="info-row">
+                <span class="info-label">Nombre:</span>
+                <span>' . htmlspecialchars($client ? $client->full_name : 'Cliente no encontrado') . '</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Cédula:</span>
+                <span>' . htmlspecialchars($client ? $client->cedula_fisica : 'N/A') . '</span>
+            </div>';
+        
+        if ($client && $client->telefono) {
+            $html .= '<div class="info-row">
+                <span class="info-label">Teléfono:</span>
+                <span>' . htmlspecialchars($client->telefono) . '</span>
+            </div>';
+        }
+        
+        $html .= '</div>
+        <div class="section-container">
+            <div class="section-title">📅 ENTREGA DEL VEHÍCULO</div>';
+        
+        if ($rental->correapartir_enabled && !empty($rental->fecha_correapartir)) {
+            $html .= '<div class="info-row">
+                <span class="info-label">Correapartir (Cortesía):</span>
+                <span>' . $this->formatDateTimeSpanish($rental->fecha_correapartir) . '</span>
+            </div>';
+        }
+        
+        $html .= '<div class="info-row">
+                <span class="info-label">Fecha de alquiler:</span>
+                <span>' . $this->formatDateTimeSafe($rental->fecha_inicio, $rental->hora_inicio) . '</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Fecha recoge vehículo:</span>
+                <span>' . $this->formatDateTimeSafe($rental->fecha_final, $rental->hora_final) . '</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Lugar de entrega:</span>
+                <span>' . htmlspecialchars($rental->lugar_entrega ?: 'San Ramón') . '</span>
             </div>
         </div>
-        <div class="info-row">
-            <span class="info-label">Nombre del cliente:</span> 
-            <span class="info-value">' . htmlspecialchars($client ? $client->full_name : 'Cliente no encontrado') . '</span>
-        </div>
-        <div class="info-row">
-            <span class="info-label">Cédula:</span> 
-            <span class="info-value">' . htmlspecialchars($client ? $client->cedula_fisica : 'N/A') . '</span>
-        </div>
-        ' . ($client && $client->telefono ? '<div class="info-row">
-            <span class="info-label">Teléfono:</span> 
-            <span class="info-value">' . htmlspecialchars($client->telefono) . '</span>
-        </div>' : '') . '
-        <div class="section-title">ENTREGA DEL VEHÍCULO:</div>
-        <div class="info-row">
-            <span class="info-label">Fecha de alquiler:</span> 
-            <span class="info-value">' . $this->formatDateTimeSafe($rental->fecha_inicio, $rental->hora_inicio) . '</span>
-        </div>
-        <div class="info-row">
-            <span class="info-label">Fecha recoge vehículo:</span> 
-            <span class="info-value">' . (
-                ($rental->correapartir_enabled && !empty($rental->fecha_correapartir))
-                    ? $this->formatDateTimeSpanish($rental->fecha_correapartir)
-                    : $this->formatDateTimeSafe($rental->fecha_inicio, $rental->hora_inicio)
-            ) . '</span>
-        </div>
-        <div class="info-row">
-            <span class="info-label">Lugar:</span> 
-            <span class="info-value">' . htmlspecialchars($rental->lugar_entrega ?: 'San Ramón') . '</span>
-        </div>
-        <div class="section-title">DEVOLUCIÓN DEL VEHÍCULO:</div>
-        <div class="info-row">
-            <span class="info-label">Fecha de entrega:</span> 
-            <span class="info-value">' . $this->formatDateTimeSafe($rental->fecha_final, $rental->hora_final) . '</span>
-        </div>
-        <div class="info-row">
-            <span class="info-label">Lugar:</span> 
-            <span class="info-value">' . htmlspecialchars($rental->lugar_retiro ?: 'San Ramón') . '</span>
+        <div class="section-container">
+            <div class="section-title">🔄 DEVOLUCIÓN DEL VEHÍCULO</div>
+            <div class="info-row">
+                <span class="info-label">Fecha de entrega:</span>
+                <span>' . $this->formatDateTimeSafe($rental->fecha_final, $rental->hora_final) . '</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Lugar de retiro:</span>
+                <span>' . htmlspecialchars($rental->lugar_retiro ?: 'San Ramón') . '</span>
+            </div>
         </div>
         <table class="vehicle-table">
             <tr>
-                <td class="vehicle-header" colspan="5">Tipo de Vehículo: ' . htmlspecialchars($car ? ($car->nombre . ' - ' . ($car->cantidad_pasajeros ?: 5) . ' pasajeros') : 'Vehículo no encontrado') . '</td>
+                <td class="vehicle-header" colspan="5">
+                    🚗 TIPO DE VEHÍCULO: ' . htmlspecialchars($car ? ($car->nombre . ' - ' . ($car->cantidad_pasajeros ?: 5) . ' pasajeros') : 'Vehículo no encontrado') . '
+                </td>
             </tr>
             <tr>
-                <td class="vehicle-quantity" colspan="5">Cantidad de días: ' . str_pad($rental->cantidad_dias, 2, '0', STR_PAD_LEFT) . '</td>
-            </tr>
-            <tr>
-                <td class="vehicle-quantity" colspan="5">Cantidad de vehículos: 1 unidad</td>
+                <td class="vehicle-quantity" colspan="5">
+                    Cantidad de días: ' . str_pad($rental->cantidad_dias, 2, '0', STR_PAD_LEFT) . ' | Cantidad de vehículos: 1 unidad
+                </td>
             </tr>';
         
         // Calcular valores para desglose
@@ -642,8 +690,8 @@ class PdfController extends Controller
         
         // Desglose: Cantidad días
         $html .= '
-            <tr class="price-row">
-                <td colspan="5" style="text-align: left; padding: 5px;">
+            <tr class="price-detail-row">
+                <td colspan="5" style="padding: 8px 10px;">
                     <strong>Cantidad días: ' . str_pad($rental->cantidad_dias, 2, '0', STR_PAD_LEFT) . ' días = ¢' . number_format($subtotalDias, 0, '.', ',') . '</strong>
                 </td>
             </tr>';
@@ -651,8 +699,8 @@ class PdfController extends Controller
         // Desglose: 1/2 día si está activo
         if ($medioDiaActivo) {
             $html .= '
-            <tr class="price-row">
-                <td colspan="5" style="text-align: left; padding: 5px;">
+            <tr class="price-detail-row">
+                <td colspan="5" style="padding: 8px 10px;">
                     <strong>1/2 día: ¢' . number_format($medioDiaValor, 0, '.', ',') . '</strong>
                 </td>
             </tr>';
@@ -660,29 +708,34 @@ class PdfController extends Controller
         
         // Total
         $html .= '
-            <tr class="price-row">
-                <td colspan="3"></td>
-                <td class="total-label">Total:</td>
-                <td class="total-value">¢' . number_format($rental->total_precio, 0, '.', ',') . '</td>
+            <tr class="total-row">
+                <td colspan="3" style="text-align: left; padding-left: 15px;">
+                    <strong>MONTO TOTAL DE LA ORDEN:</strong>
+                </td>
+                <td colspan="2" style="text-align: right; padding-right: 15px;">
+                    <strong style="font-size: 13px;">¢' . number_format($rental->total_precio, 0, '.', ',') . ' colones</strong>
+                </td>
             </tr>
         </table>
         
-        <div class="bank-section">
-            <div class="bank-title">Cuentas Bancarias</div>
-            <div class="bank-info">
-                <span class="bank-name">BCR®:</span> IBAN: CR75015201001050506181
+        <div class="payment-section">
+            <div class="payment-title">💳 INFORMACIÓN DE PAGO</div>
+            <div class="payment-info">
+                <span class="payment-label">BCR®:</span>
+                IBAN: CR75015201001050506181
             </div>
-            <div class="bank-info">
-                <span class="bank-name">BN®:</span> IBAN: CR49015102020010977051
+            <div class="payment-info">
+                <span class="payment-label">BN®:</span>
+                IBAN: CR49015102020010977051
             </div>
-        </div>
-        
-        <div class="reservation-info">
-            <div class="reservation-item">
-                <span class="reservation-label">SIMPEMOVIL:</span> 83670937
+            <div class="payment-info">
+                <span class="payment-label">SINPE MÓVIL:</span>
+                83670937
             </div>
-            <div class="reservation-item">
-                <span class="reservation-label">Monto de la Reservación:</span> ¢' . number_format($rental->total_precio, 0) . '
+            <div style="margin: 10px 0; border-top: 1px dashed #ccc;"></div>
+            <div class="payment-info" style="font-weight: bold; font-size: 10px; margin-top: 5px;">
+                <span class="payment-label">MONTO DE LA RESERVACIÓN:</span>
+                <span style="font-size: 11px;">¢' . number_format($rental->total_precio, 0, '.', ',') . '</span>
             </div>
         </div>
         </div>
