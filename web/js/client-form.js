@@ -1608,15 +1608,53 @@ function deleteFile(fileId) {
         return;
     }
     
+    // Obtener token CSRF
+    const csrfInput = document.querySelector('input[name="_csrf"]') || 
+                      document.querySelector('input[name="csrf-token"]') ||
+                      document.querySelector('input[name="YII_CSRF_TOKEN"]');
+    const csrfToken = csrfInput ? csrfInput.value : null;
+    
+    const headers = {
+        'X-Requested-With': 'XMLHttpRequest',
+        'Content-Type': 'application/json'
+    };
+    
+    if (csrfToken) {
+        headers['X-CSRF-Token'] = csrfToken;
+    }
+    
     fetch(`/client/delete-file/${fileId}`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest'
-        }
+        headers: headers,
+        credentials: 'same-origin'
     })
-    .then(response => response.json())
+    .then(response => {
+        console.log('Respuesta delete-file:', response.status, response.statusText);
+        
+        // Si la respuesta no es exitosa, intentar obtener el error del cuerpo
+        if (!response.ok) {
+            return response.text().then(text => {
+                console.error('Error del servidor:', text);
+                let errorData;
+                try {
+                    // Intentar parsear como JSON
+                    errorData = JSON.parse(text);
+                } catch (e) {
+                    // Si no es JSON, crear un objeto de error
+                    errorData = { 
+                        success: false, 
+                        message: `Error del servidor (${response.status}): ${text.substring(0, 200)}` 
+                    };
+                }
+                throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+            });
+        }
+        
+        // Si es exitosa, parsear JSON
+        return response.json();
+    })
     .then(data => {
+        console.log('Datos recibidos:', data);
         if (data.success) {
             showNotification('✅ ' + data.message, 'success');
             // Recargar lista de archivos
@@ -1628,7 +1666,7 @@ function deleteFile(fileId) {
         }
     })
     .catch(error => {
-        console.error('Error:', error);
-        showNotification('❌ Error al eliminar el archivo: ' + error.message, 'danger');
+        console.error('Error completo:', error);
+        showNotification('❌ Error al eliminar el archivo: ' + (error.message || error), 'danger');
     });
 }

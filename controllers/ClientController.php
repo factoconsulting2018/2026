@@ -595,10 +595,24 @@ class ClientController extends Controller
      */
     public function actionDeleteFile($id)
     {
+        // Configurar respuesta JSON ANTES de cualquier validación
         Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
         
+        // Desactivar validación CSRF para esta acción (archivos se eliminan via AJAX)
+        $this->enableCsrfValidation = false;
+        Yii::$app->request->enableCsrfValidation = false;
+        
         try {
-            $file = \app\models\ClientFile::findOne($id);
+            // Validar que el ID sea un número válido
+            $fileId = (int) $id;
+            if ($fileId <= 0) {
+                return [
+                    'success' => false,
+                    'message' => 'ID de archivo inválido'
+                ];
+            }
+            
+            $file = \app\models\ClientFile::findOne($fileId);
             
             if (!$file) {
                 return [
@@ -607,20 +621,36 @@ class ClientController extends Controller
                 ];
             }
             
+            // Intentar eliminar el archivo
             if ($file->delete()) {
                 return [
                     'success' => true,
                     'message' => 'Archivo eliminado exitosamente'
                 ];
             } else {
+                // Obtener errores del modelo si existen
+                $errors = $file->getErrors();
+                $errorMessage = 'Error al eliminar el archivo';
+                if (!empty($errors)) {
+                    $errorMessage .= ': ' . json_encode($errors);
+                }
+                
                 return [
                     'success' => false,
-                    'message' => 'Error al eliminar el archivo'
+                    'message' => $errorMessage
                 ];
             }
             
+        } catch (\yii\web\BadRequestHttpException $e) {
+            // Error 400 específico de Yii2
+            Yii::error('BadRequestHttpException eliminando archivo ID ' . $id . ': ' . $e->getMessage(), 'client');
+            return [
+                'success' => false,
+                'message' => 'Error del servidor (400): ' . ($e->getMessage() ?: 'Solicitud inválida')
+            ];
         } catch (\Exception $e) {
-            Yii::error('Error eliminando archivo: ' . $e->getMessage(), 'client');
+            Yii::error('Error eliminando archivo ID ' . $id . ': ' . $e->getMessage(), 'client');
+            Yii::error('Stack trace: ' . $e->getTraceAsString(), 'client');
             return [
                 'success' => false,
                 'message' => 'Error: ' . $e->getMessage()

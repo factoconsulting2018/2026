@@ -1,63 +1,68 @@
-# 🚀 Comandos para Actualizar en Producción
+# Comandos para Actualizar Producción
 
-## 📋 Pasos para Actualizar
-
-### 1. Conectarse al servidor y actualizar código
+## Ruta del Proyecto en Producción
 ```bash
-# Conectarse al servidor de producción por SSH
-ssh usuario@tu-servidor-produccion
-
-# Ir al directorio del proyecto
 cd /var/www/html/app/factorentacar
+```
 
-# Actualizar código desde GitHub
+## 1. Actualizar Código desde Git
+```bash
 sudo git pull origin master
 ```
 
-### 2. Ejecutar migraciones (IMPORTANTE)
+## 2. Actualizar Dependencias de Composer (si hay cambios)
 ```bash
-# Ejecutar TODAS las migraciones pendientes automáticamente
-sudo docker-compose exec app php yii migrate --interactive=0
+sudo docker-compose exec app composer update --no-interaction
 ```
 
-O si prefieres confirmar cada migración:
+## 3. Ejecutar Migraciones de Base de Datos
 ```bash
-# Ejecutar migraciones con confirmación
-sudo docker-compose exec app php yii migrate
+sudo docker-compose exec app php /var/www/html/yii migrate --interactive=0
 ```
 
-### 3. Limpiar caché
+## 4. Limpiar Caché de la Aplicación
 ```bash
-# Limpiar caché de Yii2
-sudo docker-compose exec app php yii cache/flush-all
+sudo docker-compose exec app php /var/www/html/yii cache/flush-all
 ```
 
-### 4. Verificar estado (opcional)
+## 5. Asegurar Permisos Correctos
 ```bash
-# Ver estado de contenedores
-sudo docker-compose ps
+sudo docker-compose exec app chmod -R 775 /var/www/html/runtime
+sudo docker-compose exec app chmod -R 775 /var/www/html/web/assets
+```
 
-# Ver logs si hay algún problema
-sudo docker-compose logs --tail=50 app
+## 6. Reiniciar Contenedores (si es necesario)
+```bash
+sudo docker-compose restart app
+```
+
+## Secuencia Completa (Copiar y Pegar)
+```bash
+cd /var/www/html/app/factorentacar && \
+sudo git pull origin master && \
+sudo docker-compose exec app composer update --no-interaction && \
+sudo docker-compose exec app php /var/www/html/yii migrate --interactive=0 && \
+sudo docker-compose exec app php /var/www/html/yii cache/flush-all && \
+sudo docker-compose exec app chmod -R 775 /var/www/html/runtime && \
+sudo docker-compose exec app chmod -R 775 /var/www/html/web/assets && \
+sudo docker-compose restart app
+```
+
+## Verificar Versión Actual
+```bash
+sudo docker-compose exec app php -r "require '/var/www/html/config/version.php'; print_r(require '/var/www/html/config/version.php');"
 ```
 
 ---
 
-## ⚡ Resumen Rápido (Todo en uno)
-```bash
-cd /var/www/html/app/factorentacar
-sudo git pull origin master
-sudo docker-compose exec app php yii migrate --interactive=0
-sudo docker-compose exec app php yii cache/flush-all
-sudo docker-compose ps
-```
+**Versión Actual:** 1.137  
+**Fecha de Actualización:** 2025-01-02
 
----
-
-## 📝 Notas Importantes
-
-- **Siempre usar `sudo`** antes de los comandos git y docker-compose si hay problemas de permisos
-- Las migraciones se ejecutan dentro del contenedor Docker
-- Si los contenedores no están corriendo, iniciarlos con: `sudo docker-compose up -d`
-- Si hay problemas, revisar logs con: `sudo docker-compose logs app`
-
+**Cambios en esta versión:**
+- Validación de formulario de clientes por pestañas
+- Mensaje de error arriba del formulario cuando hay errores
+- Resaltado de pestañas con errores de validación
+- Campos de biblioteca de archivos ahora son opcionales
+- Mejoras en la búsqueda del botón de subir archivo
+- Corrección de error con campo `description` en ClientFile
+- Corrección de error con campo `updated_at` en ClientFile
