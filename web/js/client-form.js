@@ -357,23 +357,39 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Formulario de cliente encontrado, agregando event listener');
         
         clientForm.addEventListener('submit', function(e) {
-            e.preventDefault(); // Prevenir submit por defecto
             console.log('Submit del formulario interceptado');
             
             if (!validarFormulario()) {
                 console.log('Validación del formulario falló');
+                e.preventDefault();
                 return false;
             }
             
-            console.log('Validación exitosa, enviando formulario');
-            
-            // Mostrar loading en el botón de envío
-            const submitBtn = this.querySelector('button[type="submit"]');
-            const form = this;
+            console.log('Validación exitosa');
             
             // Obtener la URL correcta del formulario (puede ser /client/create o /client/update/X)
+            const form = this;
             const formAction = form.action || form.getAttribute('action') || window.location.pathname;
             const isUpdate = formAction.includes('/client/update/');
+            
+            // Para actualizaciones, permitir submit normal y solo mostrar loading
+            if (isUpdate) {
+                console.log('Es una actualización, permitiendo submit normal');
+                const submitBtn = form.querySelector('button[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Actualizando...';
+                }
+                // Permitir que el formulario se envíe normalmente (no preventDefault)
+                return true;
+            }
+            
+            // Solo para creación, usar AJAX para manejar cédula duplicada
+            e.preventDefault(); // Prevenir submit por defecto solo para creación
+            console.log('Es una creación, usando AJAX');
+            
+            // Mostrar loading en el botón de envío
+            const submitBtn = form.querySelector('button[type="submit"]');
             
             if (submitBtn) {
                 submitBtn.disabled = true;
