@@ -166,12 +166,12 @@ class ReportsController extends Controller
      */
     public function actionOrdersReport($format = 'pdf')
     {
-        $orders = Order::find()
-            ->with(['client', 'article'])
+        $orders = Rental::find()
+            ->with(['client', 'car'])
             ->orderBy(['created_at' => SORT_DESC])
             ->all();
 
-        $totalAmount = Order::find()->sum('total_price');
+        $totalAmount = Rental::find()->sum('total_precio');
 
         switch ($format) {
             case 'pdf':
@@ -513,8 +513,8 @@ class ReportsController extends Controller
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Reporte de Órdenes');
 
-        // Encabezados con más columnas
-        $headers = ['ID', 'Ticket ID', 'Fecha', 'Cliente', 'Cédula', 'Teléfono', 'Email', 'Nombre Artículo', 'ID Artículo', 'Categoría', 'Marca', 'Modo Venta', 'Cantidad', 'Precio Unit. (₡)', 'Total (₡)', 'Notas', 'Fecha Creación'];
+        // Encabezados para alquileres
+        $headers = ['ID', 'ID Alquiler', 'Cliente', 'Cédula', 'Teléfono', 'Email', 'Vehículo', 'Placa', 'Fecha Inicio', 'Fecha Fin', 'Cantidad Días', 'Precio por Día (₡)', 'Valor Medio Día (₡)', 'Total (₡)', 'Estado Pago', 'Comprobante', 'Ejecutivo', 'Lugar Entrega', 'Lugar Retiro', 'Fecha Creación'];
         $col = 'A';
         foreach ($headers as $header) {
             $sheet->setCellValue($col . '1', $header);
@@ -525,23 +525,27 @@ class ReportsController extends Controller
         $row = 2;
         $reportNumber = $this->generateReportNumber();
         foreach ($orders as $order) {
+            $rentalId = $order->rental_id ?: 'R' . str_pad($order->id, 6, '0', STR_PAD_LEFT);
             $sheet->setCellValue('A' . $row, $order->id);
-            $sheet->setCellValue('B' . $row, $order->ticket_id);
-            $sheet->setCellValue('C' . $row, $order->created_at ? date('d/m/Y H:i', strtotime($order->created_at)) : 'N/A');
-            $sheet->setCellValue('D' . $row, $order->client ? $order->client->full_name : 'N/A');
-            $sheet->setCellValue('E' . $row, $order->client ? ($order->client->cedula_fisica ?: 'N/A') : 'N/A');
-            $sheet->setCellValue('F' . $row, $order->client ? ($order->client->whatsapp ?: ($order->client->telefono ?: 'N/A')) : 'N/A');
-            $sheet->setCellValue('G' . $row, $order->client ? ($order->client->email ?: 'N/A') : 'N/A');
-            $sheet->setCellValue('H' . $row, $order->article ? $order->article->name : 'N/A');
-            $sheet->setCellValue('I' . $row, $order->article_id);
-            $sheet->setCellValue('J' . $row, $order->article ? ($order->article->category ?: 'N/A') : 'N/A');
-            $sheet->setCellValue('K' . $row, $order->article ? ($order->article->brand ?: 'N/A') : 'N/A');
-            $sheet->setCellValue('L' . $row, $order->sale_mode ? ucfirst($order->sale_mode) : 'N/A');
-            $sheet->setCellValue('M' . $row, $order->quantity);
-            $sheet->setCellValue('N' . $row, '₡' . number_format($order->unit_price, 2));
-            $sheet->setCellValue('O' . $row, '₡' . number_format($order->total_price, 2));
-            $sheet->setCellValue('P' . $row, $order->notes ?: 'N/A');
-            $sheet->setCellValue('Q' . $row, $order->created_at ? date('d/m/Y H:i:s', strtotime($order->created_at)) : 'N/A');
+            $sheet->setCellValue('B' . $row, $rentalId);
+            $sheet->setCellValue('C' . $row, $order->client ? $order->client->full_name : 'N/A');
+            $sheet->setCellValue('D' . $row, $order->client ? ($order->client->cedula_fisica ?: 'N/A') : 'N/A');
+            $sheet->setCellValue('E' . $row, $order->client ? ($order->client->whatsapp ?: ($order->client->telefono ?: 'N/A')) : 'N/A');
+            $sheet->setCellValue('F' . $row, $order->client ? ($order->client->email ?: 'N/A') : 'N/A');
+            $sheet->setCellValue('G' . $row, $order->car ? $order->car->nombre : 'N/A');
+            $sheet->setCellValue('H' . $row, $order->car ? ($order->car->placa ?: 'N/A') : 'N/A');
+            $sheet->setCellValue('I' . $row, $order->fecha_inicio ? date('d/m/Y', strtotime($order->fecha_inicio)) : 'N/A');
+            $sheet->setCellValue('J' . $row, $order->fecha_final ? date('d/m/Y', strtotime($order->fecha_final)) : 'N/A');
+            $sheet->setCellValue('K' . $row, $order->cantidad_dias);
+            $sheet->setCellValue('L' . $row, '₡' . number_format($order->precio_por_dia ?: 0, 2));
+            $sheet->setCellValue('M' . $row, '₡' . number_format($order->medio_dia_valor ?: 0, 2));
+            $sheet->setCellValue('N' . $row, '₡' . number_format($order->total_precio ?: 0, 2));
+            $sheet->setCellValue('O' . $row, ucfirst($order->estado_pago ?: 'N/A'));
+            $sheet->setCellValue('P' . $row, $order->comprobante_pago ?: 'N/A');
+            $sheet->setCellValue('Q' . $row, $order->ejecutivo ?: 'N/A');
+            $sheet->setCellValue('R' . $row, $order->lugar_entrega ?: 'N/A');
+            $sheet->setCellValue('S' . $row, $order->lugar_retiro ?: 'N/A');
+            $sheet->setCellValue('T' . $row, $order->created_at ? date('d/m/Y H:i:s', strtotime($order->created_at)) : 'N/A');
             $row++;
         }
 
@@ -551,8 +555,8 @@ class ReportsController extends Controller
         $sheet->setCellValue('O' . $row, '₡' . number_format($totalAmount, 2));
 
         // Formatear encabezados
-        $sheet->getStyle('A1:Q1')->getFont()->setBold(true);
-        $sheet->getStyle('A1:Q1')->getFill()
+        $sheet->getStyle('A1:T1')->getFont()->setBold(true);
+        $sheet->getStyle('A1:T1')->getFill()
             ->setFillType(Fill::FILL_SOLID)
             ->getStartColor()->setRGB('4472C4'); // Color azul
         
@@ -565,21 +569,24 @@ class ReportsController extends Controller
         // Ajustar ancho de columnas
         $sheet->getColumnDimension('A')->setWidth(8);
         $sheet->getColumnDimension('B')->setWidth(15);
-        $sheet->getColumnDimension('C')->setWidth(15);
-        $sheet->getColumnDimension('D')->setWidth(30);
-        $sheet->getColumnDimension('E')->setWidth(12);
-        $sheet->getColumnDimension('F')->setWidth(15);
-        $sheet->getColumnDimension('G')->setWidth(25);
-        $sheet->getColumnDimension('H')->setWidth(30);
-        $sheet->getColumnDimension('I')->setWidth(10);
-        $sheet->getColumnDimension('J')->setWidth(15);
-        $sheet->getColumnDimension('K')->setWidth(15);
-        $sheet->getColumnDimension('L')->setWidth(12);
-        $sheet->getColumnDimension('M')->setWidth(10);
+        $sheet->getColumnDimension('C')->setWidth(30);
+        $sheet->getColumnDimension('D')->setWidth(12);
+        $sheet->getColumnDimension('E')->setWidth(15);
+        $sheet->getColumnDimension('F')->setWidth(25);
+        $sheet->getColumnDimension('G')->setWidth(30);
+        $sheet->getColumnDimension('H')->setWidth(12);
+        $sheet->getColumnDimension('I')->setWidth(12);
+        $sheet->getColumnDimension('J')->setWidth(12);
+        $sheet->getColumnDimension('K')->setWidth(12);
+        $sheet->getColumnDimension('L')->setWidth(18);
+        $sheet->getColumnDimension('M')->setWidth(18);
         $sheet->getColumnDimension('N')->setWidth(15);
         $sheet->getColumnDimension('O')->setWidth(15);
-        $sheet->getColumnDimension('P')->setWidth(30);
-        $sheet->getColumnDimension('Q')->setWidth(18);
+        $sheet->getColumnDimension('P')->setWidth(15);
+        $sheet->getColumnDimension('Q')->setWidth(15);
+        $sheet->getColumnDimension('R')->setWidth(15);
+        $sheet->getColumnDimension('S')->setWidth(15);
+        $sheet->getColumnDimension('T')->setWidth(18);
 
         return $this->downloadExcel($spreadsheet, 'reporte_ordenes_' . date('Y-m-d_H-i-s') . '.xlsx');
     }
@@ -603,20 +610,25 @@ class ReportsController extends Controller
         
         // Encabezados
         $table->addRow();
-        $table->addCell(1500)->addText('ID Ticket', ['bold' => true]);
-        $table->addCell(2000)->addText('Cliente', ['bold' => true]);
-        $table->addCell(1500)->addText('Artículo', ['bold' => true]);
-        $table->addCell(1000)->addText('Cantidad', ['bold' => true]);
+        $table->addCell(1500)->addText('ID Alquiler', ['bold' => true]);
+        $table->addCell(3000)->addText('Cliente', ['bold' => true]);
+        $table->addCell(2000)->addText('Vehículo', ['bold' => true]);
+        $table->addCell(1200)->addText('Fecha Inicio', ['bold' => true]);
+        $table->addCell(1200)->addText('Fecha Fin', ['bold' => true]);
+        $table->addCell(1000)->addText('Días', ['bold' => true]);
         $table->addCell(1500)->addText('Total (₡)', ['bold' => true]);
 
         // Datos
         foreach ($orders as $order) {
+            $rentalId = $order->rental_id ?: 'R' . str_pad($order->id, 6, '0', STR_PAD_LEFT);
             $table->addRow();
-            $table->addCell(1500)->addText($order->ticket_id);
-            $table->addCell(2000)->addText($order->client ? $order->client->full_name : 'N/A');
-            $table->addCell(1500)->addText('Artículo #' . $order->article_id);
-            $table->addCell(1000)->addText($order->quantity);
-            $table->addCell(1500)->addText('₡' . number_format($order->total_price, 2));
+            $table->addCell(1500)->addText($rentalId);
+            $table->addCell(3000)->addText($order->client ? $order->client->full_name : 'N/A');
+            $table->addCell(2000)->addText($order->car ? $order->car->nombre : 'N/A');
+            $table->addCell(1200)->addText($order->fecha_inicio ? date('d/m/Y', strtotime($order->fecha_inicio)) : 'N/A');
+            $table->addCell(1200)->addText($order->fecha_final ? date('d/m/Y', strtotime($order->fecha_final)) : 'N/A');
+            $table->addCell(1000)->addText($order->cantidad_dias);
+            $table->addCell(1500)->addText('₡' . number_format($order->total_precio ?: 0, 2));
         }
 
         $section->addTextBreak();

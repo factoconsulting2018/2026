@@ -87,25 +87,30 @@ body {
 <table class="table">
     <thead>
         <tr>
-            <th style="width: 15%;">Número de Reporte</th>
-            <th style="width: 15%;">ID Ticket</th>
-            <th style="width: 25%;">Cliente</th>
-            <th style="width: 15%;">Artículo</th>
-            <th style="width: 10%;">Cantidad</th>
-            <th style="width: 10%;">Precio Unit. (₡)</th>
-            <th style="width: 10%;">Total (₡)</th>
+            <th style="width: 10%;">ID</th>
+            <th style="width: 15%;">ID Alquiler</th>
+            <th style="width: 20%;">Cliente</th>
+            <th style="width: 15%;">Vehículo</th>
+            <th style="width: 10%;">Fecha Inicio</th>
+            <th style="width: 10%;">Fecha Fin</th>
+            <th style="width: 8%;">Días</th>
+            <th style="width: 12%;">Total (₡)</th>
         </tr>
     </thead>
     <tbody>
         <?php foreach ($orders as $order): ?>
+        <?php 
+            $rentalId = $order->rental_id ?: 'R' . str_pad($order->id, 6, '0', STR_PAD_LEFT);
+        ?>
         <tr>
-            <td><?= $reportNumber ?></td>
-            <td><?= $order->ticket_id ?></td>
+            <td><?= $order->id ?></td>
+            <td><?= $rentalId ?></td>
             <td><?= $order->client ? $order->client->full_name : 'N/A' ?></td>
-            <td>Artículo #<?= $order->article_id ?></td>
-            <td class="number"><?= $order->quantity ?></td>
-            <td class="number">₡<?= number_format($order->unit_price, 2) ?></td>
-            <td class="number">₡<?= number_format($order->total_price, 2) ?></td>
+            <td><?= $order->car ? $order->car->nombre : 'N/A' ?></td>
+            <td><?= $order->fecha_inicio ? date('d/m/Y', strtotime($order->fecha_inicio)) : 'N/A' ?></td>
+            <td><?= $order->fecha_final ? date('d/m/Y', strtotime($order->fecha_final)) : 'N/A' ?></td>
+            <td class="number"><?= $order->cantidad_dias ?></td>
+            <td class="number">₡<?= number_format($order->total_precio ?: 0, 2) ?></td>
         </tr>
         <?php endforeach; ?>
     </tbody>
