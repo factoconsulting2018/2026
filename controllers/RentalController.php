@@ -755,12 +755,12 @@ class RentalController extends Controller
             
             $pdf = new Mpdf([
                 'mode' => 'utf-8',
-                'format' => 'A4',
+                'format' => 'Letter',
                 'orientation' => 'P',
-                'margin_left' => 15,
-                'margin_right' => 15,
-                'margin_top' => 20,
-                'margin_bottom' => 10,
+                'margin_left' => 10,
+                'margin_right' => 10,
+                'margin_top' => 8,
+                'margin_bottom' => 5,
                 'default_font' => 'dejavusans',
                 'tempDir' => $tempDir
             ]);

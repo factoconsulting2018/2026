@@ -318,6 +318,44 @@ $this->registerCssFile('/css/client-form.css');
                     ])->textarea() ?>
                 </div>
             </div>
+
+            <!-- Vencimiento Licencia -->
+            <div class="row mb-3">
+                <div class="col-sm-3">
+                    <label class="form-label">
+                        <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px; color: #3fa9f5;">calendar_today</span>
+                        Vencimiento Licencia
+                    </label>
+                </div>
+                <div class="col-sm-9">
+                    <?= $form->field($model, 'fecha_vencimiento_licencia', [
+                        'template' => '{input}{error}',
+                        'inputOptions' => [
+                            'class' => 'form-control',
+                            'type' => 'date'
+                        ]
+                    ])->input('date') ?>
+                </div>
+            </div>
+
+            <!-- Vencimiento Cédula -->
+            <div class="row mb-3">
+                <div class="col-sm-3">
+                    <label class="form-label">
+                        <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px; color: #3fa9f5;">event_busy</span>
+                        Vencimiento Cédula
+                    </label>
+                </div>
+                <div class="col-sm-9">
+                    <?= $form->field($model, 'fecha_vencimiento_cedula', [
+                        'template' => '{input}{error}',
+                        'inputOptions' => [
+                            'class' => 'form-control',
+                            'type' => 'date'
+                        ]
+                    ])->input('date') ?>
+                </div>
+            </div>
         </div>
     </div>
         </div>

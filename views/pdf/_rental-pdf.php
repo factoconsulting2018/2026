@@ -1,414 +1,251 @@
 <?php
+/**
+ * VISTA PDF DE ORDEN DE ALQUILER - PÁGINA 1
+ * 
+ * Diseño optimizado para incluir TODO el contenido operativo en una sola página,
+ * con layout de dos columnas, tipografías compactas y control de altura estricto.
+ * La PÁGINA 2 se genera separadamente con condiciones (sin cambios).
+ */
+
 $rentalId = $model->rental_id ?: ('R' . str_pad($model->id, 6, '0', STR_PAD_LEFT));
 $client = $model->client;
 $car = $model->car;
 
-// Formateador de fechas en español con día de la semana y hora en 12h am/pm
-if (!function_exists('formatDatetimeEs')) {
-    function formatDatetimeEs(string $datetime): string {
-        try {
-            $dt = new DateTime($datetime);
-        } catch (Exception $e) {
-            return $datetime; // fallback
-        }
-        $dias = [1 => 'Lunes', 2 => 'Martes', 3 => 'Miércoles', 4 => 'Jueves', 5 => 'Viernes', 6 => 'Sábado', 7 => 'Domingo'];
-        $meses = [1 => 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-        $diaSemana = $dias[(int)$dt->format('N')] ?? '';
-        $dia = $dt->format('d');
-        $mes = $meses[(int)$dt->format('n')] ?? '';
-        $anio = $dt->format('Y');
-        $hora = strtolower($dt->format('h:i a')); // 12h con am/pm en minúscula
-        return "$diaSemana $dia de $mes de $anio $hora";
-    }
-}
-
-// Calcular valores para desglose
+// Calcular valores financieros
 $medioDiaEnabled = intval($model->medio_dia_enabled ?? 0);
 $medioDiaValor = floatval($model->medio_dia_valor ?? 0);
 $medioDiaActivo = ($medioDiaEnabled >= 1) && ($medioDiaValor > 0);
-$isPorHoras = ($model->fecha_inicio === $model->fecha_final || strtotime($model->fecha_inicio) === strtotime($model->fecha_final));
-$unidad = $isPorHoras ? 'horas' : 'días';
 $subtotalDias = $model->cantidad_dias * $model->precio_por_dia;
 $totalFinal = $model->total_precio;
 if (empty($totalFinal) || $totalFinal == 0) {
     $totalFinal = $model->calculateTotalPrice();
 }
+
+// Obtener vencimientos del cliente
+$vencimientoLicencia = '';
+$vencimientoCedula = '';
+if ($client) {
+    if (!empty($client->fecha_vencimiento_licencia)) {
+        try {
+            $fecha = new DateTime($client->fecha_vencimiento_licencia);
+            $vencimientoLicencia = $fecha->format('d/m/Y');
+        } catch (Exception $e) {}
+    }
+    if (!empty($client->fecha_vencimiento_cedula)) {
+        try {
+            $fecha = new DateTime($client->fecha_vencimiento_cedula);
+            $vencimientoCedula = $fecha->format('d/m/Y');
+        } catch (Exception $e) {}
+    }
+}
+
+// Formatear fechas
+function formatDateCompact($date, $time = '') {
+    try {
+        $dt = new DateTime($date . ' ' . $time);
+    } catch (Exception $e) {
+        return $date;
+    }
+    $dias = [1 => 'Lunes', 2 => 'Martes', 3 => 'Miércoles', 4 => 'Jueves', 5 => 'Viernes', 6 => 'Sábado', 7 => 'Domingo'];
+    $meses = [1 => 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+    $diaSemana = $dias[(int)$dt->format('N')] ?? '';
+    $dia = $dt->format('d');
+    $mes = strtoupper($meses[(int)$dt->format('n')] ?? '');
+    $anio = $dt->format('Y');
+    if (!empty($time)) {
+        $hora = strtolower($dt->format('h:i a'));
+        return "$diaSemana $dia de $mes $hora";
+    }
+    return "$dia de $mes $anio";
+}
+
+// Obtener licencias choferes
+$licenciasChoferes = '';
+if ($client && !empty($client->licencias_choferes)) {
+    $choferesDecoded = json_decode($client->licencias_choferes, true);
+    if (is_array($choferesDecoded) && !empty($choferesDecoded)) {
+        $licenciasInfo = [];
+        foreach ($choferesDecoded as $chofer) {
+            if (is_array($chofer)) {
+                $choferInfo = [];
+                if (isset($chofer['nombre'])) $choferInfo[] = htmlspecialchars($chofer['nombre']);
+                if (isset($chofer['licencia'])) $choferInfo[] = htmlspecialchars($chofer['licencia']);
+                if (!empty($choferInfo)) {
+                    $licenciasInfo[] = implode(' - Lic: ', $choferInfo);
+                }
+            } else {
+                $licenciasInfo[] = htmlspecialchars($chofer);
+            }
+        }
+        $licenciasChoferes = implode(', ', $licenciasInfo);
+    } else {
+        $licenciasChoferes = htmlspecialchars($client->licencias_choferes);
+    }
+}
+
+// Variables de datos para el template
+$clienteNombre = htmlspecialchars($client ? $client->full_name : 'N/A');
+$clienteCedula = htmlspecialchars($client ? $client->cedula_fisica : 'N/A');
+$clienteTelefono = htmlspecialchars($client && !empty($client->whatsapp) ? $client->whatsapp : ($client && !empty($client->telefono) ? $client->telefono : 'N/A'));
+$entregaLugar = htmlspecialchars($model->lugar_entrega ?: 'San Ramón');
+$fechaInicio = formatDateCompact($model->fecha_inicio);
+$fechaFin = formatDateCompact($model->fecha_final);
+$fechaRetiro = formatDateCompact($model->fecha_inicio, $model->hora_inicio);
+$fechaDevolucion = formatDateCompact($model->fecha_final, $model->hora_final);
+$lugarRetiro = htmlspecialchars($model->lugar_retiro ?: 'San Ramón');
+$vehiculoDesc = htmlspecialchars($car ? $car->nombre : 'N/A');
+$capacidad = htmlspecialchars($car ? ($car->cantidad_pasajeros ?: 5) : '5');
+$cantidadDias = str_pad($model->cantidad_dias, 2, '0', STR_PAD_LEFT);
+$cantidadVehiculos = 1;
+$tarifaDia = number_format($model->precio_por_dia, 0, '.', ',');
+$tarifaMedioDia = number_format($medioDiaValor, 0, '.', ',');
+$total = number_format($totalFinal, 0, '.', ',');
+
+// Logo
+$logoPath = '';
+if (!empty($companyInfo['logo'])) {
+    $logoPath = Yii::getAlias('@webroot' . str_replace(Yii::getAlias('@web'), '', $companyInfo['logo']));
+    if (!file_exists($logoPath)) {
+        $logoPath = '';
+    } else {
+        $logoPath = $companyInfo['logo'];
+    }
+}
+
+// Bancos
+$ibanBcr = 'CR75015201001050506181';
+$ibanBn = 'CR49015102020010977051';
+$simpe = '83670937';
+$montoReserva = $total;
 ?>
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <style>
-        @page { 
-            margin: 8mm 15mm;
-            size: A4 portrait;
-        }
-        body { 
-            font-family: 'Times New Roman', Georgia, serif; 
-            font-size: 10px; 
-            margin: 0; 
-            padding: 0;
-            line-height: 1.5;
-            color: #333;
-        }
-        .header-section {
-            margin-bottom: 12px;
-            padding-bottom: 0;
-            margin-top: 0;
-            padding-top: 0;
-        }
-        .company-name { 
-            font-size: 20px; 
-            font-weight: bold; 
-            font-style: italic; 
-            margin-bottom: 0; 
-            margin-top: 0;
-            padding-bottom: 0;
-            color: #000;
-            font-family: 'Times New Roman', Georgia, serif;
-            text-align: left;
-            letter-spacing: 0.5px;
-            line-height: 1.1;
-        }
-        .company-legal { 
-            font-size: 12px; 
-            margin-bottom: 0;
-            margin-top: 0;
-            padding-top: 0;
-            padding-bottom: 0;
-            font-weight: normal;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            line-height: 1.2;
-            text-align: left;
-        }
-        .company-address { 
-            font-size: 10px; 
-            margin-bottom: 0;
-            margin-top: 0;
-            padding-top: 0;
-            padding-bottom: 0;
-            line-height: 1.2;
-            text-align: left;
-        }
-        .company-address .line {
-            display: block;
-            margin-bottom: 0;
-            padding-bottom: 0;
-        }
-        .order-header {
-            background-color: #f5f5f5;
-            padding: 8px 10px;
-            margin: 12px 0 10px 0;
-            border-left: 4px solid #22487a;
-            font-size: 11px;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .client-section {
-            background-color: #f9f9f9;
-            padding: 8px 10px;
-            margin: 10px 0;
-            border-left: 3px solid #4CAF50;
-        }
-        .client-info {
-            margin: 3px 0;
-            font-size: 10px;
-        }
-        .client-info-row {
-            display: table;
-            width: 100%;
-            margin: 3px 0;
-            font-size: 10px;
-        }
-        .client-info-left {
-            display: table-cell;
-            width: 45%;
-            vertical-align: top;
-        }
-        .client-info-right {
-            display: table-cell;
-            width: 45%;
-            vertical-align: top;
-            padding-left: 20px;
-        }
-        .client-label {
-            font-weight: bold;
-            display: inline-block;
-            width: 100px;
-        }
-        .client-drivers {
-            margin-top: 5px;
-            font-size: 9px;
-        }
-        .client-drivers-label {
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
-            margin-bottom: 3px;
-        }
-        .client-drivers-content {
-            line-height: 1.4;
-        }
-        .section-container {
-            margin: 12px 0;
-            padding: 8px;
-            border: 1px solid #ddd;
-            background-color: #fafafa;
-        }
-        .section-title { 
-            font-size: 11px; 
-            font-weight: bold; 
-            margin-bottom: 8px;
-            padding-bottom: 4px;
-            border-bottom: 1px solid #ccc;
-            color: #22487a;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .info-row { 
-            margin: 5px 0;
-            font-size: 10px;
-            padding: 3px 0;
-        }
-        .info-label { 
-            font-weight: bold;
-            display: inline-block;
-            width: 140px;
-        }
-        .info-value {
-            color: #333;
-        }
-        .client-label {
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
-            font-size: 9px;
-        }
-        .vehicle-table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            margin-top: 10px; 
-            border: 2px solid #000;
-            background-color: #fff;
-        }
-        .vehicle-table td { 
-            border: 1px solid #000; 
-            padding: 8px 6px;
-            text-align: center; 
-            font-size: 10px;
-        }
-        .vehicle-header { 
-            background-color: #22487a;
-            color: #fff;
-            font-weight: bold;
-            text-align: center;
-            font-size: 13px;
-            padding: 12px 8px;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-        }
-        .vehicle-quantity {
-            text-align: center;
-            background-color: #f0f0f0;
-            font-weight: bold;
-        }
-        .price-detail-row {
-            background-color: #fff;
-            border-top: 1px dashed #ccc;
-        }
-        .price-detail-row td {
-            padding: 6px 8px;
-            font-size: 10px;
-            text-align: center;
-        }
-        .total-row { 
-            background-color: #e8e8e8;
-            border-top: 2px solid #000;
-            font-weight: bold;
-        }
-        .total-row td {
-            padding: 10px 8px;
-            font-size: 11px;
-            text-align: center;
-        }
-        .total-row strong {
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .payment-section {
-            margin-top: 15px;
-            padding: 10px;
-            background-color: #f5f5f5;
-            border: 1px solid #ccc;
-        }
-        .payment-title {
-            font-size: 11px;
-            font-weight: bold;
-            margin-bottom: 8px;
-            color: #22487a;
-            border-bottom: 1px solid #22487a;
-            padding-bottom: 4px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .payment-info {
-            font-size: 9px;
-            margin: 4px 0;
-            line-height: 1.5;
-        }
-        .payment-label {
-            font-weight: bold;
-            display: inline-block;
-            min-width: 100px;
-        }
-        .separator {
-            margin: 10px 0;
-            border-top: 1px dashed #ccc;
-        }
-        .info-label {
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
-            font-size: 9px;
-        }
-    </style>
-</head>
-<body>
-    <!-- Encabezado de la empresa -->
-    <div class="header-section">
-        <div class="company-name"><?= htmlspecialchars($companyInfo['name'] ?? 'FACTO RENT A CAR') ?></div>
-        <div class="company-address">
-            <span class="line">3-101-880789</span>
-        </div>
-        <div class="company-legal">FACTO AUTOS DE ALQUILER S.A</div>
-        <div class="company-address">
-            <span class="line">San Ramón, Alajuela. Costa Rica</span>
-        </div>
-    </div>
-    
-    <!-- Información de la orden -->
-    <div class="order-header">
-        Orden de Alquiler: <span style="color: #dc3545; font-weight: bold;"><?= htmlspecialchars($rentalId) ?></span> - <?= htmlspecialchars($car ? $car->nombre : 'N/A') ?>
-    </div>
-    
-    <!-- Información del cliente -->
-    <div class="client-section">
-        <div class="section-title">Información del Cliente</div>
-        <div class="client-info">
-            <span class="client-label">Nombre:</span>
-            <span><?= htmlspecialchars($client ? $client->full_name : 'N/A') ?></span>
-        </div>
-        <div class="client-info-row">
-            <div class="client-info-left">
-                <span class="client-label">Cédula:</span>
-                <span><?= htmlspecialchars($client ? $client->cedula_fisica : 'N/A') ?></span>
-            </div>
-            <div class="client-info-right">
-                <span class="client-label">Teléfono:</span>
-                <span><?= htmlspecialchars($client && !empty($client->whatsapp) ? $client->whatsapp : ($client && !empty($client->telefono) ? $client->telefono : 'N/A')) ?></span>
-            </div>
-        </div>
-        <?php if (!empty($model->choferes_autorizados)): ?>
-        <div class="client-drivers">
-            <div class="client-drivers-label">Choferes Autorizados:</div>
-            <div class="client-drivers-content"><?= nl2br(htmlspecialchars($model->choferes_autorizados)) ?></div>
-        </div>
-        <?php endif; ?>
-    </div>
-    
-    <!-- Entrega del vehículo -->
-    <div class="section-container">
-        <div class="section-title">Entrega del Vehículo</div>
-        <?php if ($model->correapartir_enabled && $model->fecha_correapartir): ?>
-        <div class="info-row">
-            <span class="info-label">Correapartir (Cortesía):</span>
-            <span class="info-value"><?= formatDatetimeEs($model->fecha_correapartir) ?></span>
-        </div>
-        <?php endif; ?>
-        <div class="info-row">
-            <span class="info-label">Fecha de alquiler:</span>
-            <span class="info-value"><?= formatDatetimeEs($model->fecha_inicio . ' ' . $model->hora_inicio) ?></span>
-        </div>
-        <div class="info-row">
-            <span class="info-label">Fecha recoge vehículo:</span>
-            <span class="info-value"><?= formatDatetimeEs($model->fecha_final . ' ' . $model->hora_final) ?></span>
-        </div>
-        <div class="info-row">
-            <span class="info-label">Lugar de entrega:</span>
-            <span class="info-value"><?= htmlspecialchars($model->lugar_entrega ?: 'San Ramón') ?></span>
-        </div>
-    </div>
-    
-    <!-- Devolución del vehículo -->
-    <div class="section-container">
-        <div class="section-title">Devolución del Vehículo</div>
-        <div class="info-row">
-            <span class="info-label">Fecha de entrega:</span>
-            <span class="info-value"><?= formatDatetimeEs($model->fecha_final . ' ' . $model->hora_final) ?></span>
-        </div>
-        <div class="info-row">
-            <span class="info-label">Lugar de retiro:</span>
-            <span class="info-value"><?= htmlspecialchars($model->lugar_retiro ?: 'San Ramón') ?></span>
-        </div>
-    </div>
-    
-    <!-- Detalles del vehículo y precios -->
-    <table class="vehicle-table">
-        <tr>
-            <td class="vehicle-header" colspan="5">
-                Tipo de Vehículo: <?= htmlspecialchars($car ? ($car->nombre . ' - ' . ($car->cantidad_pasajeros ?: 5) . ' pasajeros') : 'N/A') ?>
-            </td>
-        </tr>
-        <tr>
-            <td class="vehicle-quantity" colspan="5">
-                Cantidad de <?= $unidad ?>: <?= str_pad($model->cantidad_dias, 2, '0', STR_PAD_LEFT) ?> | 
-                Cantidad de vehículos: 1 unidad
-            </td>
-        </tr>
+<style>
+    * { font-family: helvetica, sans-serif; }
+    body { font-size: 10pt; line-height: 1.12; margin: 0; padding: 0; }
+    h1, h2, h3 { margin: 0; line-height: 1.1; }
+    .title { font-size: 18pt; font-weight: bold; text-align: center; margin: 4px 0 8px; }
+    .meta { font-size: 10pt; line-height: 1.12; }
+    table { width: 100%; border-spacing: 0; border-collapse: collapse; }
+    td { padding: 2px 3px; vertical-align: top; }
+    .thin { line-height: 1.12; }
+    .bank { border: 0.5pt solid #666; padding: 10px 8px; margin-top: 12px; }
+    .sign { border: 0.5pt solid #666; padding: 8px; margin-top: 8px; }
+    .r { text-align: right; }
+    .b { font-weight: bold; }
+    .muted { color: #333; }
+    .sep { padding-top: 2px; margin-top: 2px; border-top: 0.5pt solid #aaa; }
+</style>
+
+<div class="title">ORDEN DE ALQUILER</div>
+
+<table class="meta" style="margin-bottom:6px;">
+    <tr>
+        <td style="width:55%; text-align:left;">
+            <div class="b">FACTO RENT A CAR</div>
+            <div class="b">FACTO AUTOS DE ALQUILER S.A.</div>
+            <div>3-101-880789</div>
+            <div>San Ramón, Alajuela, Costa Rica</div>
+        </td>
+        <td style="width:45%; text-align:right;">
+            <?php if (!empty($logoPath)): ?>
+                <img src="<?= htmlspecialchars($logoPath) ?>" height="140" />
+            <?php endif; ?>
+        </td>
+    </tr>
+</table>
+
+<table class="meta thin">
+    <tr>
+        <!-- Columna Izquierda -->
+        <td style="width:50%; padding-right:8px;">
+            <div class="b">Cliente</div>
+            <div style="background-color: #0066CC; color: #FFFFFF; padding: 4px 8px; display: inline-block; border-radius: 3px;"><?= $clienteNombre ?></div>
+            <?php if (!empty($vencimientoLicencia) || !empty($vencimientoCedula)): ?>
+            <div class="b">Fechas de vencimiento:</div>
+            <?php if (!empty($vencimientoCedula)): ?>
+            <div>Cédula: <?= $vencimientoCedula ?></div>
+            <?php endif; ?>
+            <?php if (!empty($vencimientoLicencia)): ?>
+            <div>Licencia de conducir: <?= $vencimientoLicencia ?></div>
+            <?php endif; ?>
+            <?php endif; ?>
+            <div class="sep"></div>
+            <div class="b">Cédula / Teléfono</div>
+            <div><?= $clienteCedula ?> • <?= $clienteTelefono ?></div>
+            <div class="sep"></div>
+            <div class="b">Entrega del vehículo</div>
+            <div><?= $entregaLugar ?></div>
+            <div class="b">Fechas</div>
+            <div>Alquiler: <?= $fechaInicio ?></div>
+            <div><?= $fechaFin ?></div>
+            <div>Retiro: <?= $fechaRetiro ?> • <?= $lugarRetiro ?></div>
+            <?php if (!empty($model->choferes_autorizados)): ?>
+            <div class="sep"></div>
+            <div class="b">Choferes Autorizados</div>
+            <div><?= nl2br(htmlspecialchars($model->choferes_autorizados)) ?></div>
+            <?php endif; ?>
+        </td>
         
-        <!-- Desglose de precios -->
-        <tr class="price-detail-row">
-            <td colspan="5" style="padding: 8px 10px; text-align: center;">
-                <strong>Cantidad días: <?= str_pad($model->cantidad_dias, 2, '0', STR_PAD_LEFT) ?> <?= $unidad ?> = ₡<?= number_format($subtotalDias, 0, '.', ',') ?></strong>
+        <!-- Columna Derecha -->
+        <td style="width:50%; padding-left:8px;">
+            <div class="b">Devolución</div>
+            <div><?= $fechaDevolucion ?> • <?= $lugarRetiro ?></div>
+            <div class="sep"></div>
+            <?php if (!empty($licenciasChoferes)): ?>
+            <div class="b">Licencias / Choferes</div>
+            <div><?= $licenciasChoferes ?></div>
+            <div class="sep"></div>
+            <?php endif; ?>
+            <div class="b">Vehículo</div>
+            <div><?= $vehiculoDesc ?> • <?= $capacidad ?> pasajeros</div>
+            <?php if (!empty($car->placa)): ?>
+            <div class="b">Placa</div>
+            <div style="font-weight: bold; padding: 2px 6px; display: inline-block;"><?= htmlspecialchars($car->placa) ?></div>
+            <?php endif; ?>
+            <div class="sep"></div>
+            <div class="b">Cantidades</div>
+            <div>Días: <?= $cantidadDias ?> • Vehículos: <?= $cantidadVehiculos ?></div>
+            <div class="sep"></div>
+            <table style="width:100%;">
+                <tr>
+                    <td class="b">Tarifa día</td>
+                    <td class="r">¢<?= $tarifaDia ?></td>
+                </tr>
+                <?php if ($medioDiaActivo): ?>
+                <tr>
+                    <td class="b">1/2 día</td>
+                    <td class="r">¢<?= $tarifaMedioDia ?></td>
+                </tr>
+                <?php endif; ?>
+                <tr style="border-top: 2pt solid #000;">
+                    <td class="b">Total</td>
+                    <td class="r b">¢<?= $total ?></td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+
+<div class="bank">
+    <div class="thin">
+        <span class="b">Cuentas:</span>
+        BCR¢ IBAN <?= $ibanBcr ?> | BN¢ IBAN <?= $ibanBn ?>
+    </div>
+    <div class="thin"><span class="b">Monto de la reservación:</span> ¢<?= $montoReserva ?> — Reservación firme contra depósito.</div>
+</div>
+
+<div class="sign">
+    <div class="b" style="margin-bottom:24px;">Firmas / Observaciones</div>
+    <table style="width:100%;">
+        <tr>
+            <td style="width:50%; text-align:center;">
+                <div style="border-top:0.6pt solid #000; margin:0 24px 4px;"></div>
+                Cliente
             </td>
-        </tr>
-        <?php if ($medioDiaActivo): ?>
-        <tr class="price-detail-row">
-            <td colspan="5" style="padding: 8px 10px; text-align: center;">
-                <strong>1/2 día: ₡<?= number_format($medioDiaValor, 0, '.', ',') ?></strong>
-            </td>
-        </tr>
-        <?php endif; ?>
-        
-        <!-- Total -->
-        <tr class="total-row">
-            <td colspan="3" style="text-align: center;">
-                <strong>Monto Total de la Orden:</strong>
-            </td>
-            <td colspan="2" style="text-align: center;">
-                <strong style="font-size: 13px;">₡<?= number_format($totalFinal, 0, '.', ',') ?> colones</strong>
+            <td style="width:50%; text-align:center;">
+                <div style="border-top:0.6pt solid #000; margin:0 24px 4px;"></div>
+                Empresa
             </td>
         </tr>
     </table>
-    
-    <!-- Información de pago -->
-    <div class="payment-section">
-        <div class="payment-title">Información de Pago</div>
-        <table style="width: 100%; border-collapse: collapse; margin-top: 5px;">
-            <tr>
-                <td style="padding: 4px 0; font-weight: bold; width: 120px; vertical-align: top;">BCR®:</td>
-                <td style="padding: 4px 0; vertical-align: top;">IBAN: CR75015201001050506181</td>
-            </tr>
-            <tr>
-                <td style="padding: 4px 0; font-weight: bold; vertical-align: top;">BN®:</td>
-                <td style="padding: 4px 0; vertical-align: top;">IBAN: CR49015102020010977051</td>
-            </tr>
-            <tr>
-                <td style="padding: 4px 0; font-weight: bold; vertical-align: top;">SINPE MÓVIL:</td>
-                <td style="padding: 4px 0; vertical-align: top;">83670937</td>
-            </tr>
-        </table>
-    </div>
-</body>
-</html>
+    <div style="margin-top:12px; font-size:14pt; text-align:center;">SIMPEMÓVIL: 8367-0937</div>
+</div>

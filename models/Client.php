@@ -29,6 +29,8 @@ use yii\db\ActiveRecord;
  * @property string $actividad_economica_descripcion
  * @property string $created_at
  * @property string $updated_at
+ * @property string $fecha_vencimiento_licencia
+ * @property string $fecha_vencimiento_cedula
  */
 class Client extends ActiveRecord
 {
@@ -48,7 +50,7 @@ class Client extends ActiveRecord
         return [
             [['full_name', 'cedula_fisica'], 'required'],
             [['es_aliado', 'es_cliente_facto', 'activo'], 'integer'],
-            [['created_at', 'updated_at', 'fecha_vencimiento_licencia', 'fecha_nacimiento'], 'safe'],
+            [['created_at', 'updated_at', 'fecha_vencimiento_licencia', 'fecha_vencimiento_cedula', 'fecha_nacimiento'], 'safe'],
             [['client_id', 'nombre', 'apellido', 'full_name', 'cedula_fisica', 'email', 'telefono', 'celular', 'imagen_foto', 'licencia_conducir'], 'string', 'max' => 255],
             [['whatsapp'], 'string', 'max' => 20],
             [['notes', 'notas', 'licencias_choferes'], 'string'],
@@ -142,6 +144,8 @@ class Client extends ActiveRecord
             'actividad_economica_descripcion' => 'Descripción de Actividad Económica',
             'created_at' => 'Fecha de Creación',
             'updated_at' => 'Fecha de Actualización',
+            'fecha_vencimiento_licencia' => 'Vencimiento Licencia',
+            'fecha_vencimiento_cedula' => 'Vencimiento Cédula',
         ];
     }
 

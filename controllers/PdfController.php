@@ -55,15 +55,21 @@ class PdfController extends Controller
         @ini_set('zlib.output_compression', 0);
         @ini_set('output_buffering', 0);
         
-        // Crear PDF
-        $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+        // Crear PDF con configuración compacta para Letter
+        $pdf = new TCPDF('P', 'mm', 'Letter', true, 'UTF-8', false);
         $pdf->SetCreator('Facto Rent a Car');
         $pdf->SetAuthor('Facto Rent a Car');
         $pdf->SetTitle('Orden de Alquiler - ' . $rental->rental_id);
-        $pdf->SetMargins(15, 20, 15);
-        $pdf->SetHeaderMargin(10);
-        $pdf->SetFooterMargin(10);
-        $pdf->SetFont('dejavusans', '', 10);
+        
+        // Márgenes compactos según especificaciones
+        $pdf->SetMargins(14, 12, 14);
+        $pdf->SetHeaderMargin(6);
+        $pdf->SetFooterMargin(8);
+        $pdf->SetAutoPageBreak(true, 14);
+        $pdf->setImageScale(1.53);
+        
+        // Fuente base
+        $pdf->SetFont('helvetica', '', 10);
         
         // Agregar página
         $pdf->AddPage();
@@ -214,12 +220,12 @@ class PdfController extends Controller
             
             $mpdf = new Mpdf([
                 'mode' => 'utf-8',
-                'format' => 'A4',
+                'format' => 'Letter',
                 'orientation' => 'P',
-                'margin_left' => 15,
-                'margin_right' => 15,
-                'margin_top' => 20,
-                'margin_bottom' => 20,
+                'margin_left' => 10,
+                'margin_right' => 10,
+                'margin_top' => 8,
+                'margin_bottom' => 8,
                 'default_font' => 'arial',
                 'tempDir' => $tempDir,
                 'autoScriptToLang' => false,
@@ -395,21 +401,23 @@ class PdfController extends Controller
         @ini_set('output_buffering', 0);
         @ini_set('zlib.output_compression_level', 0);
         
-        // Crear PDF
-        $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+        // Crear PDF con configuración compacta para Letter
+        $pdf = new TCPDF('P', 'mm', 'Letter', true, 'UTF-8', false);
         
         // Configuración del documento
         $pdf->SetCreator('Facto Rent a Car');
         $pdf->SetAuthor('Facto Rent a Car');
         $pdf->SetTitle('Orden de Alquiler - ' . $rental->rental_id);
         
-        // Configurar márgenes
-        $pdf->SetMargins(15, 20, 15);
-        $pdf->SetHeaderMargin(10);
-        $pdf->SetFooterMargin(10);
+        // Márgenes compactos según especificaciones
+        $pdf->SetMargins(14, 12, 14);
+        $pdf->SetHeaderMargin(6);
+        $pdf->SetFooterMargin(8);
+        $pdf->SetAutoPageBreak(true, 14);
+        $pdf->setImageScale(1.53);
         
-        // Configurar fuente
-        $pdf->SetFont('dejavusans', '', 10);
+        // Fuente base
+        $pdf->SetFont('helvetica', '', 10);
         
         // Agregar página
         $pdf->AddPage();
@@ -478,9 +486,9 @@ class PdfController extends Controller
         $pdf->SetTitle('Orden de Venta - ' . $order->ticket_id);
         
         // Configurar márgenes
-        $pdf->SetMargins(15, 20, 15);
-        $pdf->SetHeaderMargin(10);
-        $pdf->SetFooterMargin(10);
+        $pdf->SetMargins(10, 8, 10);
+        $pdf->SetHeaderMargin(5);
+        $pdf->SetFooterMargin(5);
         
         // Configurar fuente
         $pdf->SetFont('dejavusans', '', 10);
@@ -511,6 +519,18 @@ class PdfController extends Controller
      * Generar HTML para orden de alquiler
      */
     public function generateRentalOrderHtml($rental, $companyInfo)
+    {
+        // Usar la vista _rental-pdf para unificar la generación
+        return $this->renderPartial('_rental-pdf', [
+            'model' => $rental,
+            'companyInfo' => $companyInfo
+        ], true);
+    }
+    
+    /**
+     * Generar HTML para orden de venta (método antiguo - mantener para compatibilidad)
+     */
+    private function generateRentalOrderHtml_OLD($rental, $companyInfo)
     {
         $rentalId = $rental->rental_id ?: ('R' . str_pad($rental->id, 6, '0', STR_PAD_LEFT));
         $client = $rental->client;
@@ -553,6 +573,16 @@ class PdfController extends Controller
                 width: 45%;
                 vertical-align: top;
                 padding-left: 20px;
+            }
+            .client-info {
+                margin: 3px 0;
+                font-size: 10px;
+                padding: 2px 0;
+            }
+            .client-info .info-label {
+                font-weight: bold;
+                display: inline-block;
+                width: 100px;
             }
             .client-drivers {
                 margin-top: 5px;
@@ -656,27 +686,60 @@ class PdfController extends Controller
         </div>
         <div class="client-section">
             <div class="section-title">Información del Cliente</div>
-            <div class="info-row">
-                <span class="info-label">Nombre:</span>
-                <span>' . htmlspecialchars($client ? $client->full_name : 'Cliente no encontrado') . '</span>
-            </div>
             <div class="client-info-row">
                 <div class="client-info-left">
-                    <span class="info-label">Cédula:</span>
-                    <span>' . htmlspecialchars($client ? $client->cedula_fisica : 'N/A') . '</span>
+                    <div class="client-info" style="margin-bottom: 5px;">
+                        <span class="info-label">Nombre:</span>
+                        <span>' . htmlspecialchars($client ? $client->full_name : 'Cliente no encontrado') . '</span>
+                    </div>
+                    <div class="client-info">
+                        <span class="info-label">Cédula:</span>
+                        <span>' . htmlspecialchars($client ? $client->cedula_fisica : 'N/A') . '</span>
+                    </div>';
+        
+        // Mostrar información de licencias de choferes del cliente
+        if ($client && !empty($client->licencias_choferes)) {
+            $choferesDecoded = json_decode($client->licencias_choferes, true);
+            if (is_array($choferesDecoded) && !empty($choferesDecoded)) {
+                $html .= '<div class="client-info" style="margin-top: 5px;">
+                        <span class="info-label">Licencias Choferes:</span>
+                        <span style="display: block; margin-top: 2px;">';
+                
+                foreach ($choferesDecoded as $chofer) {
+                    if (is_array($chofer)) {
+                        $choferInfo = [];
+                        if (isset($chofer['nombre'])) $choferInfo[] = htmlspecialchars($chofer['nombre']);
+                        if (isset($chofer['licencia'])) $choferInfo[] = 'Lic: ' . htmlspecialchars($chofer['licencia']);
+                        if (isset($chofer['cedula'])) $choferInfo[] = 'Céd: ' . htmlspecialchars($chofer['cedula']);
+                        $html .= implode(' - ', $choferInfo) . '<br>';
+                    } else {
+                        $html .= nl2br(htmlspecialchars($chofer)) . '<br>';
+                    }
+                }
+                
+                $html .= '</span>
+                    </div>';
+            }
+        }
+        
+        $html .= '
                 </div>
                 <div class="client-info-right">
-                    <span class="info-label">Teléfono:</span>
-                    <span>' . htmlspecialchars($client && !empty($client->whatsapp) ? $client->whatsapp : ($client && !empty($client->telefono) ? $client->telefono : 'N/A')) . '</span>
-                </div>
-            </div>';
+                    <div class="client-info" style="margin-bottom: 5px;">
+                        <span class="info-label">Teléfono:</span>
+                        <span>' . htmlspecialchars($client && !empty($client->whatsapp) ? $client->whatsapp : ($client && !empty($client->telefono) ? $client->telefono : 'N/A')) . '</span>
+                    </div>';
         
         if (!empty($rental->choferes_autorizados)) {
-            $html .= '<div class="client-drivers">
-                <div class="client-drivers-label">Choferes Autorizados:</div>
-                <div class="client-drivers-content">' . nl2br(htmlspecialchars($rental->choferes_autorizados)) . '</div>
-            </div>';
+            $html .= '<div class="client-info" style="margin-top: 5px;">
+                    <span class="info-label">Choferes Autorizados:</span>
+                    <span>' . nl2br(htmlspecialchars($rental->choferes_autorizados)) . '</span>
+                </div>';
         }
+        
+        $html .= '
+                </div>
+            </div>';
         
         $html .= '</div>
         <div class="section-container">
@@ -1121,12 +1184,12 @@ class PdfController extends Controller
             
             $mpdf = new Mpdf([
                 'mode' => 'utf-8',
-                'format' => 'A4',
+                'format' => 'Letter',
                 'orientation' => 'P',
-                'margin_left' => 15,
-                'margin_right' => 15,
-                'margin_top' => 20,
-                'margin_bottom' => 20,
+                'margin_left' => 10,
+                'margin_right' => 10,
+                'margin_top' => 8,
+                'margin_bottom' => 8,
                 'default_font' => 'arial',
                 'tempDir' => $tempDir,
                 'autoScriptToLang' => false,
@@ -1243,12 +1306,12 @@ class PdfController extends Controller
             // Generar PDF
             $mpdf = new Mpdf([
                 'mode' => 'utf-8',
-                'format' => 'A4',
+                'format' => 'Letter',
                 'orientation' => 'P',
-                'margin_left' => 15,
-                'margin_right' => 15,
-                'margin_top' => 20,
-                'margin_bottom' => 20,
+                'margin_left' => 10,
+                'margin_right' => 10,
+                'margin_top' => 8,
+                'margin_bottom' => 8,
                 'default_font' => 'arial',
                 'tempDir' => $tempDir,
                 'autoScriptToLang' => false,
