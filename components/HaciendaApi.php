@@ -78,6 +78,8 @@ class HaciendaApi
      */
     public static function formatResponse($data)
     {
+        \Yii::info("formatResponse recibió: " . json_encode($data), __METHOD__);
+        
         if (empty($data)) {
             \Yii::warning("Datos vacíos en formatResponse", __METHOD__);
             return [
@@ -90,6 +92,8 @@ class HaciendaApi
         
         $nombre = $data['nombre'] ?? '';
         $tipo = $data['tipoIdentificacion'] ?? '';
+        
+        \Yii::info("Nombre extraído: " . $nombre, __METHOD__);
         
         // Situación tributaria - manejar diferentes formatos
         $situacion = '';
