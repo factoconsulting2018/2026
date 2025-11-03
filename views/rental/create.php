@@ -659,7 +659,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (fechaIni && dias > 0) {
             const fecha = new Date(fechaIni);
-            fecha.setDate(fecha.getDate() + dias - 1); // -1 porque si inicio y fin son el mismo día = 1 día
+            fecha.setDate(fecha.getDate() + dias); // Sumar días directamente
             const fechaFormateada = fecha.toISOString().split('T')[0];
             fechaFinal.value = fechaFormateada;
         } else if (!fechaIni || dias <= 0) {
