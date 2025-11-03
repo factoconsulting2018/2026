@@ -137,7 +137,7 @@ $logoPath = $companyInfo['logo'] ?? null;
                         'inputOptions' => [
                             'class' => 'form-control',
                             'id' => 'public-nombre-input',
-                            'placeholder' => 'Ej: RONALD ALBERTO ROJAS CASTRO',
+                            'placeholder' => 'Ej: RICARDO RODRIGUEZ CASTRO',
                             'required' => true,
                             'style' => 'text-transform: uppercase;'
                         ]
