@@ -78,6 +78,31 @@ class PdfController extends Controller
         $html = $this->generateRentalOrderHtml($rental, $companyInfo);
         $pdf->writeHTML($html, true, false, true, false, '');
         
+        // Agregar código QR con información de la orden en la esquina inferior derecha
+        // IMPORTANTE: Las coordenadas en TCPDF son absolutas desde el TOP-LEFT
+        $qrUrl = \yii\helpers\Url::to(['/rental/public-view', 'id' => $rental->id], true);
+        $qrStyle = array(
+            'border' => false,
+            'padding' => 2,
+            'fgcolor' => array(0,0,0),
+            'bgcolor' => false,
+            'module_width' => 1,
+            'module_height' => 1
+        );
+        // Letter size: 215.9mm width x 279.4mm height
+        // QR position: bottom-right corner
+        // X = page width - right margin - QR width = 215.9 - 14 - 25 = 176.9mm
+        // Y = page height - bottom margin - QR height = 279.4 - 8 - 25 = 246.4mm
+        $pageHeight = 279.4; // Letter height in mm
+        $pageWidth = 215.9;  // Letter width in mm
+        $marginBottom = 8;   // Footer margin
+        $marginRight = 14;   // Right margin
+        $qrSize = 25;        // QR code size
+        $xPosition = $pageWidth - $marginRight - $qrSize;  // 176.9mm
+        $yPosition = $pageHeight - $marginBottom - $qrSize; // 246.4mm
+        // Escribir el código QR en coordenadas absolutas fijas
+        $pdf->write2DBarcode($qrUrl, 'QRCODE,M', $xPosition, $yPosition, 25, 25, $qrStyle, 'N');
+        
         // Agregar segunda página con condiciones (prioridad: alquiler > global > archivo)
         $customConditions = $rental->condiciones_especiales ?? '';
         $globalConditions = CompanyConfig::getConfig('rental_conditions_html', '');
@@ -425,6 +450,31 @@ class PdfController extends Controller
         // Generar contenido
         $html = $this->generateRentalOrderHtml($rental, $companyInfo);
         $pdf->writeHTML($html, true, false, true, false, '');
+        
+        // Agregar código QR con información de la orden en la esquina inferior derecha
+        // IMPORTANTE: Las coordenadas en TCPDF son absolutas desde el TOP-LEFT
+        $qrUrl = \yii\helpers\Url::to(['/rental/public-view', 'id' => $rental->id], true);
+        $qrStyle = array(
+            'border' => false,
+            'padding' => 2,
+            'fgcolor' => array(0,0,0),
+            'bgcolor' => false,
+            'module_width' => 1,
+            'module_height' => 1
+        );
+        // Letter size: 215.9mm width x 279.4mm height
+        // QR position: bottom-right corner
+        // X = page width - right margin - QR width = 215.9 - 14 - 25 = 176.9mm
+        // Y = page height - bottom margin - QR height = 279.4 - 8 - 25 = 246.4mm
+        $pageHeight = 279.4; // Letter height in mm
+        $pageWidth = 215.9;  // Letter width in mm
+        $marginBottom = 8;   // Footer margin
+        $marginRight = 14;   // Right margin
+        $qrSize = 25;        // QR code size
+        $xPosition = $pageWidth - $marginRight - $qrSize;  // 176.9mm
+        $yPosition = $pageHeight - $marginBottom - $qrSize; // 246.4mm
+        // Escribir el código QR en coordenadas absolutas fijas
+        $pdf->write2DBarcode($qrUrl, 'QRCODE,M', $xPosition, $yPosition, 25, 25, $qrStyle, 'N');
         
         // Agregar segunda página con condiciones (SIEMPRE se agrega, prioridad: personalizado > global > fallback por defecto)
         $pdf->AddPage();

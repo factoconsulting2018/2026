@@ -24,6 +24,11 @@ class RentalController extends Controller
                 'class' => AccessControl::class,
                 'rules' => [
                     [
+                        'actions' => ['public-view'],
+                        'allow' => true,
+                        'roles' => ['?'], // Permitir usuarios no autenticados
+                    ],
+                    [
                         'allow' => true,
                         'roles' => ['@'],
                     ],
@@ -121,6 +126,18 @@ class RentalController extends Controller
         
         return $this->render('view', [
 'model' => $model,
+        ]);
+    }
+
+    /**
+     * Vista pública de orden de alquiler (para QR)
+     */
+    public function actionPublicView($id)
+    {
+        $model = $this->findModel($id);
+        
+        return $this->render('public-view', [
+            'model' => $model,
         ]);
     }
 
