@@ -44,10 +44,32 @@ $this->params['breadcrumbs'][] = $this->title;
                                 'attribute' => 'car_id',
                                 'value' => $model->car ? $model->car->nombre . ' (' . $model->car->placa . ')' : 'N/A',
                             ],
-                            'fecha_inicio',
-                            'hora_inicio',
-                            'fecha_final',
-                            'hora_final',
+                            [
+                                'attribute' => 'fecha_inicio',
+                                'value' => function($model) {
+                                    return !empty($model->fecha_inicio) ? date('d/m/Y', strtotime($model->fecha_inicio)) : 'N/A';
+                                },
+                            ],
+                            [
+                                'attribute' => 'hora_inicio',
+                                'value' => function($model) {
+                                    if (empty($model->hora_inicio)) return 'N/A';
+                                    return \app\helpers\TimeHelper::convertTo12Hour($model->hora_inicio);
+                                },
+                            ],
+                            [
+                                'attribute' => 'fecha_final',
+                                'value' => function($model) {
+                                    return !empty($model->fecha_final) ? date('d/m/Y', strtotime($model->fecha_final)) : 'N/A';
+                                },
+                            ],
+                            [
+                                'attribute' => 'hora_final',
+                                'value' => function($model) {
+                                    if (empty($model->hora_final)) return 'N/A';
+                                    return \app\helpers\TimeHelper::convertTo12Hour($model->hora_final);
+                                },
+                            ],
                             [
                                 'attribute' => 'cantidad_dias',
                                 'value' => function($model) {
