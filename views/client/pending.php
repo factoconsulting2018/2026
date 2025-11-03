@@ -189,7 +189,7 @@ $currentTab = $tab ?? 'pending';
 <script>
 function openRejectModal(clientId, clientName) {
     document.getElementById('reject-client-name').innerHTML = '¿Está seguro que desea rechazar a <strong>' + clientName + '</strong>?';
-    document.getElementById('reject-form').action = '<?= Url::to(['reject']) ?>&id=' + clientId;
+    document.getElementById('reject-form').action = '<?= Url::to(['reject']) ?>/' + clientId;
     document.getElementById('motivo_rechazo').value = '';
 }
 </script>
