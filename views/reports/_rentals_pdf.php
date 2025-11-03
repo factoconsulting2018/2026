@@ -53,7 +53,8 @@ body {
 }
 
 .table th {
-    background-color: #f5f5f5;
+    background-color: #4472C4;
+    color: white;
     font-weight: bold;
 }
 
