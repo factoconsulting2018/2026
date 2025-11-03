@@ -969,9 +969,25 @@ $this->registerCss('
                                             <?= $model->client ? Html::encode($model->client->full_name ?? 'Cliente sin nombre') : 'Cliente no encontrado' ?>
                                         </div>
                                         <div class="client-details">
-                                            <span class="client-id">ID: <?= $model->client ? $model->client->id : 'N/A' ?></span>
-                                            <?php if ($model->client && $model->client->telefono): ?>
-                                                <span class="client-phone">📞 <?= Html::encode($model->client->telefono) ?></span>
+                                            <?php if ($model->client): ?>
+                                                <span class="client-id">ID: <?= $model->client->id ?></span>
+                                                <?php if ($model->client->cedula_fisica): ?>
+                                                    <span class="client-cedula"> | <?= Html::encode($model->client->cedula_fisica) ?></span>
+                                                <?php endif; ?>
+                                                <?php 
+                                                $telefono = '';
+                                                if ($model->client && !empty($model->client->whatsapp)) {
+                                                    $telefono = $model->client->whatsapp;
+                                                } elseif ($model->client && !empty($model->client->telefono)) {
+                                                    $telefono = $model->client->telefono;
+                                                } elseif ($model->client && !empty($model->client->celular)) {
+                                                    $telefono = $model->client->celular;
+                                                }
+                                                if ($telefono): ?>
+                                                    <span class="client-phone"> | <?= Html::encode($telefono) ?></span>
+                                                <?php endif; ?>
+                                            <?php else: ?>
+                                                <span class="client-id">ID: N/A</span>
                                             <?php endif; ?>
                                         </div>
                                     </div>

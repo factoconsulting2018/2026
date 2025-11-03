@@ -100,6 +100,7 @@ $cantidadVehiculos = 1;
 $tarifaDia = number_format($model->precio_por_dia, 0, '.', ',');
 $tarifaMedioDia = number_format($medioDiaValor, 0, '.', ',');
 $total = number_format($totalFinal, 0, '.', ',');
+$subtotalTarifaDia = number_format($subtotalDias, 0, '.', ',');
 
 // Logo
 $logoPath = '';
@@ -207,8 +208,8 @@ $montoReserva = $total;
             <div class="sep"></div>
             <table style="width:100%;">
                 <tr>
-                    <td class="b">Tarifa día</td>
-                    <td class="r">¢<?= $tarifaDia ?></td>
+                    <td class="b">Tarifa día (<?= $model->cantidad_dias ?> x ¢<?= $tarifaDia ?>)</td>
+                    <td class="r">¢<?= $subtotalTarifaDia ?></td>
                 </tr>
                 <?php if ($medioDiaActivo): ?>
                 <tr>
