@@ -1698,7 +1698,7 @@ class ReportsController extends Controller
         $sheet->setTitle('Reservados');
 
         // Encabezados
-        $headers = ['ID Alquiler', 'Nombre Cliente', 'Cédula', 'Teléfono', 'Vehículo', 'Placa', 'Fecha Inicio', 'Fecha Fin', 'Total', 'Desc. Abono 1', 'Monto Abono 1', 'Desc. Abono 2', 'Monto Abono 2', 'Desc. Abono 3', 'Monto Abono 3', 'Desc. Abono 4', 'Monto Abono 4', 'Desc. Abono 5', 'Monto Abono 5'];
+        $headers = ['ID Alquiler', 'Nombre Cliente', 'Cédula', 'Teléfono', 'Vehículo', 'Placa', 'Fecha Inicio', 'Fecha Fin', 'Total', 'Desc. Abono 1', 'Monto Abono 1', 'Desc. Abono 2', 'Monto Abono 2', 'Desc. Abono 3', 'Monto Abono 3', 'Desc. Abono 4', 'Monto Abono 4', 'Desc. Abono 5', 'Monto Abono 5', 'Total Abonado', 'Total Pendiente'];
         $col = 1;
         foreach ($headers as $header) {
             $sheet->setCellValueByColumnAndRow($col, 1, $header);
@@ -1725,6 +1725,7 @@ class ReportsController extends Controller
             
             // Abonos
             $colAbono = 10;
+            $totalClienteAbonado = 0;
             for ($i = 1; $i <= 5; $i++) {
                 $descripcion = $rental->{"abono{$i}_descripcion"} ?: '';
                 $monto = $rental->{"abono{$i}_monto"} ?: '';
@@ -1737,11 +1738,28 @@ class ReportsController extends Controller
                 if ($descripcion && $monto) {
                     $sheet->setCellValueByColumnAndRow($colAbono, $row, '₡' . number_format($monto, 2));
                     $totalAbonos += $monto;
+                    $totalClienteAbonado += $monto;
                 } else {
                     $sheet->setCellValueByColumnAndRow($colAbono, $row, 'N/A');
                 }
                 $colAbono++;
             }
+            
+            // Calcular total abonado y pendiente del cliente
+            $totalCliente = $rental->total_precio ?: 0;
+            $totalPendienteCliente = $totalCliente - $totalClienteAbonado;
+            
+            // Total Abonado (Verde)
+            $sheet->setCellValueByColumnAndRow(20, $row, '₡' . number_format($totalClienteAbonado, 2));
+            $sheet->getStyleByColumnAndRow(20, $row)->getFill()
+                ->setFillType(Fill::FILL_SOLID)
+                ->getStartColor()->setRGB('C6EFCE'); // Verde claro
+            
+            // Total Pendiente (Rojo)
+            $sheet->setCellValueByColumnAndRow(21, $row, '₡' . number_format($totalPendienteCliente, 2));
+            $sheet->getStyleByColumnAndRow(21, $row)->getFill()
+                ->setFillType(Fill::FILL_SOLID)
+                ->getStartColor()->setRGB('FFC7CE'); // Rojo claro
             
             $row++;
         }
@@ -1761,8 +1779,8 @@ class ReportsController extends Controller
         $sheet->setCellValueByColumnAndRow(10, $row, '₡' . number_format($saldoPendiente, 2));
 
         // Formatear encabezados
-        $sheet->getStyle('A1:S1')->getFont()->setBold(true);
-        $sheet->getStyle('A1:S1')->getFill()
+        $sheet->getStyle('A1:U1')->getFont()->setBold(true);
+        $sheet->getStyle('A1:U1')->getFill()
             ->setFillType(Fill::FILL_SOLID)
             ->getStartColor()->setRGB('B3D9FF'); // Color azul claro
         

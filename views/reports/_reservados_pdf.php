@@ -109,29 +109,39 @@ body {
 <table class="table">
     <thead>
         <tr>
-            <th style="width: 5%;">ID</th>
-            <th style="width: 10%;">Nombre</th>
-            <th style="width: 5%;">Cédula</th>
-            <th style="width: 6%;">Teléfono</th>
-            <th style="width: 8%;">Vehículo</th>
-            <th style="width: 5%;">Placa</th>
-            <th style="width: 5%;">Inicio</th>
-            <th style="width: 5%;">Fin</th>
-            <th style="width: 6%;">Total</th>
-            <th style="width: 5%;">Desc.1</th>
-            <th style="width: 5%;">Mto.1</th>
-            <th style="width: 5%;">Desc.2</th>
-            <th style="width: 5%;">Mto.2</th>
-            <th style="width: 5%;">Desc.3</th>
-            <th style="width: 5%;">Mto.3</th>
-            <th style="width: 5%;">Desc.4</th>
-            <th style="width: 5%;">Mto.4</th>
-            <th style="width: 5%;">Desc.5</th>
-            <th style="width: 5%;">Mto.5</th>
+            <th style="width: 4%;">ID</th>
+            <th style="width: 8%;">Nombre</th>
+            <th style="width: 4%;">Cédula</th>
+            <th style="width: 5%;">Teléfono</th>
+            <th style="width: 7%;">Vehículo</th>
+            <th style="width: 4%;">Placa</th>
+            <th style="width: 4%;">Inicio</th>
+            <th style="width: 4%;">Fin</th>
+            <th style="width: 5%;">Total</th>
+            <th style="width: 4%;">D1</th>
+            <th style="width: 4%;">M1</th>
+            <th style="width: 4%;">D2</th>
+            <th style="width: 4%;">M2</th>
+            <th style="width: 4%;">D3</th>
+            <th style="width: 4%;">M3</th>
+            <th style="width: 4%;">D4</th>
+            <th style="width: 4%;">M4</th>
+            <th style="width: 4%;">D5</th>
+            <th style="width: 4%;">M5</th>
+            <th style="width: 6%;">T. Abonado</th>
+            <th style="width: 6%;">T. Pendiente</th>
         </tr>
     </thead>
     <tbody>
-        <?php foreach ($rentals as $rental): ?>
+        <?php foreach ($rentals as $rental): 
+            $totalClienteAbonado = 0;
+            for ($i = 1; $i <= 5; $i++) {
+                $monto = $rental->{"abono{$i}_monto"} ?: 0;
+                $totalClienteAbonado += $monto;
+            }
+            $totalCliente = $rental->total_precio ?: 0;
+            $totalPendienteCliente = $totalCliente - $totalClienteAbonado;
+        ?>
         <tr>
             <td class="number"><?= $rental->rental_id ?: 'R' . str_pad($rental->id, 6, '0', STR_PAD_LEFT) ?></td>
             <td><?= $rental->client ? Html::encode($rental->client->full_name) : 'N/A' ?></td>
@@ -150,6 +160,8 @@ body {
                 <td><?= $descripcion ?: 'N/A' ?></td>
                 <td class="number"><?= $monto ? '₡' . number_format($monto, 2) : 'N/A' ?></td>
             <?php endfor; ?>
+            <td class="number" style="background-color: #C6EFCE;">₡<?= number_format($totalClienteAbonado, 2) ?></td>
+            <td class="number" style="background-color: #FFC7CE;">₡<?= number_format($totalPendienteCliente, 2) ?></td>
         </tr>
         <?php endforeach; ?>
     </tbody>
