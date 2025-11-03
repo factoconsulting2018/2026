@@ -3,11 +3,23 @@
 /** @var string $reportNumber */
 
 use yii\helpers\Html;
+
+// Calcular totales
+$totalGeneral = 0;
+$totalAbonos = 0;
+foreach ($rentals as $rental) {
+    $totalGeneral += ($rental->total_precio ?: 0);
+    for ($i = 1; $i <= 5; $i++) {
+        $monto = $rental->{"abono{$i}_monto"} ?: 0;
+        $totalAbonos += $monto;
+    }
+}
+$saldoPendiente = $totalGeneral - $totalAbonos;
 ?>
 <style>
 body {
     font-family: Arial, sans-serif;
-    font-size: 10px;
+    font-size: 8px;
     line-height: 1.4;
     margin: 0;
     padding: 20px;
@@ -15,47 +27,48 @@ body {
 
 .header {
     text-align: center;
-    margin-bottom: 30px;
+    margin-bottom: 20px;
     border-bottom: 2px solid #17a2b8;
-    padding-bottom: 20px;
+    padding-bottom: 15px;
 }
 
 .company-name {
-    font-size: 24px;
+    font-size: 20px;
     font-weight: bold;
     color: #22487a;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
 }
 
 .report-title {
-    font-size: 18px;
+    font-size: 16px;
     font-weight: bold;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
     color: #17a2b8;
 }
 
 .report-info {
-    font-size: 12px;
+    font-size: 10px;
     color: #666;
 }
 
 .table {
     width: 100%;
     border-collapse: collapse;
-    margin-bottom: 20px;
-    font-size: 9px;
+    margin-bottom: 15px;
+    font-size: 7px;
 }
 
 .table th,
 .table td {
     border: 1px solid #333;
-    padding: 4px;
+    padding: 3px;
     text-align: left;
 }
 
 .table th {
     background-color: #b3d9ff;
     font-weight: bold;
+    font-size: 7px;
 }
 
 .table .number {
@@ -63,16 +76,23 @@ body {
 }
 
 .total-section {
-    margin-top: 20px;
-    text-align: center;
+    margin-top: 15px;
     border-top: 2px solid #17a2b8;
     padding-top: 10px;
+    font-size: 10px;
 }
 
-.total-rentals {
-    font-size: 16px;
+.total-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px 10px;
+    border-bottom: 1px solid #ccc;
+}
+
+.total-row.total-final {
     font-weight: bold;
-    color: #17a2b8;
+    font-size: 12px;
+    border-bottom: 2px solid #17a2b8;
 }
 </style>
 
@@ -89,20 +109,25 @@ body {
 <table class="table">
     <thead>
         <tr>
-            <th style="width: 8%;">ID</th>
-            <th style="width: 15%;">Nombre Cliente</th>
-            <th style="width: 8%;">Cédula</th>
-            <th style="width: 8%;">Teléfono</th>
-            <th style="width: 12%;">Vehículo</th>
-            <th style="width: 8%;">Placa</th>
-            <th style="width: 7%;">Inicio</th>
-            <th style="width: 7%;">Fin</th>
-            <th style="width: 8%;">Total</th>
-            <th style="width: 9%;">Abono 1</th>
-            <th style="width: 9%;">Abono 2</th>
-            <th style="width: 9%;">Abono 3</th>
-            <th style="width: 9%;">Abono 4</th>
-            <th style="width: 9%;">Abono 5</th>
+            <th style="width: 5%;">ID</th>
+            <th style="width: 10%;">Nombre</th>
+            <th style="width: 5%;">Cédula</th>
+            <th style="width: 6%;">Teléfono</th>
+            <th style="width: 8%;">Vehículo</th>
+            <th style="width: 5%;">Placa</th>
+            <th style="width: 5%;">Inicio</th>
+            <th style="width: 5%;">Fin</th>
+            <th style="width: 6%;">Total</th>
+            <th style="width: 5%;">Desc.1</th>
+            <th style="width: 5%;">Mto.1</th>
+            <th style="width: 5%;">Desc.2</th>
+            <th style="width: 5%;">Mto.2</th>
+            <th style="width: 5%;">Desc.3</th>
+            <th style="width: 5%;">Mto.3</th>
+            <th style="width: 5%;">Desc.4</th>
+            <th style="width: 5%;">Mto.4</th>
+            <th style="width: 5%;">Desc.5</th>
+            <th style="width: 5%;">Mto.5</th>
         </tr>
     </thead>
     <tbody>
@@ -122,7 +147,8 @@ body {
                 $descripcion = $rental->{"abono{$i}_descripcion"} ?: '';
                 $monto = $rental->{"abono{$i}_monto"} ?: '';
                 ?>
-                <td><?= $descripcion && $monto ? "$descripcion: ₡" . number_format($monto, 2) : 'N/A' ?></td>
+                <td><?= $descripcion ?: 'N/A' ?></td>
+                <td class="number"><?= $monto ? '₡' . number_format($monto, 2) : 'N/A' ?></td>
             <?php endfor; ?>
         </tr>
         <?php endforeach; ?>
@@ -130,13 +156,21 @@ body {
 </table>
 
 <div class="total-section">
-    <div class="total-rentals">
-        TOTAL DE RESERVAS: <?= count($rentals) ?>
+    <div class="total-row">
+        <span><strong>TOTAL GENERAL:</strong></span>
+        <span><strong>₡<?= number_format($totalGeneral, 2) ?></strong></span>
+    </div>
+    <div class="total-row">
+        <span><strong>TOTAL ABONOS:</strong></span>
+        <span><strong>₡<?= number_format($totalAbonos, 2) ?></strong></span>
+    </div>
+    <div class="total-row total-final">
+        <span><strong>SALDO PENDIENTE:</strong></span>
+        <span><strong>₡<?= number_format($saldoPendiente, 2) ?></strong></span>
     </div>
 </div>
 
-<div style="margin-top: 40px; text-align: center; font-size: 10px; color: #666;">
+<div style="margin-top: 30px; text-align: center; font-size: 8px; color: #666;">
     <p>Este reporte fue generado automáticamente el <?= date('d/m/Y H:i:s') ?> por el Sistema de Gestión de Alquileres</p>
     <p>FACTO RENT A CAR - Sistema de Gestión</p>
 </div>
-

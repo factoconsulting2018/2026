@@ -1698,7 +1698,7 @@ class ReportsController extends Controller
         $sheet->setTitle('Reservados');
 
         // Encabezados
-        $headers = ['ID Alquiler', 'Nombre Cliente', 'Cédula', 'Teléfono', 'Vehículo', 'Placa', 'Fecha Inicio', 'Fecha Fin', 'Total', 'Abono 1', 'Abono 2', 'Abono 3', 'Abono 4', 'Abono 5'];
+        $headers = ['ID Alquiler', 'Nombre Cliente', 'Cédula', 'Teléfono', 'Vehículo', 'Placa', 'Fecha Inicio', 'Fecha Fin', 'Total', 'Desc. Abono 1', 'Monto Abono 1', 'Desc. Abono 2', 'Monto Abono 2', 'Desc. Abono 3', 'Monto Abono 3', 'Desc. Abono 4', 'Monto Abono 4', 'Desc. Abono 5', 'Monto Abono 5'];
         $col = 1;
         foreach ($headers as $header) {
             $sheet->setCellValueByColumnAndRow($col, 1, $header);
@@ -1707,6 +1707,9 @@ class ReportsController extends Controller
 
         // Datos
         $row = 2;
+        $totalGeneral = 0;
+        $totalAbonos = 0;
+        
         foreach ($rentals as $rental) {
             $sheet->setCellValueByColumnAndRow(1, $row, $rental->rental_id ?: 'R' . str_pad($rental->id, 6, '0', STR_PAD_LEFT));
             $sheet->setCellValueByColumnAndRow(2, $row, $rental->client ? $rental->client->full_name : 'N/A');
@@ -1716,31 +1719,58 @@ class ReportsController extends Controller
             $sheet->setCellValueByColumnAndRow(6, $row, $rental->car ? ($rental->car->placa ?: 'N/A') : 'N/A');
             $sheet->setCellValueByColumnAndRow(7, $row, $rental->fecha_inicio ? date('d/m/Y', strtotime($rental->fecha_inicio)) : 'N/A');
             $sheet->setCellValueByColumnAndRow(8, $row, $rental->fecha_final ? date('d/m/Y', strtotime($rental->fecha_final)) : 'N/A');
-            $sheet->setCellValueByColumnAndRow(9, $row, $rental->total_precio ?: '0.00');
+            $sheet->setCellValueByColumnAndRow(9, $row, '₡' . number_format($rental->total_precio ?: 0, 2));
+            
+            $totalGeneral += ($rental->total_precio ?: 0);
             
             // Abonos
+            $colAbono = 10;
             for ($i = 1; $i <= 5; $i++) {
                 $descripcion = $rental->{"abono{$i}_descripcion"} ?: '';
                 $monto = $rental->{"abono{$i}_monto"} ?: '';
-                $abonoValue = '';
                 
+                // Descripción
+                $sheet->setCellValueByColumnAndRow($colAbono, $row, $descripcion ?: 'N/A');
+                $colAbono++;
+                
+                // Monto con formato
                 if ($descripcion && $monto) {
-                    $abonoValue = "$descripcion: ₡" . number_format($monto, 2);
+                    $sheet->setCellValueByColumnAndRow($colAbono, $row, '₡' . number_format($monto, 2));
+                    $totalAbonos += $monto;
                 } else {
-                    $abonoValue = 'N/A';
+                    $sheet->setCellValueByColumnAndRow($colAbono, $row, 'N/A');
                 }
-                
-                $sheet->setCellValueByColumnAndRow(9 + $i, $row, $abonoValue);
+                $colAbono++;
             }
             
             $row++;
         }
 
-        // Formatear
-        $sheet->getStyle('A1:N1')->getFont()->setBold(true);
-        $sheet->getStyle('A1:N1')->getFill()
+        // Agregar totales al final
+        $row++;
+        $sheet->setCellValueByColumnAndRow(9, $row, 'TOTAL GENERAL:');
+        $sheet->setCellValueByColumnAndRow(10, $row, '₡' . number_format($totalGeneral, 2));
+        
+        $row++;
+        $sheet->setCellValueByColumnAndRow(9, $row, 'TOTAL ABONOS:');
+        $sheet->setCellValueByColumnAndRow(10, $row, '₡' . number_format($totalAbonos, 2));
+        
+        $row++;
+        $sheet->setCellValueByColumnAndRow(9, $row, 'SALDO PENDIENTE:');
+        $saldoPendiente = $totalGeneral - $totalAbonos;
+        $sheet->setCellValueByColumnAndRow(10, $row, '₡' . number_format($saldoPendiente, 2));
+
+        // Formatear encabezados
+        $sheet->getStyle('A1:S1')->getFont()->setBold(true);
+        $sheet->getStyle('A1:S1')->getFill()
             ->setFillType(Fill::FILL_SOLID)
             ->getStartColor()->setRGB('B3D9FF'); // Color azul claro
+        
+        // Formatear totales
+        $sheet->getStyle('I' . ($row - 2) . ':J' . $row)->getFont()->setBold(true);
+        $sheet->getStyle('I' . ($row - 2) . ':J' . $row)->getFill()
+            ->setFillType(Fill::FILL_SOLID)
+            ->getStartColor()->setRGB('FFE6CC'); // Color naranja claro
 
         return $this->downloadExcel($spreadsheet, 'reporte_reservados_' . date('Y-m-d_H-i-s') . '.xlsx');
     }
