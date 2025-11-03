@@ -1670,3 +1670,38 @@ function deleteFile(fileId) {
         showNotification('❌ Error al eliminar el archivo: ' + (error.message || error), 'danger');
     });
 }
+
+// ========== SITUACIÓN FINANCIERA ==========
+// Manejar la visualización del campo de detalle de situación financiera
+document.addEventListener('DOMContentLoaded', function() {
+    const situacionField = document.getElementById('situacion-financiera');
+    const detalleContainer = document.getElementById('detalle-situacion-container');
+    const detalleLabel = document.getElementById('detalle-situacion-label');
+    
+    if (!situacionField || !detalleContainer || !detalleLabel) {
+        return; // Los campos no existen en esta vista
+    }
+    
+    const labelTexts = {
+        'independiente': '¿Qué profesión o actividad ejerce actualmente? Indique cantidad de años.',
+        'asalariado': '¿En qué empresa o institución trabaja actualmente? Indique cantidad de años.',
+        'tiene_empresa': 'Ingrese el nombre de su empresa y cédula jurídica. Indique cantidad de años.'
+    };
+    
+    situacionField.addEventListener('change', function() {
+        const value = this.value;
+        
+        if (value && labelTexts[value]) {
+            detalleLabel.innerHTML = '<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px; color: #3fa9f5;">description</span>' + labelTexts[value];
+            detalleContainer.style.display = 'block';
+        } else {
+            detalleContainer.style.display = 'none';
+            document.getElementById('client-situacion_financiera_detalle').value = '';
+        }
+    });
+    
+    // Mostrar campo si ya hay un valor seleccionado (edición)
+    if (situacionField.value) {
+        situacionField.dispatchEvent(new Event('change'));
+    }
+});

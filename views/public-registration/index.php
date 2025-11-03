@@ -2,9 +2,13 @@
 
 use yii\helpers\Html;
 use yii\widgets\ActiveForm;
+use app\models\CompanyConfig;
 
 /** @var yii\web\View $this */
 /** @var app\models\Client $model */
+
+$companyInfo = CompanyConfig::getCompanyInfo();
+$logoPath = $companyInfo['logo'] ?? null;
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -16,7 +20,7 @@ use yii\widgets\ActiveForm;
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
     <style>
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #2e6faa;
             min-height: 100vh;
             padding: 40px 20px;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -58,10 +62,12 @@ use yii\widgets\ActiveForm;
 <div class="registration-container">
     <div class="card">
         <div class="card-header text-center">
+            <?php if ($logoPath): ?>
+                <div class="mb-3">
+                    <img src="<?= Html::encode($logoPath) ?>" alt="Logo" style="max-height: 100px;">
+                </div>
+            <?php endif; ?>
             <h2 class="mb-0">
-                <span class="material-symbols-outlined" style="font-size: 32px; vertical-align: middle; margin-right: 10px;">
-                    person_add
-                </span>
                 Registro de Nuevo Cliente
             </h2>
             <p class="mb-0 mt-2" style="font-size: 14px; opacity: 0.9;">
@@ -244,6 +250,48 @@ use yii\widgets\ActiveForm;
                 </div>
             </div>
 
+            <!-- Situación Financiera Actual -->
+            <div class="row mb-3">
+                <div class="col-sm-4">
+                    <label class="form-label">
+                        <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle;">account_balance</span>
+                        Situación Financiera Actual
+                    </label>
+                </div>
+                <div class="col-sm-8">
+                    <?= $form->field($model, 'situacion_financiera', [
+                        'template' => '{input}{error}',
+                        'inputOptions' => [
+                            'class' => 'form-control',
+                            'id' => 'situacion-financiera'
+                        ]
+                    ])->dropDownList([
+                        '' => 'Seleccione una opción',
+                        'independiente' => 'Independiente',
+                        'asalariado' => 'Asalariado',
+                        'tiene_empresa' => 'Tiene empresa'
+                    ], ['class' => 'form-select']) ?>
+                </div>
+            </div>
+
+            <!-- Detalle Situación Financiera (aparece dinámicamente) -->
+            <div class="row mb-3" id="detalle-situacion-container" style="display: none;">
+                <div class="col-sm-4">
+                    <label class="form-label" id="detalle-situacion-label">
+                        <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle;">description</span>
+                    </label>
+                </div>
+                <div class="col-sm-8">
+                    <?= $form->field($model, 'situacion_financiera_detalle', [
+                        'template' => '{input}{error}',
+                        'inputOptions' => [
+                            'class' => 'form-control',
+                            'rows' => 3
+                        ]
+                    ])->textarea() ?>
+                </div>
+            </div>
+
             <div class="text-center mt-4">
                 <?= Html::submitButton('<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">send</span>Enviar Solicitud', [
                     'class' => 'btn btn-primary btn-lg'
@@ -265,6 +313,40 @@ use yii\widgets\ActiveForm;
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const situacionField = document.getElementById('situacion-financiera');
+        const detalleContainer = document.getElementById('detalle-situacion-container');
+        const detalleLabel = document.getElementById('detalle-situacion-label');
+        
+        if (!situacionField || !detalleContainer || !detalleLabel) {
+            return; // Los campos no existen
+        }
+        
+        const labelTexts = {
+            'independiente': '¿Qué profesión o actividad ejerce actualmente? Indique cantidad de años.',
+            'asalariado': '¿En qué empresa o institución trabaja actualmente? Indique cantidad de años.',
+            'tiene_empresa': 'Ingrese el nombre de su empresa y cédula jurídica. Indique cantidad de años.'
+        };
+        
+        situacionField.addEventListener('change', function() {
+            const value = this.value;
+            
+            if (value && labelTexts[value]) {
+                detalleLabel.innerHTML = '<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle;">description</span>' + labelTexts[value];
+                detalleContainer.style.display = 'block';
+            } else {
+                detalleContainer.style.display = 'none';
+                document.getElementById('client-situacion_financiera_detalle').value = '';
+            }
+        });
+        
+        // Mostrar campo si ya hay un valor seleccionado (edición)
+        if (situacionField.value) {
+            situacionField.dispatchEvent(new Event('change'));
+        }
+    });
+</script>
 </body>
 </html>
 

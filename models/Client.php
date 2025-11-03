@@ -32,6 +32,8 @@ use yii\db\ActiveRecord;
  * @property string $fecha_vencimiento_licencia
  * @property string $fecha_vencimiento_cedula
  * @property string $approval_status
+ * @property string $situacion_financiera
+ * @property string $situacion_financiera_detalle
  */
 class Client extends ActiveRecord
 {
@@ -52,9 +54,9 @@ class Client extends ActiveRecord
             [['full_name', 'cedula_fisica'], 'required'],
             [['es_aliado', 'es_cliente_facto', 'activo'], 'integer'],
             [['created_at', 'updated_at', 'fecha_vencimiento_licencia', 'fecha_vencimiento_cedula', 'fecha_nacimiento'], 'safe'],
-            [['client_id', 'nombre', 'apellido', 'full_name', 'cedula_fisica', 'email', 'telefono', 'celular', 'imagen_foto', 'licencia_conducir'], 'string', 'max' => 255],
+            [['client_id', 'nombre', 'apellido', 'full_name', 'cedula_fisica', 'email', 'telefono', 'celular', 'imagen_foto', 'licencia_conducir', 'situacion_financiera'], 'string', 'max' => 255],
             [['whatsapp'], 'string', 'max' => 20],
-            [['notes', 'notas', 'licencias_choferes'], 'string'],
+            [['notes', 'notas', 'licencias_choferes', 'situacion_financiera_detalle'], 'string'],
             [['address', 'direccion'], 'safe'], // Permitir cualquier texto para direcciones
             [['status'], 'string', 'max' => 50],
             [['status'], 'in', 'range' => ['active', 'inactive']],
@@ -155,6 +157,8 @@ class Client extends ActiveRecord
             'fecha_vencimiento_licencia' => 'Vencimiento Licencia',
             'fecha_vencimiento_cedula' => 'Vencimiento Cédula',
             'approval_status' => 'Estado de Aprobación',
+            'situacion_financiera' => 'Situación Financiera Actual',
+            'situacion_financiera_detalle' => 'Detalle de Situación Financiera',
         ];
     }
 

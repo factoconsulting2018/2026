@@ -356,6 +356,48 @@ $this->registerCssFile('/css/client-form.css');
                     ])->input('date') ?>
                 </div>
             </div>
+
+            <!-- Situación Financiera Actual -->
+            <div class="row mb-3">
+                <div class="col-sm-3">
+                    <label class="form-label">
+                        <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px; color: #3fa9f5;">account_balance</span>
+                        Situación Financiera
+                    </label>
+                </div>
+                <div class="col-sm-9">
+                    <?= $form->field($model, 'situacion_financiera', [
+                        'template' => '{input}{error}',
+                        'inputOptions' => [
+                            'class' => 'form-control',
+                            'id' => 'situacion-financiera'
+                        ]
+                    ])->dropDownList([
+                        '' => 'Seleccione una opción',
+                        'independiente' => 'Independiente',
+                        'asalariado' => 'Asalariado',
+                        'tiene_empresa' => 'Tiene empresa'
+                    ], ['class' => 'form-select']) ?>
+                </div>
+            </div>
+
+            <!-- Detalle Situación Financiera (aparece dinámicamente) -->
+            <div class="row mb-3" id="detalle-situacion-container" style="display: none;">
+                <div class="col-sm-3">
+                    <label class="form-label" id="detalle-situacion-label">
+                        <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px; color: #3fa9f5;">description</span>
+                    </label>
+                </div>
+                <div class="col-sm-9">
+                    <?= $form->field($model, 'situacion_financiera_detalle', [
+                        'template' => '{input}{error}',
+                        'inputOptions' => [
+                            'class' => 'form-control',
+                            'rows' => 3
+                        ]
+                    ])->textarea() ?>
+                </div>
+            </div>
         </div>
     </div>
         </div>

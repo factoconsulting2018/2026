@@ -145,6 +145,28 @@ class ClientController extends Controller
     {
         $model = $this->findModel($id);
         $model->approval_status = 'approved';
+        
+        // Agregar información de situación financiera a las notas si existe
+        if (!empty($model->situacion_financiera) && !empty($model->situacion_financiera_detalle)) {
+            $labels = [
+                'independiente' => 'Independiente',
+                'asalariado' => 'Asalariado',
+                'tiene_empresa' => 'Tiene Empresa'
+            ];
+            $label = $labels[$model->situacion_financiera] ?? $model->situacion_financiera;
+            
+            $notaFinanciera = "\n\n=== SITUACIÓN FINANCIERA ===\n";
+            $notaFinanciera .= "P: " . $label . "\n";
+            $notaFinanciera .= "R: " . $model->situacion_financiera_detalle;
+            
+            // Agregar a las notas existentes
+            if (empty($model->notes)) {
+                $model->notes = $notaFinanciera;
+            } else {
+                $model->notes = $model->notes . $notaFinanciera;
+            }
+        }
+        
         if ($model->save(false)) {
             Yii::$app->session->setFlash('success', 'Cliente aprobado exitosamente');
         } else {

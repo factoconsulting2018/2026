@@ -76,8 +76,48 @@ $car = $model->car;
     
     <div class="section">
         <div class="section-title">INFORMACIÓN DEL CLIENTE</div>
-        <div class="info-row"><strong>Nombre:</strong> <?= htmlspecialchars($client ? $client->full_name : 'N/A') ?></div>
-        <div class="info-row"><strong>Cédula:</strong> <?= htmlspecialchars($client ? $client->cedula_fisica : 'N/A') ?></div>
+        <div style="display: table; width: 100%;">
+            <div style="display: table-cell; width: 50%; padding-right: 10px; vertical-align: top;">
+                <div class="info-row"><strong>Nombre:</strong> <?= htmlspecialchars($client ? $client->full_name : 'N/A') ?></div>
+                <div class="info-row"><strong>Cédula:</strong> <?= htmlspecialchars($client ? $client->cedula_fisica : 'N/A') ?></div>
+                <?php 
+                // Mostrar información de licencias de choferes del cliente
+                $choferesClient = [];
+                if ($client && !empty($client->licencias_choferes)) {
+                    $choferesDecoded = json_decode($client->licencias_choferes, true);
+                    if (is_array($choferesDecoded)) {
+                        $choferesClient = $choferesDecoded;
+                    } else {
+                        // Si no es JSON válido, mostrar como texto
+                        $choferesClient = [$client->licencias_choferes];
+                    }
+                }
+                if (!empty($choferesClient)):
+                ?>
+                <div class="info-row"><strong>Licencias Choferes:</strong><br>
+                    <?php foreach ($choferesClient as $chofer): ?>
+                        <?php if (is_array($chofer)): ?>
+                            <?php 
+                            $choferInfo = [];
+                            if (isset($chofer['nombre'])) $choferInfo[] = htmlspecialchars($chofer['nombre']);
+                            if (isset($chofer['licencia'])) $choferInfo[] = 'Lic: ' . htmlspecialchars($chofer['licencia']);
+                            if (isset($chofer['cedula'])) $choferInfo[] = 'Céd: ' . htmlspecialchars($chofer['cedula']);
+                            echo implode(' - ', $choferInfo);
+                            ?>
+                        <?php else: ?>
+                            <?= nl2br(htmlspecialchars($chofer)) ?>
+                        <?php endif; ?><br>
+                    <?php endforeach; ?>
+                </div>
+                <?php endif; ?>
+            </div>
+            <div style="display: table-cell; width: 50%; padding-left: 10px; vertical-align: top;">
+                <div class="info-row"><strong>Teléfono:</strong> <?= htmlspecialchars($client && !empty($client->whatsapp) ? $client->whatsapp : ($client && !empty($client->telefono) ? $client->telefono : 'N/A')) ?></div>
+                <?php if (!empty($model->choferes_autorizados)): ?>
+                <div class="info-row"><strong>Choferes Autorizados:</strong><br><?= nl2br(htmlspecialchars($model->choferes_autorizados)) ?></div>
+                <?php endif; ?>
+            </div>
+        </div>
     </div>
     
     <div class="section">
