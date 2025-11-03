@@ -427,22 +427,29 @@ class RentalController extends Controller
             
             $model = $this->findModel($id);
             
+            $result = [
+                'success' => true
+            ];
+            
             if ($model->hasComprobante()) {
-                return [
-                    'success' => true,
-                    'comprobante' => [
-                        'url' => $model->getComprobanteUrl(),
-                        'fileName' => $model->getComprobanteFileName(),
-                        'sizeFormatted' => $model->getComprobanteSizeFormatted(),
-                        'isImage' => $model->isComprobanteImage()
-                    ]
-                ];
-            } else {
-                return [
-                    'success' => false,
-                    'message' => 'No hay comprobante'
+                $result['comprobante'] = [
+                    'url' => $model->getComprobanteUrl(),
+                    'fileName' => $model->getComprobanteFileName(),
+                    'sizeFormatted' => $model->getComprobanteSizeFormatted(),
+                    'isImage' => $model->isComprobanteImage()
                 ];
             }
+            
+            // Agregar información de abonos
+            $result['abonos'] = [];
+            for ($i = 1; $i <= 5; $i++) {
+                $result['abonos'][] = [
+                    'descripcion' => $model->{"abono{$i}_descripcion"} ?: '',
+                    'monto' => $model->{"abono{$i}_monto"} ?: ''
+                ];
+            }
+            
+            return $result;
             
         } catch (\Exception $e) {
             Yii::error('Error al obtener información del comprobante: ' . $e->getMessage(), 'rental_comprobante_info_error');

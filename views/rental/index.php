@@ -1504,7 +1504,7 @@ $this->registerCss('
                     <div class="mb-3">
                         <label for="comprobanteFile" class="form-label">
                             <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">upload_file</span>
-                            Comprobante de Pago
+                            Comprobantes de Pago
                         </label>
                         <input type="file" class="form-control" id="comprobanteFile" name="comprobanteFile" 
                                accept=".jpg,.jpeg,.png,.pdf,.doc,.docx">
@@ -1598,7 +1598,13 @@ function openPaymentModal(button) {
     document.getElementById('comprobanteFile').value = '';
     document.getElementById('observaciones').value = '';
     
-    // Cargar comprobante actual si existe
+    // Limpiar campos de abonos
+    for (let i = 1; i <= 5; i++) {
+        document.getElementById(`abono${i}_descripcion`).value = '';
+        document.getElementById(`abono${i}_monto`).value = '';
+    }
+    
+    // Cargar comprobante actual y abonos si existen
     loadCurrentComprobante(rentalId);
     
     // Mostrar el modal
@@ -1759,10 +1765,11 @@ function showNotification(message, type = 'info') {
 }
 
 function loadCurrentComprobante(rentalId) {
-    // Hacer petición para obtener información del comprobante actual
+    // Hacer petición para obtener información del comprobante actual y abonos
     fetch(`<?= Url::to(['rental/get-comprobante-info']) ?>?id=${rentalId}`)
         .then(response => response.json())
         .then(data => {
+            // Cargar comprobante si existe
             if (data.success && data.comprobante) {
                 const container = document.getElementById('comprobantePreview');
                 container.innerHTML = '';
@@ -1808,6 +1815,17 @@ function loadCurrentComprobante(rentalId) {
             } else {
                 document.getElementById('currentComprobante').style.display = 'none';
                 document.getElementById('comprobanteActions').style.display = 'none';
+            }
+            
+            // Cargar abonos anteriores si existen
+            if (data.success && data.abonos) {
+                for (let i = 0; i < data.abonos.length; i++) {
+                    const abono = data.abonos[i];
+                    if (abono.descripcion && abono.monto) {
+                        document.getElementById(`abono${i + 1}_descripcion`).value = abono.descripcion;
+                        document.getElementById(`abono${i + 1}_monto`).value = abono.monto;
+                    }
+                }
             }
         })
         .catch(error => {
