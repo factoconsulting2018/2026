@@ -5,6 +5,8 @@ use Yii;
 use yii\web\Controller;
 use yii\filters\AccessControl;
 use yii\filters\VerbFilter;
+use yii\filters\ContentNegotiator;
+use yii\web\Response;
 use app\components\HaciendaApi;
 
 /**
@@ -40,7 +42,24 @@ class HaciendaController extends Controller
                     'consultar-public' => ['POST'], // Solo POST
                 ],
             ],
+            'contentNegotiator' => [
+                'class' => ContentNegotiator::class,
+                'formats' => [
+                    'application/json' => Response::FORMAT_JSON,
+                ],
+            ],
         ];
+    }
+    
+    /**
+     * Desactivar CSRF para consultas AJAX públicas
+     */
+    public function beforeAction($action)
+    {
+        if ($action->id === 'consultar-public') {
+            $this->enableCsrfValidation = false;
+        }
+        return parent::beforeAction($action);
     }
 
     /**
