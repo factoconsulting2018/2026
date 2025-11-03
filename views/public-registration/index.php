@@ -1,6 +1,7 @@
 <?php
 
 use yii\helpers\Html;
+use yii\helpers\Url;
 use yii\widgets\ActiveForm;
 use app\models\CompanyConfig;
 
@@ -93,6 +94,7 @@ $logoPath = $companyInfo['logo'] ?? null;
             
             <?php $form = ActiveForm::begin([
                 'id' => 'registration-form',
+                'action' => Url::to(['public-registration/index']),
                 'options' => ['class' => 'form-horizontal'],
                 'fieldConfig' => [
                     'template' => "<div class='row mb-3'><div class='col-sm-4'>{label}</div><div class='col-sm-8'>{input}{error}</div></div>",
