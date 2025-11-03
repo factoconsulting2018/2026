@@ -142,20 +142,29 @@ class HaciendaController extends Controller
             // Obtener datos directamente de la API
             $rawData = HaciendaApi::consultarCedula($cedula);
             
+            \Yii::info("Raw data de Hacienda: " . json_encode($rawData), __METHOD__);
+            
             if ($rawData && !empty($rawData)) {
-                
                 $formattedData = HaciendaApi::formatResponse($rawData);
                 
-                if ($formattedData && $formattedData['ok']) {
-                    // Solo retornar el nombre para consulta pública
-                    return [
-                        'success' => true,
-                        'message' => 'Consulta exitosa',
-                        'data' => [
-                            'cedula' => $cedula,
-                            'nombre' => $formattedData['nombre'] ?? '',
-                        ]
-                    ];
+                \Yii::info("Formatted data: " . json_encode($formattedData), __METHOD__);
+                
+                if ($formattedData && isset($formattedData['ok']) && $formattedData['ok']) {
+                    $nombre = $formattedData['nombre'] ?? '';
+                    
+                    \Yii::info("Nombre extraído: " . $nombre, __METHOD__);
+                    
+                    // Retornar éxito solo si hay nombre
+                    if (!empty($nombre)) {
+                        return [
+                            'success' => true,
+                            'message' => 'Consulta exitosa',
+                            'data' => [
+                                'cedula' => $cedula,
+                                'nombre' => $nombre,
+                            ]
+                        ];
+                    }
                 }
             }
             
