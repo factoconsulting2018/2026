@@ -171,7 +171,7 @@ class ReportsController extends Controller
             ->orderBy(['created_at' => SORT_DESC])
             ->all();
 
-        $totalAmount = Order::find()->sum('total_price');
+        $totalAmount = Order::find()->sum('total_precio');
 
         switch ($format) {
             case 'pdf':

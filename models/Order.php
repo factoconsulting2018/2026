@@ -28,7 +28,7 @@ class Order extends ActiveRecord
      */
     public static function tableName()
     {
-        return 'rentals';
+        return 'sales';
     }
 
     /**
@@ -37,14 +37,13 @@ class Order extends ActiveRecord
     public function rules()
     {
         return [
-            [['client_id', 'car_id', 'fecha_inicio', 'cantidad_dias'], 'required'],
-            [['client_id', 'car_id', 'correapartir_enabled', 'cantidad_dias'], 'integer'],
-            [['fecha_inicio', 'fecha_final', 'hora_inicio', 'hora_final', 'fecha_correapartir', 'created_at', 'updated_at'], 'safe'],
-            [['precio_por_dia'], 'number'],
-            [['rental_id', 'lugar_entrega', 'lugar_retiro', 'estado_pago', 'ejecutivo', 'ejecutivo_otro'], 'string', 'max' => 255],
-            [['comprobante_pago'], 'string', 'max' => 500],
-            [['condiciones_especiales', 'choferes_autorizados'], 'string'],
-            [['estado_pago'], 'in', 'range' => ['pendiente', 'pagado', 'reservado', 'cancelado']],
+            [['ticket_id', 'article_id', 'quantity', 'unit_price', 'total_price'], 'required'],
+            [['article_id', 'client_id', 'store_id', 'quantity'], 'integer'],
+            [['unit_price', 'total_price'], 'number'],
+            [['sale_mode', 'notes'], 'string'],
+            [['created_at', 'updated_at'], 'safe'],
+            [['ticket_id'], 'string', 'max' => 50],
+            [['sale_mode'], 'in', 'range' => ['retail', 'wholesale', 'auction']],
         ];
     }
 
@@ -55,26 +54,15 @@ class Order extends ActiveRecord
     {
         return [
             'id' => 'ID',
-            'rental_id' => 'ID del Alquiler',
+            'ticket_id' => 'ID Ticket',
+            'article_id' => 'Artículo',
             'client_id' => 'Cliente',
-            'car_id' => 'Vehículo',
-            'correapartir_enabled' => 'Correapartir Habilitado',
-            'fecha_correapartir' => 'Fecha Correapartir',
-            'fecha_inicio' => 'Fecha de Inicio',
-            'hora_inicio' => 'Hora de Inicio',
-            'fecha_final' => 'Fecha Final',
-            'hora_final' => 'Hora Final',
-            'lugar_entrega' => 'Lugar de Entrega',
-            'lugar_retiro' => 'Lugar de Retiro',
-            'cantidad_dias' => 'Cantidad de Días',
-            'precio_por_dia' => 'Precio por Día',
-            'total_precio' => 'Precio Total',
-            'condiciones_especiales' => 'Condiciones Especiales',
-            'choferes_autorizados' => 'Choferes Autorizados',
-            'estado_pago' => 'Estado de Pago',
-            'comprobante_pago' => 'Comprobante de Pago',
-            'ejecutivo' => 'Ejecutivo',
-            'ejecutivo_otro' => 'Ejecutivo Otro',
+            'sale_mode' => 'Modo de Venta',
+            'store_id' => 'Tienda',
+            'quantity' => 'Cantidad',
+            'unit_price' => 'Precio Unitario',
+            'total_price' => 'Precio Total',
+            'notes' => 'Notas',
             'created_at' => 'Fecha de Creación',
             'updated_at' => 'Fecha de Actualización',
         ];
@@ -86,24 +74,13 @@ class Order extends ActiveRecord
     public function beforeSave($insert)
     {
         if (parent::beforeSave($insert)) {
-            if ($insert && empty($this->rental_id)) {
-                $this->rental_id = $this->generateRentalId();
+            // Calcular total_price si no está establecido
+            if (empty($this->total_price)) {
+                $this->total_price = $this->quantity * $this->unit_price;
             }
             return true;
         }
         return false;
-    }
-
-    /**
-     * Genera un ID único para el alquiler
-     * @return string
-     */
-    protected function generateRentalId()
-    {
-        $prefix = 'RENT';
-        $timestamp = time();
-        $random = mt_rand(1000, 9999);
-        return $prefix . $timestamp . $random;
     }
 
     /**
@@ -116,12 +93,12 @@ class Order extends ActiveRecord
     }
 
     /**
-     * Obtiene el vehículo asociado
+     * Obtiene el artículo asociado
      * @return \yii\db\ActiveQuery
      */
-    public function getCar()
+    public function getArticle()
     {
-        return $this->hasOne(\app\models\Car::class, ['id' => 'car_id']);
+        return $this->hasOne(Article::class, ['id' => 'article_id']);
     }
 }
 
