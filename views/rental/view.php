@@ -148,6 +148,11 @@ $this->params['breadcrumbs'][] = $this->title;
                             'style' => 'background: linear-gradient(135deg, #22487a 0%, #0d001e 100%); border: none;'
                         ]) ?>
 
+                        <?= Html::a('<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">picture_as_pdf</span>Orden PDF', ['/pdf/download-rental', 'id' => $model->id], [
+                            'class' => 'btn btn-info btn-lg',
+                            'target' => '_blank'
+                        ]) ?>
+
                         <?= Html::a('<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">delete</span>Cancelar Alquiler', ['delete', 'id' => $model->id], [
                             'class' => 'btn btn-danger btn-lg',
                             'data' => [
