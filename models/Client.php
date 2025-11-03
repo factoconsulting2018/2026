@@ -31,6 +31,7 @@ use yii\db\ActiveRecord;
  * @property string $updated_at
  * @property string $fecha_vencimiento_licencia
  * @property string $fecha_vencimiento_cedula
+ * @property string $approval_status
  */
 class Client extends ActiveRecord
 {
@@ -57,6 +58,8 @@ class Client extends ActiveRecord
             [['address', 'direccion'], 'safe'], // Permitir cualquier texto para direcciones
             [['status'], 'string', 'max' => 50],
             [['status'], 'in', 'range' => ['active', 'inactive']],
+            [['approval_status'], 'string', 'max' => 20],
+            [['approval_status'], 'in', 'range' => ['pending', 'approved', 'rejected']],
             [['tipo_identificacion', 'situacion_tributaria', 'regimen_tributario'], 'string', 'max' => 255],
             [['actividad_economica_codigo'], 'string', 'max' => 50],
             [['actividad_economica_descripcion'], 'string', 'max' => 500],
@@ -80,6 +83,11 @@ class Client extends ActiveRecord
             // Generar client_id si es nuevo
             if ($insert && empty($this->client_id)) {
                 $this->client_id = $this->generateClientId();
+            }
+            
+            // Establecer approval_status por defecto a 'approved' si no se especifica
+            if ($insert && empty($this->approval_status)) {
+                $this->approval_status = 'approved';
             }
             
             // Convertir nombres a mayúsculas y dividir full_name en nombre y apellido
@@ -146,6 +154,7 @@ class Client extends ActiveRecord
             'updated_at' => 'Fecha de Actualización',
             'fecha_vencimiento_licencia' => 'Vencimiento Licencia',
             'fecha_vencimiento_cedula' => 'Vencimiento Cédula',
+            'approval_status' => 'Estado de Aprobación',
         ];
     }
 

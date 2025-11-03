@@ -208,6 +208,35 @@ class ReportsController extends Controller
     }
 
     /**
+     * Reporte de Nuevos Clientes del Mes en múltiples formatos
+     */
+    public function actionNewClientsReport($format = 'pdf')
+    {
+        // Obtener rango de fechas: días 1 al 30 del mes actual
+        $year = date('Y');
+        $month = date('m');
+        $startDate = "$year-$month-01 00:00:00";
+        $endDate = "$year-$month-30 23:59:59";
+        
+        $clients = Client::find()
+            ->where(['>=', 'created_at', $startDate])
+            ->andWhere(['<=', 'created_at', $endDate])
+            ->orderBy(['full_name' => SORT_ASC])
+            ->all();
+
+        switch ($format) {
+            case 'pdf':
+                return $this->generateNewClientsPdf($clients);
+            case 'excel':
+                return $this->generateNewClientsExcel($clients);
+            case 'word':
+                return $this->generateNewClientsWord($clients);
+            default:
+                throw new \Exception('Formato no soportado');
+        }
+    }
+
+    /**
      * Reporte de Ventas por Cliente en múltiples formatos
      */
     public function actionSalesByClientReport($format = 'pdf')
@@ -650,6 +679,101 @@ class ReportsController extends Controller
         $section->addText('Total de Clientes: ' . count($clients), ['bold' => true, 'size' => 14]);
 
         return $this->downloadWord($phpWord, 'reporte_clientes_' . date('Y-m-d_H-i-s') . '.docx');
+    }
+
+    /**
+     * Generar PDF de Nuevos Clientes
+     */
+    private function generateNewClientsPdf($clients)
+    {
+        $html = $this->renderPartial('_clients_pdf', [
+            'clients' => $clients,
+            'reportNumber' => $this->generateReportNumber(),
+            'title' => 'REPORTE DE NUEVOS CLIENTES - MES ACTUAL'
+        ]);
+
+        return $this->generateSimplePdf($html, 'reporte_nuevos_clientes_' . date('Y-m-d_H-i-s') . '.pdf');
+    }
+
+    /**
+     * Generar Excel de Nuevos Clientes
+     */
+    private function generateNewClientsExcel($clients)
+    {
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Nuevos Clientes del Mes');
+
+        // Encabezados
+        $headers = ['Número de Reporte', 'ID', 'Nombre Completo', 'Cédula', 'WhatsApp', 'Email', 'Dirección', 'Fecha Registro'];
+        $col = 'A';
+        foreach ($headers as $header) {
+            $sheet->setCellValue($col . '1', $header);
+            $col++;
+        }
+
+        // Datos
+        $row = 2;
+        $reportNumber = $this->generateReportNumber();
+        foreach ($clients as $client) {
+            $sheet->setCellValue('A' . $row, $reportNumber);
+            $sheet->setCellValue('B' . $row, $client->id);
+            $sheet->setCellValue('C' . $row, $client->full_name);
+            $sheet->setCellValue('D' . $row, $client->cedula_fisica ?: 'N/A');
+            $sheet->setCellValue('E' . $row, $client->whatsapp ?: 'N/A');
+            $sheet->setCellValue('F' . $row, $client->email ?: 'N/A');
+            $sheet->setCellValue('G' . $row, $client->address ?: 'N/A');
+            $sheet->setCellValue('H' . $row, date('d/m/Y', strtotime($client->created_at)));
+            $row++;
+        }
+
+        // Formatear
+        $sheet->getStyle('A1:H1')->getFont()->setBold(true);
+
+        return $this->downloadExcel($spreadsheet, 'reporte_nuevos_clientes_' . date('Y-m-d_H-i-s') . '.xlsx');
+    }
+
+    /**
+     * Generar Word de Nuevos Clientes
+     */
+    private function generateNewClientsWord($clients)
+    {
+        $phpWord = new PhpWord();
+        $section = $phpWord->addSection();
+
+        // Título
+        $section->addText('REPORTE DE NUEVOS CLIENTES - MES ACTUAL', ['bold' => true, 'size' => 16]);
+        $section->addText('Número de Reporte: ' . $this->generateReportNumber(), ['bold' => true]);
+        $section->addText('Fecha: ' . date('d/m/Y H:i:s'));
+        $section->addTextBreak();
+
+        // Tabla
+        $table = $section->addTable(['borderSize' => 6, 'borderColor' => '000000']);
+        
+        // Encabezados
+        $table->addRow();
+        $table->addCell(600)->addText('ID', ['bold' => true]);
+        $table->addCell(2500)->addText('Nombre Completo', ['bold' => true]);
+        $table->addCell(1200)->addText('Cédula', ['bold' => true]);
+        $table->addCell(1200)->addText('WhatsApp', ['bold' => true]);
+        $table->addCell(2000)->addText('Email', ['bold' => true]);
+        $table->addCell(2000)->addText('Dirección', ['bold' => true]);
+
+        // Datos
+        foreach ($clients as $client) {
+            $table->addRow();
+            $table->addCell(600)->addText($client->id);
+            $table->addCell(2500)->addText($client->full_name);
+            $table->addCell(1200)->addText($client->cedula_fisica ?: 'N/A');
+            $table->addCell(1200)->addText($client->whatsapp ?: 'N/A');
+            $table->addCell(2000)->addText($client->email ?: 'N/A');
+            $table->addCell(2000)->addText($client->address ?: 'N/A');
+        }
+
+        $section->addTextBreak();
+        $section->addText('Total de Nuevos Clientes: ' . count($clients), ['bold' => true, 'size' => 14]);
+
+        return $this->downloadWord($phpWord, 'reporte_nuevos_clientes_' . date('Y-m-d_H-i-s') . '.docx');
     }
 
     /**

@@ -88,7 +88,7 @@ class ClientController extends Controller
             ],
             'sort' => [
                 'defaultOrder' => [
-                    'created_at' => SORT_DESC,
+                    'full_name' => SORT_ASC,
                 ]
             ],
         ]);
@@ -112,6 +112,45 @@ class ClientController extends Controller
         return $this->render('view', [
             'model' => $this->findModel($id),
         ]);
+    }
+
+    /**
+     * Lista clientes pendientes de aprobación
+     */
+    public function actionPending()
+    {
+        $query = Client::find()->where(['approval_status' => 'pending']);
+        
+        $dataProvider = new ActiveDataProvider([
+            'query' => $query,
+            'pagination' => [
+                'pageSize' => 20,
+            ],
+            'sort' => [
+                'defaultOrder' => [
+                    'created_at' => SORT_DESC,
+                ]
+            ],
+        ]);
+
+        return $this->render('pending', [
+            'dataProvider' => $dataProvider,
+        ]);
+    }
+
+    /**
+     * Aprueba un cliente
+     */
+    public function actionApprove($id)
+    {
+        $model = $this->findModel($id);
+        $model->approval_status = 'approved';
+        if ($model->save(false)) {
+            Yii::$app->session->setFlash('success', 'Cliente aprobado exitosamente');
+        } else {
+            Yii::$app->session->setFlash('error', 'Error al aprobar el cliente');
+        }
+        return $this->redirect(['pending']);
     }
 
     /**

@@ -464,6 +464,19 @@ $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => Yii
                     <span class="nav-text">Clientes</span>
                 </a>
             </li>
+            <?php
+            // Contar clientes pendientes de aprobación
+            $pendingCount = \app\models\Client::find()->where(['approval_status' => 'pending'])->count();
+            if ($pendingCount > 0): ?>
+            <li class="nav-item">
+                <a class="nav-link <?= Yii::$app->controller->id === 'client' && Yii::$app->controller->action->id === 'pending' ? 'active' : '' ?>" 
+                   href="<?= \yii\helpers\Url::to(['/client/pending']) ?>">
+                    <span class="nav-icon material-symbols-outlined">person_add</span>
+                    <span class="nav-text">Nuevos clientes</span>
+                    <span class="badge bg-warning ms-2"><?= $pendingCount ?></span>
+                </a>
+            </li>
+            <?php endif; ?>
             <li class="nav-item">
                 <a class="nav-link <?= Yii::$app->controller->id === 'car' ? 'active' : '' ?>" 
                    href="<?= \yii\helpers\Url::to(['/car/index']) ?>">

@@ -58,6 +58,18 @@ $reports = [
         ]
     ],
     [
+        'id' => 6,
+        'name' => 'Nuevos Clientes',
+        'description' => 'Reporte de nuevos clientes del día 1 al 30 del mes actual con toda su información',
+        'icon' => 'person_add',
+        'color' => 'warning',
+        'actions' => [
+            'pdf' => ['reports/new-clients-report', 'format' => 'pdf'],
+            'excel' => ['reports/new-clients-report', 'format' => 'excel'],
+            'word' => ['reports/new-clients-report', 'format' => 'word']
+        ]
+    ],
+    [
         'id' => 4,
         'name' => 'Reporte de Ventas por Cliente',
         'description' => 'Análisis de ventas agrupadas por cliente con totales y estadísticas',
