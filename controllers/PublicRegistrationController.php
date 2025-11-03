@@ -7,6 +7,7 @@ use app\models\Client;
 use yii\web\Controller;
 use yii\web\Response;
 use yii\widgets\ActiveForm;
+use yii\filters\AccessControl;
 
 class PublicRegistrationController extends Controller
 {
@@ -15,7 +16,14 @@ class PublicRegistrationController extends Controller
     public function behaviors()
     {
         return [
-            // No requerir autenticación
+            'access' => [
+                'class' => AccessControl::class,
+                'rules' => [
+                    [
+                        'allow' => true, // Permitir acceso público sin autenticación
+                    ],
+                ],
+            ],
         ];
     }
 
