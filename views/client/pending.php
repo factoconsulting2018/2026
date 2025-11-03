@@ -80,11 +80,9 @@ $currentTab = $tab ?? 'pending';
                     'data-method' => 'post'
                 ]);
                 
-                $buttons .= Html::a('<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">cancel</span>Rechazar', ['reject', 'id' => $model->id], [
-                    'class' => 'btn btn-warning me-2',
-                    'data-confirm' => '¿Está seguro que desea rechazar este cliente?',
-                    'data-method' => 'post'
-                ]);
+                $buttons .= '<button type="button" class="btn btn-warning me-2" data-bs-toggle="modal" data-bs-target="#rejectModal" onclick="openRejectModal(' . $model->id . ', \'' . Html::encode(addslashes($model->full_name)) . '\')">
+                    <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">cancel</span>Rechazar
+                </button>';
                 
                 $buttons .= Html::a('<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">delete</span>Eliminar', ['delete-permanently', 'id' => $model->id], [
                     'class' => 'btn btn-danger me-2',
@@ -132,6 +130,48 @@ $currentTab = $tab ?? 'pending';
     <?php Pjax::end(); ?>
 </div>
 
+<!-- Modal para Rechazar Cliente -->
+<div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="rejectModalLabel">
+                    <span class="material-symbols-outlined" style="font-size: 24px; vertical-align: middle; margin-right: 8px;">cancel</span>
+                    Rechazar Cliente
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="reject-form" method="post" action="">
+                <?= Html::hiddenInput(Yii::$app->request->csrfParam, Yii::$app->request->csrfToken) ?>
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <span class="material-symbols-outlined" style="font-size: 20px; vertical-align: middle; margin-right: 8px;">warning</span>
+                        <strong id="reject-client-name"></strong>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="motivo_rechazo" class="form-label">
+                            <strong>Motivo del Rechazo *</strong>
+                        </label>
+                        <textarea class="form-control" id="motivo_rechazo" name="motivo_rechazo" rows="4" required placeholder="Ingrese el motivo por el cual se rechaza este cliente..."></textarea>
+                        <small class="text-muted">Este motivo aparecerá en el reporte de clientes rechazados.</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">close</span>
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-danger">
+                        <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">cancel</span>
+                        Rechazar Cliente
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <style>
 .client-pending .card {
     border-left: 4px solid #ff9800;
@@ -145,3 +185,11 @@ $currentTab = $tab ?? 'pending';
     border-color: #dee2e6 #dee2e6 #fff;
 }
 </style>
+
+<script>
+function openRejectModal(clientId, clientName) {
+    document.getElementById('reject-client-name').innerHTML = '¿Está seguro que desea rechazar a <strong>' + clientName + '</strong>?';
+    document.getElementById('reject-form').action = '<?= Url::to(['reject']) ?>&id=' + clientId;
+    document.getElementById('motivo_rechazo').value = '';
+}
+</script>

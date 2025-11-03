@@ -191,7 +191,9 @@ class ClientController extends Controller
     public function actionReject($id)
     {
         $model = $this->findModel($id);
+        $motivo = Yii::$app->request->post('motivo_rechazo', '');
         $model->approval_status = 'rejected';
+        $model->motivo_rechazo = $motivo;
         
         if ($model->save(false)) {
             Yii::$app->session->setFlash('success', 'Cliente rechazado exitosamente');

@@ -1626,7 +1626,7 @@ class ReportsController extends Controller
         $sheet->setTitle('Clientes Rechazados');
 
         // Encabezados
-        $headers = ['Número de Reporte', 'ID', 'Nombre Completo', 'Cédula', 'WhatsApp', 'Email', 'Dirección', 'Fecha Rechazo'];
+        $headers = ['ID', 'Nombre Completo', 'Cédula', 'WhatsApp', 'Email', 'Fecha Rechazo', 'Motivo del Rechazo'];
         $col = 'A';
         foreach ($headers as $header) {
             $sheet->setCellValue($col . '1', $header);
@@ -1635,22 +1635,20 @@ class ReportsController extends Controller
 
         // Datos
         $row = 2;
-        $reportNumber = $this->generateReportNumber();
         foreach ($clients as $client) {
-            $sheet->setCellValue('A' . $row, $reportNumber);
-            $sheet->setCellValue('B' . $row, $client->id);
-            $sheet->setCellValue('C' . $row, $client->full_name);
-            $sheet->setCellValue('D' . $row, $client->cedula_fisica ?: 'N/A');
-            $sheet->setCellValue('E' . $row, $client->whatsapp ?: 'N/A');
-            $sheet->setCellValue('F' . $row, $client->email ?: 'N/A');
-            $sheet->setCellValue('G' . $row, $client->address ?: 'N/A');
-            $sheet->setCellValue('H' . $row, date('d/m/Y', strtotime($client->updated_at)));
+            $sheet->setCellValue('A' . $row, $client->id);
+            $sheet->setCellValue('B' . $row, $client->full_name);
+            $sheet->setCellValue('C' . $row, $client->cedula_fisica ?: 'N/A');
+            $sheet->setCellValue('D' . $row, $client->whatsapp ?: 'N/A');
+            $sheet->setCellValue('E' . $row, $client->email ?: 'N/A');
+            $sheet->setCellValue('F' . $row, date('d/m/Y', strtotime($client->updated_at)));
+            $sheet->setCellValue('G' . $row, $client->motivo_rechazo ?: 'Sin motivo registrado');
             $row++;
         }
 
         // Formatear
-        $sheet->getStyle('A1:H1')->getFont()->setBold(true);
-        $sheet->getStyle('A1:H1')->getFill()
+        $sheet->getStyle('A1:G1')->getFont()->setBold(true);
+        $sheet->getStyle('A1:G1')->getFill()
             ->setFillType(Fill::FILL_SOLID)
             ->getStartColor()->setRGB('FFB6C6'); // Color rosa claro
 

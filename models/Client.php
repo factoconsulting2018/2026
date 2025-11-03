@@ -32,6 +32,7 @@ use yii\db\ActiveRecord;
  * @property string $fecha_vencimiento_licencia
  * @property string $fecha_vencimiento_cedula
  * @property string $approval_status
+ * @property string $motivo_rechazo
  * @property string $situacion_financiera
  * @property string $situacion_financiera_detalle
  */
@@ -56,7 +57,7 @@ class Client extends ActiveRecord
             [['created_at', 'updated_at', 'fecha_vencimiento_licencia', 'fecha_vencimiento_cedula', 'fecha_nacimiento'], 'safe'],
             [['client_id', 'nombre', 'apellido', 'full_name', 'cedula_fisica', 'email', 'telefono', 'celular', 'imagen_foto', 'licencia_conducir', 'situacion_financiera'], 'string', 'max' => 255],
             [['whatsapp'], 'string', 'max' => 20],
-            [['notes', 'notas', 'licencias_choferes', 'situacion_financiera_detalle'], 'string'],
+            [['notes', 'notas', 'licencias_choferes', 'situacion_financiera_detalle', 'motivo_rechazo'], 'string'],
             [['address', 'direccion'], 'safe'], // Permitir cualquier texto para direcciones
             [['status'], 'string', 'max' => 50],
             [['status'], 'in', 'range' => ['active', 'inactive']],
@@ -157,6 +158,7 @@ class Client extends ActiveRecord
             'fecha_vencimiento_licencia' => 'Vencimiento Licencia',
             'fecha_vencimiento_cedula' => 'Vencimiento Cédula',
             'approval_status' => 'Estado de Aprobación',
+            'motivo_rechazo' => 'Motivo de Rechazo',
             'situacion_financiera' => 'Situación Financiera Actual',
             'situacion_financiera_detalle' => 'Detalle de Situación Financiera',
         ];

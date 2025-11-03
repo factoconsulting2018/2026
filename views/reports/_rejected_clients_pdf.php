@@ -1,6 +1,8 @@
 <?php
 /** @var array $clients */
 /** @var string $reportNumber */
+
+use yii\helpers\Html;
 ?>
 
 <style>
@@ -87,27 +89,25 @@ body {
 <table class="table">
     <thead>
         <tr>
-            <th style="width: 8%;">Número de Reporte</th>
-            <th style="width: 6%;">ID</th>
-            <th style="width: 20%;">Nombre Completo</th>
-            <th style="width: 12%;">Cédula</th>
-            <th style="width: 12%;">WhatsApp</th>
-            <th style="width: 18%;">Email</th>
-            <th style="width: 14%;">Dirección</th>
-            <th style="width: 10%;">Fecha Rechazo</th>
+            <th style="width: 5%;">ID</th>
+            <th style="width: 18%;">Nombre Completo</th>
+            <th style="width: 10%;">Cédula</th>
+            <th style="width: 10%;">WhatsApp</th>
+            <th style="width: 15%;">Email</th>
+            <th style="width: 12%;">Fecha Rechazo</th>
+            <th style="width: 30%;">Motivo del Rechazo</th>
         </tr>
     </thead>
     <tbody>
         <?php foreach ($clients as $client): ?>
         <tr>
-            <td><?= $reportNumber ?></td>
             <td class="number"><?= $client->id ?></td>
             <td><?= $client->full_name ?></td>
             <td><?= $client->cedula_fisica ?: 'N/A' ?></td>
             <td><?= $client->whatsapp ?: 'N/A' ?></td>
             <td><?= $client->email ?: 'N/A' ?></td>
-            <td><?= $client->address ?: 'N/A' ?></td>
             <td><?= date('d/m/Y', strtotime($client->updated_at)) ?></td>
+            <td><?= $client->motivo_rechazo ? nl2br(Html::encode($client->motivo_rechazo)) : '<em>Sin motivo registrado</em>' ?></td>
         </tr>
         <?php endforeach; ?>
     </tbody>
