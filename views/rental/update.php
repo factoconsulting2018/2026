@@ -331,19 +331,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const dias = parseInt(cantidadDias.value) || 0;
         
         if (fechaIni && dias > 0) {
-            // Validar que la fecha no sea inválida
-            const fecha = new Date(fechaIni);
-            if (isNaN(fecha.getTime())) {
-                fechaFinalPreview.value = 'Fecha inválida';
-                const fechaFinalHidden = document.getElementById('rental-fecha_final');
-                if (fechaFinalHidden) {
-                    fechaFinalHidden.value = '';
-                }
-                return;
-            }
-            
-            fecha.setDate(fecha.getDate() + dias);
-            const fechaFormateada = fecha.toISOString().split('T')[0];
+            // Parsear fecha manualmente para evitar problemas de zona horaria
+            const [year, month, day] = fechaIni.split('-').map(Number);
+            const fecha = new Date(year, month - 1, day + dias); // month es 0-indexed
+            const fechaFormateada = fecha.getFullYear() + '-' + 
+                String(fecha.getMonth() + 1).padStart(2, '0') + '-' + 
+                String(fecha.getDate()).padStart(2, '0');
             fechaFinalPreview.value = fechaFormateada;
             
             // Actualizar también el campo oculto
