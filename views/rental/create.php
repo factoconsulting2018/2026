@@ -658,9 +658,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const dias = parseInt(cantidadDias.value) || 0;
         
         if (fechaIni && dias > 0) {
-            const fecha = new Date(fechaIni);
-            fecha.setDate(fecha.getDate() + dias); // Sumar días directamente
-            const fechaFormateada = fecha.toISOString().split('T')[0];
+            // Parsear fecha manualmente para evitar problemas de zona horaria
+            const [year, month, day] = fechaIni.split('-').map(Number);
+            const fecha = new Date(year, month - 1, day + dias); // month es 0-indexed, day + dias
+            const fechaFormateada = fecha.getFullYear() + '-' + 
+                String(fecha.getMonth() + 1).padStart(2, '0') + '-' + 
+                String(fecha.getDate()).padStart(2, '0');
             fechaFinal.value = fechaFormateada;
         } else if (!fechaIni || dias <= 0) {
             fechaFinal.value = '';
@@ -726,15 +729,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             } else {
                 // Alquiler por días - calcular días correctamente
-                // Ejemplo: 20/12 a 22/12 debería ser 2 días (diferencia de días)
-                // Normalizar las fechas a medianoche para calcular correctamente
-                inicio.setHours(0, 0, 0, 0);
-                fin.setHours(0, 0, 0, 0);
-                const diffTime = fin - inicio;
-                // Calcular diferencia en días: del 20/12 al 22/12 = 2 días (no 3)
-                // Math.floor redondea hacia abajo, lo cual es correcto para diferencia de días
+                // Parsear fechas manualmente para evitar problemas de zona horaria
+                const [yearIni, monthIni, dayIni] = fechaIni.split('-').map(Number);
+                const [yearFin, monthFin, dayFin] = fechaFin.split('-').map(Number);
+                const fechaInicioParsed = new Date(yearIni, monthIni - 1, dayIni);
+                const fechaFinalParsed = new Date(yearFin, monthFin - 1, dayFin);
+                
+                const diffTime = fechaFinalParsed - fechaInicioParsed;
                 const diasCalculados = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-                // Si es el mismo día, usar 1 día. Si hay diferencia, usar la diferencia exacta (sin sumar 1)
+                
+                // Si es el mismo día, usar 1 día. Si hay diferencia, usar la diferencia exacta
                 cantidadDias.value = diasCalculados >= 0 ? (diasCalculados === 0 ? 1 : diasCalculados) : 1;
                 cantidadDias.min = 1;
             }
