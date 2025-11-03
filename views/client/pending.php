@@ -1,14 +1,17 @@
 <?php
 /** @var yii\web\View $this */
 /** @var yii\data\ActiveDataProvider $dataProvider */
+/** @var string $tab */
 
 use yii\helpers\Html;
 use yii\helpers\Url;
 use yii\widgets\ListView;
 use yii\widgets\Pjax;
 
-$this->title = 'Nuevos Clientes - Pendientes de Aprobación';
+$this->title = 'Nuevos Clientes';
 $this->params['breadcrumbs'][] = $this->title;
+
+$currentTab = $tab ?? 'pending';
 ?>
 
 <div class="client-pending">
@@ -46,17 +49,61 @@ $this->params['breadcrumbs'][] = $this->title;
         </div>
     <?php endif; ?>
 
+    <!-- Tabs -->
+    <ul class="nav nav-tabs mb-4" role="tablist">
+        <li class="nav-item" role="presentation">
+            <?= Html::a('Pendientes', ['pending', 'tab' => 'pending'], [
+                'class' => 'nav-link ' . ($currentTab === 'pending' ? 'active' : ''),
+                'aria-selected' => $currentTab === 'pending' ? 'true' : 'false'
+            ]) ?>
+        </li>
+        <li class="nav-item" role="presentation">
+            <?= Html::a('Rechazados', ['pending', 'tab' => 'rejected'], [
+                'class' => 'nav-link ' . ($currentTab === 'rejected' ? 'active' : ''),
+                'aria-selected' => $currentTab === 'rejected' ? 'true' : 'false'
+            ]) ?>
+        </li>
+    </ul>
+
     <?php Pjax::begin(); ?>
     
     <?= ListView::widget([
         'dataProvider' => $dataProvider,
-        'itemView' => function($model, $key, $index, $widget) {
+        'itemView' => function($model, $key, $index, $widget) use ($currentTab) {
+            $buttons = '';
+            
+            if ($currentTab === 'pending') {
+                // Botones para clientes pendientes
+                $buttons = Html::a('<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">check_circle</span>Aprobar', ['approve', 'id' => $model->id], [
+                    'class' => 'btn btn-success me-2',
+                    'data-confirm' => '¿Está seguro que desea aprobar este cliente?',
+                    'data-method' => 'post'
+                ]);
+                
+                $buttons .= Html::a('<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">cancel</span>Rechazar', ['reject', 'id' => $model->id], [
+                    'class' => 'btn btn-warning me-2',
+                    'data-confirm' => '¿Está seguro que desea rechazar este cliente?',
+                    'data-method' => 'post'
+                ]);
+                
+                $buttons .= Html::a('<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">delete</span>Eliminar', ['delete-permanently', 'id' => $model->id], [
+                    'class' => 'btn btn-danger me-2',
+                    'data-confirm' => '¿Está seguro que desea eliminar permanentemente este cliente? Esta acción no se puede deshacer.',
+                    'data-method' => 'post'
+                ]);
+            }
+            
+            $buttons .= Html::a('<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">visibility</span>Ver', ['view', 'id' => $model->id], ['class' => 'btn btn-primary']);
+            
+            $borderColor = $currentTab === 'rejected' ? '#dc3545' : '#ff9800';
+            $iconColor = $currentTab === 'rejected' ? '#dc3545' : '#ff9800';
+            
             return '<div class="card mb-3">
                         <div class="card-body">
                             <div class="row">
                                 <div class="col-md-8">
                                     <h5 class="card-title">
-                                        <span class="material-symbols-outlined" style="font-size: 24px; vertical-align: middle; margin-right: 8px; color: #ff9800;">person</span>
+                                        <span class="material-symbols-outlined" style="font-size: 24px; vertical-align: middle; margin-right: 8px; color: ' . $iconColor . ';">person</span>
                                         ' . Html::encode($model->full_name) . '
                                     </h5>
                                     <p class="card-text mb-2">
@@ -67,12 +114,7 @@ $this->params['breadcrumbs'][] = $this->title;
                                     </p>
                                 </div>
                                 <div class="col-md-4 text-end">
-                                    ' . Html::a('<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">check_circle</span>Aprobar', ['approve', 'id' => $model->id], [
-                                        'class' => 'btn btn-success me-2',
-                                        'data-confirm' => '¿Está seguro que desea aprobar este cliente?',
-                                        'data-method' => 'post'
-                                    ]) . '
-                                    ' . Html::a('<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">visibility</span>Ver', ['view', 'id' => $model->id], ['class' => 'btn btn-primary']) . '
+                                    ' . $buttons . '
                                 </div>
                             </div>
                         </div>
@@ -80,9 +122,9 @@ $this->params['breadcrumbs'][] = $this->title;
         },
         'layout' => "{items}\n<div class='d-flex justify-content-center mt-4'>{pager}</div>",
         'emptyText' => '<div class="alert alert-info text-center">
-                          <span class="material-symbols-outlined" style="font-size: 48px; display: block; margin-bottom: 16px;">check_circle</span>
-                          <h5>¡Excelente!</h5>
-                          <p>No hay clientes pendientes de aprobación.</p>
+                          <span class="material-symbols-outlined" style="font-size: 48px; display: block; margin-bottom: 16px;">' . ($currentTab === 'rejected' ? 'block' : 'check_circle') . '</span>
+                          <h5>' . ($currentTab === 'rejected' ? 'Sin clientes rechazados' : '¡Excelente!') . '</h5>
+                          <p>' . ($currentTab === 'rejected' ? 'No hay clientes rechazados.' : 'No hay clientes pendientes de aprobación.') . '</p>
                         </div>',
         'emptyTextOptions' => ['class' => 'empty-result'],
     ]); ?>
@@ -98,5 +140,8 @@ $this->params['breadcrumbs'][] = $this->title;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     transition: all 0.3s ease;
 }
+.nav-tabs .nav-link.active {
+    background-color: #fff;
+    border-color: #dee2e6 #dee2e6 #fff;
+}
 </style>
-

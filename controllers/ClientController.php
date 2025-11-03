@@ -51,14 +51,17 @@ class ClientController extends Controller
     {
         $query = Client::find();
         
+        // Excluir clientes pendientes por defecto
+        $query->where(['!=', 'approval_status', 'pending']);
+        
         // Filtro por estado (por defecto todos)
         $estado = Yii::$app->request->get('estado');
         if ($estado === 'all' || $estado === '') {
             // Mostrar todos los clientes (por defecto)
         } elseif ($estado === 'active') {
-            $query->where(['status' => 'active']);
+            $query->andWhere(['status' => 'active']);
         } elseif ($estado === 'inactive') {
-            $query->where(['status' => 'inactive']);
+            $query->andWhere(['status' => 'inactive']);
         }
         
         // Búsqueda
@@ -119,7 +122,13 @@ class ClientController extends Controller
      */
     public function actionPending()
     {
-        $query = Client::find()->where(['approval_status' => 'pending']);
+        $tab = Yii::$app->request->get('tab', 'pending');
+        
+        if ($tab === 'rejected') {
+            $query = Client::find()->where(['approval_status' => 'rejected']);
+        } else {
+            $query = Client::find()->where(['approval_status' => 'pending']);
+        }
         
         $dataProvider = new ActiveDataProvider([
             'query' => $query,
@@ -135,6 +144,7 @@ class ClientController extends Controller
 
         return $this->render('pending', [
             'dataProvider' => $dataProvider,
+            'tab' => $tab,
         ]);
     }
 
@@ -171,6 +181,22 @@ class ClientController extends Controller
             Yii::$app->session->setFlash('success', 'Cliente aprobado exitosamente');
         } else {
             Yii::$app->session->setFlash('error', 'Error al aprobar el cliente');
+        }
+        return $this->redirect(['pending']);
+    }
+
+    /**
+     * Rechaza un cliente
+     */
+    public function actionReject($id)
+    {
+        $model = $this->findModel($id);
+        $model->approval_status = 'rejected';
+        
+        if ($model->save(false)) {
+            Yii::$app->session->setFlash('success', 'Cliente rechazado exitosamente');
+        } else {
+            Yii::$app->session->setFlash('error', 'Error al rechazar el cliente');
         }
         return $this->redirect(['pending']);
     }
@@ -328,6 +354,28 @@ class ClientController extends Controller
         Yii::$app->session->setFlash('success', '🗑️ Cliente eliminado exitosamente');
 
         return $this->redirect(['index']);
+    }
+
+    /**
+     * Elimina permanentemente un cliente pendiente
+     */
+    public function actionDeletePermanently($id)
+    {
+        $model = $this->findModel($id);
+        
+        // Solo permitir eliminar clientes pendientes
+        if ($model->approval_status !== 'pending') {
+            Yii::$app->session->setFlash('error', 'Solo se pueden eliminar clientes pendientes');
+            return $this->redirect(['pending']);
+        }
+        
+        if ($model->delete()) {
+            Yii::$app->session->setFlash('success', 'Cliente eliminado permanentemente');
+        } else {
+            Yii::$app->session->setFlash('error', 'Error al eliminar el cliente');
+        }
+        
+        return $this->redirect(['pending']);
     }
 
     /**
