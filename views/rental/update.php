@@ -142,22 +142,77 @@ $this->params['breadcrumbs'][] = 'Actualizar';
                 <div class="card-body">
                     <?= $form->field($model, 'fecha_inicio')->input('date', [
                         'required' => true,
-                        'value' => $model->fecha_inicio ? date('Y-m-d', strtotime($model->fecha_inicio)) : ''
+                        'value' => $model->fecha_inicio ? date('Y-m-d', strtotime($model->fecha_inicio)) : '',
+                        'id' => 'rental-fecha_inicio'
                     ]) ?>
 
-                    <?= $form->field($model, 'hora_inicio')->input('time') ?>
-
                     <div class="form-group mb-3">
-                        <label class="form-label fw-bold">Fecha Final</label>
-                        <input type="text" id="fecha-final-preview" class="form-control" readonly 
-                               placeholder="Se calculará automáticamente" 
-                               style="background-color: #f8f9fa;">
-                        <small class="form-text text-muted">Se calcula automáticamente: Fecha de inicio + Cantidad de días</small>
-                        <!-- Campo oculto para enviar fecha_final calculada -->
-                        <input type="hidden" id="rental-fecha_final" name="Rental[fecha_final]" value="<?= Html::encode($model->fecha_final ?: '') ?>">
+                        <label class="form-label fw-bold">Hora de Inicio</label>
+                        <div class="row g-2">
+                            <div class="col-4">
+                                <select class="form-select" id="hora-inicio-hours">
+                                    <?php
+                                    for ($i = 1; $i <= 12; $i++) {
+                                        echo '<option value="' . $i . '">' . $i . '</option>';
+                                    }
+                                    ?>
+                                </select>
+                            </div>
+                            <div class="col-4">
+                                <select class="form-select" id="hora-inicio-minutes">
+                                    <?php
+                                    for ($i = 0; $i < 60; $i++) {
+                                        $min = str_pad($i, 2, '0', STR_PAD_LEFT);
+                                        echo '<option value="' . $min . '">' . $min . '</option>';
+                                    }
+                                    ?>
+                                </select>
+                            </div>
+                            <div class="col-4">
+                                <select class="form-select" id="hora-inicio-period">
+                                    <option value="AM">AM</option>
+                                    <option value="PM">PM</option>
+                                </select>
+                            </div>
+                        </div>
+                        <input type="hidden" id="rental-hora_inicio" name="Rental[hora_inicio]" value="<?= $model->hora_inicio ?: '09:00' ?>">
                     </div>
 
-                    <?= $form->field($model, 'hora_final')->input('time') ?>
+                    <?= $form->field($model, 'fecha_final')->input('date', [
+                        'id' => 'rental-fecha_final'
+                    ]) ?>
+
+                    <div class="form-group mb-3">
+                        <label class="form-label fw-bold">Hora Final</label>
+                        <div class="row g-2">
+                            <div class="col-4">
+                                <select class="form-select" id="hora-final-hours">
+                                    <?php
+                                    for ($i = 1; $i <= 12; $i++) {
+                                        echo '<option value="' . $i . '">' . $i . '</option>';
+                                    }
+                                    ?>
+                                </select>
+                            </div>
+                            <div class="col-4">
+                                <select class="form-select" id="hora-final-minutes">
+                                    <?php
+                                    for ($i = 0; $i < 60; $i++) {
+                                        $min = str_pad($i, 2, '0', STR_PAD_LEFT);
+                                        echo '<option value="' . $min . '">' . $min . '</option>';
+                                    }
+                                    ?>
+                                </select>
+                            </div>
+                            <div class="col-4">
+                                <select class="form-select" id="hora-final-period">
+                                    <option value="AM">AM</option>
+                                    <option value="PM">PM</option>
+                                </select>
+                            </div>
+                        </div>
+                        <input type="hidden" id="rental-hora_final" name="Rental[hora_final]" value="<?= $model->hora_final ?: '18:00' ?>">
+                    </div>
                 </div>
             </div>
         </div>
@@ -285,21 +340,148 @@ $this->params['breadcrumbs'][] = 'Actualizar';
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Calcular automáticamente el precio total y fecha final
+    // ==========================================
+    // FUNCIONES DE CONVERSIÓN 12H ↔ 24H
+    // ==========================================
+    
+    /**
+     * Convierte hora de formato 24h a formato 12h
+     * @param {string} hora24 - Hora en formato "HH:mm" (ej: "14:30")
+     * @returns {object} - {hora: 2, minutos: 30, periodo: "PM"}
+     */
+    function convertir24hA12h(hora24) {
+        if (!hora24 || !hora24.includes(':')) {
+            return {hora: 12, minutos: 0, periodo: 'AM'};
+        }
+        
+        const [horas, minutos] = hora24.split(':').map(Number);
+        let hora12 = horas;
+        let periodo = 'AM';
+        
+        if (horas === 0) {
+            hora12 = 12;
+            periodo = 'AM';
+        } else if (horas === 12) {
+            hora12 = 12;
+            periodo = 'PM';
+        } else if (horas > 12) {
+            hora12 = horas - 12;
+            periodo = 'PM';
+        }
+        
+        return {
+            hora: hora12,
+            minutos: minutos || 0,
+            periodo: periodo
+        };
+    }
+    
+    /**
+     * Convierte hora de formato 12h a formato 24h
+     * @param {number} hora - Hora 1-12
+     * @param {number} minutos - Minutos 0-59
+     * @param {string} periodo - "AM" o "PM"
+     * @returns {string} - Hora en formato "HH:mm" (ej: "14:30")
+     */
+    function convertir12hA24h(hora, minutos, periodo) {
+        let horas24 = hora;
+        
+        if (periodo === 'AM') {
+            if (hora === 12) {
+                horas24 = 0;
+            }
+        } else { // PM
+            if (hora !== 12) {
+                horas24 = hora + 12;
+            }
+        }
+        
+        const horasStr = String(horas24).padStart(2, '0');
+        const minutosStr = String(minutos).padStart(2, '0');
+        
+        return `${horasStr}:${minutosStr}`;
+    }
+    
+    /**
+     * Actualiza el campo oculto de hora cuando cambian los selectores
+     * @param {string} prefix - "hora-inicio" o "hora-final"
+     */
+    function actualizarHoraOculta(prefix) {
+        const horasSelect = document.getElementById(`${prefix}-hours`);
+        const minutosSelect = document.getElementById(`${prefix}-minutes`);
+        const periodoSelect = document.getElementById(`${prefix}-period`);
+        const campoOculto = document.getElementById(`rental-${prefix === 'hora-inicio' ? 'hora_inicio' : 'hora_final'}`);
+        
+        if (horasSelect && minutosSelect && periodoSelect && campoOculto) {
+            const hora24 = convertir12hA24h(
+                parseInt(horasSelect.value),
+                parseInt(minutosSelect.value),
+                periodoSelect.value
+            );
+            campoOculto.value = hora24;
+        }
+    }
+    
+    /**
+     * Inicializa los selectores de hora 12h con el valor del campo oculto
+     * @param {string} prefix - "hora-inicio" o "hora-final"
+     * @param {string} hora24 - Hora en formato 24h
+     */
+    function inicializarHora12h(prefix, hora24) {
+        const hora12 = convertir24hA12h(hora24);
+        const horasSelect = document.getElementById(`${prefix}-hours`);
+        const minutosSelect = document.getElementById(`${prefix}-minutes`);
+        const periodoSelect = document.getElementById(`${prefix}-period`);
+        
+        if (horasSelect && minutosSelect && periodoSelect) {
+            horasSelect.value = hora12.hora;
+            periodoSelect.value = hora12.periodo;
+            
+            minutosSelect.value = String(hora12.minutos).padStart(2, '0');
+        }
+    }
+    
+    // Inicializar campos de hora 12h
+    const horaInicioOculta = document.getElementById('rental-hora_inicio');
+    const horaFinalOculta = document.getElementById('rental-hora_final');
+    
+    if (horaInicioOculta) {
+        inicializarHora12h('hora-inicio', horaInicioOculta.value || '09:00');
+    }
+    
+    if (horaFinalOculta) {
+        inicializarHora12h('hora-final', horaFinalOculta.value || '18:00');
+    }
+    
+    // Event listeners para actualizar campos ocultos cuando cambian selectores
+    ['hora-inicio', 'hora-final'].forEach(prefix => {
+        ['hours', 'minutes', 'period'].forEach(tipo => {
+            const selector = document.getElementById(`${prefix}-${tipo}`);
+            if (selector) {
+                selector.addEventListener('change', function() {
+                    actualizarHoraOculta(prefix);
+                });
+            }
+        });
+    });
+    
+    // ==========================================
+    // CÁLCULO DE PRECIO TOTAL
+    // ==========================================
+    
     const cantidadDias = document.getElementById('rental-cantidad_dias');
     const precioPorDia = document.getElementById('rental-precio_por_dia');
     const fechaInicio = document.getElementById('rental-fecha_inicio');
+    const fechaFinal = document.getElementById('rental-fecha_final');
     const totalPreview = document.getElementById('total-preview');
-    const fechaFinalPreview = document.getElementById('fecha-final-preview');
     
     function calcularTotal() {
         const precio = parseFloat(precioPorDia.value) || 0;
         let total = 0;
         
         // Verificar si es alquiler por horas (mismo día)
-        const fechaIni = fechaInicio.value;
-        const fechaFinalInput = document.getElementById('rental-fecha_final');
-        const fechaFin = fechaFinalInput ? fechaFinalInput.value : '';
+        const fechaIni = fechaInicio ? fechaInicio.value : '';
+        const fechaFin = fechaFinal ? fechaFinal.value : '';
         const esPorHoras = fechaIni && fechaFin && fechaIni === fechaFin;
         
         if (esPorHoras) {
@@ -326,40 +508,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    function calcularFechaFinal() {
-        const fechaIni = fechaInicio.value;
-        const dias = parseInt(cantidadDias.value) || 0;
-        
-        if (fechaIni && dias > 0) {
-            // Parsear fecha manualmente para evitar problemas de zona horaria
-            const [year, month, day] = fechaIni.split('-').map(Number);
-            const fecha = new Date(year, month - 1, day + dias); // month es 0-indexed
-            const fechaFormateada = fecha.getFullYear() + '-' + 
-                String(fecha.getMonth() + 1).padStart(2, '0') + '-' + 
-                String(fecha.getDate()).padStart(2, '0');
-            fechaFinalPreview.value = fechaFormateada;
-            
-            // Actualizar también el campo oculto
-            const fechaFinalHidden = document.getElementById('rental-fecha_final');
-            if (fechaFinalHidden) {
-                fechaFinalHidden.value = fechaFormateada;
-            }
-        } else {
-            fechaFinalPreview.value = '';
-            const fechaFinalHidden = document.getElementById('rental-fecha_final');
-            if (fechaFinalHidden) {
-                fechaFinalHidden.value = '';
-            }
-        }
-    }
-    
     /**
      * Actualiza el texto de ayuda del cálculo de precio
      */
     function actualizarTextoAyudaPrecio() {
-        const fechaIni = fechaInicio.value;
-        const fechaFinalInput = document.getElementById('rental-fecha_final');
-        const fechaFin = fechaFinalInput ? fechaFinalInput.value : '';
+        const fechaIni = fechaInicio ? fechaInicio.value : '';
+        const fechaFin = fechaFinal ? fechaFinal.value : '';
         const esPorHoras = fechaIni && fechaFin && fechaIni === fechaFin;
         const precioCalculoTexto = document.getElementById('precio-calculo-texto');
         
@@ -381,19 +535,23 @@ document.addEventListener('DOMContentLoaded', function() {
         if (fechaInicio) {
             fechaInicio.addEventListener('change', actualizarTextoAyudaPrecio);
         }
-        const fechaFinalInput = document.getElementById('rental-fecha_final');
-        if (fechaFinalInput) {
-            fechaFinalInput.addEventListener('change', actualizarTextoAyudaPrecio);
+        if (fechaFinal) {
+            fechaFinal.addEventListener('change', actualizarTextoAyudaPrecio);
         }
         
         // Agregar listeners para medio día
         const medioDiaEnabled = document.getElementById('rental-medio_dia_enabled');
         const medioDiaValor = document.getElementById('rental-medio_dia_valor');
+        const medioDiaValorField = document.getElementById('medio-dia-valor-field');
         if (medioDiaEnabled) {
+            // Inicializar estado al cargar
+            if (medioDiaValorField) {
+                medioDiaValorField.style.display = medioDiaEnabled.checked ? 'block' : 'none';
+            }
+            
             medioDiaEnabled.addEventListener('change', function() {
-                const campoValor = document.getElementById('medio-dia-valor-field');
-                if (campoValor) {
-                    campoValor.style.display = this.checked ? 'block' : 'none';
+                if (medioDiaValorField) {
+                    medioDiaValorField.style.display = this.checked ? 'block' : 'none';
                 }
                 calcularTotal();
             });
@@ -405,19 +563,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // Calcular inicialmente
         calcularTotal();
         actualizarTextoAyudaPrecio();
-    }
-    
-    if (cantidadDias && fechaInicio && fechaFinalPreview) {
-        cantidadDias.addEventListener('input', calcularFechaFinal);
-        fechaInicio.addEventListener('input', calcularFechaFinal);
-        // Calcular inicialmente
-        calcularFechaFinal();
-        
-        // Si ya hay una fecha final en el modelo, mostrarla
-        const fechaFinalHidden = document.getElementById('rental-fecha_final');
-        if (fechaFinalHidden && fechaFinalHidden.value) {
-            fechaFinalPreview.value = fechaFinalHidden.value;
-        }
     }
     
     // Mostrar/ocultar campo de correapartir
