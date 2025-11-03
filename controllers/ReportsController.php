@@ -1583,4 +1583,78 @@ class ReportsController extends Controller
         }
     }
 
+    /**
+     * Reporte de Clientes Rechazados en múltiples formatos
+     */
+    public function actionRejectedClientsReport($format = 'pdf')
+    {
+        $clients = Client::find()
+            ->where(['approval_status' => 'rejected'])
+            ->orderBy(['created_at' => SORT_DESC])
+            ->all();
+
+        switch ($format) {
+            case 'pdf':
+                return $this->generateRejectedClientsPdf($clients);
+            case 'excel':
+                return $this->generateRejectedClientsExcel($clients);
+            default:
+                throw new \Exception('Formato no soportado');
+        }
+    }
+
+    /**
+     * Generar PDF de Clientes Rechazados
+     */
+    private function generateRejectedClientsPdf($clients)
+    {
+        $html = $this->renderPartial('_rejected_clients_pdf', [
+            'clients' => $clients,
+            'reportNumber' => $this->generateReportNumber()
+        ]);
+
+        return $this->generateSimplePdf($html, 'reporte_clientes_rechazados_' . date('Y-m-d_H-i-s') . '.pdf');
+    }
+
+    /**
+     * Generar Excel de Clientes Rechazados
+     */
+    private function generateRejectedClientsExcel($clients)
+    {
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Clientes Rechazados');
+
+        // Encabezados
+        $headers = ['Número de Reporte', 'ID', 'Nombre Completo', 'Cédula', 'WhatsApp', 'Email', 'Dirección', 'Fecha Rechazo'];
+        $col = 'A';
+        foreach ($headers as $header) {
+            $sheet->setCellValue($col . '1', $header);
+            $col++;
+        }
+
+        // Datos
+        $row = 2;
+        $reportNumber = $this->generateReportNumber();
+        foreach ($clients as $client) {
+            $sheet->setCellValue('A' . $row, $reportNumber);
+            $sheet->setCellValue('B' . $row, $client->id);
+            $sheet->setCellValue('C' . $row, $client->full_name);
+            $sheet->setCellValue('D' . $row, $client->cedula_fisica ?: 'N/A');
+            $sheet->setCellValue('E' . $row, $client->whatsapp ?: 'N/A');
+            $sheet->setCellValue('F' . $row, $client->email ?: 'N/A');
+            $sheet->setCellValue('G' . $row, $client->address ?: 'N/A');
+            $sheet->setCellValue('H' . $row, date('d/m/Y', strtotime($client->updated_at)));
+            $row++;
+        }
+
+        // Formatear
+        $sheet->getStyle('A1:H1')->getFont()->setBold(true);
+        $sheet->getStyle('A1:H1')->getFill()
+            ->setFillType(Fill::FILL_SOLID)
+            ->getStartColor()->setRGB('FFB6C6'); // Color rosa claro
+
+        return $this->downloadExcel($spreadsheet, 'reporte_clientes_rechazados_' . date('Y-m-d_H-i-s') . '.xlsx');
+    }
+
 }

@@ -70,6 +70,17 @@ $reports = [
         ]
     ],
     [
+        'id' => 7,
+        'name' => 'Clientes Rechazados',
+        'description' => 'Reporte de clientes rechazados con toda su información de registro',
+        'icon' => 'block',
+        'color' => 'danger',
+        'actions' => [
+            'pdf' => ['reports/rejected-clients-report', 'format' => 'pdf'],
+            'excel' => ['reports/rejected-clients-report', 'format' => 'excel']
+        ]
+    ],
+    [
         'id' => 4,
         'name' => 'Reporte de Ventas por Cliente',
         'description' => 'Análisis de ventas agrupadas por cliente con totales y estadísticas',
