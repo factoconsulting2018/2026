@@ -81,6 +81,17 @@ $reports = [
         ]
     ],
     [
+        'id' => 8,
+        'name' => 'Reservados',
+        'description' => 'Reporte de alquileres reservados con abonos y detalles de pago',
+        'icon' => 'bookmark',
+        'color' => 'info',
+        'actions' => [
+            'pdf' => ['reports/reservados-report', 'format' => 'pdf'],
+            'excel' => ['reports/reservados-report', 'format' => 'excel']
+        ]
+    ],
+    [
         'id' => 4,
         'name' => 'Reporte de Ventas por Cliente',
         'description' => 'Análisis de ventas agrupadas por cliente con totales y estadísticas',

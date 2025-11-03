@@ -1655,4 +1655,94 @@ class ReportsController extends Controller
         return $this->downloadExcel($spreadsheet, 'reporte_clientes_rechazados_' . date('Y-m-d_H-i-s') . '.xlsx');
     }
 
+    /**
+     * Reporte de Reservados en múltiples formatos
+     */
+    public function actionReservadosReport($format = 'pdf')
+    {
+        $rentals = Rental::find()
+            ->where(['estado_pago' => 'reservado'])
+            ->with(['client', 'car'])
+            ->orderBy(['created_at' => SORT_DESC])
+            ->all();
+
+        switch ($format) {
+            case 'pdf':
+                return $this->generateReservadosPdf($rentals);
+            case 'excel':
+                return $this->generateReservadosExcel($rentals);
+            default:
+                throw new \Exception('Formato no soportado');
+        }
+    }
+
+    /**
+     * Generar PDF de Reservados
+     */
+    private function generateReservadosPdf($rentals)
+    {
+        $html = $this->renderPartial('_reservados_pdf', [
+            'rentals' => $rentals
+        ]);
+
+        return $this->generateSimplePdf($html, 'reporte_reservados_' . date('Y-m-d_H-i-s') . '.pdf');
+    }
+
+    /**
+     * Generar Excel de Reservados
+     */
+    private function generateReservadosExcel($rentals)
+    {
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Reservados');
+
+        // Encabezados
+        $headers = ['ID Alquiler', 'Nombre Cliente', 'Cédula', 'Teléfono', 'Vehículo', 'Placa', 'Fecha Inicio', 'Fecha Fin', 'Total', 'Abono 1', 'Abono 2', 'Abono 3', 'Abono 4', 'Abono 5'];
+        $col = 1;
+        foreach ($headers as $header) {
+            $sheet->setCellValueByColumnAndRow($col, 1, $header);
+            $col++;
+        }
+
+        // Datos
+        $row = 2;
+        foreach ($rentals as $rental) {
+            $sheet->setCellValueByColumnAndRow(1, $row, $rental->rental_id ?: 'R' . str_pad($rental->id, 6, '0', STR_PAD_LEFT));
+            $sheet->setCellValueByColumnAndRow(2, $row, $rental->client ? $rental->client->full_name : 'N/A');
+            $sheet->setCellValueByColumnAndRow(3, $row, $rental->client ? ($rental->client->cedula_fisica ?: 'N/A') : 'N/A');
+            $sheet->setCellValueByColumnAndRow(4, $row, $rental->client ? ($rental->client->whatsapp ?: ($rental->client->telefono ?: 'N/A')) : 'N/A');
+            $sheet->setCellValueByColumnAndRow(5, $row, $rental->car ? $rental->car->nombre : 'N/A');
+            $sheet->setCellValueByColumnAndRow(6, $row, $rental->car ? ($rental->car->placa ?: 'N/A') : 'N/A');
+            $sheet->setCellValueByColumnAndRow(7, $row, $rental->fecha_inicio ? date('d/m/Y', strtotime($rental->fecha_inicio)) : 'N/A');
+            $sheet->setCellValueByColumnAndRow(8, $row, $rental->fecha_final ? date('d/m/Y', strtotime($rental->fecha_final)) : 'N/A');
+            $sheet->setCellValueByColumnAndRow(9, $row, $rental->total_precio ?: '0.00');
+            
+            // Abonos
+            for ($i = 1; $i <= 5; $i++) {
+                $descripcion = $rental->{"abono{$i}_descripcion"} ?: '';
+                $monto = $rental->{"abono{$i}_monto"} ?: '';
+                $abonoValue = '';
+                
+                if ($descripcion && $monto) {
+                    $abonoValue = "$descripcion: ₡" . number_format($monto, 2);
+                } else {
+                    $abonoValue = 'N/A';
+                }
+                
+                $sheet->setCellValueByColumnAndRow(9 + $i, $row, $abonoValue);
+            }
+            
+            $row++;
+        }
+
+        // Formatear
+        $sheet->getStyle('A1:N1')->getFont()->setBold(true);
+        $sheet->getStyle('A1:N1')->getFill()
+            ->setFillType(Fill::FILL_SOLID)
+            ->getStartColor()->setRGB('B3D9FF'); // Color azul claro
+
+        return $this->downloadExcel($spreadsheet, 'reporte_reservados_' . date('Y-m-d_H-i-s') . '.xlsx');
+    }
+
 }

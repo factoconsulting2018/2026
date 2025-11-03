@@ -33,6 +33,16 @@ use yii\db\ActiveRecord;
  * @property string $ejecutivo_otro
  * @property string $created_at
  * @property string $updated_at
+ * @property string $abono1_descripcion
+ * @property float $abono1_monto
+ * @property string $abono2_descripcion
+ * @property float $abono2_monto
+ * @property string $abono3_descripcion
+ * @property float $abono3_monto
+ * @property string $abono4_descripcion
+ * @property float $abono4_monto
+ * @property string $abono5_descripcion
+ * @property float $abono5_monto
  */
 class Rental extends ActiveRecord
 {
@@ -76,8 +86,8 @@ class Rental extends ActiveRecord
             [['client_id', 'car_id', 'fecha_inicio', 'cantidad_dias'], 'required'],
             [['client_id', 'car_id', 'correapartir_enabled', 'medio_dia_enabled', 'cantidad_dias'], 'integer'],
             [['fecha_inicio', 'fecha_final', 'hora_inicio', 'hora_final', 'fecha_correapartir', 'created_at', 'updated_at'], 'safe'],
-            [['precio_por_dia', 'medio_dia_valor'], 'number'], // Removido total_precio porque es columna generada
-            [['rental_id', 'lugar_entrega', 'lugar_retiro', 'estado_pago', 'ejecutivo', 'ejecutivo_otro'], 'string', 'max' => 255],
+            [['precio_por_dia', 'medio_dia_valor', 'abono1_monto', 'abono2_monto', 'abono3_monto', 'abono4_monto', 'abono5_monto'], 'number'], // Removido total_precio porque es columna generada
+            [['rental_id', 'lugar_entrega', 'lugar_retiro', 'estado_pago', 'ejecutivo', 'ejecutivo_otro', 'abono1_descripcion', 'abono2_descripcion', 'abono3_descripcion', 'abono4_descripcion', 'abono5_descripcion'], 'string', 'max' => 255],
             [['comprobante_pago'], 'string', 'max' => 500],
             [['condiciones_especiales', 'choferes_autorizados'], 'string'],
             [['custom_conditions_html'], 'string'],
@@ -117,6 +127,16 @@ class Rental extends ActiveRecord
             'comprobante_pago' => 'Comprobante de Pago',
             'created_at' => 'Fecha de Creación',
             'updated_at' => 'Fecha de Actualización',
+            'abono1_descripcion' => 'Abono 1 Descripción',
+            'abono1_monto' => 'Abono 1 Monto',
+            'abono2_descripcion' => 'Abono 2 Descripción',
+            'abono2_monto' => 'Abono 2 Monto',
+            'abono3_descripcion' => 'Abono 3 Descripción',
+            'abono3_monto' => 'Abono 3 Monto',
+            'abono4_descripcion' => 'Abono 4 Descripción',
+            'abono4_monto' => 'Abono 4 Monto',
+            'abono5_descripcion' => 'Abono 5 Descripción',
+            'abono5_monto' => 'Abono 5 Monto',
         ];
     }
 

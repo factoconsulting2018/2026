@@ -351,6 +351,17 @@ class RentalController extends Controller
                 $model->comprobante_pago = $comprobantePath;
             }
             
+            // Actualizar abonos si el estado es "reservado"
+            if ($newStatus === 'reservado') {
+                for ($i = 1; $i <= 5; $i++) {
+                    $descripcion = Yii::$app->request->post("abono{$i}_descripcion");
+                    $monto = Yii::$app->request->post("abono{$i}_monto");
+                    
+                    $model->{"abono{$i}_descripcion"} = $descripcion ?: null;
+                    $model->{"abono{$i}_monto"} = $monto ?: null;
+                }
+            }
+            
             // Guardar cambios
             if ($model->save(false)) {
                 // Log del cambio

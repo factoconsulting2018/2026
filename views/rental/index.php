@@ -1466,13 +1466,39 @@ $this->registerCss('
                             <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">category</span>
                             Nuevo Estado de Pago
                         </label>
-                        <select class="form-select" id="newStatus" name="newStatus" required>
+                        <select class="form-select" id="newStatus" name="newStatus" required onchange="toggleAbonosFields()">
                             <option value="">Seleccione un estado</option>
                             <option value="pendiente">Pendiente</option>
                             <option value="pagado">Pagado</option>
                             <option value="reservado">Reservado</option>
                             <option value="cancelado">Cancelado</option>
                         </select>
+                    </div>
+                    
+                    <!-- Campos de Abonos (solo visible cuando estado es "Reservado") -->
+                    <div id="abonosFields" style="display: none;">
+                        <div class="card mb-3">
+                            <div class="card-header bg-info text-white">
+                                <h6 class="mb-0">
+                                    <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">payments</span>
+                                    Abonos
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <?php for ($i = 1; $i <= 5; $i++): ?>
+                                    <div class="row mb-3">
+                                        <div class="col-md-8">
+                                            <label for="abono<?= $i ?>_descripcion" class="form-label">Abono <?= $i ?> Descripción</label>
+                                            <input type="text" class="form-control" id="abono<?= $i ?>_descripcion" name="abono<?= $i ?>_descripcion" placeholder="Ej: Anticipo">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label for="abono<?= $i ?>_monto" class="form-label">Abono <?= $i ?> Monto (₡)</label>
+                                            <input type="number" class="form-control" id="abono<?= $i ?>_monto" name="abono<?= $i ?>_monto" step="0.01" placeholder="0.00">
+                                        </div>
+                                    </div>
+                                <?php endfor; ?>
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="mb-3">
@@ -1789,6 +1815,17 @@ function loadCurrentComprobante(rentalId) {
             document.getElementById('currentComprobante').style.display = 'none';
             document.getElementById('comprobanteActions').style.display = 'none';
         });
+}
+
+function toggleAbonosFields() {
+    const newStatus = document.getElementById('newStatus').value;
+    const abonosFields = document.getElementById('abonosFields');
+    
+    if (newStatus === 'reservado') {
+        abonosFields.style.display = 'block';
+    } else {
+        abonosFields.style.display = 'none';
+    }
 }
 
 function savePaymentStatus() {
