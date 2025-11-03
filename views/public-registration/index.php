@@ -56,6 +56,16 @@ $logoPath = $companyInfo['logo'] ?? null;
         .alert {
             border-radius: 10px;
         }
+        .spinner-border-sm {
+            width: 1rem;
+            height: 1rem;
+            border-width: 0.15em;
+        }
+        .inline-flex {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
     </style>
 </head>
 <body>
@@ -102,9 +112,10 @@ $logoPath = $companyInfo['logo'] ?? null;
                 </div>
                 <div class="col-sm-8">
                     <?= $form->field($model, 'cedula_fisica', [
-                        'template' => '{input}{error}',
+                        'template' => '{input}<span id="hacienda-loading-public" style="display:none; color: #0066CC; margin-top: 5px;"><span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Consultando Hacienda...</span><span id="hacienda-error-public" style="display:none; color: #dc3545; margin-top: 5px;">⚠️ No se encontró información</span>{error}',
                         'inputOptions' => [
                             'class' => 'form-control',
+                            'id' => 'public-cedula-input',
                             'placeholder' => 'Ej: 112610049',
                             'required' => true
                         ]
@@ -125,6 +136,7 @@ $logoPath = $companyInfo['logo'] ?? null;
                         'template' => '{input}{error}',
                         'inputOptions' => [
                             'class' => 'form-control',
+                            'id' => 'public-nombre-input',
                             'placeholder' => 'Ej: RONALD ALBERTO ROJAS CASTRO',
                             'required' => true,
                             'style' => 'text-transform: uppercase;'
@@ -315,35 +327,115 @@ $logoPath = $companyInfo['logo'] ?? null;
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // ========== SITUACIÓN FINANCIERA ==========
         const situacionField = document.getElementById('situacion-financiera');
         const detalleContainer = document.getElementById('detalle-situacion-container');
         const detalleLabel = document.getElementById('detalle-situacion-label');
         
-        if (!situacionField || !detalleContainer || !detalleLabel) {
-            return; // Los campos no existen
+        if (situacionField && detalleContainer && detalleLabel) {
+            const labelTexts = {
+                'independiente': '¿Qué profesión o actividad ejerce actualmente? Indique cantidad de años.',
+                'asalariado': '¿En qué empresa o institución trabaja actualmente? Indique cantidad de años.',
+                'tiene_empresa': 'Ingrese el nombre de su empresa y cédula jurídica. Indique cantidad de años.'
+            };
+            
+            situacionField.addEventListener('change', function() {
+                const value = this.value;
+                
+                if (value && labelTexts[value]) {
+                    detalleLabel.innerHTML = '<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle;">description</span>' + labelTexts[value];
+                    detalleContainer.style.display = 'block';
+                } else {
+                    detalleContainer.style.display = 'none';
+                    document.getElementById('client-situacion_financiera_detalle').value = '';
+                }
+            });
+            
+            // Mostrar campo si ya hay un valor seleccionado (edición)
+            if (situacionField.value) {
+                situacionField.dispatchEvent(new Event('change'));
+            }
+        }
+
+        // ========== CONSULTA HACIENDA AUTOMÁTICA ==========
+        const cedulaInput = document.getElementById('public-cedula-input');
+        const nombreInput = document.getElementById('public-nombre-input');
+        const loadingEl = document.getElementById('hacienda-loading-public');
+        const errorEl = document.getElementById('hacienda-error-public');
+        
+        let consultaTimeout = null;
+        
+        if (cedulaInput && nombreInput) {
+            cedulaInput.addEventListener('input', function() {
+                const cedula = this.value.trim();
+                
+                // Ocultar mensajes anteriores
+                if (errorEl) errorEl.style.display = 'none';
+                
+                // Cancelar consulta anterior
+                if (consultaTimeout) {
+                    clearTimeout(consultaTimeout);
+                }
+                
+                // Validar formato de cédula (9 o 10 dígitos)
+                if (!/^\d{9,10}$/.test(cedula)) {
+                    return;
+                }
+                
+                // Mostrar loading
+                if (loadingEl) loadingEl.style.display = 'inline-flex';
+                if (errorEl) errorEl.style.display = 'none';
+                
+                // Esperar 500ms después de que el usuario termine de escribir
+                consultaTimeout = setTimeout(function() {
+                    consultarHaciendaPublic(cedula);
+                }, 500);
+            });
         }
         
-        const labelTexts = {
-            'independiente': '¿Qué profesión o actividad ejerce actualmente? Indique cantidad de años.',
-            'asalariado': '¿En qué empresa o institución trabaja actualmente? Indique cantidad de años.',
-            'tiene_empresa': 'Ingrese el nombre de su empresa y cédula jurídica. Indique cantidad de años.'
-        };
-        
-        situacionField.addEventListener('change', function() {
-            const value = this.value;
+        function consultarHaciendaPublic(cedula) {
+            console.log('Consultando Hacienda para cédula:', cedula);
             
-            if (value && labelTexts[value]) {
-                detalleLabel.innerHTML = '<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle;">description</span>' + labelTexts[value];
-                detalleContainer.style.display = 'block';
-            } else {
-                detalleContainer.style.display = 'none';
-                document.getElementById('client-situacion_financiera_detalle').value = '';
-            }
-        });
-        
-        // Mostrar campo si ya hay un valor seleccionado (edición)
-        if (situacionField.value) {
-            situacionField.dispatchEvent(new Event('change'));
+            fetch('/hacienda/consultar-public', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({
+                    cedula: cedula
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Error HTTP ' + response.status);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Respuesta Hacienda:', data);
+                if (loadingEl) loadingEl.style.display = 'none';
+                
+                if (data.success && data.data && data.data.nombre) {
+                    // Llenar campo de nombre
+                    if (nombreInput) {
+                        nombreInput.value = data.data.nombre.toUpperCase();
+                        nombreInput.style.backgroundColor = '#e8f5e8';
+                        setTimeout(() => {
+                            nombreInput.style.backgroundColor = '';
+                        }, 2000);
+                    }
+                } else {
+                    // No se encontró información
+                    if (errorEl) errorEl.style.display = 'inline';
+                }
+            })
+            .catch(error => {
+                console.error('Error al consultar Hacienda:', error);
+                if (loadingEl) loadingEl.style.display = 'none';
+                if (errorEl) errorEl.style.display = 'inline';
+            });
         }
     });
 </script>

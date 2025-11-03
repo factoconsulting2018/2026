@@ -25,12 +25,19 @@ class HaciendaController extends Controller
                         'allow' => true,
                         'roles' => ['@'],
                     ],
+                    // Permitir consulta pública sin autenticación
+                    [
+                        'allow' => true,
+                        'actions' => ['consultar-public'],
+                        'roles' => ['?'],
+                    ],
                 ],
             ],
             'verbs' => [
                 'class' => VerbFilter::class,
                 'actions' => [
                     'consultar' => ['POST', 'GET'], // Permitir ambos métodos
+                    'consultar-public' => ['POST'], // Solo POST
                 ],
             ],
         ];
@@ -98,6 +105,68 @@ class HaciendaController extends Controller
             
         } catch (\Exception $e) {
             \Yii::error('Error en HaciendaController: ' . $e->getMessage(), __METHOD__);
+            return [
+                'success' => false,
+                'message' => 'Error al consultar: ' . $e->getMessage(),
+                'data' => null,
+            ];
+        }
+    }
+
+    /**
+     * Consulta pública de una cédula en el API de Hacienda (sin autenticación)
+     * @return array
+     */
+    public function actionConsultarPublic()
+    {
+        \Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        
+        $request = Yii::$app->request;
+        $cedula = null;
+        
+        // Obtener cédula desde POST
+        if ($request->isPost) {
+            $postData = json_decode($request->getRawBody(), true);
+            $cedula = $postData['cedula'] ?? null;
+        }
+        
+        if (empty($cedula)) {
+            return [
+                'success' => false,
+                'message' => 'Parámetro "cedula" requerido',
+                'data' => null,
+            ];
+        }
+        
+        try {
+            // Obtener datos directamente de la API
+            $rawData = HaciendaApi::consultarCedula($cedula);
+            
+            if ($rawData && !empty($rawData)) {
+                
+                $formattedData = HaciendaApi::formatResponse($rawData);
+                
+                if ($formattedData && $formattedData['ok']) {
+                    // Solo retornar el nombre para consulta pública
+                    return [
+                        'success' => true,
+                        'message' => 'Consulta exitosa',
+                        'data' => [
+                            'cedula' => $cedula,
+                            'nombre' => $formattedData['nombre'] ?? '',
+                        ]
+                    ];
+                }
+            }
+            
+            return [
+                'success' => false,
+                'message' => 'No se encontró información para esta cédula',
+                'data' => null,
+            ];
+            
+        } catch (\Exception $e) {
+            \Yii::error('Error en HaciendaController (público): ' . $e->getMessage(), __METHOD__);
             return [
                 'success' => false,
                 'message' => 'Error al consultar: ' . $e->getMessage(),
