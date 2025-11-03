@@ -51,8 +51,7 @@ $reports = [
         'color' => 'info',
         'actions' => [
             'pdf' => ['reports/clients-report', 'format' => 'pdf'],
-            'excel' => ['reports/clients-report', 'format' => 'excel'],
-            'word' => ['reports/clients-report', 'format' => 'word']
+            'excel' => ['reports/clients-report', 'format' => 'excel']
         ]
     ],
     [
