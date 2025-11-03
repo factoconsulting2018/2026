@@ -1131,43 +1131,35 @@ class ReportsController extends Controller
     }
 
     /**
-     * Generar PDF simple usando HTML a PDF básico
+     * Generar PDF simple usando mPDF
      */
     private function generateSimplePdf($html, $filename)
     {
-        // Configurar headers para PDF
-        header('Content-Type: application/pdf');
-        header('Content-Disposition: attachment; filename="' . $filename . '"');
-        header('Cache-Control: max-age=0');
-        
-        // Crear PDF básico usando HTML
-        $pdfContent = '<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>' . $filename . '</title>
-    <style>
-        body { font-family: Arial, sans-serif; font-size: 12px; line-height: 1.4; margin: 20px; }
-        .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px; }
-        .company-name { font-size: 24px; font-weight: bold; color: #22487a; margin-bottom: 10px; }
-        .report-title { font-size: 18px; font-weight: bold; margin-bottom: 10px; }
-        .report-info { font-size: 12px; color: #666; }
-        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-        th, td { border: 1px solid #333; padding: 8px; text-align: left; }
-        th { background-color: #f5f5f5; font-weight: bold; }
-        .number { text-align: right; }
-        .total-section { margin-top: 20px; text-align: right; border-top: 2px solid #333; padding-top: 10px; }
-        .total-amount { font-size: 16px; font-weight: bold; color: #22487a; }
-    </style>
-</head>
-<body>
-' . $html . '
-</body>
-</html>';
-
-        // Para una implementación más robusta, aquí podrías usar una librería como mPDF o TCPDF
-        // Por ahora, retornamos el HTML que el navegador puede convertir a PDF
-        echo $pdfContent;
+        try {
+            // Crear directorio temporal para mPDF
+            $tempDir = Yii::getAlias('@app') . '/runtime/mpdf_temp';
+            if (!is_dir($tempDir)) {
+                mkdir($tempDir, 0777, true);
+            }
+            
+            $pdf = new \Mpdf\Mpdf([
+                'mode' => 'utf-8',
+                'format' => 'Letter',
+                'orientation' => 'P',
+                'margin_left' => 10,
+                'margin_right' => 10,
+                'margin_top' => 10,
+                'margin_bottom' => 10,
+                'default_font' => 'dejavusans',
+                'tempDir' => $tempDir
+            ]);
+            
+            $pdf->WriteHTML($html);
+            $pdf->Output($filename, 'D');
+        } catch (\Exception $e) {
+            Yii::error('Error generando PDF: ' . $e->getMessage());
+            echo "Error generando PDF: " . $e->getMessage();
+        }
         exit;
     }
 
