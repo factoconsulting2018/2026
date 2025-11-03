@@ -167,7 +167,7 @@ class ReportsController extends Controller
     public function actionOrdersReport($format = 'pdf')
     {
         $orders = Order::find()
-            ->with(['client'])
+            ->with(['client', 'article'])
             ->orderBy(['created_at' => SORT_DESC])
             ->all();
 
@@ -513,8 +513,8 @@ class ReportsController extends Controller
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Reporte de Órdenes');
 
-        // Encabezados
-        $headers = ['Número de Reporte', 'ID Ticket', 'Cliente', 'Artículo', 'Cantidad', 'Precio Unit.', 'Total (₡)'];
+        // Encabezados con más columnas
+        $headers = ['ID', 'Ticket ID', 'Fecha', 'Cliente', 'Cédula', 'Teléfono', 'Email', 'Nombre Artículo', 'ID Artículo', 'Categoría', 'Marca', 'Modo Venta', 'Cantidad', 'Precio Unit. (₡)', 'Total (₡)', 'Notas', 'Fecha Creación'];
         $col = 'A';
         foreach ($headers as $header) {
             $sheet->setCellValue($col . '1', $header);
@@ -525,23 +525,61 @@ class ReportsController extends Controller
         $row = 2;
         $reportNumber = $this->generateReportNumber();
         foreach ($orders as $order) {
-            $sheet->setCellValue('A' . $row, $reportNumber);
+            $sheet->setCellValue('A' . $row, $order->id);
             $sheet->setCellValue('B' . $row, $order->ticket_id);
-            $sheet->setCellValue('C' . $row, $order->client ? $order->client->full_name : 'N/A');
-            $sheet->setCellValue('D' . $row, 'Artículo #' . $order->article_id);
-            $sheet->setCellValue('E' . $row, $order->quantity);
-            $sheet->setCellValue('F' . $row, '₡' . number_format($order->unit_price, 2));
-            $sheet->setCellValue('G' . $row, '₡' . number_format($order->total_price, 2));
+            $sheet->setCellValue('C' . $row, $order->created_at ? date('d/m/Y H:i', strtotime($order->created_at)) : 'N/A');
+            $sheet->setCellValue('D' . $row, $order->client ? $order->client->full_name : 'N/A');
+            $sheet->setCellValue('E' . $row, $order->client ? ($order->client->cedula_fisica ?: 'N/A') : 'N/A');
+            $sheet->setCellValue('F' . $row, $order->client ? ($order->client->whatsapp ?: ($order->client->telefono ?: 'N/A')) : 'N/A');
+            $sheet->setCellValue('G' . $row, $order->client ? ($order->client->email ?: 'N/A') : 'N/A');
+            $sheet->setCellValue('H' . $row, $order->article ? $order->article->name : 'N/A');
+            $sheet->setCellValue('I' . $row, $order->article_id);
+            $sheet->setCellValue('J' . $row, $order->article ? ($order->article->category ?: 'N/A') : 'N/A');
+            $sheet->setCellValue('K' . $row, $order->article ? ($order->article->brand ?: 'N/A') : 'N/A');
+            $sheet->setCellValue('L' . $row, $order->sale_mode ? ucfirst($order->sale_mode) : 'N/A');
+            $sheet->setCellValue('M' . $row, $order->quantity);
+            $sheet->setCellValue('N' . $row, '₡' . number_format($order->unit_price, 2));
+            $sheet->setCellValue('O' . $row, '₡' . number_format($order->total_price, 2));
+            $sheet->setCellValue('P' . $row, $order->notes ?: 'N/A');
+            $sheet->setCellValue('Q' . $row, $order->created_at ? date('d/m/Y H:i:s', strtotime($order->created_at)) : 'N/A');
             $row++;
         }
 
         // Total
-        $sheet->setCellValue('F' . $row, 'TOTAL:');
-        $sheet->setCellValue('G' . $row, '₡' . number_format($totalAmount, 2));
+        $row++;
+        $sheet->setCellValue('N' . $row, 'TOTAL:');
+        $sheet->setCellValue('O' . $row, '₡' . number_format($totalAmount, 2));
 
-        // Formatear
-        $sheet->getStyle('A1:G1')->getFont()->setBold(true);
-        $sheet->getStyle('F' . $row . ':G' . $row)->getFont()->setBold(true);
+        // Formatear encabezados
+        $sheet->getStyle('A1:Q1')->getFont()->setBold(true);
+        $sheet->getStyle('A1:Q1')->getFill()
+            ->setFillType(Fill::FILL_SOLID)
+            ->getStartColor()->setRGB('4472C4'); // Color azul
+        
+        // Formatear totales
+        $sheet->getStyle('N' . $row . ':O' . $row)->getFont()->setBold(true);
+        $sheet->getStyle('N' . $row . ':O' . $row)->getFill()
+            ->setFillType(Fill::FILL_SOLID)
+            ->getStartColor()->setRGB('FFE699'); // Color amarillo claro
+        
+        // Ajustar ancho de columnas
+        $sheet->getColumnDimension('A')->setWidth(8);
+        $sheet->getColumnDimension('B')->setWidth(15);
+        $sheet->getColumnDimension('C')->setWidth(15);
+        $sheet->getColumnDimension('D')->setWidth(30);
+        $sheet->getColumnDimension('E')->setWidth(12);
+        $sheet->getColumnDimension('F')->setWidth(15);
+        $sheet->getColumnDimension('G')->setWidth(25);
+        $sheet->getColumnDimension('H')->setWidth(30);
+        $sheet->getColumnDimension('I')->setWidth(10);
+        $sheet->getColumnDimension('J')->setWidth(15);
+        $sheet->getColumnDimension('K')->setWidth(15);
+        $sheet->getColumnDimension('L')->setWidth(12);
+        $sheet->getColumnDimension('M')->setWidth(10);
+        $sheet->getColumnDimension('N')->setWidth(15);
+        $sheet->getColumnDimension('O')->setWidth(15);
+        $sheet->getColumnDimension('P')->setWidth(30);
+        $sheet->getColumnDimension('Q')->setWidth(18);
 
         return $this->downloadExcel($spreadsheet, 'reporte_ordenes_' . date('Y-m-d_H-i-s') . '.xlsx');
     }
