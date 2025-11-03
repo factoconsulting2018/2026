@@ -484,11 +484,11 @@ class Rental extends ActiveRecord
                     }
                 }
             } else {
-                // Alquiler por días - calcular días como antes
+                // Alquiler por días - calcular días correctamente
                 $start = new \DateTime($this->fecha_inicio);
                 $end = new \DateTime($this->fecha_final);
                 $diff = $start->diff($end);
-                $this->cantidad_dias = $diff->days + 1; // +1 para incluir el día de inicio
+                $this->cantidad_dias = $diff->days; // No sumar 1, diff ya da la diferencia correcta
             }
         }
     }
