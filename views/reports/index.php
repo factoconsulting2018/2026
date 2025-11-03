@@ -40,9 +40,7 @@ $reports = [
         'icon' => 'shopping_cart',
         'color' => 'success',
         'actions' => [
-            'pdf' => ['reports/orders-report', 'format' => 'pdf'],
-            'excel' => ['reports/orders-report', 'format' => 'excel'],
-            'word' => ['reports/orders-report', 'format' => 'word']
+            'excel' => ['reports/orders-report', 'format' => 'excel']
         ]
     ],
     [
