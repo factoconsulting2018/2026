@@ -198,7 +198,7 @@ $montoReserva = $total;
             <div><?= $entregaLugar ?></div>
             <div class="b">Fechas</div>
             <?php if (!empty($fechaCorreapartir)): ?>
-            <div class="b" style="color: #0066CC;">Correapartir: <?= $fechaCorreapartir ?></div>
+            <div class="b" style="color: #FF6600; font-weight: bold;">Correapartir: <?= $fechaCorreapartir ?></div>
             <?php endif; ?>
             <div>Alquiler: <?= $fechaInicio ?></div>
             <div><?= $fechaFin ?></div>
