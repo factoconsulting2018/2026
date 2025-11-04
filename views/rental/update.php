@@ -60,6 +60,19 @@ $this->params['breadcrumbs'][] = 'Actualizar';
                         'rows' => 3,
                         'placeholder' => 'Ingrese los choferes autorizados (uno por línea)'
                     ]) ?>
+
+                    <div class="form-check mt-3 mb-3">
+                        <?= Html::activeCheckbox($model, 'correapartir_enabled', [
+                            'class' => 'form-check-input',
+                            'id' => 'rental-correapartir_enabled',
+                            'label' => 'Habilitar Correapartir',
+                            'labelOptions' => ['class' => 'form-check-label']
+                        ]) ?>
+                    </div>
+
+                    <div class="form-group" id="correapartir-field" style="<?= $model->correapartir_enabled ? '' : 'display: none;' ?>">
+                        <?= $form->field($model, 'fecha_correapartir')->input('datetime-local') ?>
+                    </div>
                 </div>
             </div>
         </div>
@@ -300,18 +313,6 @@ $this->params['breadcrumbs'][] = 'Actualizar';
                     <?= $form->field($model, 'comprobante_pago')->textInput([
                         'placeholder' => 'Número de comprobante de pago'
                     ]) ?>
-
-                    <div class="form-check mt-3">
-                        <?= Html::activeCheckbox($model, 'correapartir_enabled', [
-                            'class' => 'form-check-input',
-                            'label' => 'Habilitar Correapartir',
-                            'labelOptions' => ['class' => 'form-check-label']
-                        ]) ?>
-                    </div>
-
-                    <div class="form-group" id="correapartir-field" style="<?= $model->correapartir_enabled ? '' : 'display: none;' ?>">
-                        <?= $form->field($model, 'fecha_correapartir')->input('datetime-local') ?>
-                    </div>
                 </div>
             </div>
         </div>
