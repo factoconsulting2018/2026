@@ -5,6 +5,7 @@ namespace app\controllers;
 use Yii;
 use app\models\CompanyConfig;
 use app\models\Client;
+use app\models\ApiKey;
 use yii\web\Controller;
 use yii\web\UploadedFile;
 use yii\filters\AccessControl;
@@ -51,11 +52,15 @@ class ConfigController extends Controller
         $fileConfigs = CompanyConfig::getFileConfigs();
 
         $model = new CompanyConfig();
+        
+        // Obtener API Keys
+        $apiKeys = ApiKey::find()->orderBy(['created_at' => SORT_DESC])->all();
 
         return $this->render('index', [
             'companyInfo' => $companyInfo,
             'fileConfigs' => $fileConfigs,
             'model' => $model,
+            'apiKeys' => $apiKeys,
         ]);
     }
 
@@ -473,5 +478,84 @@ class ConfigController extends Controller
         }
 
         return $this->redirect(['index']);
+    }
+
+    // ==================== API KEYS ====================
+
+    /**
+     * Crear nueva API Key
+     */
+    public function actionCreateApiKey()
+    {
+        if (Yii::$app->request->isPost) {
+            $model = new ApiKey();
+            $post = Yii::$app->request->post();
+            
+            $model->name = $post['name'] ?? '';
+            $model->description = $post['description'] ?? '';
+            $model->is_active = 1;
+            
+            if ($model->save()) {
+                Yii::$app->session->setFlash('success', 'API Key creada exitosamente. La key se mostrará una sola vez: ' . $model->key);
+                Yii::$app->session->setFlash('new_api_key', $model->key);
+            } else {
+                $errors = implode(', ', $model->getFirstErrors());
+                Yii::$app->session->setFlash('error', 'Error al crear API Key: ' . $errors);
+            }
+        }
+        
+        return $this->redirect(['index']);
+    }
+
+    /**
+     * Activar/Desactivar API Key
+     */
+    public function actionToggleApiKey($id)
+    {
+        if (Yii::$app->request->isPost) {
+            $model = ApiKey::findOne($id);
+            if ($model) {
+                $model->is_active = $model->is_active ? 0 : 1;
+                if ($model->save(false)) {
+                    $status = $model->is_active ? 'activada' : 'desactivada';
+                    Yii::$app->session->setFlash('success', "API Key {$status} exitosamente.");
+                } else {
+                    Yii::$app->session->setFlash('error', 'Error al actualizar API Key.');
+                }
+            } else {
+                Yii::$app->session->setFlash('error', 'API Key no encontrada.');
+            }
+        }
+        
+        return $this->redirect(['index']);
+    }
+
+    /**
+     * Eliminar API Key
+     */
+    public function actionDeleteApiKey($id)
+    {
+        if (Yii::$app->request->isPost) {
+            $model = ApiKey::findOne($id);
+            if ($model) {
+                if ($model->delete()) {
+                    Yii::$app->session->setFlash('success', 'API Key eliminada exitosamente.');
+                } else {
+                    Yii::$app->session->setFlash('error', 'Error al eliminar API Key.');
+                }
+            } else {
+                Yii::$app->session->setFlash('error', 'API Key no encontrada.');
+            }
+        }
+        
+        return $this->redirect(['index']);
+    }
+
+    /**
+     * Mostrar documentación de la API
+     */
+    public function actionApiDocs()
+    {
+        return $this->render('api-docs');
     }
 }

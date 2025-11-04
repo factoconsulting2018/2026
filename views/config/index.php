@@ -63,6 +63,11 @@ $conditionsModel = new \app\models\CompanyConfig();
                                 <i class="fas fa-eye"></i> Vista Previa
                             </button>
                         </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="api-tab" data-bs-toggle="tab" data-bs-target="#api" type="button" role="tab" aria-controls="api" aria-selected="false">
+                                <i class="fas fa-code"></i> API
+                            </button>
+                        </li>
                     </ul>
 
                     <div class="tab-content" id="configTabsContent">
@@ -771,6 +776,169 @@ $conditionsModel = new \app\models\CompanyConfig();
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Tab de API -->
+                        <div class="tab-pane fade" id="api" role="tabpanel" aria-labelledby="api-tab">
+                            <div class="row mt-4">
+                                <div class="col-12">
+                                    <!-- Mostrar nueva API Key si se acaba de crear -->
+                                    <?php if (Yii::$app->session->hasFlash('new_api_key')): ?>
+                                        <div class="alert alert-success alert-dismissible fade show">
+                                            <h5><i class="fas fa-key"></i> Nueva API Key Creada</h5>
+                                            <p><strong>IMPORTANTE:</strong> Esta es la única vez que verás esta key. Cópiala y guárdala en un lugar seguro.</p>
+                                            <div class="input-group mb-3">
+                                                <input type="text" class="form-control" id="new-api-key" value="<?= Html::encode(Yii::$app->session->getFlash('new_api_key')) ?>" readonly>
+                                                <button class="btn btn-outline-secondary" type="button" onclick="copyApiKey()">
+                                                    <i class="fas fa-copy"></i> Copiar
+                                                </button>
+                                            </div>
+                                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                        </div>
+                                    <?php endif; ?>
+
+                                    <!-- Formulario para crear nueva API Key -->
+                                    <div class="card mb-4">
+                                        <div class="card-header">
+                                            <h5><i class="fas fa-plus-circle"></i> Crear Nueva API Key</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <?php $form = ActiveForm::begin([
+                                                'action' => ['config/create-api-key'],
+                                                'method' => 'post',
+                                                'options' => ['class' => 'needs-validation']
+                                            ]); ?>
+                                            
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <?= Html::label('Nombre', 'name', ['class' => 'form-label']) ?>
+                                                        <?= Html::textInput('name', '', [
+                                                            'class' => 'form-control',
+                                                            'required' => true,
+                                                            'placeholder' => 'Ej: API de Producción, API de Desarrollo'
+                                                        ]) ?>
+                                                        <small class="form-text text-muted">Nombre descriptivo para identificar esta API Key</small>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <?= Html::label('Descripción', 'description', ['class' => 'form-label']) ?>
+                                                        <?= Html::textarea('description', '', [
+                                                            'class' => 'form-control',
+                                                            'rows' => 2,
+                                                            'placeholder' => 'Descripción opcional de para qué se usará esta key'
+                                                        ]) ?>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="fas fa-key"></i> Crear API Key
+                                            </button>
+                                            
+                                            <?php ActiveForm::end(); ?>
+                                        </div>
+                                    </div>
+
+                                    <!-- Lista de API Keys existentes -->
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h5><i class="fas fa-list"></i> API Keys Existentes</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <?php if (empty($apiKeys)): ?>
+                                                <div class="alert alert-info">
+                                                    <i class="fas fa-info-circle"></i> No hay API Keys creadas. Crea una nueva usando el formulario de arriba.
+                                                </div>
+                                            <?php else: ?>
+                                                <div class="table-responsive">
+                                                    <table class="table table-hover">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Nombre</th>
+                                                                <th>Key (primeros 20 caracteres)</th>
+                                                                <th>Estado</th>
+                                                                <th>Último Uso</th>
+                                                                <th>Creada</th>
+                                                                <th>Acciones</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <?php foreach ($apiKeys as $key): ?>
+                                                                <tr>
+                                                                    <td>
+                                                                        <strong><?= Html::encode($key->name) ?></strong>
+                                                                        <?php if ($key->description): ?>
+                                                                            <br><small class="text-muted"><?= Html::encode($key->description) ?></small>
+                                                                        <?php endif; ?>
+                                                                    </td>
+                                                                    <td>
+                                                                        <code><?= Html::encode(substr($key->key, 0, 20)) ?>...</code>
+                                                                    </td>
+                                                                    <td>
+                                                                        <?= $key->getStatusBadge() ?>
+                                                                    </td>
+                                                                    <td>
+                                                                        <?= $key->getFormattedLastUsed() ?>
+                                                                    </td>
+                                                                    <td>
+                                                                        <?= Yii::$app->formatter->asDate($key->created_at) ?>
+                                                                    </td>
+                                                                    <td>
+                                                                        <?php if ($key->is_active): ?>
+                                                                            <?= Html::a('<i class="fas fa-ban"></i> Desactivar', 
+                                                                                ['config/toggle-api-key', 'id' => $key->id],
+                                                                                [
+                                                                                    'class' => 'btn btn-sm btn-warning',
+                                                                                    'data' => ['method' => 'post', 'confirm' => '¿Estás seguro de desactivar esta API Key?']
+                                                                                ]) ?>
+                                                                        <?php else: ?>
+                                                                            <?= Html::a('<i class="fas fa-check"></i> Activar', 
+                                                                                ['config/toggle-api-key', 'id' => $key->id],
+                                                                                [
+                                                                                    'class' => 'btn btn-sm btn-success',
+                                                                                    'data' => ['method' => 'post']
+                                                                                ]) ?>
+                                                                        <?php endif; ?>
+                                                                        
+                                                                        <?= Html::a('<i class="fas fa-trash"></i> Eliminar', 
+                                                                            ['config/delete-api-key', 'id' => $key->id],
+                                                                            [
+                                                                                'class' => 'btn btn-sm btn-danger',
+                                                                                'data' => ['method' => 'post', 'confirm' => '¿Estás seguro de eliminar esta API Key? Esta acción no se puede deshacer.']
+                                                                            ]) ?>
+                                                                    </td>
+                                                                </tr>
+                                                            <?php endforeach; ?>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+
+                                    <!-- Información sobre uso de API -->
+                                    <div class="card mt-4">
+                                        <div class="card-header">
+                                            <h5><i class="fas fa-info-circle"></i> Información sobre la API</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <p>La API REST está disponible en: <code>https://app.factorentacar.com/api/v1/</code></p>
+                                            <p class="text-muted"><small>URL actual: <?= Yii::$app->request->hostInfo ?>/api/v1/</small></p>
+                                            <p>Para usar la API, incluye tu API Key en el header de la petición:</p>
+                                            <pre class="bg-light p-3 rounded"><code>X-API-Key: tu_api_key_aqui</code></pre>
+                                            <p>O como parámetro de query:</p>
+                                            <pre class="bg-light p-3 rounded"><code>?api_key=tu_api_key_aqui</code></pre>
+                                            <p class="mb-0">
+                                                <a href="<?= Url::to(['config/api-docs']) ?>" class="btn btn-outline-primary" target="_blank">
+                                                    <i class="fas fa-book"></i> Ver Documentación Completa de la API
+                                                </a>
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -891,5 +1059,30 @@ $(document).ready(function() {
     };
     
     console.log('Funciones adicionales disponibles: testLogoUpload()');
+    
+    // Función para copiar API Key
+    window.copyApiKey = function(e) {
+        const input = document.getElementById('new-api-key');
+        if (input) {
+            input.select();
+            input.setSelectionRange(0, 99999); // Para dispositivos móviles
+            document.execCommand('copy');
+            
+            // Mostrar mensaje de confirmación
+            const btn = e ? e.target.closest('button') : document.querySelector('#new-api-key').nextElementSibling;
+            if (btn) {
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-check"></i> Copiado!';
+                btn.classList.add('btn-success');
+                btn.classList.remove('btn-outline-secondary');
+                
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.classList.remove('btn-success');
+                    btn.classList.add('btn-outline-secondary');
+                }, 2000);
+            }
+        }
+    };
 });
 </script>

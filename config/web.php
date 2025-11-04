@@ -88,11 +88,41 @@ $config = [
                 'pdf/download-zip/<id:\d+>' => 'pdf/download-zip',
                 'order2/<action:\w+>' => 'order2/<action>',
                 'order2' => 'order2/index',
-                // API REST para Dashboard y Power BI
+                // API REST para Dashboard y Power BI (legacy)
                 'api/reports/rentals' => 'reports/api-rentals',
                 'api/reports/clients' => 'reports/api-clients',
                 'api/reports/metrics' => 'reports/api-metrics',
                 'api/reports/sales-by-client' => 'reports/api-sales-by-client',
+                // API REST v1
+                'api/v1/health' => 'api/health',
+                // Clientes
+                'api/v1/clients' => 'api/clients',
+                'api/v1/clients/<id:\d+>' => 'api/client',
+                'api/v1/clients/create' => 'api/create-client',
+                'api/v1/clients/<id:\d+>/update' => 'api/update-client',
+                'api/v1/clients/<id:\d+>/delete' => 'api/delete-client',
+                // Vehículos
+                'api/v1/cars' => 'api/cars',
+                'api/v1/cars/<id:\d+>' => 'api/car',
+                'api/v1/cars/available' => 'api/available-cars',
+                // Reservas/Alquileres
+                'api/v1/rentals' => 'api/rentals',
+                'api/v1/rentals/<id:\d+>' => 'api/rental',
+                'api/v1/rentals/create' => 'api/create-rental',
+                'api/v1/rentals/<id:\d+>/update' => 'api/update-rental',
+                // Reportes
+                'api/v1/reports/sales' => 'api/reports-sales',
+                'api/v1/reports/clients' => 'api/reports-clients',
+                // Estadísticas
+                'api/v1/statistics' => 'api/statistics',
+                'api/v1/statistics/metrics' => 'api/statistics-metrics',
+                // Notas
+                'api/v1/notes' => 'api/notes',
+                'api/v1/notes/create' => 'api/create-note',
+                // Hacienda
+                'api/v1/hacienda/<cedula:\w+>' => 'api/hacienda',
+                // Documentación de API
+                'config/api-docs' => 'config/api-docs',
                 // Rutas para archivos de clientes
                 'client/upload-file/<id:\d+>' => 'client/upload-file',
                 'client/list-files/<id:\d+>' => 'client/list-files',
