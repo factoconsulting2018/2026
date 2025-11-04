@@ -70,8 +70,37 @@ $this->params['breadcrumbs'][] = 'Actualizar';
                         ]) ?>
                     </div>
 
-                    <div class="form-group" id="correapartir-field" style="<?= $model->correapartir_enabled ? '' : 'display: none;' ?>">
-                        <?= $form->field($model, 'fecha_correapartir')->input('datetime-local') ?>
+                    <div class="form-group mb-3" id="correapartir-field" style="<?= $model->correapartir_enabled ? '' : 'display: none;' ?>">
+                        <label class="form-label fw-bold">Fecha y Hora de Correapartir</label>
+                        <div class="row mb-2">
+                            <div class="col-md-6">
+                                <label class="form-label">Fecha</label>
+                                <input type="date" class="form-control" id="correapartir-fecha">
+                                <div class="invalid-feedback"></div>
+                            </div>
+                        </div>
+                        <div class="row g-2">
+                            <div class="col-4">
+                                <label class="form-label">Hora</label>
+                                <select class="form-select" id="correapartir-hours">
+                                    <?php for ($i = 1; $i <= 12; $i++) { echo '<option value="' . $i . '">' . $i . '</option>'; } ?>
+                                </select>
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label">Minutos</label>
+                                <select class="form-select" id="correapartir-minutes">
+                                    <?php for ($i = 0; $i < 60; $i++) { $min = str_pad($i, 2, '0', STR_PAD_LEFT); echo '<option value="' . $min . '">' . $min . '</option>'; } ?>
+                                </select>
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label">Periodo</label>
+                                <select class="form-select" id="correapartir-period">
+                                    <option value="AM">AM</option>
+                                    <option value="PM">PM</option>
+                                </select>
+                            </div>
+                        </div>
+                        <input type="hidden" id="rental-fecha_correapartir" name="Rental[fecha_correapartir]" value="<?= $model->fecha_correapartir ?? '' ?>">
                     </div>
                 </div>
             </div>
@@ -566,13 +595,134 @@ document.addEventListener('DOMContentLoaded', function() {
         actualizarTextoAyudaPrecio();
     }
     
+    // ==========================================
+    // MANEJO DE CORREAPARTIR FORMATO 12H
+    // ==========================================
+    
+    /**
+     * Actualiza el campo oculto fecha_correapartir combinando fecha y hora
+     */
+    function actualizarCorreapartirOculta() {
+        const fechaInput = document.getElementById('correapartir-fecha');
+        const horasSelect = document.getElementById('correapartir-hours');
+        const minutosSelect = document.getElementById('correapartir-minutes');
+        const periodoSelect = document.getElementById('correapartir-period');
+        const campoOculto = document.getElementById('rental-fecha_correapartir');
+        
+        if (!fechaInput || !horasSelect || !minutosSelect || !periodoSelect || !campoOculto) {
+            return;
+        }
+        
+        const fecha = fechaInput.value;
+        if (!fecha) {
+            campoOculto.value = '';
+            return;
+        }
+        
+        // Convertir hora 12h a 24h
+        const hora24 = convertir12hA24h(
+            parseInt(horasSelect.value),
+            parseInt(minutosSelect.value),
+            periodoSelect.value
+        );
+        
+        // Combinar fecha y hora: "YYYY-MM-DD HH:MM:SS"
+        campoOculto.value = fecha + ' ' + hora24 + ':00';
+    }
+    
+    /**
+     * Inicializa campos de correapartir con valor existente
+     */
+    function inicializarCorreapartir12h() {
+        const campoOculto = document.getElementById('rental-fecha_correapartir');
+        if (!campoOculto) {
+            return;
+        }
+        
+        const fechaInput = document.getElementById('correapartir-fecha');
+        const horasSelect = document.getElementById('correapartir-hours');
+        const minutosSelect = document.getElementById('correapartir-minutes');
+        const periodoSelect = document.getElementById('correapartir-period');
+        
+        if (!fechaInput || !horasSelect || !minutosSelect || !periodoSelect) {
+            return;
+        }
+        
+        // Si hay valor en el campo oculto, parsearlo
+        if (campoOculto.value && campoOculto.value.trim()) {
+            // Parsear fecha_correapartir: "YYYY-MM-DD HH:MM:SS" o "YYYY-MM-DD HH:MM"
+            const fechaHora = campoOculto.value.trim();
+            const parts = fechaHora.split(' ');
+            const fechaPart = parts[0] || '';
+            let horaPart = parts[1] || '';
+            
+            // Si la hora tiene segundos, removerlos
+            if (horaPart && horaPart.includes(':')) {
+                const horaParts = horaPart.split(':');
+                horaPart = horaParts[0] + ':' + horaParts[1]; // Solo HH:MM
+            }
+            
+            // Establecer fecha
+            if (fechaPart) {
+                fechaInput.value = fechaPart;
+            }
+            
+            // Establecer hora en formato 12h
+            if (horaPart) {
+                const hora12 = convertir24hA12h(horaPart);
+                horasSelect.value = hora12.hora;
+                minutosSelect.value = String(hora12.minutos).padStart(2, '0');
+                periodoSelect.value = hora12.periodo;
+            } else {
+                // Si no hay hora, establecer valores por defecto
+                horasSelect.value = 12;
+                minutosSelect.value = '00';
+                periodoSelect.value = 'AM';
+            }
+        } else {
+            // Si no hay valor, establecer valores por defecto
+            fechaInput.value = '';
+            horasSelect.value = 12;
+            minutosSelect.value = '00';
+            periodoSelect.value = 'AM';
+        }
+    }
+    
     // Mostrar/ocultar campo de correapartir
     const correapartirCheckbox = document.getElementById('rental-correapartir_enabled');
     const correapartirField = document.getElementById('correapartir-field');
     
     if (correapartirCheckbox && correapartirField) {
+        // Inicializar si ya está habilitado (con pequeño delay para asegurar que los elementos estén renderizados)
+        if (correapartirCheckbox.checked) {
+            setTimeout(function() {
+                inicializarCorreapartir12h();
+            }, 100);
+        }
+        
         correapartirCheckbox.addEventListener('change', function() {
             correapartirField.style.display = this.checked ? 'block' : 'none';
+            if (this.checked) {
+                setTimeout(function() {
+                    inicializarCorreapartir12h();
+                }, 100);
+            } else {
+                // Limpiar campo oculto cuando se desactiva
+                const campoOculto = document.getElementById('rental-fecha_correapartir');
+                if (campoOculto) {
+                    campoOculto.value = '';
+                }
+            }
+        });
+        
+        // Actualizar campo oculto cuando cambian los valores
+        ['correapartir-fecha', 'correapartir-hours', 'correapartir-minutes', 'correapartir-period'].forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.addEventListener('change', function() {
+                    actualizarCorreapartirOculta();
+                });
+            }
         });
     }
 
