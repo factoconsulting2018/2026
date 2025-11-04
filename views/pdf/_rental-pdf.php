@@ -94,6 +94,26 @@ $fechaRetiro = formatDateCompact($model->fecha_inicio, $model->hora_inicio);
 $fechaDevolucion = formatDateCompact($model->fecha_final, $model->hora_final);
 $lugarRetiro = htmlspecialchars($model->lugar_retiro ?: 'San Ramón');
 
+// Función específica para formatear correapartir (mes con primera letra mayúscula)
+function formatDateCorreapartir($date, $time = '') {
+    try {
+        $dt = new DateTime($date . ' ' . $time);
+    } catch (Exception $e) {
+        return $date;
+    }
+    $dias = [1 => 'Lunes', 2 => 'Martes', 3 => 'Miércoles', 4 => 'Jueves', 5 => 'Viernes', 6 => 'Sábado', 7 => 'Domingo'];
+    $meses = [1 => 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+    $diaSemana = $dias[(int)$dt->format('N')] ?? '';
+    $dia = $dt->format('d');
+    $mes = ucfirst($meses[(int)$dt->format('n')] ?? ''); // Primera letra mayúscula, resto minúscula
+    $anio = $dt->format('Y');
+    if (!empty($time)) {
+        $hora = strtolower($dt->format('h:i a'));
+        return "$diaSemana $dia de $mes $hora";
+    }
+    return "$dia de $mes $anio";
+}
+
 // Formatear fecha de correapartir si está habilitado
 $fechaCorreapartir = '';
 if ($model->correapartir_enabled && !empty($model->fecha_correapartir)) {
@@ -106,9 +126,9 @@ if ($model->correapartir_enabled && !empty($model->fecha_correapartir)) {
         
         // Si tiene hora, formatearla con hora, sino solo fecha
         if (!empty($horaPart)) {
-            $fechaCorreapartir = formatDateCompact($fechaPart, $horaPart);
+            $fechaCorreapartir = formatDateCorreapartir($fechaPart, $horaPart);
         } else {
-            $fechaCorreapartir = formatDateCompact($fechaPart);
+            $fechaCorreapartir = formatDateCorreapartir($fechaPart);
         }
     } catch (Exception $e) {
         $fechaCorreapartir = '';
