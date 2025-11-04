@@ -840,13 +840,38 @@ $conditionsModel = new \app\models\CompanyConfig();
                                         </div>
                                     </div>
 
+                                    <!-- Mensaje si la tabla no existe -->
+                                    <?php
+                                    $tableExists = true;
+                                    try {
+                                        $tableSchema = Yii::$app->db->getTableSchema('api_keys', true);
+                                        $tableExists = ($tableSchema !== null);
+                                    } catch (\Exception $e) {
+                                        $tableExists = false;
+                                    }
+                                    ?>
+                                    <?php if (!$tableExists): ?>
+                                        <div class="alert alert-warning">
+                                            <h5><i class="fas fa-exclamation-triangle"></i> Tabla API Keys No Existe</h5>
+                                            <p>La tabla <code>api_keys</code> no existe en la base de datos. Para habilitar la funcionalidad de API Keys, ejecuta la migración:</p>
+                                            <pre class="bg-light p-3 rounded mt-2"><code>sudo docker-compose exec app php yii migrate</code></pre>
+                                            <p class="mb-0"><strong>O desde el servidor:</strong></p>
+                                            <pre class="bg-light p-3 rounded mt-2"><code>cd /var/www/html/app/factorentacar
+sudo docker-compose exec app php yii migrate</code></pre>
+                                        </div>
+                                    <?php endif; ?>
+
                                     <!-- Lista de API Keys existentes -->
                                     <div class="card">
                                         <div class="card-header">
                                             <h5><i class="fas fa-list"></i> API Keys Existentes</h5>
                                         </div>
                                         <div class="card-body">
-                                            <?php if (empty($apiKeys)): ?>
+                                            <?php if (!$tableExists): ?>
+                                                <div class="alert alert-info">
+                                                    <i class="fas fa-info-circle"></i> Ejecuta la migración primero para habilitar la gestión de API Keys.
+                                                </div>
+                                            <?php elseif (empty($apiKeys)): ?>
                                                 <div class="alert alert-info">
                                                     <i class="fas fa-info-circle"></i> No hay API Keys creadas. Crea una nueva usando el formulario de arriba.
                                                 </div>

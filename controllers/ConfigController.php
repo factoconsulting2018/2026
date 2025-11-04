@@ -53,8 +53,19 @@ class ConfigController extends Controller
 
         $model = new CompanyConfig();
         
-        // Obtener API Keys
-        $apiKeys = ApiKey::find()->orderBy(['created_at' => SORT_DESC])->all();
+        // Obtener API Keys (manejar caso cuando la tabla no existe todavía)
+        $apiKeys = [];
+        try {
+            // Verificar si la tabla existe antes de consultarla
+            $tableSchema = Yii::$app->db->getTableSchema('api_keys', true);
+            if ($tableSchema !== null) {
+                $apiKeys = ApiKey::find()->orderBy(['created_at' => SORT_DESC])->all();
+            }
+        } catch (\Exception $e) {
+            // Si hay error (tabla no existe), usar array vacío
+            Yii::warning('Tabla api_keys no existe aún: ' . $e->getMessage(), 'config');
+            $apiKeys = [];
+        }
 
         return $this->render('index', [
             'companyInfo' => $companyInfo,
@@ -487,6 +498,18 @@ class ConfigController extends Controller
      */
     public function actionCreateApiKey()
     {
+        // Verificar si la tabla existe
+        try {
+            $tableSchema = Yii::$app->db->getTableSchema('api_keys', true);
+            if ($tableSchema === null) {
+                Yii::$app->session->setFlash('error', 'La tabla api_keys no existe. Por favor ejecuta la migración: php yii migrate');
+                return $this->redirect(['index']);
+            }
+        } catch (\Exception $e) {
+            Yii::$app->session->setFlash('error', 'Error al verificar tabla api_keys: ' . $e->getMessage());
+            return $this->redirect(['index']);
+        }
+        
         if (Yii::$app->request->isPost) {
             $model = new ApiKey();
             $post = Yii::$app->request->post();
@@ -512,6 +535,18 @@ class ConfigController extends Controller
      */
     public function actionToggleApiKey($id)
     {
+        // Verificar si la tabla existe
+        try {
+            $tableSchema = Yii::$app->db->getTableSchema('api_keys', true);
+            if ($tableSchema === null) {
+                Yii::$app->session->setFlash('error', 'La tabla api_keys no existe. Por favor ejecuta la migración: php yii migrate');
+                return $this->redirect(['index']);
+            }
+        } catch (\Exception $e) {
+            Yii::$app->session->setFlash('error', 'Error al verificar tabla api_keys: ' . $e->getMessage());
+            return $this->redirect(['index']);
+        }
+        
         if (Yii::$app->request->isPost) {
             $model = ApiKey::findOne($id);
             if ($model) {
@@ -535,6 +570,18 @@ class ConfigController extends Controller
      */
     public function actionDeleteApiKey($id)
     {
+        // Verificar si la tabla existe
+        try {
+            $tableSchema = Yii::$app->db->getTableSchema('api_keys', true);
+            if ($tableSchema === null) {
+                Yii::$app->session->setFlash('error', 'La tabla api_keys no existe. Por favor ejecuta la migración: php yii migrate');
+                return $this->redirect(['index']);
+            }
+        } catch (\Exception $e) {
+            Yii::$app->session->setFlash('error', 'Error al verificar tabla api_keys: ' . $e->getMessage());
+            return $this->redirect(['index']);
+        }
+        
         if (Yii::$app->request->isPost) {
             $model = ApiKey::findOne($id);
             if ($model) {
