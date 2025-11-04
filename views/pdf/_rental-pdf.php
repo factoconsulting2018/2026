@@ -93,6 +93,27 @@ $fechaFin = formatDateCompact($model->fecha_final);
 $fechaRetiro = formatDateCompact($model->fecha_inicio, $model->hora_inicio);
 $fechaDevolucion = formatDateCompact($model->fecha_final, $model->hora_final);
 $lugarRetiro = htmlspecialchars($model->lugar_retiro ?: 'San Ramón');
+
+// Formatear fecha de correapartir si está habilitado
+$fechaCorreapartir = '';
+if ($model->correapartir_enabled && !empty($model->fecha_correapartir)) {
+    try {
+        // fecha_correapartir puede venir como "YYYY-MM-DD HH:MM:SS" o "YYYY-MM-DD HH:MM"
+        // Separar fecha y hora para formatear correctamente
+        $parts = explode(' ', $model->fecha_correapartir);
+        $fechaPart = $parts[0] ?? $model->fecha_correapartir;
+        $horaPart = $parts[1] ?? '';
+        
+        // Si tiene hora, formatearla con hora, sino solo fecha
+        if (!empty($horaPart)) {
+            $fechaCorreapartir = formatDateCompact($fechaPart, $horaPart);
+        } else {
+            $fechaCorreapartir = formatDateCompact($fechaPart);
+        }
+    } catch (Exception $e) {
+        $fechaCorreapartir = '';
+    }
+}
 $vehiculoDesc = htmlspecialchars($car ? $car->nombre : 'N/A');
 $capacidad = htmlspecialchars($car ? ($car->cantidad_pasajeros ?: 5) : '5');
 $cantidadDias = str_pad($model->cantidad_dias, 2, '0', STR_PAD_LEFT);
@@ -176,6 +197,9 @@ $montoReserva = $total;
             <div class="b">Entrega del vehículo</div>
             <div><?= $entregaLugar ?></div>
             <div class="b">Fechas</div>
+            <?php if (!empty($fechaCorreapartir)): ?>
+            <div class="b" style="color: #0066CC;">Correapartir: <?= $fechaCorreapartir ?></div>
+            <?php endif; ?>
             <div>Alquiler: <?= $fechaInicio ?></div>
             <div><?= $fechaFin ?></div>
             <div>Retiro: <?= $fechaRetiro ?> • <?= $lugarRetiro ?></div>
