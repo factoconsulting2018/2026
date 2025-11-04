@@ -81,19 +81,19 @@ $this->params['breadcrumbs'][] = 'Actualizar';
                         </div>
                         <div class="row g-2">
                             <div class="col-4">
-                                <label class="form-label" style="color: #FF6600;">Hora</label>
+                                <label class="form-label" style="color: #FF6600; font-weight: bold;">Hora</label>
                                 <select class="form-select" id="correapartir-hours">
                                     <?php for ($i = 1; $i <= 12; $i++) { echo '<option value="' . $i . '">' . $i . '</option>'; } ?>
                                 </select>
                             </div>
                             <div class="col-4">
-                                <label class="form-label" style="color: #FF6600;">Minutos</label>
+                                <label class="form-label" style="color: #FF6600; font-weight: bold;">Minutos</label>
                                 <select class="form-select" id="correapartir-minutes">
                                     <?php for ($i = 0; $i < 60; $i++) { $min = str_pad($i, 2, '0', STR_PAD_LEFT); echo '<option value="' . $min . '">' . $min . '</option>'; } ?>
                                 </select>
                             </div>
                             <div class="col-4">
-                                <label class="form-label" style="color: #FF6600;">Periodo</label>
+                                <label class="form-label" style="color: #FF6600; font-weight: bold;">Periodo</label>
                                 <select class="form-select" id="correapartir-period">
                                     <option value="AM">AM</option>
                                     <option value="PM">PM</option>
