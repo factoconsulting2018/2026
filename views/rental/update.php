@@ -71,29 +71,29 @@ $this->params['breadcrumbs'][] = 'Actualizar';
                     </div>
 
                     <div class="form-group mb-3" id="correapartir-field" style="<?= $model->correapartir_enabled ? '' : 'display: none;' ?>">
-                        <label class="form-label fw-bold">Fecha y Hora de Correapartir</label>
+                        <label class="form-label fw-bold" style="color: #FF6600;">Fecha y Hora de Correapartir</label>
                         <div class="row mb-2">
                             <div class="col-md-6">
-                                <label class="form-label">Fecha</label>
+                                <label class="form-label" style="color: #FF6600;">Fecha</label>
                                 <input type="date" class="form-control" id="correapartir-fecha">
                                 <div class="invalid-feedback"></div>
                             </div>
                         </div>
                         <div class="row g-2">
                             <div class="col-4">
-                                <label class="form-label">Hora</label>
+                                <label class="form-label" style="color: #FF6600;">Hora</label>
                                 <select class="form-select" id="correapartir-hours">
                                     <?php for ($i = 1; $i <= 12; $i++) { echo '<option value="' . $i . '">' . $i . '</option>'; } ?>
                                 </select>
                             </div>
                             <div class="col-4">
-                                <label class="form-label">Minutos</label>
+                                <label class="form-label" style="color: #FF6600;">Minutos</label>
                                 <select class="form-select" id="correapartir-minutes">
                                     <?php for ($i = 0; $i < 60; $i++) { $min = str_pad($i, 2, '0', STR_PAD_LEFT); echo '<option value="' . $min . '">' . $min . '</option>'; } ?>
                                 </select>
                             </div>
                             <div class="col-4">
-                                <label class="form-label">Periodo</label>
+                                <label class="form-label" style="color: #FF6600;">Periodo</label>
                                 <select class="form-select" id="correapartir-period">
                                     <option value="AM">AM</option>
                                     <option value="PM">PM</option>
