@@ -802,32 +802,34 @@ $conditionsModel = new \app\models\CompanyConfig();
                                             <h5><i class="fas fa-plus-circle"></i> Crear Nueva API Key</h5>
                                         </div>
                                         <div class="card-body">
-                                            <?php $form = ActiveForm::begin([
+                                            <?php 
+                                            $apiKeyModel = new \app\models\ApiKey();
+                                            $form = ActiveForm::begin([
                                                 'action' => ['config/create-api-key'],
                                                 'method' => 'post',
-                                                'options' => ['class' => 'needs-validation']
+                                                'options' => ['class' => 'needs-validation', 'novalidate' => true]
                                             ]); ?>
                                             
                                             <div class="row">
                                                 <div class="col-md-6">
                                                     <div class="mb-3">
-                                                        <?= Html::label('Nombre', 'name', ['class' => 'form-label']) ?>
-                                                        <?= Html::textInput('name', '', [
+                                                        <?= $form->field($apiKeyModel, 'name')->textInput([
                                                             'class' => 'form-control',
                                                             'required' => true,
-                                                            'placeholder' => 'Ej: API de Producción, API de Desarrollo'
-                                                        ]) ?>
+                                                            'placeholder' => 'Ej: API de Producción, API de Desarrollo',
+                                                            'name' => 'name'
+                                                        ])->label('Nombre') ?>
                                                         <small class="form-text text-muted">Nombre descriptivo para identificar esta API Key</small>
                                                     </div>
                                                 </div>
                                                 <div class="col-md-6">
                                                     <div class="mb-3">
-                                                        <?= Html::label('Descripción', 'description', ['class' => 'form-label']) ?>
-                                                        <?= Html::textarea('description', '', [
+                                                        <?= $form->field($apiKeyModel, 'description')->textarea([
                                                             'class' => 'form-control',
                                                             'rows' => 2,
-                                                            'placeholder' => 'Descripción opcional de para qué se usará esta key'
-                                                        ]) ?>
+                                                            'placeholder' => 'Descripción opcional de para qué se usará esta key',
+                                                            'name' => 'description'
+                                                        ])->label('Descripción') ?>
                                                     </div>
                                                 </div>
                                             </div>
@@ -972,37 +974,48 @@ sudo docker-compose exec app php yii migrate</code></pre>
 </div>
 
 <script>
-$(document).ready(function() {
+document.addEventListener('DOMContentLoaded', function() {
     // Agregar cuenta bancaria
-    $('#add-bank-account').click(function() {
-        const container = $('#bank-accounts-container');
-        const index = container.find('.bank-account-row').length;
-        
-        const newRow = `
-            <div class="row bank-account-row mb-3">
-                <div class="col-md-3">
-                    <input type="text" name="bank_accounts[${index}][bank]" class="form-control" placeholder="Banco (ej: BCR, BN)">
-                </div>
-                <div class="col-md-6">
-                    <input type="text" name="bank_accounts[${index}][account]" class="form-control" placeholder="Número de cuenta">
-                </div>
-                <div class="col-md-2">
-                    <input type="text" name="bank_accounts[${index}][currency]" class="form-control" placeholder="₡" value="₡">
-                </div>
-                <div class="col-md-1">
-                    <button type="button" class="btn btn-outline-danger btn-sm remove-bank-account">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-            </div>
-        `;
-        
-        container.append(newRow);
-    });
+    const addBankAccountBtn = document.getElementById('add-bank-account');
+    if (addBankAccountBtn) {
+        addBankAccountBtn.addEventListener('click', function() {
+            const container = document.getElementById('bank-accounts-container');
+            if (container) {
+                const rows = container.querySelectorAll('.bank-account-row');
+                const index = rows.length;
+                
+                const newRow = document.createElement('div');
+                newRow.className = 'row bank-account-row mb-3';
+                newRow.innerHTML = `
+                    <div class="col-md-3">
+                        <input type="text" name="bank_accounts[${index}][bank]" class="form-control" placeholder="Banco (ej: BCR, BN)">
+                    </div>
+                    <div class="col-md-6">
+                        <input type="text" name="bank_accounts[${index}][account]" class="form-control" placeholder="Número de cuenta">
+                    </div>
+                    <div class="col-md-2">
+                        <input type="text" name="bank_accounts[${index}][currency]" class="form-control" placeholder="₡" value="₡">
+                    </div>
+                    <div class="col-md-1">
+                        <button type="button" class="btn btn-outline-danger btn-sm remove-bank-account">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(newRow);
+            }
+        });
+    }
     
     // Eliminar cuenta bancaria
-    $(document).on('click', '.remove-bank-account', function() {
-        $(this).closest('.bank-account-row').remove();
+    document.addEventListener('click', function(e) {
+        if (e.target && (e.target.classList.contains('remove-bank-account') || e.target.closest('.remove-bank-account'))) {
+            const btn = e.target.classList.contains('remove-bank-account') ? e.target : e.target.closest('.remove-bank-account');
+            const row = btn.closest('.bank-account-row');
+            if (row) {
+                row.remove();
+            }
+        }
     });
     
     // JavaScript del logo movido a la pestaña de información

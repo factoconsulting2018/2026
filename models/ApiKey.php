@@ -50,9 +50,9 @@ class ApiKey extends ActiveRecord
     public function rules()
     {
         return [
-            [['key', 'name'], 'required'],
-            [['key'], 'string', 'length' => [32, 64]],
-            [['key'], 'unique'],
+            [['name'], 'required'],
+            [['key'], 'string', 'length' => [32, 64], 'skipOnEmpty' => true],
+            [['key'], 'unique', 'skipOnEmpty' => true],
             [['name'], 'string', 'max' => 255],
             [['description'], 'string'],
             [['is_active'], 'integer'],
@@ -114,12 +114,28 @@ class ApiKey extends ActiveRecord
     }
 
     /**
-     * Antes de guardar, generar key si es nuevo
+     * Antes de validar, generar key si es nuevo y está vacío
+     */
+    public function beforeValidate()
+    {
+        if (parent::beforeValidate()) {
+            // Si es nuevo registro y no tiene key, generarla antes de validar
+            if ($this->isNewRecord && empty($this->key)) {
+                $this->key = self::generateKey();
+            }
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Antes de guardar, asegurar que la key existe
      */
     public function beforeSave($insert)
     {
         if (parent::beforeSave($insert)) {
-            if ($insert && empty($this->key)) {
+            // Asegurar que siempre tenga key (por si acaso)
+            if (empty($this->key)) {
                 $this->key = self::generateKey();
             }
             return true;
