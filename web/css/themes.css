@@ -298,7 +298,7 @@ h1, h2, h3, h4, h5, h6 {
 /* Sidebar */
 .sidebar,
 .drawer {
-    background-color: #1F2937 !important;
+    background-color: #0f1d41 !important;
 }
 
 .sidebar .nav-link,
@@ -468,7 +468,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 [data-theme="light"] .drawer .nav-link .nav-icon {
-    color: #FFFFFF !important; /* Iconos en blanco */
+    color: #0094ff !important; /* Iconos en azul */
     margin-right: 12px !important;
 }
 
@@ -494,7 +494,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 [data-theme="light"] .drawer .theme-toggle-menu .nav-icon {
-    color: #FFFFFF !important; /* Icono en blanco */
+    color: #0094ff !important; /* Icono en azul */
     margin-right: 12px !important;
 }
 
@@ -505,7 +505,7 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Estilos para el header del drawer en tema claro */
 [data-theme="light"] .drawer-header {
-    background: #1F2937 !important;
+    background: #0f1d41 !important;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 
@@ -573,7 +573,7 @@ h1, h2, h3, h4, h5, h6 {
 [data-theme="light"] .drawer .theme-toggle-menu .material-symbols-outlined,
 [data-theme="light"] .logout-button .material-symbols-outlined {
     font-size: 20px !important;
-    color: #FFFFFF !important; /* Iconos en blanco */
+    color: #0094ff !important; /* Iconos en azul */
     margin-right: 12px !important;
     opacity: 0.9 !important;
 }
@@ -600,7 +600,7 @@ h1, h2, h3, h4, h5, h6 {
 /* Asegurar que el tema se aplique a elementos de navegación */
 [data-theme="light"] .drawer,
 [data-theme="light"] .sidebar {
-    background-color: #1F2937 !important;
+    background-color: #0f1d41 !important;
     color: #FFFFFF !important;
 }
 
@@ -683,7 +683,7 @@ h1, h2, h3, h4, h5, h6 {
 .car-index .table-dark th,
 .car-index .table-dark thead th {
     color: #ffffff !important;
-    background-color: #343a40 !important;
+    background-color: #0f1d41 !important;
     border-color: #495057 !important;
     font-weight: 600 !important;
 }
@@ -695,7 +695,7 @@ h1, h2, h3, h4, h5, h6 {
 /* Asegurar que todos los elementos del header sean blancos */
 .car-index .table thead th {
     color: #ffffff !important;
-    background-color: #343a40 !important;
+    background-color: #0f1d41 !important;
     border-color: #495057 !important;
     font-weight: 600 !important;
 }

@@ -103,7 +103,7 @@ $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => Yii
             left: 0;
             width: var(--drawer-width);
             height: 100vh;
-            background: #1F2937;
+            background: #0f1d41;
             box-shadow: 2px 0 8px rgba(0,0,0,0.1);
             transform: translateX(-100%);
             transition: transform 0.3s ease;
@@ -117,7 +117,7 @@ $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => Yii
         
         .drawer-header {
             padding: 20px;
-            background: #1F2937;
+            background: #0f1d41;
             color: white;
             text-align: center;
         }
@@ -169,7 +169,7 @@ $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => Yii
             margin-right: 12px;
             width: 20px;
             text-align: center;
-            color: #FFFFFF;
+            color: #0094ff;
             font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
         }
         
