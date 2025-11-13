@@ -458,6 +458,13 @@ $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => Yii
                 </a>
             </li>
             <li class="nav-item">
+                <a class="nav-link <?= Yii::$app->controller->id === 'async-rental' ? 'active' : '' ?>" 
+                   href="<?= \yii\helpers\Url::to(['/async-rental/index']) ?>">
+                    <span class="nav-icon material-symbols-outlined">history</span>
+                    <span class="nav-text">Rentas Asincrónicas</span>
+                </a>
+            </li>
+            <li class="nav-item">
                 <a class="nav-link <?= Yii::$app->controller->id === 'client' ? 'active' : '' ?>" 
                    href="<?= \yii\helpers\Url::to(['/client/index']) ?>">
                     <span class="nav-icon material-symbols-outlined">group</span>

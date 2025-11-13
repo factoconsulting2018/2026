@@ -24,6 +24,7 @@ use yii\db\ActiveRecord;
  * @property float $precio_por_dia
  * @property int $medio_dia_enabled
  * @property float $medio_dia_valor
+ * @property int $is_async
  * @property float $total_precio
  * @property string $condiciones_especiales
  * @property string $choferes_autorizados
@@ -84,7 +85,7 @@ class Rental extends ActiveRecord
     {
         return [
             [['client_id', 'car_id', 'fecha_inicio', 'cantidad_dias'], 'required'],
-            [['client_id', 'car_id', 'correapartir_enabled', 'medio_dia_enabled', 'cantidad_dias'], 'integer'],
+            [['client_id', 'car_id', 'correapartir_enabled', 'medio_dia_enabled', 'cantidad_dias', 'is_async'], 'integer'],
             [['fecha_inicio', 'fecha_final', 'hora_inicio', 'hora_final', 'fecha_correapartir', 'created_at', 'updated_at'], 'safe'],
             [['precio_por_dia', 'medio_dia_valor', 'abono1_monto', 'abono2_monto', 'abono3_monto', 'abono4_monto', 'abono5_monto'], 'number'], // Removido total_precio porque es columna generada
             [['rental_id', 'lugar_entrega', 'lugar_retiro', 'estado_pago', 'ejecutivo', 'ejecutivo_otro', 'abono1_descripcion', 'abono2_descripcion', 'abono3_descripcion', 'abono4_descripcion', 'abono5_descripcion'], 'string', 'max' => 255],
@@ -120,6 +121,7 @@ class Rental extends ActiveRecord
             'precio_por_dia' => 'Precio por Día',
             'medio_dia_enabled' => '1/2 Día',
             'medio_dia_valor' => 'Valor Medio Día',
+            'is_async' => 'Orden Asincrónica',
             'total_precio' => 'Precio Total',
             'condiciones_especiales' => 'Condiciones Especiales',
             'choferes_autorizados' => 'Choferes Autorizados',
@@ -518,6 +520,10 @@ class Rental extends ActiveRecord
      */
     public function validateCarAvailability($attribute, $params)
     {
+        if ((int)$this->is_async === 1) {
+            return;
+        }
+
         if ($this->car_id && $this->fecha_inicio && $this->cantidad_dias) {
             // Asegurar que fecha_final esté calculada antes de la validación
             if (empty($this->fecha_final) && !empty($this->fecha_inicio) && !empty($this->cantidad_dias) && $this->cantidad_dias > 0) {

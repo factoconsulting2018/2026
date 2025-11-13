@@ -23,6 +23,7 @@ class CarAvailability
         $query = Rental::find()
             ->where(['car_id' => $carId])
             ->andWhere(['!=', 'estado_pago', 'cancelado'])
+            ->andWhere(['is_async' => 0])
             ->andWhere([
                 'not',
                 [
@@ -56,6 +57,7 @@ class CarAvailability
         $rentals = Rental::find()
             ->where(['car_id' => $carId])
             ->andWhere(['!=', 'estado_pago', 'cancelado'])
+            ->andWhere(['is_async' => 0])
             ->andWhere(['<=', 'fecha_inicio', $endOfMonth])
             ->andWhere(['>=', 'fecha_final', $startOfMonth])
             ->all();
@@ -134,7 +136,8 @@ class CarAvailability
     {
         $query = Rental::find()
             ->where(['car_id' => $carId])
-            ->andWhere(['!=', 'estado_pago', 'cancelado']);
+            ->andWhere(['!=', 'estado_pago', 'cancelado'])
+            ->andWhere(['is_async' => 0]);
 
         if ($startDate && $endDate) {
             $query->andWhere([

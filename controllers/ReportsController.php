@@ -168,10 +168,11 @@ class ReportsController extends Controller
     {
         $orders = Rental::find()
             ->with(['client', 'car'])
+            ->where(['is_async' => 0])
             ->orderBy(['created_at' => SORT_DESC])
             ->all();
 
-        $totalAmount = Rental::find()->sum('total_precio');
+        $totalAmount = Rental::find()->where(['is_async' => 0])->sum('total_precio');
 
         switch ($format) {
             case 'pdf':
@@ -183,6 +184,26 @@ class ReportsController extends Controller
             default:
                 throw new \Exception('Formato no soportado');
         }
+    }
+
+    /**
+     * Reporte de Órdenes Asincrónicas
+     */
+    public function actionAsyncOrdersReport($format = 'pdf')
+    {
+        $orders = Rental::find()
+            ->with(['client', 'car'])
+            ->where(['is_async' => 1])
+            ->orderBy(['fecha_inicio' => SORT_ASC])
+            ->all();
+
+        $totalAmount = Rental::find()->where(['is_async' => 1])->sum('total_precio');
+
+        if ($format === 'pdf') {
+            return $this->generateAsyncOrdersPdf($orders, $totalAmount);
+        }
+
+        throw new \Exception('Formato no soportado para este reporte.');
     }
 
     /**
@@ -502,6 +523,17 @@ class ReportsController extends Controller
         ]);
 
         return $this->generateSimplePdf($html, 'reporte_ordenes_' . date('Y-m-d_H-i-s') . '.pdf');
+    }
+
+    private function generateAsyncOrdersPdf($orders, $totalAmount)
+    {
+        $html = $this->renderPartial('_async_orders_pdf', [
+            'orders' => $orders,
+            'totalAmount' => $totalAmount,
+            'reportNumber' => $this->generateReportNumber()
+        ]);
+
+        return $this->generateSimplePdf($html, 'reporte_ordenes_asincronicas_' . date('Y-m-d_H-i-s') . '.pdf');
     }
 
     /**

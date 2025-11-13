@@ -44,6 +44,16 @@ $reports = [
         ]
     ],
     [
+        'id' => 6,
+        'name' => 'Reporte de Órdenes Asincrónicas',
+        'description' => 'Listado de órdenes creadas sin validar disponibilidad, ideal para rentas históricas',
+        'icon' => 'history',
+        'color' => 'primary',
+        'actions' => [
+            'pdf' => ['reports/async-orders-report', 'format' => 'pdf']
+        ]
+    ],
+    [
         'id' => 3,
         'name' => 'Reporte de Clientes',
         'description' => 'Listado completo de todos los clientes con toda su información de contacto',
@@ -55,7 +65,7 @@ $reports = [
         ]
     ],
     [
-        'id' => 6,
+        'id' => 7,
         'name' => 'Nuevos Clientes',
         'description' => 'Reporte de nuevos clientes del día 1 al 30 del mes actual con toda su información',
         'icon' => 'person_add',
@@ -67,7 +77,7 @@ $reports = [
         ]
     ],
     [
-        'id' => 7,
+        'id' => 8,
         'name' => 'Clientes Rechazados',
         'description' => 'Reporte de clientes rechazados con toda su información de registro',
         'icon' => 'block',
@@ -78,7 +88,7 @@ $reports = [
         ]
     ],
     [
-        'id' => 8,
+        'id' => 9,
         'name' => 'Reservados',
         'description' => 'Reporte de alquileres reservados con abonos y detalles de pago',
         'icon' => 'bookmark',
@@ -89,7 +99,7 @@ $reports = [
         ]
     ],
     [
-        'id' => 4,
+        'id' => 10,
         'name' => 'Reporte de Ventas por Cliente',
         'description' => 'Análisis de ventas agrupadas por cliente con totales y estadísticas',
         'icon' => 'analytics',
@@ -101,7 +111,7 @@ $reports = [
         ]
     ],
     [
-        'id' => 5,
+        'id' => 11,
         'name' => 'Calendario Mensual',
         'description' => 'Calendario mensual en Excel mostrando los vehículos alquilados por día',
         'icon' => 'calendar_month',

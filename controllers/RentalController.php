@@ -50,6 +50,7 @@ class RentalController extends Controller
         // Crear query base con relaciones
         $query = Rental::find()
             ->with(['client', 'car'])
+            ->where(['is_async' => 0])
             ->orderBy(['id' => SORT_DESC]);
         
         // Aplicar filtro de estado si existe
@@ -146,6 +147,7 @@ class RentalController extends Controller
         $model = new Rental();
 
         if ($model->load(Yii::$app->request->post())) {
+            $model->is_async = 0;
             // Debug: Log de los datos recibidos
             Yii::info('DEBUG - Datos POST recibidos: ' . json_encode(Yii::$app->request->post()), 'rental');
             Yii::info('DEBUG - Modelo cargado - car_id: ' . $model->car_id . ', fecha_inicio: ' . $model->fecha_inicio . ', cantidad_dias: ' . $model->cantidad_dias, 'rental');
@@ -155,7 +157,7 @@ class RentalController extends Controller
                 $model->refresh();
                 
                 // Actualizar estado del carro
-                if ($model->car) {
+                if (!$model->is_async && $model->car) {
                     $model->car->status = 'alquilado';
                     $model->car->save(false);
                 }
@@ -236,7 +238,7 @@ class RentalController extends Controller
             $model = $this->findModel($id);
             
             // Liberar el carro antes de eliminar
-            if ($model->car) {
+            if (!$model->is_async && $model->car) {
                 $model->car->status = 'disponible';
                 if (!$model->car->save(false)) {
                     throw new \Exception('Error al liberar el vehículo');
