@@ -42,19 +42,36 @@ $this->params['breadcrumbs'][] = $this->title;
             </div>
         </div>
 
-        <!-- Vehículos Disponibles -->
+        <!-- Ventas de Hoy (monto) -->
         <div class="col-md-3 mb-4">
-            <div class="card text-white" style="background: linear-gradient(135deg, #3179b8 0%, #2a6199 100%);">
+            <div class="card text-white" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="card-title mb-0"><span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">directions_car</span>Vehículos</h6>
-                            <h2 class="mt-2"><?= $stats['total_cars'] ?></h2>
-                            <small>Disponibles</small>
+                            <h6 class="card-title mb-0"><span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">point_of_sale</span>Ventas de Hoy</h6>
+                            <h2 class="mt-2">₡<?= number_format($stats['today_revenue'], 2) ?></h2>
+                            <small>Monto total vendido</small>
                         </div>
-                        <div class="fs-1"><span class="material-symbols-outlined" style="font-size: 48px;">directions_car</span></div>
+                        <div class="fs-1"><span class="material-symbols-outlined" style="font-size: 48px;">point_of_sale</span></div>
                     </div>
-                    <a href="<?= Url::to(['/car/index']) ?>" class="btn btn-sm btn-light mt-3">Ver todos →</a>
+                    <a href="<?= Url::to(['/reports/ventas2-report', 'format' => 'excel']) ?>" class="btn btn-sm btn-light mt-3">Ver detalle →</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rentas Asincrónicas -->
+        <div class="col-md-3 mb-4">
+            <div class="card text-white" style="background: linear-gradient(135deg, #ff6600 0%, #d9480f 100%);">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title mb-0"><span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">history</span>Rentas Asincrónicas</h6>
+                            <h2 class="mt-2"><?= $stats['async_sales'] ?></h2>
+                            <small>Registradas</small>
+                        </div>
+                        <div class="fs-1"><span class="material-symbols-outlined" style="font-size: 48px;">history</span></div>
+                    </div>
+                    <a href="<?= Url::to(['/async-rental/index']) ?>" class="btn btn-sm btn-light mt-3">Ver órdenes →</a>
                 </div>
             </div>
         </div>
@@ -75,39 +92,22 @@ $this->params['breadcrumbs'][] = $this->title;
                 </div>
             </div>
         </div>
-
-        <!-- Ventas Asincrónicas -->
-        <div class="col-md-3 mb-4">
-            <div class="card text-white" style="background: linear-gradient(135deg, #ff6600 0%, #d9480f 100%);">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="card-title mb-0"><span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">history</span>Rentas Asincrónicas</h6>
-                            <h2 class="mt-2"><?= $stats['async_sales'] ?></h2>
-                            <small>Registradas</small>
-                        </div>
-                        <div class="fs-1"><span class="material-symbols-outlined" style="font-size: 48px;">history</span></div>
-                    </div>
-                    <a href="<?= Url::to(['/async-rental/index']) ?>" class="btn btn-sm btn-light mt-3">Ver órdenes →</a>
-                </div>
-            </div>
-        </div>
     </div>
 
     <div class="row mt-4">
-        <!-- Ventas de Hoy -->
+        <!-- Órdenes de Hoy (cantidad) -->
         <div class="col-md-4 mb-4">
             <div class="card text-white" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="card-title mb-0"><span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">today</span>Ventas de Hoy</h6>
+                            <h6 class="card-title mb-0"><span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">today</span>Órdenes de Hoy</h6>
                             <h2 class="mt-2"><?= $stats['today_sales'] ?></h2>
-                            <small>Órdenes del día</small>
+                            <small>Órdenes generadas</small>
                         </div>
                         <div class="fs-1"><span class="material-symbols-outlined" style="font-size: 48px;">today</span></div>
                     </div>
-                    <a href="<?= Url::to(['/sale/index']) ?>" class="btn btn-sm btn-light mt-3">Ver ventas →</a>
+                    <a href="<?= Url::to(['/rental/index']) ?>" class="btn btn-sm btn-light mt-3">Ver órdenes →</a>
                 </div>
             </div>
         </div>

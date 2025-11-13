@@ -64,10 +64,11 @@ class SiteController extends Controller
     {
         try {
             // Ventas de hoy (usando rentals como "ventas")
-            $todaySales = Rental::find()
+            $todaySalesQuery = Rental::find()
                 ->where(['>=', 'created_at', date('Y-m-d 00:00:00')])
-                ->andWhere(['<', 'created_at', date('Y-m-d 23:59:59')])
-                ->count();
+                ->andWhere(['<', 'created_at', date('Y-m-d 23:59:59')]);
+            $todaySales = $todaySalesQuery->count();
+            $todayRevenue = $todaySalesQuery->sum('total_precio') ?: 0;
             
             // Ventas del mes actual (usando rentals como "ventas")
             $monthStart = date('Y-m-01 00:00:00');
@@ -87,7 +88,8 @@ class SiteController extends Controller
                 'total_cars' => Car::find()->count(),
                 'active_rentals' => Rental::find()->count(),
                 'async_sales' => Rental::find()->where(['is_async' => 1])->count(),
-                'today_sales' => $todaySales, // Ventas de hoy
+                'today_sales' => $todaySales, // Ventas de hoy (cantidad)
+                'today_revenue' => $todayRevenue, // Ventas de hoy (monto)
                 'month_revenue' => $monthSales, // Ventas del mes
                 'pending_orders' => $pendingOrders, // Órdenes pendientes
             ];
@@ -106,6 +108,7 @@ class SiteController extends Controller
                 'active_rentals' => 0,
                 'async_sales' => 0,
                 'today_sales' => 0,
+                'today_revenue' => 0,
                 'month_revenue' => 0,
                 'pending_orders' => 0,
             ];
