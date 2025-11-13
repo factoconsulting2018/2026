@@ -7,7 +7,6 @@ use yii\web\Controller;
 use yii\web\Response;
 use yii\filters\VerbFilter;
 use app\models\LoginForm;
-use app\models\Usuario;
 use app\models\Client;
 use app\models\Car;
 use app\models\Rental;
@@ -87,7 +86,7 @@ class SiteController extends Controller
                 'total_clients' => Client::find()->count(),
                 'total_cars' => Car::find()->count(),
                 'active_rentals' => Rental::find()->count(),
-                'total_users' => Usuario::find()->where(['activo' => 1])->count(),
+                'async_sales' => Rental::find()->where(['is_async' => 1])->count(),
                 'today_sales' => $todaySales, // Ventas de hoy
                 'month_revenue' => $monthSales, // Ventas del mes
                 'pending_orders' => $pendingOrders, // Órdenes pendientes
@@ -105,7 +104,7 @@ class SiteController extends Controller
                 'total_clients' => 0,
                 'total_cars' => 0,
                 'active_rentals' => 0,
-                'total_users' => 1,
+                'async_sales' => 0,
                 'today_sales' => 0,
                 'month_revenue' => 0,
                 'pending_orders' => 0,

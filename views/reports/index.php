@@ -50,7 +50,8 @@ $reports = [
         'icon' => 'history',
         'color' => 'primary',
         'actions' => [
-            'pdf' => ['reports/async-orders-report', 'format' => 'pdf']
+            'pdf' => ['reports/async-orders-report', 'format' => 'pdf'],
+            'excel' => ['reports/async-orders-report', 'format' => 'excel'],
         ]
     ],
     [

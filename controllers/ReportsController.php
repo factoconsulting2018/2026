@@ -11,6 +11,7 @@ use app\models\Client;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Color;
 use PhpOffice\PhpWord\PhpWord;
 use PhpOffice\PhpWord\IOFactory;
@@ -199,11 +200,14 @@ class ReportsController extends Controller
 
         $totalAmount = Rental::find()->where(['is_async' => 1])->sum('total_precio');
 
-        if ($format === 'pdf') {
-            return $this->generateAsyncOrdersPdf($orders, $totalAmount);
+        switch ($format) {
+            case 'pdf':
+                return $this->generateAsyncOrdersPdf($orders, $totalAmount);
+            case 'excel':
+                return $this->generateAsyncOrdersExcel($orders, $totalAmount);
+            default:
+                throw new \Exception('Formato no soportado para este reporte.');
         }
-
-        throw new \Exception('Formato no soportado para este reporte.');
     }
 
     /**
@@ -534,6 +538,76 @@ class ReportsController extends Controller
         ]);
 
         return $this->generateSimplePdf($html, 'reporte_ordenes_asincronicas_' . date('Y-m-d_H-i-s') . '.pdf');
+    }
+
+    private function generateAsyncOrdersExcel($orders, $totalAmount)
+    {
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Órdenes Asincrónicas');
+
+        $row = 1;
+        $reportNumber = $this->generateReportNumber();
+
+        $sheet->setCellValue('A' . $row, 'Reporte de Órdenes Asincrónicas');
+        $sheet->mergeCells('A' . $row . ':H' . $row);
+        $sheet->getStyle('A' . $row)->getFont()->setBold(true)->setSize(16);
+        $sheet->getStyle('A' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $row += 2;
+
+        $sheet->setCellValue('A' . $row, 'Número de Reporte:');
+        $sheet->setCellValue('B' . $row, $reportNumber);
+        $sheet->setCellValue('C' . $row, 'Generado el:');
+        $sheet->setCellValue('D' . $row, date('d/m/Y H:i:s'));
+        $sheet->setCellValue('E' . $row, 'Total de Órdenes:');
+        $sheet->setCellValue('F' . $row, count($orders));
+        $row += 2;
+
+        $headers = [
+            'A' => 'ID',
+            'B' => 'ID Orden',
+            'C' => 'Cliente',
+            'D' => 'Vehículo',
+            'E' => 'Fecha Inicio',
+            'F' => 'Fecha Fin',
+            'G' => 'Días',
+            'H' => 'Total (₡)',
+        ];
+
+        foreach ($headers as $column => $label) {
+            $sheet->setCellValue($column . $row, $label);
+        }
+        $sheet->getStyle('A' . $row . ':H' . $row)->getFont()->setBold(true);
+        $sheet->getStyle('A' . $row . ':H' . $row)->getFill()
+            ->setFillType(Fill::FILL_SOLID)
+            ->getStartColor()->setRGB('FF6600');
+        $sheet->getStyle('A' . $row . ':H' . $row)->getFont()->getColor()->setRGB('FFFFFF');
+        $row++;
+
+        foreach ($orders as $order) {
+            $rentalId = $order->rental_id ?: ('R' . str_pad($order->id, 6, '0', STR_PAD_LEFT));
+            $sheet->setCellValue('A' . $row, $order->id);
+            $sheet->setCellValue('B' . $row, $rentalId);
+            $sheet->setCellValue('C' . $row, $order->client ? $order->client->full_name : 'N/A');
+            $sheet->setCellValue('D' . $row, $order->car ? $order->car->nombre : 'N/A');
+            $sheet->setCellValue('E' . $row, $order->fecha_inicio ? date('d/m/Y', strtotime($order->fecha_inicio)) : 'N/A');
+            $sheet->setCellValue('F' . $row, $order->fecha_final ? date('d/m/Y', strtotime($order->fecha_final)) : 'N/A');
+            $sheet->setCellValue('G' . $row, $order->cantidad_dias);
+            $sheet->setCellValue('H' . $row, (float)($order->total_precio ?: 0));
+            $row++;
+        }
+
+        $sheet->setCellValue('G' . $row, 'Total General:');
+        $sheet->setCellValue('H' . $row, (float)($totalAmount ?: 0));
+        $sheet->getStyle('G' . $row . ':H' . $row)->getFont()->setBold(true);
+        $sheet->getStyle('H' . ($row - count($orders)) . ':H' . $row)->getNumberFormat()
+            ->setFormatCode('#,##0.00');
+
+        foreach (range('A', 'H') as $columnID) {
+            $sheet->getColumnDimension($columnID)->setAutoSize(true);
+        }
+
+        return $this->downloadExcel($spreadsheet, 'reporte_ordenes_asincronicas_' . date('Y-m-d_H-i-s') . '.xlsx');
     }
 
     /**

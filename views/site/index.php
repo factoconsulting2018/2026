@@ -76,19 +76,19 @@ $this->params['breadcrumbs'][] = $this->title;
             </div>
         </div>
 
-        <!-- Total Usuarios -->
+        <!-- Ventas Asincrónicas -->
         <div class="col-md-3 mb-4">
-            <div class="card text-white" style="background: linear-gradient(135deg, #14183d 0%, #0d001e 100%);">
+            <div class="card text-white" style="background: linear-gradient(135deg, #ff6600 0%, #d9480f 100%);">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="card-title mb-0"><span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">person</span>Usuarios</h6>
-                            <h2 class="mt-2"><?= $stats['total_users'] ?></h2>
-                            <small>Activos</small>
+                            <h6 class="card-title mb-0"><span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">history</span>Rentas Asincrónicas</h6>
+                            <h2 class="mt-2"><?= $stats['async_sales'] ?></h2>
+                            <small>Registradas</small>
                         </div>
-                        <div class="fs-1"><span class="material-symbols-outlined" style="font-size: 48px;">person</span></div>
+                        <div class="fs-1"><span class="material-symbols-outlined" style="font-size: 48px;">history</span></div>
                     </div>
-                    <a href="<?= Url::to(['/user/index']) ?>" class="btn btn-sm btn-light mt-3">Ver todos →</a>
+                    <a href="<?= Url::to(['/async-rental/index']) ?>" class="btn btn-sm btn-light mt-3">Ver órdenes →</a>
                 </div>
             </div>
         </div>
