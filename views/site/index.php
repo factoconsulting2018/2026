@@ -23,7 +23,7 @@ $this->params['breadcrumbs'][] = $this->title;
             <p class="lead">Bienvenido al sistema de gestión de alquiler de vehículos</p>
         </div>
         <div class="btn-group" role="group" aria-label="Acciones rápidas">
-            <a href="<?= Url::to(['/notes/index']) ?>" class="btn btn-outline-primary">
+            <a href="<?= Url::to(['/notes/index']) ?>" class="btn" style="background: linear-gradient(135deg, #6f42c1 0%, #5936a2 100%); color: #fff; border: none;">
                 <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 6px;">sticky_note_2</span>
                 Notas
             </a>
