@@ -24,21 +24,13 @@ class CarAvailability
             ->where(['car_id' => $carId])
             ->andWhere(['!=', 'estado_pago', 'cancelado'])
             ->andWhere([
-                'or',
-                // Solapamiento en la fecha de inicio
-                ['and',
-                    ['<=', 'fecha_inicio', $startDate],
-                    ['>=', 'fecha_final', $startDate]
-                ],
-                // Solapamiento en la fecha de fin
-                ['and',
-                    ['<=', 'fecha_inicio', $endDate],
-                    ['>=', 'fecha_final', $endDate]
-                ],
-                // El rango está completamente dentro de otro alquiler
-                ['and',
-                    ['>=', 'fecha_inicio', $startDate],
-                    ['<=', 'fecha_final', $endDate]
+                'not',
+                [
+                    'or',
+                    // El alquiler existente comienza después (o igual) de que termina el nuevo rango
+                    ['>=', 'fecha_inicio', $endDate],
+                    // El alquiler existente termina antes (o igual) de que inicia el nuevo rango
+                    ['<=', 'fecha_final', $startDate],
                 ]
             ]);
 
@@ -146,11 +138,11 @@ class CarAvailability
 
         if ($startDate && $endDate) {
             $query->andWhere([
-                'or',
-                // Solapamiento en la fecha de inicio
-                ['and',
-                    ['<=', 'fecha_inicio', $endDate],
-                    ['>=', 'fecha_final', $startDate]
+                'not',
+                [
+                    'or',
+                    ['>=', 'fecha_inicio', $endDate],
+                    ['<=', 'fecha_final', $startDate],
                 ]
             ]);
         }
