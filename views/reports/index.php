@@ -28,10 +28,7 @@ $reports = [
         'description' => 'Reporte de ventas con colores y diseño mejorado, incluyendo gráficos y análisis visual',
         'icon' => 'bar_chart',
         'color' => 'danger',
-        'actions' => [
-            'pdf' => ['reports/ventas2-report', 'format' => 'pdf'],
-            'excel' => ['reports/ventas2-report', 'format' => 'excel']
-        ]
+        'special' => 'sales'
     ],
     [
         'id' => 2,
@@ -156,7 +153,100 @@ $reports = [
                                 </div>
                             </td>
                             <td>
-                                <?php if (isset($report['special']) && $report['special'] === 'calendar'): ?>
+                                <?php if (isset($report['special']) && $report['special'] === 'sales'): ?>
+                                    <!-- Modal para reporte de ventas -->
+                                    <div class="btn-group" role="group">
+                                        <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#salesModal<?= $report['id'] ?>" title="Generar PDF">
+                                            <span class="material-symbols-outlined" style="font-size: 16px;">picture_as_pdf</span>
+                                        </button>
+                                        <button type="button" class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#salesModal<?= $report['id'] ?>Excel" title="Generar Excel">
+                                            <span class="material-symbols-outlined" style="font-size: 16px;">table_chart</span>
+                                        </button>
+                                    </div>
+                                    
+                                    <!-- Modal PDF -->
+                                    <div class="modal fade" id="salesModal<?= $report['id'] ?>" tabindex="-1">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">
+                                                        <span class="material-symbols-outlined me-2">bar_chart</span>
+                                                        <?= $report['name'] ?> - PDF
+                                                    </h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <form method="get" action="<?= Url::to(['reports/ventas2-report', 'format' => 'pdf']) ?>">
+                                                    <div class="modal-body">
+                                                        <div class="mb-3">
+                                                            <label for="fecha_inicio<?= $report['id'] ?>" class="form-label">Fecha de Inicio del Período:</label>
+                                                            <input type="date" name="fecha_inicio" id="fecha_inicio<?= $report['id'] ?>" class="form-control" required>
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label for="fecha_final<?= $report['id'] ?>" class="form-label">Fecha Final del Período:</label>
+                                                            <input type="date" name="fecha_final" id="fecha_final<?= $report['id'] ?>" class="form-control" required>
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label for="empresa<?= $report['id'] ?>" class="form-label">Seleccione la Empresa:</label>
+                                                            <select name="empresa" id="empresa<?= $report['id'] ?>" class="form-select" required>
+                                                                <option value="Facto Rent a Car">Facto renta car</option>
+                                                                <option value="Moviliza">Moviliza</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                                        <button type="submit" class="btn btn-danger">
+                                                            <span class="material-symbols-outlined me-1" style="font-size: 16px;">download</span>
+                                                            Generar PDF
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Modal Excel -->
+                                    <div class="modal fade" id="salesModal<?= $report['id'] ?>Excel" tabindex="-1">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">
+                                                        <span class="material-symbols-outlined me-2">bar_chart</span>
+                                                        <?= $report['name'] ?> - Excel
+                                                    </h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <form method="get" action="<?= Url::to(['reports/ventas2-report', 'format' => 'excel']) ?>">
+                                                    <div class="modal-body">
+                                                        <div class="mb-3">
+                                                            <label for="fecha_inicio_excel<?= $report['id'] ?>" class="form-label">Fecha de Inicio del Período:</label>
+                                                            <input type="date" name="fecha_inicio" id="fecha_inicio_excel<?= $report['id'] ?>" class="form-control" required>
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label for="fecha_final_excel<?= $report['id'] ?>" class="form-label">Fecha Final del Período:</label>
+                                                            <input type="date" name="fecha_final" id="fecha_final_excel<?= $report['id'] ?>" class="form-control" required>
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label for="empresa_excel<?= $report['id'] ?>" class="form-label">Seleccione la Empresa:</label>
+                                                            <select name="empresa" id="empresa_excel<?= $report['id'] ?>" class="form-select" required>
+                                                                <option value="">Todas las empresas</option>
+                                                                <option value="Facto Rent a Car">Facto renta car</option>
+                                                                <option value="Moviliza">Moviliza</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                                        <button type="submit" class="btn btn-success">
+                                                            <span class="material-symbols-outlined me-1" style="font-size: 16px;">download</span>
+                                                            Generar Excel
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <?php elseif (isset($report['special']) && $report['special'] === 'calendar'): ?>
                                     <!-- Modal para calendario -->
                                     <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#calendarModal<?= $report['id'] ?>">
                                         <span class="material-symbols-outlined" style="font-size: 16px; vertical-align: middle;">calendar_month</span>

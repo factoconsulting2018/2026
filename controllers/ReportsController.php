@@ -45,8 +45,19 @@ class ReportsController extends Controller
     public function actionVentas2Report($format = 'pdf')
     {
         try {
-            // Obtener alquileres organizados por empresa
-            $rentalsByCompany = $this->getRentalsByCompany();
+            // Obtener parámetros del formulario
+            $fechaInicio = Yii::$app->request->get('fecha_inicio');
+            $fechaFinal = Yii::$app->request->get('fecha_final');
+            $empresa = Yii::$app->request->get('empresa');
+            
+            // Validar que las fechas estén presentes
+            if (empty($fechaInicio) || empty($fechaFinal)) {
+                Yii::$app->session->setFlash('error', 'Debe especificar las fechas de inicio y fin del período.');
+                return $this->redirect(['index']);
+            }
+            
+            // Obtener alquileres organizados por empresa con filtros
+            $rentalsByCompany = $this->getRentalsByCompany($fechaInicio, $fechaFinal, $empresa);
             
             // Calcular totales por empresa
             $totalsByCompany = $this->calculateTotalsByCompany($rentalsByCompany);
@@ -54,13 +65,13 @@ class ReportsController extends Controller
             
             switch ($format) {
                 case 'pdf':
-                    return $this->generateVentas2Pdf($rentalsByCompany, $totalsByCompany, $totalAmount);
+                    return $this->generateVentas2Pdf($rentalsByCompany, $totalsByCompany, $totalAmount, $fechaInicio, $fechaFinal, $empresa);
                 case 'excel':
-                    return $this->generateVentas2Excel($rentalsByCompany, $totalsByCompany, $totalAmount);
+                    return $this->generateVentas2Excel($rentalsByCompany, $totalsByCompany, $totalAmount, $fechaInicio, $fechaFinal, $empresa);
                 case 'word':
                     // Generar PDF en lugar de Word por ahora
                     Yii::$app->session->setFlash('info', 'Formato Word no disponible. Generando PDF en su lugar.');
-                    return $this->generateVentas2Pdf($rentalsByCompany, $totalsByCompany, $totalAmount);
+                    return $this->generateVentas2Pdf($rentalsByCompany, $totalsByCompany, $totalAmount, $fechaInicio, $fechaFinal, $empresa);
                 default:
                     throw new \Exception('Formato no soportado');
             }
@@ -320,12 +331,20 @@ class ReportsController extends Controller
     /**
      * Obtener alquileres organizados por empresa
      */
-    private function getRentalsByCompany()
+    private function getRentalsByCompany($fechaInicio = null, $fechaFinal = null, $empresa = null)
     {
-        $rentals = Rental::find()
+        $query = Rental::find()
             ->with(['client', 'car'])
-            ->orderBy(['created_at' => SORT_DESC])
-            ->all();
+            ->orderBy(['created_at' => SORT_DESC]);
+        
+        // Aplicar filtro de fechas si se proporcionan
+        if ($fechaInicio && $fechaFinal) {
+            // Filtrar por fecha_inicio dentro del rango
+            $query->andWhere(['>=', 'fecha_inicio', $fechaInicio])
+                  ->andWhere(['<=', 'fecha_inicio', $fechaFinal]);
+        }
+        
+        $rentals = $query->all();
 
         $rentalsByCompany = [
             'Facto Rent a Car' => [],
@@ -334,11 +353,32 @@ class ReportsController extends Controller
 
         foreach ($rentals as $rental) {
             $company = $rental->car ? $rental->car->empresa : 'Sin Empresa';
+            
+            // Si se especificó una empresa, filtrar solo esa
+            if ($empresa && $company !== $empresa) {
+                continue;
+            }
+            
+            // Normalizar nombre de empresa
+            if ($company === 'Facto renta car' || $company === 'Facto Rent a Car') {
+                $company = 'Facto Rent a Car';
+            }
+            
             if (isset($rentalsByCompany[$company])) {
                 $rentalsByCompany[$company][] = $rental;
             } else {
                 // Si no es una empresa conocida, agregar a Facto por defecto
                 $rentalsByCompany['Facto Rent a Car'][] = $rental;
+            }
+        }
+        
+        // Si se especificó una empresa, eliminar las otras del array
+        if ($empresa) {
+            $normalizedEmpresa = ($empresa === 'Facto renta car') ? 'Facto Rent a Car' : $empresa;
+            foreach ($rentalsByCompany as $key => $value) {
+                if ($key !== $normalizedEmpresa) {
+                    unset($rentalsByCompany[$key]);
+                }
             }
         }
 
@@ -1272,7 +1312,7 @@ class ReportsController extends Controller
     /**
      * Generar PDF para Ventas 2 con colores y diseño mejorado
      */
-    private function generateVentas2Pdf($rentalsByCompany, $totalsByCompany, $totalAmount)
+    private function generateVentas2Pdf($rentalsByCompany, $totalsByCompany, $totalAmount, $fechaInicio = null, $fechaFinal = null, $empresa = null)
     {
         $reportNumber = $this->generateReportNumber();
         $currentDate = date('d/m/Y H:i:s');
@@ -1282,7 +1322,10 @@ class ReportsController extends Controller
             'totalsByCompany' => $totalsByCompany,
             'totalAmount' => $totalAmount,
             'reportNumber' => $reportNumber,
-            'currentDate' => $currentDate
+            'currentDate' => $currentDate,
+            'fechaInicio' => $fechaInicio,
+            'fechaFinal' => $fechaFinal,
+            'empresa' => $empresa
         ]);
         
         $filename = 'Ventas_Reporte_' . date('Y-m-d_H-i-s') . '.pdf';
@@ -1292,7 +1335,7 @@ class ReportsController extends Controller
     /**
      * Generar Excel para Ventas 2 con colores y formato mejorado
      */
-    private function generateVentas2Excel($rentalsByCompany, $totalsByCompany, $totalAmount)
+    private function generateVentas2Excel($rentalsByCompany, $totalsByCompany, $totalAmount, $fechaInicio = null, $fechaFinal = null, $empresa = null)
     {
         try {
             $spreadsheet = new Spreadsheet();
@@ -1335,6 +1378,14 @@ class ReportsController extends Controller
             // Información del reporte
             $sheet->setCellValue('A' . $row, 'Número de Reporte: ' . $this->generateReportNumber());
             $sheet->setCellValue('A' . ($row + 1), 'Fecha de Generación: ' . date('d/m/Y H:i:s'));
+            if ($fechaInicio && $fechaFinal) {
+                $sheet->setCellValue('A' . ($row + 2), 'Período: ' . date('d/m/Y', strtotime($fechaInicio)) . ' - ' . date('d/m/Y', strtotime($fechaFinal)));
+                $row++;
+            }
+            if ($empresa) {
+                $sheet->setCellValue('A' . ($row + 2), 'Empresa: ' . $empresa);
+                $row++;
+            }
             $sheet->setCellValue('A' . ($row + 2), 'Total de Registros: ' . array_sum(array_map('count', $rentalsByCompany)));
             $row += 4;
             
