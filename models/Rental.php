@@ -318,18 +318,18 @@ class Rental extends ActiveRecord
 
     /**
      * Calcula el precio total basado en días y tarifa del vehículo
+     * Si medio_dia_enabled = 1, el total es solo medio_dia_valor (tarifa fija)
      * @return float
      */
     public function calculateTotalPrice()
     {
-        $total = $this->cantidad_dias * $this->precio_por_dia;
-        
-        // Si está habilitado el medio día, agregar su valor
+        // Si está habilitado el medio día, el total es solo el valor del medio día (tarifa fija)
         if (!empty($this->medio_dia_enabled) && $this->medio_dia_valor > 0) {
-            $total += $this->medio_dia_valor;
+            return (float)$this->medio_dia_valor;
         }
         
-        return $total;
+        // Si no, calcular normalmente: días * precio por día
+        return (float)($this->cantidad_dias * $this->precio_por_dia);
     }
 
     /**

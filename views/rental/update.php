@@ -512,23 +512,26 @@ document.addEventListener('DOMContentLoaded', function() {
         // Verificar si es alquiler por horas (mismo día)
         const fechaIni = fechaInicio ? fechaInicio.value : '';
         const fechaFin = fechaFinal ? fechaFinal.value : '';
-        const esPorHoras = fechaIni && fechaFin && fechaIni === fechaFin;
-        
-        if (esPorHoras) {
-            // Si es por horas, el precio total es igual al precio por día (fijo)
-            total = precio;
-        } else {
-            // Si es por días, calcular normalmente: cantidad_dias × precio_por_dia
-            const dias = parseFloat(cantidadDias.value) || 0;
-            total = dias * precio;
-        }
-        
-        // Agregar valor del medio día si está habilitado
+        // Verificar si medio día está habilitado
         const medioDiaEnabled = document.getElementById('rental-medio_dia_enabled');
         const medioDiaValor = document.getElementById('rental-medio_dia_valor');
+        
         if (medioDiaEnabled && medioDiaEnabled.checked && medioDiaValor) {
             const valorMedioDia = parseFloat(medioDiaValor.value) || 0;
-            total += valorMedioDia;
+            // Si medio día está activo, el total es solo el valor del medio día (tarifa fija)
+            total = valorMedioDia;
+        } else {
+            // Si no está activo medio día, calcular normalmente
+            const esPorHoras = fechaIni && fechaFin && fechaIni === fechaFin;
+            
+            if (esPorHoras) {
+                // Si es por horas, el precio total es igual al precio por día (fijo)
+                total = precio;
+            } else {
+                // Si es por días, calcular normalmente: cantidad_dias × precio_por_dia
+                const dias = parseFloat(cantidadDias.value) || 0;
+                total = dias * precio;
+            }
         }
         
         if (total > 0) {
