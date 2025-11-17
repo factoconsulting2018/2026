@@ -861,6 +861,10 @@ $this->registerCss('
         <div class="card-body">
             <form method="get" class="row g-3">
                 <div class="col-md-4">
+                    <label class="form-label"><span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">search</span>Buscar</label>
+                    <input type="text" name="search" class="form-control" placeholder="Buscar por ID, cliente, cédula, teléfono, vehículo o placa..." value="<?= Yii::$app->request->get('search', '') ?>">
+                </div>
+                <div class="col-md-4">
                     <label class="form-label"><span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">category</span>Estado</label>
                     <select name="estado_pago" class="form-select">
                         <option value="">Todos</option>
@@ -869,7 +873,7 @@ $this->registerCss('
                         <option value="reservado" <?= $status === 'reservado' ? 'selected' : '' ?>>Reservado</option>
                     </select>
                 </div>
-                <div class="col-md-3 d-flex align-items-end">
+                <div class="col-md-4 d-flex align-items-end">
                     <button type="submit" class="btn btn-primary me-2"><span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">filter_alt</span>Filtrar</button>
                     <a href="<?= Url::to(['index']) ?>" class="btn btn-secondary"><span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">clear</span>Limpiar</a>
                 </div>

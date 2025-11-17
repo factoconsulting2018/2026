@@ -47,9 +47,8 @@ class RentalController extends Controller
 
     public function actionIndex()
     {
-        // Crear query base con relaciones
+        // Crear query base
         $query = Rental::find()
-            ->with(['client', 'car'])
             ->where(['is_async' => 0])
             ->orderBy(['id' => SORT_DESC]);
         
@@ -57,6 +56,28 @@ class RentalController extends Controller
         $estado_pago = Yii::$app->request->get('estado_pago');
         if ($estado_pago) {
             $query->andWhere(['estado_pago' => $estado_pago]);
+        }
+        
+        // Aplicar búsqueda si existe
+        $search = Yii::$app->request->get('search');
+        if (!empty($search)) {
+            $query->joinWith(['client', 'car']);
+            $query->andWhere([
+                'or',
+                ['like', Rental::tableName() . '.rental_id', $search],
+                ['like', Rental::tableName() . '.id', $search],
+                ['like', Client::tableName() . '.nombre', $search],
+                ['like', Client::tableName() . '.apellido', $search],
+                ['like', Client::tableName() . '.cedula_fisica', $search],
+                ['like', Client::tableName() . '.telefono', $search],
+                ['like', Client::tableName() . '.celular', $search],
+                ['like', Client::tableName() . '.whatsapp', $search],
+                ['like', Car::tableName() . '.nombre', $search],
+                ['like', Car::tableName() . '.placa', $search],
+            ]);
+        } else {
+            // Solo hacer eager loading si no hay búsqueda
+            $query->with(['client', 'car']);
         }
         
         // Asegurar que todos los alquileres tengan rental_id
