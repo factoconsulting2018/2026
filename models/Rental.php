@@ -465,8 +465,10 @@ class Rental extends ActiveRecord
     public function validateDates($attribute, $params)
     {
         if ($this->fecha_inicio && $this->fecha_final) {
-            // Verificar que la fecha de inicio no sea en el pasado
-            if (strtotime($this->fecha_inicio) < strtotime('today')) {
+            $allowPastDates = ((int)$this->is_async === 1);
+
+            // Verificar que la fecha de inicio no sea en el pasado (solo para rentas normales)
+            if (!$allowPastDates && strtotime($this->fecha_inicio) < strtotime('today')) {
                 $this->addError($attribute, 'La fecha de inicio no puede ser en el pasado.');
                 return;
             }
