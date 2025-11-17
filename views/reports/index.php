@@ -36,9 +36,7 @@ $reports = [
         'description' => 'Reporte detallado de todas las órdenes de venta con información completa',
         'icon' => 'shopping_cart',
         'color' => 'success',
-        'actions' => [
-            'excel' => ['reports/orders-report', 'format' => 'excel']
-        ]
+        'special' => 'orders'
     ],
     [
         'id' => 6,
@@ -233,6 +231,45 @@ $reports = [
                                                                 <option value="Facto Rent a Car">Facto renta car</option>
                                                                 <option value="Moviliza">Moviliza</option>
                                                             </select>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                                        <button type="submit" class="btn btn-success">
+                                                            <span class="material-symbols-outlined me-1" style="font-size: 16px;">download</span>
+                                                            Generar Excel
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <?php elseif (isset($report['special']) && $report['special'] === 'orders'): ?>
+                                    <!-- Modal para reporte de órdenes -->
+                                    <button type="button" class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#ordersModal<?= $report['id'] ?>" title="Generar Excel">
+                                        <span class="material-symbols-outlined" style="font-size: 16px;">table_chart</span>
+                                    </button>
+                                    
+                                    <!-- Modal Excel -->
+                                    <div class="modal fade" id="ordersModal<?= $report['id'] ?>" tabindex="-1">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">
+                                                        <span class="material-symbols-outlined me-2">shopping_cart</span>
+                                                        <?= $report['name'] ?> - Excel
+                                                    </h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <form method="get" action="<?= Url::to(['reports/orders-report', 'format' => 'excel']) ?>">
+                                                    <div class="modal-body">
+                                                        <div class="mb-3">
+                                                            <label for="fecha_inicio_orders<?= $report['id'] ?>" class="form-label">Fecha de Inicio del Período:</label>
+                                                            <input type="date" name="fecha_inicio" id="fecha_inicio_orders<?= $report['id'] ?>" class="form-control" required value="<?= date('Y-m-d', strtotime('-1 month')) ?>">
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label for="fecha_final_orders<?= $report['id'] ?>" class="form-label">Fecha Final del Período:</label>
+                                                            <input type="date" name="fecha_final" id="fecha_final_orders<?= $report['id'] ?>" class="form-control" required value="<?= date('Y-m-d') ?>">
                                                         </div>
                                                     </div>
                                                     <div class="modal-footer">

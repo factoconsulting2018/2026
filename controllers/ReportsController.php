@@ -178,21 +178,43 @@ class ReportsController extends Controller
      */
     public function actionOrdersReport($format = 'pdf')
     {
-        $orders = Rental::find()
+        // Obtener parámetros del formulario
+        $fechaInicio = Yii::$app->request->get('fecha_inicio');
+        $fechaFinal = Yii::$app->request->get('fecha_final');
+        
+        // Si no se proporcionan fechas, usar valores por defecto (1 mes antes hasta hoy)
+        if (empty($fechaInicio)) {
+            $fechaInicio = date('Y-m-d', strtotime('-1 month'));
+        }
+        if (empty($fechaFinal)) {
+            $fechaFinal = date('Y-m-d');
+        }
+        
+        $query = Rental::find()
             ->with(['client', 'car'])
-            ->where(['is_async' => 0])
-            ->orderBy(['created_at' => SORT_DESC])
-            ->all();
-
-        $totalAmount = Rental::find()->where(['is_async' => 0])->sum('total_precio');
+            ->where(['is_async' => 0]);
+        
+        // Aplicar filtro de fechas
+        if ($fechaInicio && $fechaFinal) {
+            $query->andWhere(['>=', 'created_at', $fechaInicio . ' 00:00:00'])
+                  ->andWhere(['<=', 'created_at', $fechaFinal . ' 23:59:59']);
+        }
+        
+        $orders = $query->orderBy(['created_at' => SORT_DESC])->all();
+        
+        // Calcular total solo de los registros filtrados
+        $totalAmount = 0;
+        foreach ($orders as $order) {
+            $totalAmount += $order->total_precio ?? 0;
+        }
 
         switch ($format) {
             case 'pdf':
-                return $this->generateOrdersPdf($orders, $totalAmount);
+                return $this->generateOrdersPdf($orders, $totalAmount, $fechaInicio, $fechaFinal);
             case 'excel':
-                return $this->generateOrdersExcel($orders, $totalAmount);
+                return $this->generateOrdersExcel($orders, $totalAmount, $fechaInicio, $fechaFinal);
             case 'word':
-                return $this->generateOrdersWord($orders, $totalAmount);
+                return $this->generateOrdersWord($orders, $totalAmount, $fechaInicio, $fechaFinal);
             default:
                 throw new \Exception('Formato no soportado');
         }
@@ -558,12 +580,14 @@ class ReportsController extends Controller
     /**
      * Generar PDF de Órdenes
      */
-    private function generateOrdersPdf($orders, $totalAmount)
+    private function generateOrdersPdf($orders, $totalAmount, $fechaInicio = null, $fechaFinal = null)
     {
         $html = $this->renderPartial('_orders_pdf', [
             'orders' => $orders,
             'totalAmount' => $totalAmount,
-            'reportNumber' => $this->generateReportNumber()
+            'reportNumber' => $this->generateReportNumber(),
+            'fechaInicio' => $fechaInicio,
+            'fechaFinal' => $fechaFinal
         ]);
 
         return $this->generateSimplePdf($html, 'reporte_ordenes_' . date('Y-m-d_H-i-s') . '.pdf');
@@ -653,23 +677,40 @@ class ReportsController extends Controller
     /**
      * Generar Excel de Órdenes
      */
-    private function generateOrdersExcel($orders, $totalAmount)
+    private function generateOrdersExcel($orders, $totalAmount, $fechaInicio = null, $fechaFinal = null)
     {
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Reporte de Órdenes');
 
+        $row = 1;
+        $reportNumber = $this->generateReportNumber();
+        
+        // Información del reporte
+        $sheet->setCellValue('A' . $row, 'REPORTE DE ÓRDENES');
+        $sheet->mergeCells('A' . $row . ':T' . $row);
+        $sheet->getStyle('A' . $row)->getFont()->setBold(true)->setSize(16);
+        $sheet->getStyle('A' . $row)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+        $row++;
+        
+        $sheet->setCellValue('A' . $row, 'Número de Reporte: ' . $reportNumber);
+        $row++;
+        $sheet->setCellValue('A' . $row, 'Fecha de Generación: ' . date('d/m/Y H:i:s'));
+        $row++;
+        if ($fechaInicio && $fechaFinal) {
+            $sheet->setCellValue('A' . $row, 'Período: ' . date('d/m/Y', strtotime($fechaInicio)) . ' - ' . date('d/m/Y', strtotime($fechaFinal)));
+            $row++;
+        }
+        $row++;
+
         // Encabezados para alquileres
         $headers = ['ID', 'ID Alquiler', 'Cliente', 'Cédula', 'Teléfono', 'Email', 'Vehículo', 'Placa', 'Fecha Inicio', 'Fecha Fin', 'Cantidad Días', 'Precio por Día (₡)', 'Valor Medio Día (₡)', 'Total (₡)', 'Estado Pago', 'Comprobante', 'Ejecutivo', 'Lugar Entrega', 'Lugar Retiro', 'Fecha Creación'];
         $col = 'A';
         foreach ($headers as $header) {
-            $sheet->setCellValue($col . '1', $header);
+            $sheet->setCellValue($col . $row, $header);
             $col++;
         }
-
-        // Datos
-        $row = 2;
-        $reportNumber = $this->generateReportNumber();
+        $row++;
         foreach ($orders as $order) {
             $rentalId = $order->rental_id ?: 'R' . str_pad($order->id, 6, '0', STR_PAD_LEFT);
             $sheet->setCellValue('A' . $row, $order->id);
@@ -740,7 +781,7 @@ class ReportsController extends Controller
     /**
      * Generar Word de Órdenes
      */
-    private function generateOrdersWord($orders, $totalAmount)
+    private function generateOrdersWord($orders, $totalAmount, $fechaInicio = null, $fechaFinal = null)
     {
         $phpWord = new PhpWord();
         $section = $phpWord->addSection();
@@ -749,6 +790,9 @@ class ReportsController extends Controller
         $section->addText('REPORTE DE ÓRDENES', ['bold' => true, 'size' => 16]);
         $section->addText('Número de Reporte: ' . $this->generateReportNumber(), ['bold' => true]);
         $section->addText('Fecha: ' . date('d/m/Y H:i:s'));
+        if ($fechaInicio && $fechaFinal) {
+            $section->addText('Período: ' . date('d/m/Y', strtotime($fechaInicio)) . ' - ' . date('d/m/Y', strtotime($fechaFinal)));
+        }
         $section->addTextBreak();
 
         // Tabla
