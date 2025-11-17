@@ -479,9 +479,9 @@ class Rental extends ActiveRecord
                 return;
             }
 
-            // Si fecha_inicio = fecha_final (mismo día): calcular horas
+            // Si fecha_inicio = fecha_final (mismo día): es alquiler por horas/medio día
             if ($this->fecha_inicio === $this->fecha_final || strtotime($this->fecha_final) === strtotime($this->fecha_inicio)) {
-                // Alquiler por horas - calcular horas entre hora_inicio y hora_final
+                // Alquiler por horas - validar horas
                 if (!empty($this->hora_inicio) && !empty($this->hora_final)) {
                     try {
                         $horaInicio = new \DateTime($this->fecha_inicio . ' ' . $this->hora_inicio);
@@ -493,19 +493,17 @@ class Rental extends ActiveRecord
                             return;
                         }
                         
-                        // Calcular diferencia en horas
-                        $diff = $horaInicio->diff($horaFinal);
-                        $horas = ($diff->days * 24) + $diff->h + ($diff->i / 60); // Incluir minutos como fracción
-                        $this->cantidad_dias = (int)ceil($horas); // Redondear hacia arriba a horas enteras
-                        
-                        // Si es menos de 1 hora, establecer como 1 hora mínima
-                        if ($this->cantidad_dias < 1) {
-                            $this->cantidad_dias = 1;
-                        }
+                        // Si es alquiler por horas en el mismo día, cantidad_dias = 1 (no las horas totales)
+                        // Si está marcado como medio día, podría ser 0.5, pero por ahora usamos 1
+                        $this->cantidad_dias = 1;
                     } catch (\Exception $e) {
-                        // Si hay error, no calcular automáticamente
+                        // Si hay error, establecer como 1 día por defecto
+                        $this->cantidad_dias = 1;
                         Yii::warning('Error al calcular horas: ' . $e->getMessage());
                     }
+                } else {
+                    // Si no hay horas, establecer como 1 día por defecto
+                    $this->cantidad_dias = 1;
                 }
             } else {
                 // Alquiler por días - calcular días correctamente

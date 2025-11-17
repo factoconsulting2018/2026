@@ -73,11 +73,19 @@ $this->params['breadcrumbs'][] = $this->title;
                             [
                                 'attribute' => 'cantidad_dias',
                                 'value' => function($model) {
-                                    $texto = $model->cantidad_dias . ' días';
-                                    if ((!empty($model->medio_dia_enabled) || $model->medio_dia_enabled == 1) && !empty($model->medio_dia_valor) && $model->medio_dia_valor > 0) {
-                                        $texto .= ' + 1/2 día (¢' . number_format($model->medio_dia_valor, 0) . ')';
+                                    // Si es alquiler por horas (mismo día) y medio día está activo, mostrar solo "1/2 día"
+                                    $esMismoDia = ($model->fecha_inicio === $model->fecha_final || strtotime($model->fecha_inicio) === strtotime($model->fecha_final));
+                                    $medioDiaActivo = (!empty($model->medio_dia_enabled) || $model->medio_dia_enabled == 1) && !empty($model->medio_dia_valor) && $model->medio_dia_valor > 0;
+                                    
+                                    if ($esMismoDia && $medioDiaActivo) {
+                                        return '1/2 día (¢' . number_format($model->medio_dia_valor, 0) . ')';
+                                    } elseif ($medioDiaActivo) {
+                                        return $model->cantidad_dias . ' días + 1/2 día (¢' . number_format($model->medio_dia_valor, 0) . ')';
+                                    } elseif ($esMismoDia) {
+                                        return '1 día (por horas)';
+                                    } else {
+                                        return $model->cantidad_dias . ' días';
                                     }
-                                    return $texto;
                                 },
                             ],
                             [

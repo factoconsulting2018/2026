@@ -718,12 +718,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         return;
                     }
                     
-                    // Calcular diferencia en horas
-                    const diffMs = horaFinDate - horaIniDate;
-                    const diffHours = Math.ceil(diffMs / (1000 * 60 * 60)); // Redondear hacia arriba
-                    
-                    // Guardar horas en cantidad_dias (mínimo 1 hora)
-                    cantidadDias.value = diffHours > 0 ? diffHours : 1;
+                    // Si es alquiler por horas en el mismo día, cantidad_dias = 1 (no las horas totales)
+                    // El cálculo del precio se maneja en calcularTotal() según si medio_dia está activo
+                    cantidadDias.value = 1;
                     cantidadDias.min = 1;
                 } else {
                     // Si no hay horas, establecer 1 hora por defecto
