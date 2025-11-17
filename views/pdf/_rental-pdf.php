@@ -199,7 +199,7 @@ $montoReserva = $total;
     <tr>
         <!-- Columna Izquierda -->
         <td style="width:50%; padding-right:8px;">
-            <div class="b" style="margin-bottom:2px;">ID Alquiler: <span style="font-weight: bold; color: #0f1d41;"><?= htmlspecialchars($rentalId) ?></span></div>
+            <div class="b" style="margin-bottom:2px;">Orden de Alquiler: <span style="font-weight: bold; color: #0f1d41;"><?= htmlspecialchars($rentalId) ?></span></div>
             <div class="b">Cliente</div>
             <div style="background-color: #0066CC; color: #FFFFFF; padding: 4px 8px; display: inline-block; border-radius: 3px;"><?= $clienteNombre ?></div>
             <?php if (!empty($vencimientoLicencia) || !empty($vencimientoCedula)): ?>
