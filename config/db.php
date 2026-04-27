@@ -11,6 +11,13 @@
 
 class EnvironmentDetector
 {
+    private const DEFAULT_HOST = 'localhost';
+    private const DEFAULT_PORT = '3306';
+    private const DEFAULT_USER = 'factorentacar_user';
+    private const DEFAULT_DB = 'factorentacar_db';
+    private const DEFAULT_PASSWORD = 'factorenta2024!';
+    private const PRODUCTION_PASSWORD = 'Fact0renta#2026!AWS';
+
     /**
      * Detecta si estamos en un contenedor Docker
      */
@@ -48,34 +55,52 @@ class EnvironmentDetector
      */
     public static function getDatabaseConfig()
     {
+        $envHost = getenv('DB_HOST');
+        $envPort = getenv('DB_PORT');
+        $envUser = getenv('DB_USERNAME') ?: getenv('DB_USER');
+        $envPassword = getenv('DB_PASSWORD');
+        $envDbName = getenv('DB_DATABASE') ?: getenv('DB_NAME');
+
+        // Priorizar variables de entorno cuando existan para evitar detecciones ambiguas.
+        if ($envHost || $envPort || $envUser || $envPassword || $envDbName) {
+            return [
+                'host' => $envHost ?: self::DEFAULT_HOST,
+                'port' => $envPort ?: self::DEFAULT_PORT,
+                'username' => $envUser ?: self::DEFAULT_USER,
+                'password' => $envPassword ?: self::PRODUCTION_PASSWORD,
+                'dbname' => $envDbName ?: self::DEFAULT_DB,
+                'environment' => getenv('APP_ENV') ?: 'env'
+            ];
+        }
+
         if (self::isDocker()) {
             // Entorno Docker - Desarrollo
             return [
                 'host' => 'mysql',
-                'port' => '3306',
-                'username' => 'factorentacar_user',
-                'password' => 'factorenta2024!',
-                'dbname' => 'factorentacar_db',
+                'port' => self::DEFAULT_PORT,
+                'username' => self::DEFAULT_USER,
+                'password' => self::DEFAULT_PASSWORD,
+                'dbname' => self::DEFAULT_DB,
                 'environment' => 'docker'
             ];
         } elseif (self::isLinuxProduction()) {
             // Entorno Linux - Producción
             return [
-                'host' => 'localhost',
-                'port' => '3306',
-                'username' => 'factorentacar_user',
-                'password' => getenv('DB_PASSWORD') ?: 'TU_CONTRASEÑA_SEGURA_PRODUCCION',
-                'dbname' => 'factorentacar_db',
+                'host' => self::DEFAULT_HOST,
+                'port' => self::DEFAULT_PORT,
+                'username' => self::DEFAULT_USER,
+                'password' => getenv('DB_PASSWORD') ?: self::PRODUCTION_PASSWORD,
+                'dbname' => self::DEFAULT_DB,
                 'environment' => 'production'
             ];
         } else {
             // Entorno Windows - Desarrollo local
             return [
-                'host' => 'localhost',
+                'host' => self::DEFAULT_HOST,
                 'port' => '3309', // Puerto externo de Docker
-                'username' => 'factorentacar_user',
-                'password' => 'factorenta2024!',
-                'dbname' => 'factorentacar_db',
+                'username' => self::DEFAULT_USER,
+                'password' => self::DEFAULT_PASSWORD,
+                'dbname' => self::DEFAULT_DB,
                 'environment' => 'windows'
             ];
         }
