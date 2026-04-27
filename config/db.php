@@ -16,7 +16,7 @@ class EnvironmentDetector
     private const DEFAULT_USER = 'factorentacar_user';
     private const DEFAULT_DB = 'factorentacar_db';
     private const DEFAULT_PASSWORD = 'factorenta2024!';
-    private const PRODUCTION_PASSWORD = 'Fact0renta#2026!AWS';
+    private const PRODUCTION_PASSWORD = 'Ardillita60+';
 
     /**
      * Detecta si estamos en un contenedor Docker
