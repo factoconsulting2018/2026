@@ -34,7 +34,7 @@ services:
       MYSQL_ROOT_PASSWORD: root123
       MYSQL_DATABASE: factorentacar_db
       MYSQL_USER: factorentacar_user
-      MYSQL_PASSWORD: factorenta2024!
+      MYSQL_PASSWORD: Ardillita60+
       MYSQL_CHARSET: utf8mb4
       MYSQL_COLLATION: utf8mb4_unicode_ci
     volumes:
