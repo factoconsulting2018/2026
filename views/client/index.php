@@ -6,7 +6,6 @@
 /** @var string $estado */
 
 use yii\helpers\Html;
-use yii\helpers\StringHelper;
 use yii\helpers\Url;
 use yii\widgets\LinkPager;
 use yii\widgets\ListView;
@@ -16,19 +15,15 @@ $this->title = 'Gestión de Clientes';
 $this->params['breadcrumbs'][] = $this->title;
 
 $this->registerCss('
-    .client-index-mobile .nav-tabs .nav-link {
-        font-size: 0.8rem;
-        padding: 0.45rem 0.65rem;
-        max-width: 42vw;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+    .client-index-mobile .accordion-button {
+        white-space: normal;
+        line-height: 1.3;
+        font-size: 0.95rem;
+        padding-top: 0.65rem;
+        padding-bottom: 0.65rem;
     }
-    .client-index-mobile .nav-tabs .nav-link.active {
+    .client-index-mobile .accordion-button:not(.collapsed) {
         font-weight: 600;
-    }
-    .client-mobile-tab-scroll {
-        -webkit-overflow-scrolling: touch;
     }
 ');
 ?>
@@ -119,31 +114,33 @@ $this->registerCss('
         if (count($models) === 0): ?>
             <p class="text-muted text-center py-4 mb-0">No se encontraron clientes con los filtros seleccionados.</p>
         <?php else: ?>
-            <ul class="nav nav-tabs client-mobile-tab-scroll flex-nowrap overflow-auto mb-0" role="tablist">
+            <div class="accordion accordion-flush border rounded overflow-hidden" id="clientMobileAccordion">
                 <?php foreach ($models as $i => $model):
-                    $full = (string) $model->fullNameUppercase;
-                    $label = StringHelper::truncate($full, 24);
-                    $tabId = 'client-m-tab-' . $model->id;
-                    $paneId = 'client-m-pane-' . $model->id;
+                    $accId = 'client-acc-' . $model->id;
+                    $headingId = 'client-acc-heading-' . $model->id;
                     ?>
-                    <li class="nav-item text-nowrap" role="presentation">
-                        <button class="nav-link <?= $i === 0 ? 'active' : '' ?>" id="<?= Html::encode($tabId) ?>"
-                                data-bs-toggle="tab" data-bs-target="#<?= Html::encode($paneId) ?>"
-                                type="button" role="tab" aria-controls="<?= Html::encode($paneId) ?>"
-                                aria-selected="<?= $i === 0 ? 'true' : 'false' ?>">
-                            <?= Html::encode($label) ?>
-                        </button>
-                    </li>
-                <?php endforeach; ?>
-            </ul>
-            <div class="tab-content border border-top-0 rounded-bottom bg-white px-2 py-3">
-                <?php foreach ($models as $i => $model):
-                    $paneId = 'client-m-pane-' . $model->id;
-                    $tabId = 'client-m-tab-' . $model->id;
-                    ?>
-                    <div class="tab-pane fade <?= $i === 0 ? 'show active' : '' ?>" id="<?= Html::encode($paneId) ?>"
-                         role="tabpanel" aria-labelledby="<?= Html::encode($tabId) ?>">
-                        <?= $this->render('_list_item_mobile_pane', ['model' => $model]) ?>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="<?= Html::encode($headingId) ?>">
+                            <button class="accordion-button <?= $i !== 0 ? 'collapsed' : '' ?>"
+                                    type="button"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#<?= Html::encode($accId) ?>"
+                                    aria-expanded="<?= $i === 0 ? 'true' : 'false' ?>"
+                                    aria-controls="<?= Html::encode($accId) ?>">
+                                <?= Html::encode($model->fullNameUppercase) ?>
+                            </button>
+                        </h2>
+                        <div id="<?= Html::encode($accId) ?>"
+                             class="accordion-collapse collapse <?= $i === 0 ? 'show' : '' ?>"
+                             aria-labelledby="<?= Html::encode($headingId) ?>"
+                             data-bs-parent="#clientMobileAccordion">
+                            <div class="accordion-body bg-white px-2 py-3">
+                                <?= $this->render('_list_item_mobile_pane', [
+                                    'model' => $model,
+                                    'hideHeader' => true,
+                                ]) ?>
+                            </div>
+                        </div>
                     </div>
                 <?php endforeach; ?>
             </div>

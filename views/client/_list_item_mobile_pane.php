@@ -1,13 +1,16 @@
 <?php
 /** @var yii\web\View $this */
 /** @var app\models\Client $model */
+/** @var bool $hideHeader Ocultar título duplicado (p. ej. en acordeón móvil donde el nombre va en el botón) */
 
 use yii\helpers\Html;
 use yii\helpers\Json;
 use yii\helpers\Url;
 
+$hideHeader = !empty($hideHeader);
 ?>
 <div class="client-mobile-pane">
+    <?php if (!$hideHeader): ?>
     <div class="mb-3 text-center">
         <h5 class="mb-2">
             <?= Html::encode($model->fullNameUppercase) ?>
@@ -24,6 +27,21 @@ use yii\helpers\Url;
             <?php endif; ?>
         </h5>
     </div>
+    <?php else: ?>
+    <div class="d-flex flex-wrap justify-content-center gap-1 mb-3">
+        <?php if ($model->status === 'active'): ?>
+            <span class="badge bg-success">Activo</span>
+        <?php else: ?>
+            <span class="badge bg-secondary">Inactivo</span>
+        <?php endif; ?>
+        <?php if ($model->es_cliente_facto): ?>
+            <span class="badge bg-primary">Facto</span>
+        <?php endif; ?>
+        <?php if ($model->es_aliado): ?>
+            <span class="badge bg-info">Aliado</span>
+        <?php endif; ?>
+    </div>
+    <?php endif; ?>
     <div class="client-mobile-details small">
         <p class="mb-2"><strong>🆔 Cédula:</strong> <?= Html::encode($model->cedula_fisica) ?></p>
         <p class="mb-2"><strong>📱 WhatsApp:</strong> <?= Html::encode($model->whatsapp) ?></p>
