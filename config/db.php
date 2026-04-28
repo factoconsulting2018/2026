@@ -9,13 +9,14 @@
  * - Windows: Desarrollo local
  */
 
+if (!class_exists('EnvironmentDetector', false)) {
 class EnvironmentDetector
 {
     private const DEFAULT_HOST = 'localhost';
     private const DEFAULT_PORT = '3306';
     private const DEFAULT_USER = 'factorentacar_user';
     private const DEFAULT_DB = 'factorentacar_db';
-    private const DEFAULT_PASSWORD = 'factorenta2024!';
+    private const DEFAULT_PASSWORD = 'Ardillita60+';
     private const PRODUCTION_PASSWORD = 'Ardillita60+';
 
     /**
@@ -105,6 +106,7 @@ class EnvironmentDetector
             ];
         }
     }
+}
 }
 
 // Obtener configuración según el entorno detectado

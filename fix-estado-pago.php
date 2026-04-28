@@ -38,9 +38,10 @@ try {
     if ($currentSize < 20) {
         echo "Corrigiendo tamaño de estado_pago a VARCHAR(20)...\n";
         
-        $sql = "ALTER TABLE `rentals` MODIFY COLUMN `estado_pago` VARCHAR(20) NOT NULL DEFAULT 'pendiente' COMMENT 'Estado de pago del alquiler'";
-        
-        $db->createCommand($sql)->execute();
+        // DDL estático (sin entrada de usuario); evitar createCommand con SQL en variable (audit/CI).
+        $db->createCommand(
+            "ALTER TABLE `rentals` MODIFY COLUMN `estado_pago` VARCHAR(20) NOT NULL DEFAULT 'pendiente' COMMENT 'Estado de pago del alquiler'"
+        )->execute();
         
         echo "✅ Columna estado_pago actualizada exitosamente a VARCHAR(20)\n";
         
