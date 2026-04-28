@@ -25,7 +25,98 @@ $this->registerCss('
     .client-index-mobile .accordion-button:not(.collapsed) {
         font-weight: 600;
     }
+
+    .client-pagination-bar {
+        padding: 14px 18px;
+        background: #fff;
+        border: 1px solid #e6ecf3;
+        border-radius: 14px;
+        box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+    }
+
+    .client-pagination-summary {
+        font-size: 0.95rem;
+        color: #5b6b82;
+        font-weight: 500;
+    }
+
+    .pagination-modern {
+        gap: 6px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .pagination-modern .page-item .page-link {
+        min-width: 40px;
+        height: 40px;
+        padding: 0 14px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+        border: 1px solid #d9e2ec;
+        background: #ffffff;
+        color: #1b305b;
+        font-weight: 600;
+        transition: all 0.2s ease;
+        box-shadow: none;
+    }
+
+    .pagination-modern .page-item .page-link:hover {
+        background: #eef4ff;
+        border-color: #b8cae6;
+        color: #163055;
+    }
+
+    .pagination-modern .page-item.active .page-link {
+        background: linear-gradient(135deg, #1b305b 0%, #22487a 100%);
+        border-color: #1b305b;
+        color: #ffffff;
+        box-shadow: 0 6px 14px rgba(27, 48, 91, 0.22);
+    }
+
+    .pagination-modern .page-item.disabled .page-link {
+        background: #f8fafc;
+        border-color: #e2e8f0;
+        color: #9aa8bc;
+    }
+
+    @media (max-width: 768px) {
+        .client-pagination-bar {
+            padding: 12px;
+        }
+
+        .pagination-modern .page-item .page-link {
+            min-width: 42px;
+            height: 42px;
+            border-radius: 10px;
+        }
+
+        .client-pagination-summary {
+            font-size: 0.9rem;
+        }
+    }
 ');
+
+$pagination = $dataProvider->pagination;
+$start = $pagination->totalCount > 0 ? $pagination->offset + 1 : 0;
+$end = $pagination->totalCount > 0
+    ? min($pagination->offset + $pagination->limit, $pagination->totalCount)
+    : 0;
+
+$pagerConfig = [
+    'pagination' => $pagination,
+    'options' => ['class' => 'pagination pagination-modern mb-0'],
+    'linkOptions' => ['class' => 'page-link'],
+    'pageCssClass' => 'page-item',
+    'prevPageCssClass' => 'page-item',
+    'nextPageCssClass' => 'page-item',
+    'activePageCssClass' => 'active',
+    'disabledPageCssClass' => 'disabled',
+    'prevPageLabel' => '«',
+    'nextPageLabel' => '»',
+    'maxButtonCount' => 5,
+];
 ?>
 
 <div class="client-index">
@@ -102,9 +193,10 @@ $this->registerCss('
         <?= ListView::widget([
             'dataProvider' => $dataProvider,
             'itemView' => '_list_item',
-            'layout' => "{items}\n<div class='d-flex justify-content-center mt-4'>{pager}</div>",
+            'layout' => "{items}\n<div class='client-pagination-bar d-flex flex-column flex-md-row justify-content-between align-items-center gap-3 mt-4'><div class='client-pagination-summary'>Mostrando {$start} - {$end} de {$pagination->totalCount} clientes</div>{pager}</div>",
             'itemOptions' => ['class' => ''],
             'emptyText' => '<p class="text-muted text-center py-4 mb-0">No se encontraron clientes con los filtros seleccionados.</p>',
+            'pager' => $pagerConfig,
         ]); ?>
     </div>
 
@@ -145,17 +237,11 @@ $this->registerCss('
                 <?php endforeach; ?>
             </div>
         <?php endif; ?>
-        <div class="d-flex justify-content-center mt-4">
-            <?= LinkPager::widget([
-                'pagination' => $dataProvider->pagination,
-                'options' => ['class' => 'pagination'],
-                'linkOptions' => ['class' => 'page-link'],
-                'pageCssClass' => 'page-item',
-                'prevPageCssClass' => 'page-item',
-                'nextPageCssClass' => 'page-item',
-                'activePageCssClass' => 'active',
-                'disabledPageCssClass' => 'disabled',
-            ]) ?>
+        <div class="client-pagination-bar d-flex flex-column align-items-center gap-3 mt-4">
+            <div class="client-pagination-summary text-center">
+                Mostrando <?= $start ?> - <?= $end ?> de <?= $pagination->totalCount ?> clientes
+            </div>
+            <?= LinkPager::widget($pagerConfig) ?>
         </div>
     </div>
 

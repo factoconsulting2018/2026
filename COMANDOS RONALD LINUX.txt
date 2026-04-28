@@ -1,0 +1,55 @@
+13.223.69.123
+cd /var/www/html/app/factorentacar
+git fetch origin --prune
+git checkout master
+git reset --hard origin/master
+git clean -fd
+
+docker-compose ps
+
+docker-compose exec -T app php yii migrate --interactive=0
+
+docker-compose exec -T app php yii migrate/history 20
+
+docker exec -it factorentacar_yii2 php yii migrate --interactive=0
+docker exec -it factorentacar_yii2 php yii migrate/new
+
+--------------
+Saber cual fue la ultima actualización de migraciones
+cd /var/www/html/app/factorentacar
+git log -1 --format="%h %ci %s"
+
+------------
+
+resuemn
+SSH / sistema
+cd /var/www/html/app/factorentacar
+Docker (estado y reinicio)
+docker-compose ps
+docker-compose restart app
+docker-compose down
+docker-compose up -d
+Git (traer cambios del repo)
+git pull origin master
+(Cuando falló por config/db.php, la solución típica que ya veníamos usando es git stash / backup + pull; hoy tu captura mostró que al final lograste git pull con actualización de archivos.)
+
+Yii (dentro del contenedor app)
+docker exec -it factorentacar_yii2 php yii migrate/history | head -n 30
+docker exec -it factorentacar_yii2 php yii cache/flush-all
+MySQL (dentro del contenedor mysql)
+docker exec -it factorentacar_yii2_mysql sh -lc 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "SHOW DATABASES;"'
+docker exec -it factorentacar_yii2_mysql sh -lc 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "USE factorentacar_db; SHOW TABLES;"'
+docker exec -it factorentacar_yii2_mysql sh -lc 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "USE README_TO_RECOVER; SHOW TABLES;"'
+docker exec -it factorentacar_yii2_mysql sh -lc 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "USE README_TO_RECOVER; SELECT * FROM README;"'
+Verificación de usuario MySQL (diagnóstico)
+docker exec -it factorentacar_yii2_mysql sh -lc 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "SELECT user, host, plugin FROM mysql.user WHERE user=\"factorentacar_user\";"'
+Diagnóstico de conectividad app→MySQL (PDO)
+docker exec -it factorentacar_yii2 sh -lc "php -r 'new PDO(\"mysql:host=mysql;port=3306;dbname=factorentacar_db\",\"factorentacar_user\",\"<PASSWORD>\"); echo \"OK\\n\";'"
+(En tu captura imprimió OK cuando la clave/host eran correctos.)
+
+Config en servidor (edición manual)
+nano config/db.php
+Comandos que probaste pero NO aplican / NO funcionaron (para no repetirlos)
+docker compose ps → en tu servidor salió “unknown command: docker compose” (te funcionó docker-compose).
+php yii migrate --dryRun → Yii 2.0.53 no tiene --dryRun.
+Un intento de dump con mysql ... mysqldump ... dentro del contenedor equivocado (patrón incorrecto).
