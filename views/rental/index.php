@@ -776,6 +776,13 @@ $this->registerCss('
         .accordion-body {
             padding: 0.75rem !important;
         }
+
+        /* Leyenda de estados: botón compacto en móvil */
+        .mobile-legend-trigger {
+            font-size: 0.8rem;
+            padding: 0.35rem 0.65rem;
+            border-radius: 999px;
+        }
     }
 ');
 ?>
@@ -807,8 +814,16 @@ $this->registerCss('
         <div class="tab-pane fade show active" id="list-pane" role="tabpanel" aria-labelledby="list-tab">
 
 
-    <!-- Resumen de Estados -->
-    <div class="card mb-4">
+    <!-- Leyenda móvil: botón + modal -->
+    <div class="d-lg-none mb-3 text-end">
+        <button type="button" class="btn btn-outline-secondary mobile-legend-trigger" data-bs-toggle="modal" data-bs-target="#statusLegendModal">
+            <span class="material-symbols-outlined" style="font-size: 16px; vertical-align: middle; margin-right: 4px;">info</span>
+            Leyenda
+        </button>
+    </div>
+
+    <!-- Resumen de Estados (solo desktop/tablet grande) -->
+    <div class="card mb-4 d-none d-lg-block">
         <div class="card-header">
             <h5 class="mb-0">
                 <span class="material-symbols-outlined" style="font-size: 20px; vertical-align: middle; margin-right: 8px;">palette</span>
@@ -1438,6 +1453,48 @@ $this->registerCss('
     <!-- Fin Sistema de Tabs -->
 </div>
 
+
+<!-- Modal: Leyenda de estados (móvil) -->
+<div class="modal fade" id="statusLegendModal" tabindex="-1" aria-labelledby="statusLegendModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="statusLegendModalLabel">
+                    <span class="material-symbols-outlined" style="font-size: 20px; vertical-align: middle; margin-right: 8px;">palette</span>
+                    Leyenda de Estados
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-2">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="status-indicator bg-warning me-2"></div>
+                        <span><strong>Pendiente:</strong> Esperando pago</span>
+                    </div>
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="status-indicator bg-success me-2"></div>
+                        <span><strong>Pagado:</strong> Alquiler activo</span>
+                    </div>
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="status-indicator bg-info me-2"></div>
+                        <span><strong>Reservado:</strong> Reserva confirmada</span>
+                    </div>
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="status-indicator bg-danger me-2"></div>
+                        <span><strong>Cancelado:</strong> Alquiler cancelado</span>
+                    </div>
+                </div>
+                <hr>
+                <small class="text-muted d-block mb-1">
+                    <span class="text-danger">⚠️</span> <strong>Vencido:</strong> Fecha de entrega pasada
+                </small>
+                <small class="text-muted d-block">
+                    <span class="text-warning">⏰</span> <strong>Por vencer:</strong> Próximo a vencer (2 días o menos)
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- Modal para cambiar estado de pago -->
 <div class="modal fade" id="paymentStatusModal" tabindex="-1" aria-labelledby="paymentStatusModalLabel" aria-hidden="true">
