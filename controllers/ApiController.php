@@ -26,7 +26,23 @@ class ApiController extends Controller
      */
     public function behaviors()
     {
+        $allowedOrigins = Yii::$app->params['corsAllowedOrigins'] ?? [];
+        if (!is_array($allowedOrigins) || $allowedOrigins === []) {
+            $allowedOrigins = ['https://app.factorentacar.com'];
+        }
+
         return [
+            // CORS debe ir primero: responde OPTIONS sin pasar por autenticación.
+            'cors' => [
+                'class' => Cors::class,
+                'cors' => [
+                    'Origin' => $allowedOrigins,
+                    'Access-Control-Request-Method' => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'],
+                    'Access-Control-Request-Headers' => ['*'],
+                    'Access-Control-Allow-Credentials' => false,
+                    'Access-Control-Max-Age' => 86400,
+                ],
+            ],
             'contentNegotiator' => [
                 'class' => ContentNegotiator::class,
                 'formats' => [
@@ -47,15 +63,6 @@ class ApiController extends Controller
             'authenticator' => [
                 'class' => ApiKeyAuth::class,
                 'except' => ['health'], // Health check no requiere autenticación
-            ],
-            'cors' => [
-                'class' => Cors::class,
-                'cors' => [
-                    'Origin' => ['*'],
-                    'Access-Control-Request-Method' => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'],
-                    'Access-Control-Request-Headers' => ['*'],
-                    'Access-Control-Allow-Credentials' => false,
-                ],
             ],
         ];
     }
