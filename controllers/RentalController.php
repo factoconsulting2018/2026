@@ -87,7 +87,7 @@ class RentalController extends Controller
         $dataProvider = new ActiveDataProvider([
             'query' => $query,
             'pagination' => [
-                'pageSize' => 20,
+                'pageSize' => 10,
                 'pageParam' => 'page',
                 'pageSizeParam' => 'per-page'
             ],
