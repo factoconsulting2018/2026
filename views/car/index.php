@@ -62,14 +62,14 @@ $this->params['breadcrumbs'][] = $this->title;
                             <th>ID</th>
                             <th>Vehículo</th>
                             <th>Placa</th>
-                            <th>VIN</th>
-                            <th>Marca</th>
-                            <th>Modelo</th>
-                            <th>Año</th>
-                            <th>Estado</th>
-                            <th>Empresa</th>
-                            <th>Precio/Día</th>
-                            <th>Acciones</th>
+                            <th class="d-none d-md-table-cell">VIN</th>
+                            <th class="d-none d-md-table-cell">Marca</th>
+                            <th class="d-none d-md-table-cell">Modelo</th>
+                            <th class="d-none d-md-table-cell">Año</th>
+                            <th class="d-none d-md-table-cell">Estado</th>
+                            <th class="d-none d-md-table-cell">Empresa</th>
+                            <th class="d-none d-md-table-cell">Precio/Día</th>
+                            <th class="d-none d-md-table-cell">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -81,15 +81,39 @@ $this->params['breadcrumbs'][] = $this->title;
                                     <span class="material-symbols-outlined me-2" style="font-size: 20px; color: #3fa9f5;">directions_car</span>
                                     <strong><?= Html::encode($model->nombre) ?></strong>
                                 </div>
+                                <div class="d-md-none mt-2 d-flex flex-wrap gap-1 justify-content-start">
+                                    <a href="<?= Url::to(['view', 'id' => $model->id]) ?>"
+                                       class="btn btn-sm btn-outline-primary"
+                                       title="Ver detalles">
+                                        <span class="material-symbols-outlined" style="font-size: 16px;">visibility</span>
+                                    </a>
+                                    <a href="<?= Url::to(['update', 'id' => $model->id]) ?>"
+                                       class="btn btn-sm btn-outline-warning"
+                                       title="Editar">
+                                        <span class="material-symbols-outlined" style="font-size: 16px;">edit</span>
+                                    </a>
+                                    <a href="<?= Url::to(['/rental/create', 'car_id' => $model->id]) ?>"
+                                       class="btn btn-sm btn-outline-success"
+                                       title="Nuevo alquiler">
+                                        <span class="material-symbols-outlined" style="font-size: 16px;">add_circle</span>
+                                    </a>
+                                    <a href="<?= Url::to(['delete', 'id' => $model->id]) ?>"
+                                       class="btn btn-sm btn-outline-danger"
+                                       title="Eliminar"
+                                       data-confirm="¿Estás seguro de eliminar este vehículo?"
+                                       data-method="post">
+                                        <span class="material-symbols-outlined" style="font-size: 16px;">delete</span>
+                                    </a>
+                                </div>
                             </td>
                             <td>
                                 <span class="badge bg-secondary"><?= Html::encode($model->placa) ?></span>
                             </td>
-                            <td><?= Html::encode($model->vin ?? 'N/A') ?></td>
-                            <td><?= Html::encode($model->marca ?? 'N/A') ?></td>
-                            <td><?= Html::encode($model->modelo ?? 'N/A') ?></td>
-                            <td><?= Html::encode($model->año ?? 'N/A') ?></td>
-                            <td>
+                            <td class="d-none d-md-table-cell"><?= Html::encode($model->vin ?? 'N/A') ?></td>
+                            <td class="d-none d-md-table-cell"><?= Html::encode($model->marca ?? 'N/A') ?></td>
+                            <td class="d-none d-md-table-cell"><?= Html::encode($model->modelo ?? 'N/A') ?></td>
+                            <td class="d-none d-md-table-cell"><?= Html::encode($model->año ?? 'N/A') ?></td>
+                            <td class="d-none d-md-table-cell">
                                 <?php
                                 $statusConfig = [
                                     'disponible' => ['class' => 'bg-success', 'text' => 'Disponible', 'icon' => 'check_circle'],
@@ -104,11 +128,11 @@ $this->params['breadcrumbs'][] = $this->title;
                                     <?= $currentStatus['text'] ?>
                                 </span>
                             </td>
-                            <td><?= Html::encode($model->empresa ?? 'N/A') ?></td>
-                            <td>
+                            <td class="d-none d-md-table-cell"><?= Html::encode($model->empresa ?? 'N/A') ?></td>
+                            <td class="d-none d-md-table-cell">
                                 <strong>₡<?= number_format($model->precio_dia ?? 0, 2) ?></strong>
                             </td>
-                            <td>
+                            <td class="d-none d-md-table-cell">
                                 <div class="btn-group" role="group">
                                     <a href="<?= Url::to(['view', 'id' => $model->id]) ?>" 
                                        class="btn btn-sm btn-outline-primary" 
