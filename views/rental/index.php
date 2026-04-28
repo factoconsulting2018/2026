@@ -1170,15 +1170,25 @@ $this->registerCss('
         
         <?php foreach ($dataProvider->getModels() as $model): ?>
             <?php
-            $estado = $model->estado_pago ?? 'pendiente';
+            $estado = strtolower(trim((string) ($model->estado_pago ?? 'pendiente')));
+            if ($estado === '') {
+                $estado = 'pendiente';
+            }
+            $estadoLabels = [
+                'pendiente' => 'Pendiente',
+                'pagado' => 'Pagado',
+                'reservado' => 'Reservado',
+                'cancelado' => 'Cancelado',
+            ];
+            $estadoLabel = $estadoLabels[$estado] ?? ucfirst($estado);
             $estadoClass = 'estado-' . $estado;
-            
-            // Verificar si el alquiler está vencido o por vencer
-            if ($model->fecha_final) {
-                $hoy = new \DateTime();
+
+            $hoy = new \DateTime();
+            $fechaFin = null;
+            $diferencia = null;
+            if (!empty($model->fecha_final)) {
                 $fechaFin = new \DateTime($model->fecha_final);
-                $diferencia = $hoy->diff($fechaFin)->days;
-                
+                $diferencia = (int) $hoy->diff($fechaFin)->days;
                 if ($fechaFin < $hoy && $estado !== 'cancelado') {
                     $estadoClass .= ' vencido';
                 } elseif ($diferencia <= 2 && $estado === 'pagado') {
@@ -1196,8 +1206,8 @@ $this->registerCss('
                     <div class="accordion-header-info">
                         <div class="accordion-rental-id-status-container">
                             <div class="accordion-rental-id"><?= Html::encode(!empty($model->rental_id) ? $model->rental_id : 'R' . $model->id) ?></div>
-                            <div class="accordion-status-badge accordion-status-<?= $estado ?>">
-                                <?= ucfirst($estado) ?>
+                            <div class="accordion-status-badge accordion-status-<?= Html::encode($estado) ?>">
+                                <?= Html::encode($estadoLabel) ?>
                             </div>
                         </div>
                         <div class="accordion-client-info">
@@ -1260,9 +1270,9 @@ $this->registerCss('
                                 <div class="accordion-info-value">
                                     <?php
                                     $fechaFinClass = '';
-                                    if ($fechaFin < $hoy && $estado !== 'cancelado') {
+                                    if ($fechaFin instanceof \DateTime && $fechaFin < $hoy && $estado !== 'cancelado') {
                                         $fechaFinClass = 'vencida';
-                                    } elseif ($diferencia <= 2 && $estado === 'pagado') {
+                                    } elseif ($fechaFin instanceof \DateTime && $diferencia !== null && $diferencia <= 2 && $estado === 'pagado') {
                                         $fechaFinClass = 'por-vencer';
                                     }
                                     ?>
@@ -1278,7 +1288,7 @@ $this->registerCss('
                                             } elseif ($fechaFinObj < $hoyObj && $estado !== 'cancelado') {
                                                 $diasVencido = $hoyObj->diff($fechaFinObj)->days;
                                                 echo '<strong>Vencido hace ' . $diasVencido . ' día' . ($diasVencido != 1 ? 's' : '') . ' (' . $fechaFinFormatted . ')</strong>';
-                                            } elseif ($diferencia && $diferencia <= 2 && $estado === 'pagado') {
+                                            } elseif ($diferencia !== null && $diferencia <= 2 && $estado === 'pagado') {
                                                 echo '<strong>Por vencer en ' . $diferencia . ' día' . ($diferencia != 1 ? 's' : '') . ' (' . $fechaFinFormatted . ')</strong>';
                                             } else {
                                                 echo $fechaFinFormatted;

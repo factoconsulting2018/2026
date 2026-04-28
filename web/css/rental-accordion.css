@@ -65,6 +65,7 @@
     align-items: center;
     gap: 16px;
     flex: 1;
+    min-width: 0;
 }
 
 .accordion-rental-id-status-container {
@@ -72,6 +73,7 @@
     flex-direction: column;
     gap: 6px;
     align-items: flex-start;
+    flex-shrink: 0;
 }
 
 .accordion-rental-id {
@@ -87,11 +89,19 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
+    min-width: 0;
+    flex: 1;
 }
 
 .accordion-client-name {
     font-weight: 600;
     font-size: 16px;
+    line-height: 1.3;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
 }
 
 .accordion-car-info {
@@ -100,39 +110,48 @@
     display: flex;
     align-items: center;
     gap: 8px;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .accordion-status-badge {
     padding: 6px 12px;
     border-radius: 16px;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    flex-shrink: 0;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.22);
+    border: none;
 }
 
 .accordion-status-pendiente {
-    background: #e0a800;
+    background: #b45309;
     color: #ffffff;
-    border: none;
 }
 
 .accordion-status-pagado {
-    background: #198754;
+    background: #0f5132;
     color: #ffffff;
-    border: none;
 }
 
 .accordion-status-reservado {
-    background: #0d6efd;
+    background: #084298;
     color: #ffffff;
-    border: none;
 }
 
 .accordion-status-cancelado {
-    background: #dc3545;
+    background: #842029;
     color: #ffffff;
-    border: none;
+}
+
+/* Estado desconocido / legado (sin clase de color) */
+.accordion-status-badge:not([class*="accordion-status-pendiente"]):not([class*="accordion-status-pagado"]):not([class*="accordion-status-reservado"]):not([class*="accordion-status-cancelado"]) {
+    background: #495057;
+    color: #ffffff;
 }
 
 .accordion-toggle-icon {
@@ -146,6 +165,12 @@
     align-items: center;
     justify-content: center;
     backdrop-filter: blur(10px);
+    flex-shrink: 0;
+    color: inherit;
+}
+
+.accordion-car-info .material-symbols-outlined {
+    flex-shrink: 0;
 }
 
 .rental-accordion-item.active .accordion-toggle-icon {
@@ -533,9 +558,46 @@
     background: linear-gradient(135deg, #b02a37 0%, #dc3545 100%);
 }
 
+.rental-accordion-item.vencido .accordion-header .accordion-client-name,
+.rental-accordion-item.vencido .accordion-header .accordion-car-info {
+    color: #ffffff;
+}
+
+.rental-accordion-item.vencido .accordion-header .accordion-car-info {
+    opacity: 0.95;
+}
+
+.rental-accordion-item.vencido .accordion-header .accordion-car-info .material-symbols-outlined {
+    color: rgba(255, 255, 255, 0.92);
+}
+
 .rental-accordion-item.por-vencer .accordion-header {
-    background: linear-gradient(135deg, #d39e00 0%, #ffc107 100%);
-    color: #212529;
+    background: linear-gradient(135deg, #e8a600 0%, #f0b429 100%);
+    color: #1a1d21;
+}
+
+.rental-accordion-item.por-vencer .accordion-header .accordion-client-name,
+.rental-accordion-item.por-vencer .accordion-header .accordion-car-info {
+    color: #1a1d21;
+    opacity: 1;
+}
+
+.rental-accordion-item.por-vencer .accordion-header .accordion-car-info .material-symbols-outlined {
+    color: #3d4349;
+}
+
+.rental-accordion-item.por-vencer .accordion-rental-id {
+    background: rgba(0, 0, 0, 0.1);
+    color: #1a1d21;
+}
+
+.rental-accordion-item.por-vencer .accordion-toggle-icon {
+    background: rgba(0, 0, 0, 0.12);
+    color: #1a1d21;
+}
+
+.rental-accordion-item.por-vencer .accordion-toggle-icon .material-symbols-outlined {
+    color: currentColor;
 }
 
 /* Animaciones */
