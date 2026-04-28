@@ -6,7 +6,7 @@ use yii\helpers\Html;
 use yii\helpers\Url;
 ?>
 
-<div class="card">
+<div class="card client-card-desktop d-none d-md-block mb-3">
     <div class="card-body">
         <div class="row align-items-center">
             <div class="col-md-8">
@@ -44,8 +44,8 @@ use yii\helpers\Url;
                 </div>
                 <?php endif; ?>
             </div>
-            <div class="col-md-4 text-end">
-                <div class="d-flex gap-2 justify-content-end">
+            <div class="col-md-4 text-md-end">
+                <div class="d-flex gap-2 justify-content-md-end justify-content-center flex-wrap">
                     <!-- READ - Ver detalles -->
                     <a href="<?= Url::to(['view', 'id' => $model->id]) ?>" class="btn btn-sm btn-info" title="Ver Detalles">
                         <span class="material-symbols-outlined" style="font-size: 16px;">visibility</span>

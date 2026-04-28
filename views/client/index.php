@@ -6,12 +6,31 @@
 /** @var string $estado */
 
 use yii\helpers\Html;
+use yii\helpers\StringHelper;
 use yii\helpers\Url;
+use yii\widgets\LinkPager;
 use yii\widgets\ListView;
 use yii\widgets\Pjax;
 
 $this->title = 'Gestión de Clientes';
 $this->params['breadcrumbs'][] = $this->title;
+
+$this->registerCss('
+    .client-index-mobile .nav-tabs .nav-link {
+        font-size: 0.8rem;
+        padding: 0.45rem 0.65rem;
+        max-width: 42vw;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .client-index-mobile .nav-tabs .nav-link.active {
+        font-weight: 600;
+    }
+    .client-mobile-tab-scroll {
+        -webkit-overflow-scrolling: touch;
+    }
+');
 ?>
 
 <div class="client-index">
@@ -83,13 +102,65 @@ $this->params['breadcrumbs'][] = $this->title;
     </div>
 
     <?php Pjax::begin(); ?>
-    
-    <?= ListView::widget([
-        'dataProvider' => $dataProvider,
-        'itemView' => '_list_item',
-        'layout' => "{items}\n<div class='d-flex justify-content-center mt-4'>{pager}</div>",
-        'itemOptions' => ['class' => 'mb-3'],
-    ]); ?>
+
+    <div class="d-none d-md-block">
+        <?= ListView::widget([
+            'dataProvider' => $dataProvider,
+            'itemView' => '_list_item',
+            'layout' => "{items}\n<div class='d-flex justify-content-center mt-4'>{pager}</div>",
+            'itemOptions' => ['class' => ''],
+            'emptyText' => '<p class="text-muted text-center py-4 mb-0">No se encontraron clientes con los filtros seleccionados.</p>',
+        ]); ?>
+    </div>
+
+    <div class="d-md-none client-index-mobile">
+        <?php
+        $models = $dataProvider->getModels();
+        if (count($models) === 0): ?>
+            <p class="text-muted text-center py-4 mb-0">No se encontraron clientes con los filtros seleccionados.</p>
+        <?php else: ?>
+            <ul class="nav nav-tabs client-mobile-tab-scroll flex-nowrap overflow-auto mb-0" role="tablist">
+                <?php foreach ($models as $i => $model):
+                    $full = (string) $model->fullNameUppercase;
+                    $label = StringHelper::truncate($full, 24);
+                    $tabId = 'client-m-tab-' . $model->id;
+                    $paneId = 'client-m-pane-' . $model->id;
+                    ?>
+                    <li class="nav-item text-nowrap" role="presentation">
+                        <button class="nav-link <?= $i === 0 ? 'active' : '' ?>" id="<?= Html::encode($tabId) ?>"
+                                data-bs-toggle="tab" data-bs-target="#<?= Html::encode($paneId) ?>"
+                                type="button" role="tab" aria-controls="<?= Html::encode($paneId) ?>"
+                                aria-selected="<?= $i === 0 ? 'true' : 'false' ?>">
+                            <?= Html::encode($label) ?>
+                        </button>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+            <div class="tab-content border border-top-0 rounded-bottom bg-white px-2 py-3">
+                <?php foreach ($models as $i => $model):
+                    $paneId = 'client-m-pane-' . $model->id;
+                    $tabId = 'client-m-tab-' . $model->id;
+                    ?>
+                    <div class="tab-pane fade <?= $i === 0 ? 'show active' : '' ?>" id="<?= Html::encode($paneId) ?>"
+                         role="tabpanel" aria-labelledby="<?= Html::encode($tabId) ?>">
+                        <?= $this->render('_list_item_mobile_pane', ['model' => $model]) ?>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+        <div class="d-flex justify-content-center mt-4">
+            <?= LinkPager::widget([
+                'pagination' => $dataProvider->pagination,
+                'options' => ['class' => 'pagination'],
+                'linkOptions' => ['class' => 'page-link'],
+                'pageCssClass' => 'page-item',
+                'prevPageCssClass' => 'page-item',
+                'nextPageCssClass' => 'page-item',
+                'activePageCssClass' => 'active',
+                'disabledPageCssClass' => 'disabled',
+            ]) ?>
+        </div>
+    </div>
 
     <?php Pjax::end(); ?>
 </div>
