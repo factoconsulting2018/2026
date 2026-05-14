@@ -11,6 +11,8 @@ use yii\bootstrap5\NavBar;
 
 AppAsset::register($this);
 
+$this->registerCssFile('@web/css/material-symbols.css', [], 'material-symbols');
+
 $this->registerCsrfMetaTags();
 $this->registerMetaTag(['charset' => 'UTF-8'], 'charset');
 $this->registerMetaTag(['name' => 'viewport', 'content' => 'width=device-width, initial-scale=1, shrink-to-fit=no']);
@@ -39,9 +41,6 @@ $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => Yii
     <!-- Navigation Drawer -->
     <?php $this->registerJsFile('@web/js/navigation-drawer.js'); ?>
     
-    <!-- Material Symbols -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <style>
         :root {
             --primary-color: #3fa9f5;
@@ -167,26 +166,12 @@ $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => Yii
         .nav-icon {
             font-size: 20px;
             margin-right: 12px;
-            width: 20px;
+            flex-shrink: 0;
+            min-width: 24px;
+            width: auto;
             text-align: center;
             color: #0094ff;
             font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
-        }
-        
-        .material-symbols-outlined {
-            font-family: 'Material Symbols Outlined';
-            font-weight: normal;
-            font-style: normal;
-            font-size: 24px;
-            line-height: 1;
-            letter-spacing: normal;
-            text-transform: none;
-            display: inline-block;
-            white-space: nowrap;
-            word-wrap: normal;
-            direction: ltr;
-            -webkit-font-feature-settings: 'liga';
-            -webkit-font-smoothing: antialiased;
         }
         
         .nav-text {

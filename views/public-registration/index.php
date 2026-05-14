@@ -18,7 +18,7 @@ $logoPath = $companyInfo['logo'] ?? null;
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registro de Cliente - Facto Rent a Car</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+    <link rel="stylesheet" href="<?= Html::encode(Url::to('@web/css/material-symbols.css')) ?>" />
     <style>
         body {
             background: #2e6faa;
