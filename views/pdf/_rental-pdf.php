@@ -1,5 +1,15 @@
 <?php
 /**
+ * Escapa para HTML/PDF; PHP 8.1+ no admite null en htmlspecialchars().
+ */
+if (!function_exists('pdf_escape')) {
+    function pdf_escape($value): string
+    {
+        return htmlspecialchars((string) ($value ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
+}
+
+/**
  * VISTA PDF DE ORDEN DE ALQUILER - PÁGINA 1
  * 
  * Diseño optimizado para incluir TODO el contenido operativo en una sola página,
@@ -68,31 +78,35 @@ if ($client && !empty($client->licencias_choferes)) {
         foreach ($choferesDecoded as $chofer) {
             if (is_array($chofer)) {
                 $choferInfo = [];
-                if (isset($chofer['nombre'])) $choferInfo[] = htmlspecialchars($chofer['nombre']);
-                if (isset($chofer['licencia'])) $choferInfo[] = htmlspecialchars($chofer['licencia']);
+                if (isset($chofer['nombre'])) {
+                    $choferInfo[] = pdf_escape($chofer['nombre'] ?? '');
+                }
+                if (isset($chofer['licencia'])) {
+                    $choferInfo[] = pdf_escape($chofer['licencia'] ?? '');
+                }
                 if (!empty($choferInfo)) {
                     $licenciasInfo[] = implode(' - Lic: ', $choferInfo);
                 }
             } else {
-                $licenciasInfo[] = htmlspecialchars($chofer);
+                $licenciasInfo[] = pdf_escape($chofer);
             }
         }
         $licenciasChoferes = implode(', ', $licenciasInfo);
     } else {
-        $licenciasChoferes = htmlspecialchars($client->licencias_choferes);
+        $licenciasChoferes = pdf_escape($client->licencias_choferes);
     }
 }
 
 // Variables de datos para el template
-$clienteNombre = htmlspecialchars($client ? $client->full_name : 'N/A');
-$clienteCedula = htmlspecialchars($client ? $client->cedula_fisica : 'N/A');
-$clienteTelefono = htmlspecialchars($client && !empty($client->whatsapp) ? $client->whatsapp : ($client && !empty($client->telefono) ? $client->telefono : 'N/A'));
-$entregaLugar = htmlspecialchars($model->lugar_entrega ?: 'San Ramón');
+$clienteNombre = pdf_escape($client ? ($client->full_name ?? 'N/A') : 'N/A');
+$clienteCedula = pdf_escape($client ? ($client->cedula_fisica ?? 'N/A') : 'N/A');
+$clienteTelefono = pdf_escape($client && !empty($client->whatsapp) ? $client->whatsapp : ($client && !empty($client->telefono) ? $client->telefono : 'N/A'));
+$entregaLugar = pdf_escape($model->lugar_entrega ?: 'San Ramón');
 $fechaInicio = formatDateCompact($model->fecha_inicio);
 $fechaFin = formatDateCompact($model->fecha_final);
 $fechaRetiro = formatDateCompact($model->fecha_inicio, $model->hora_inicio);
 $fechaDevolucion = formatDateCompact($model->fecha_final, $model->hora_final);
-$lugarRetiro = htmlspecialchars($model->lugar_retiro ?: 'San Ramón');
+$lugarRetiro = pdf_escape($model->lugar_retiro ?: 'San Ramón');
 
 // Función específica para formatear correapartir (mes con primera letra mayúscula)
 function formatDateCorreapartir($date, $time = '') {
@@ -134,8 +148,8 @@ if ($model->correapartir_enabled && !empty($model->fecha_correapartir)) {
         $fechaCorreapartir = '';
     }
 }
-$vehiculoDesc = htmlspecialchars($car ? $car->nombre : 'N/A');
-$capacidad = htmlspecialchars($car ? ($car->cantidad_pasajeros ?: 5) : '5');
+$vehiculoDesc = pdf_escape($car ? ($car->nombre ?? 'N/A') : 'N/A');
+$capacidad = pdf_escape($car ? ($car->cantidad_pasajeros ?: 5) : '5');
 $cantidadDias = str_pad($model->cantidad_dias, 2, '0', STR_PAD_LEFT);
 $cantidadVehiculos = 1;
 $tarifaDia = number_format($model->precio_por_dia, 0, '.', ',');
@@ -189,7 +203,7 @@ $montoReserva = $total;
         </td>
         <td style="width:45%; text-align:right;">
             <?php if (!empty($logoPath)): ?>
-                <img src="<?= htmlspecialchars($logoPath) ?>" height="140" />
+                <img src="<?= pdf_escape($logoPath) ?>" height="140" />
             <?php endif; ?>
         </td>
     </tr>
@@ -199,7 +213,7 @@ $montoReserva = $total;
     <tr>
         <!-- Columna Izquierda -->
         <td style="width:50%; padding-right:8px;">
-            <div class="b" style="margin-bottom:2px;"><span style="background-color: #FF6600; color: #FFFFFF; padding: 4px 8px; display: inline-block; border-radius: 3px; font-weight: bold;">Orden de Alquiler: <?= htmlspecialchars($rentalId) ?></span></div>
+            <div class="b" style="margin-bottom:2px;"><span style="background-color: #FF6600; color: #FFFFFF; padding: 4px 8px; display: inline-block; border-radius: 3px; font-weight: bold;">Orden de Alquiler: <?= pdf_escape($rentalId) ?></span></div>
             <div class="b">Cliente</div>
             <div style="background-color: #0066CC; color: #FFFFFF; padding: 4px 8px; display: inline-block; border-radius: 3px;"><?= $clienteNombre ?></div>
             <?php if (!empty($vencimientoLicencia) || !empty($vencimientoCedula)): ?>
@@ -227,7 +241,7 @@ $montoReserva = $total;
             <?php if (!empty($model->choferes_autorizados)): ?>
             <div class="sep"></div>
             <div class="b">Choferes Autorizados</div>
-            <div><?= nl2br(htmlspecialchars($model->choferes_autorizados)) ?></div>
+            <div><?= nl2br(pdf_escape($model->choferes_autorizados ?? '')) ?></div>
             <?php endif; ?>
         </td>
         
@@ -245,7 +259,7 @@ $montoReserva = $total;
             <div><?= $vehiculoDesc ?> • <?= $capacidad ?> pasajeros</div>
             <?php if (!empty($car->placa)): ?>
             <div class="b">Placa</div>
-            <div style="font-weight: bold; padding: 2px 6px; display: inline-block;"><?= htmlspecialchars($car->placa) ?></div>
+            <div style="font-weight: bold; padding: 2px 6px; display: inline-block;"><?= pdf_escape($car->placa) ?></div>
             <?php endif; ?>
             <div class="sep"></div>
             <div class="b">Cantidades</div>

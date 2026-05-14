@@ -1,4 +1,10 @@
 <?php
+if (!function_exists('pdf_escape')) {
+    function pdf_escape($value): string
+    {
+        return htmlspecialchars((string) ($value ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
+}
 $rentalId = $model->rental_id ?: ('R' . str_pad($model->id, 6, '0', STR_PAD_LEFT));
 $client = $model->client;
 $car = $model->car;
@@ -66,20 +72,20 @@ $car = $model->car;
 </head>
 <body>
     <div class="header">
-        <div class="company-name"><?= htmlspecialchars($companyInfo['name'] ?? 'FACTO AUTOS DE ALQUILER S.A') ?></div>
+        <div class="company-name"><?= pdf_escape($companyInfo['name'] ?? 'FACTO AUTOS DE ALQUILER S.A') ?></div>
         <div>San Ramón, Alajuela, Costa Rica</div>
     </div>
     
     <div class="order-title">
-        ORDEN DE ALQUILER: <?= htmlspecialchars($rentalId) ?>
+        ORDEN DE ALQUILER: <?= pdf_escape($rentalId) ?>
     </div>
     
     <div class="section">
         <div class="section-title">INFORMACIÓN DEL CLIENTE</div>
         <div style="display: table; width: 100%;">
             <div style="display: table-cell; width: 50%; padding-right: 10px; vertical-align: top;">
-                <div class="info-row"><strong>Nombre:</strong> <?= htmlspecialchars($client ? $client->full_name : 'N/A') ?></div>
-                <div class="info-row"><strong>Cédula:</strong> <?= htmlspecialchars($client ? $client->cedula_fisica : 'N/A') ?></div>
+                <div class="info-row"><strong>Nombre:</strong> <?= pdf_escape($client ? ($client->full_name ?? 'N/A') : 'N/A') ?></div>
+                <div class="info-row"><strong>Cédula:</strong> <?= pdf_escape($client ? ($client->cedula_fisica ?? 'N/A') : 'N/A') ?></div>
                 <?php 
                 // Mostrar información de licencias de choferes del cliente
                 $choferesClient = [];
@@ -99,22 +105,28 @@ $car = $model->car;
                         <?php if (is_array($chofer)): ?>
                             <?php 
                             $choferInfo = [];
-                            if (isset($chofer['nombre'])) $choferInfo[] = htmlspecialchars($chofer['nombre']);
-                            if (isset($chofer['licencia'])) $choferInfo[] = 'Lic: ' . htmlspecialchars($chofer['licencia']);
-                            if (isset($chofer['cedula'])) $choferInfo[] = 'Céd: ' . htmlspecialchars($chofer['cedula']);
+                            if (isset($chofer['nombre'])) {
+                                $choferInfo[] = pdf_escape($chofer['nombre'] ?? '');
+                            }
+                            if (isset($chofer['licencia'])) {
+                                $choferInfo[] = 'Lic: ' . pdf_escape($chofer['licencia'] ?? '');
+                            }
+                            if (isset($chofer['cedula'])) {
+                                $choferInfo[] = 'Céd: ' . pdf_escape($chofer['cedula'] ?? '');
+                            }
                             echo implode(' - ', $choferInfo);
                             ?>
                         <?php else: ?>
-                            <?= nl2br(htmlspecialchars($chofer)) ?>
+                            <?= nl2br(pdf_escape($chofer)) ?>
                         <?php endif; ?><br>
                     <?php endforeach; ?>
                 </div>
                 <?php endif; ?>
             </div>
             <div style="display: table-cell; width: 50%; padding-left: 10px; vertical-align: top;">
-                <div class="info-row"><strong>Teléfono:</strong> <?= htmlspecialchars($client && !empty($client->whatsapp) ? $client->whatsapp : ($client && !empty($client->telefono) ? $client->telefono : 'N/A')) ?></div>
+                <div class="info-row"><strong>Teléfono:</strong> <?= pdf_escape($client && !empty($client->whatsapp) ? $client->whatsapp : ($client && !empty($client->telefono) ? $client->telefono : 'N/A')) ?></div>
                 <?php if (!empty($model->choferes_autorizados)): ?>
-                <div class="info-row"><strong>Choferes Autorizados:</strong><br><?= nl2br(htmlspecialchars($model->choferes_autorizados)) ?></div>
+                <div class="info-row"><strong>Choferes Autorizados:</strong><br><?= nl2br(pdf_escape($model->choferes_autorizados ?? '')) ?></div>
                 <?php endif; ?>
             </div>
         </div>
@@ -122,8 +134,8 @@ $car = $model->car;
     
     <div class="section">
         <div class="section-title">INFORMACIÓN DEL VEHÍCULO</div>
-        <div class="info-row"><strong>Vehículo:</strong> <?= htmlspecialchars($car ? $car->nombre : 'N/A') ?></div>
-        <div class="info-row"><strong>Pasajeros:</strong> <?= htmlspecialchars($car ? ($car->cantidad_pasajeros ?: 5) : 'N/A') ?></div>
+        <div class="info-row"><strong>Vehículo:</strong> <?= pdf_escape($car ? ($car->nombre ?? 'N/A') : 'N/A') ?></div>
+        <div class="info-row"><strong>Pasajeros:</strong> <?= pdf_escape($car ? ($car->cantidad_pasajeros ?: 5) : 'N/A') ?></div>
     </div>
     
     <div class="section">
