@@ -237,6 +237,26 @@ class Client extends ActiveRecord
     }
 
     /**
+     * Dígitos normalizados para enlace wa.me (WhatsApp).
+     * Usa WhatsApp del cliente; si falta, celular o teléfono.
+     *
+     * @return string|null
+     */
+    public function getWhatsAppWaDigits(): ?string
+    {
+        $raw = trim((string) ($this->whatsapp ?: $this->celular ?: $this->telefono ?? ''));
+        if ($raw === '') {
+            return null;
+        }
+        $digits = preg_replace('/\D+/', '', $raw);
+        if ($digits === '') {
+            return null;
+        }
+
+        return self::formatWhatsApp($raw);
+    }
+
+    /**
      * Obtiene los archivos del cliente
      * @return \yii\db\ActiveQuery
      */
