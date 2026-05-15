@@ -238,7 +238,7 @@ foreach ($cars as $car) {
                         ]
                     ) ?>
                     <p class="small text-muted mb-0">
-                        <span class="text-success">Verde</span> = Facto Rent a Car disponible &nbsp;·&nbsp;
+                        <span class="text-success fw-bold">Verde</span> = Facto Rent a Car disponible &nbsp;·&nbsp;
                         <span class="text-secondary">Gris</span> = Moviliza
                     </p>
 
@@ -1614,6 +1614,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     .form-select option[data-status="disponible"]:not([data-empresa="Moviliza"]) {
         color: #28a745;
+        font-weight: 700;
     }
 
     /* Vehículos Moviliza: gris (no rojo por estado alquilado/mantenimiento) */

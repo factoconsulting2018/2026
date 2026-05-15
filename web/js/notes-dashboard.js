@@ -4,6 +4,20 @@ let currentViewMode = 'grid';
 let allNotes = [];
 let filteredNotes = [];
 
+function getNotesDashboardEl() {
+    return document.querySelector('.notes-dashboard');
+}
+
+function buildNoteEditUrl(noteId) {
+    const base = getNotesDashboardEl()?.dataset.updateUrl || '/notes/update';
+    const sep = base.indexOf('?') >= 0 ? '&' : '?';
+    return base + sep + 'id=' + encodeURIComponent(noteId);
+}
+
+function isTouchDevice() {
+    return window.matchMedia('(hover: none), (pointer: coarse)').matches;
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     initializeDashboard();
     setupEventListeners();
@@ -340,18 +354,49 @@ function viewNote(noteId) {
         const editBtn = document.getElementById('editNoteBtn');
         editBtn.style.display = 'inline-block';
         editBtn.onclick = function() {
-            window.location.href = `/notes/update?id=${noteId}`;
+            window.location.href = buildNoteEditUrl(noteId);
         };
     }
 }
 
 function editNote(noteId) {
-    window.location.href = `/notes/update?id=${noteId}`;
+    if (!noteId) {
+        return;
+    }
+    window.location.href = buildNoteEditUrl(noteId);
 }
 
 function changeStatus(noteId) {
-    // Implementar cambio de estado
-    console.log('Cambiar estado de nota:', noteId);
+    const card = document.querySelector(`.note-card[data-id="${noteId}"]`);
+    if (!card) {
+        return;
+    }
+    const order = ['pending', 'processing', 'completed'];
+    const current = card.dataset.status || 'pending';
+    const next = order[(order.indexOf(current) + 1) % order.length];
+    const labels = { pending: 'Pendiente', processing: 'Procesando', completed: 'Completada' };
+    if (!confirm('¿Cambiar estado a "' + (labels[next] || next) + '"?')) {
+        return;
+    }
+    const dash = getNotesDashboardEl();
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = dash?.dataset.changeStatusUrl || '/notes/change-status';
+    form.style.display = 'none';
+    const addField = (name, value) => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = name;
+        input.value = value;
+        form.appendChild(input);
+    };
+    addField('id', noteId);
+    addField('status', next);
+    if (dash?.dataset.csrfParam && dash?.dataset.csrfToken) {
+        addField(dash.dataset.csrfParam, dash.dataset.csrfToken);
+    }
+    document.body.appendChild(form);
+    form.submit();
 }
 
 // Funciones auxiliares para formatear datos
@@ -502,21 +547,6 @@ function clearAllFilters() {
     updateActiveFilterIndicator(null);
 }
 
-// Función para editar nota
-function editNote(noteId) {
-    if (!noteId) {
-        console.error('ID de nota no válido');
-        showNotification('error', 'Error: ID de nota no válido');
-        return;
-    }
-    
-    // Mostrar notificación de carga
-    showNotification('info', 'Abriendo editor de nota...');
-    
-    // Redirigir a la página de edición
-    const editUrl = `/notes/update/${noteId}`;
-    window.location.href = editUrl;
-}
 
 // Agregar tooltips para doble clic
 function addDoubleClickTooltips() {
@@ -559,23 +589,31 @@ document.getElementById('searchInput').addEventListener('input', function() {
     }, 300);
 });
 
-// Efectos de hover mejorados
-document.addEventListener('mouseover', function(e) {
-    if (e.target.closest('.note-card')) {
+// Efectos de hover (solo dispositivos con puntero fino)
+if (!isTouchDevice()) {
+    document.addEventListener('mouseover', function(e) {
+        if (e.target.closest('.note-actions, .note-footer-actions, a, button')) {
+            return;
+        }
         const card = e.target.closest('.note-card');
-        card.style.transform = 'translateY(-3px) scale(1.02)';
-    }
-});
+        if (card) {
+            card.style.transform = 'translateY(-3px) scale(1.02)';
+        }
+    });
 
-document.addEventListener('mouseout', function(e) {
-    if (e.target.closest('.note-card')) {
+    document.addEventListener('mouseout', function(e) {
         const card = e.target.closest('.note-card');
-        card.style.transform = 'translateY(0) scale(1)';
-    }
-});
+        if (card) {
+            card.style.transform = '';
+        }
+    });
+}
 
-// Doble clic para editar nota
+// Doble clic para editar nota (escritorio)
 document.addEventListener('dblclick', function(e) {
+    if (isTouchDevice()) {
+        return;
+    }
     console.log('Doble clic detectado en:', e.target);
     
     // Verificar si el clic fue en un botón de acción
@@ -607,8 +645,7 @@ document.addEventListener('dblclick', function(e) {
             
             // Redirigir inmediatamente sin delay adicional
             console.log('Redirigiendo inmediatamente a edición...');
-            const editUrl = `/notes/update/${noteId}`;
-            window.location.href = editUrl;
+            window.location.href = buildNoteEditUrl(noteId);
         } else {
             console.error('No se pudo obtener el ID de la nota');
             showNotification('error', 'Error: No se pudo obtener el ID de la nota');

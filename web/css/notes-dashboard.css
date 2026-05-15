@@ -537,36 +537,162 @@
 }
 
 /* Responsive */
-@media (max-width: 768px) {
+@media (max-width: 767.98px) {
+    .notes-dashboard {
+        padding: 0;
+    }
+
+    .notes-dashboard-toolbar .btn {
+        width: 100%;
+        justify-content: center;
+        min-height: 42px;
+    }
+
+    .notes-filter-actions .btn {
+        width: 100%;
+        min-height: 42px;
+    }
+
+    .notes-stats-row .stat-card {
+        padding: 16px;
+        margin-bottom: 0;
+    }
+
+    .notes-stats-row .stat-card .stat-number {
+        font-size: 1.75rem;
+    }
+
+    .notes-stats-row .stat-card .stat-icon {
+        font-size: 1.75rem;
+        top: 12px;
+        right: 12px;
+    }
+
+    .notes-stats-row .stat-card::after {
+        display: none;
+    }
+
+    .notes-panel-header .btn-group {
+        width: 100%;
+    }
+
+    .notes-panel-header .btn-group .btn {
+        flex: 1;
+        min-height: 40px;
+    }
+
+    .notes-panel-header #filteredCount {
+        width: 100%;
+        text-align: center;
+        padding: 0.5rem;
+    }
+
     .notes-container {
         grid-template-columns: 1fr;
+        gap: 14px;
+        padding: 12px 0;
     }
-    
-    .stat-card {
-        padding: 20px;
+
+    .note-card {
+        padding: 16px;
+        cursor: default;
     }
-    
-    .stat-card .stat-number {
-        font-size: 2rem;
+
+    .note-card:hover {
+        transform: none;
     }
-    
-    .stat-card .stat-icon {
-        font-size: 2rem;
+
+    .note-card::after {
+        display: none;
     }
-    
-    .note-card .note-actions {
-        opacity: 1;
+
+    .note-card .note-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0;
+        margin-bottom: 12px;
     }
-    
+
+    .note-card .note-title {
+        margin-right: 0;
+        margin-bottom: 0;
+        font-size: 1.05rem;
+        word-break: break-word;
+    }
+
+    .note-card .note-content {
+        max-height: none;
+        margin-bottom: 12px;
+    }
+
+    .note-card .note-footer {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+
+    .note-card .note-meta {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .note-card .note-footer-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        width: 100%;
+    }
+
+    .note-card .note-footer-actions .btn {
+        width: 100%;
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        font-size: 0.85rem;
+        padding: 0.5rem 0.65rem;
+        opacity: 1 !important;
+    }
+
+    .note-card.yellow .note-footer-actions .btn-outline-primary {
+        background: rgba(0, 0, 0, 0.08);
+        border-color: rgba(0, 0, 0, 0.25);
+        color: #333;
+    }
+
+    .note-card .note-actions .btn {
+        min-width: 40px;
+        min-height: 40px;
+    }
+
     .notes-container.list-view .note-card {
         flex-direction: column;
-        align-items: flex-start;
+        align-items: stretch;
     }
-    
+
     .notes-container.list-view .note-header,
     .notes-container.list-view .note-content {
         margin-right: 0;
         margin-bottom: 10px;
+    }
+
+    .notes-modal-footer .btn {
+        margin: 0;
+    }
+
+    .card-body {
+        padding: 1rem;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .notes-dashboard-title h1 {
+        font-size: 1.35rem;
+    }
+
+    .note-card .note-footer-actions {
+        grid-template-columns: 1fr;
     }
 }
 
@@ -595,9 +721,13 @@
     100% { transform: rotate(360deg); }
 }
 
-/* Transiciones suaves */
-* {
-    transition: all 0.3s ease;
+/* Transiciones en componentes del dashboard */
+.notes-dashboard .btn,
+.notes-dashboard .note-card,
+.notes-dashboard .stat-card,
+.notes-dashboard .form-control,
+.notes-dashboard .form-select {
+    transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 /* Mejoras visuales */

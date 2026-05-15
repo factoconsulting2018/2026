@@ -15,27 +15,29 @@ $this->params['breadcrumbs'][] = $this->title;
 $this->registerCssFile('@web/css/notes-dashboard.css', ['depends' => [\yii\bootstrap5\BootstrapAsset::class]]);
 ?>
 
-<div class="notes-dashboard">
+<div class="notes-dashboard"
+     data-update-url="<?= Html::encode(Url::to(['/notes/update'])) ?>"
+     data-delete-url="<?= Html::encode(Url::to(['/notes/delete'])) ?>"
+     data-change-status-url="<?= Html::encode(Url::to(['/notes/change-status'])) ?>"
+     data-csrf-param="<?= Html::encode(Yii::$app->request->csrfParam) ?>"
+     data-csrf-token="<?= Html::encode(Yii::$app->request->csrfToken) ?>">
     <!-- Header con controles dinámicos -->
     <div class="row mb-4">
         <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h1 class="h3 mb-0">📊 Dashboard de Notas</h1>
-                    <p class="text-muted mb-0">Gestiona tus notas con una interfaz dinámica e interactiva</p>
+            <div class="notes-dashboard-header d-flex flex-column flex-md-row justify-content-between align-items-stretch align-items-md-center gap-3">
+                <div class="notes-dashboard-title">
+                    <h1 class="h3 mb-1">📊 Dashboard de Notas</h1>
+                    <p class="text-muted mb-0 small">Gestiona tus notas con una interfaz dinámica e interactiva</p>
                 </div>
-                <div class="d-flex gap-2">
+                <div class="notes-dashboard-toolbar d-grid d-sm-flex flex-wrap gap-2">
                     <?= Html::a('➕ Nueva Nota', ['create'], [
                         'class' => 'btn btn-primary btn-sm',
                         'data-bs-toggle' => 'modal',
                         'data-bs-target' => '#createNoteModal'
                     ]) ?>
                     <?= Html::a('📋 Vista Lista', ['list'], ['class' => 'btn btn-outline-info btn-sm']) ?>
-                    <button class="btn btn-outline-secondary btn-sm" onclick="toggleViewMode()">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="toggleViewMode()">
                         <i class="fas fa-th" id="viewModeIcon"></i> <span id="viewModeText">Vista Compacta</span>
-                    </button>
-                    <button class="btn btn-outline-warning btn-sm" onclick="testModal()">
-                        <i class="fas fa-bug"></i> Test Modal
                     </button>
                 </div>
             </div>
@@ -47,12 +49,12 @@ $this->registerCssFile('@web/css/notes-dashboard.css', ['depends' => [\yii\boots
         <div class="col-12">
             <div class="card">
                 <div class="card-body">
-                    <div class="row align-items-center">
-                        <div class="col-md-3">
+                    <div class="row g-3 align-items-end notes-filters-row">
+                        <div class="col-12 col-md-3">
                             <label class="form-label fw-bold">🔍 Buscar:</label>
                             <input type="text" class="form-control" id="searchInput" placeholder="Buscar por título o contenido...">
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-12 col-sm-6 col-md-2">
                             <label class="form-label fw-bold">📊 Estado:</label>
                             <select class="form-select" id="statusFilter">
                                 <option value="">Todos los estados</option>
@@ -61,7 +63,7 @@ $this->registerCssFile('@web/css/notes-dashboard.css', ['depends' => [\yii\boots
                                 <option value="completed">✅ Completadas</option>
                             </select>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-12 col-sm-6 col-md-2">
                             <label class="form-label fw-bold">🎨 Color:</label>
                             <select class="form-select" id="colorFilter">
                                 <option value="">Todos los colores</option>
@@ -77,7 +79,7 @@ $this->registerCssFile('@web/css/notes-dashboard.css', ['depends' => [\yii\boots
                                 <option value="lightgreen">🟢 Verde Claro</option>
                             </select>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-12 col-sm-6 col-md-2">
                             <label class="form-label fw-bold">📅 Ordenar:</label>
                             <select class="form-select" id="sortFilter">
                                 <option value="newest">Más recientes</option>
@@ -86,13 +88,13 @@ $this->registerCssFile('@web/css/notes-dashboard.css', ['depends' => [\yii\boots
                                 <option value="status">Por estado</option>
                             </select>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-12 col-md-3">
                             <label class="form-label fw-bold">⚡ Acciones:</label>
-                            <div class="d-flex gap-2">
-                                <button class="btn btn-outline-primary btn-sm" onclick="clearFilters()">
+                            <div class="d-grid d-sm-flex gap-2 notes-filter-actions">
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="clearFilters()">
                                     <i class="fas fa-times"></i> Limpiar
                                 </button>
-                                <button class="btn btn-outline-success btn-sm" onclick="exportNotes()">
+                                <button type="button" class="btn btn-outline-success btn-sm" onclick="exportNotes()">
                                     <i class="fas fa-download"></i> Exportar
                                 </button>
                             </div>
@@ -104,8 +106,8 @@ $this->registerCssFile('@web/css/notes-dashboard.css', ['depends' => [\yii\boots
     </div>
 
     <!-- Estadísticas animadas -->
-    <div class="row mb-4">
-        <div class="col-md-3">
+    <div class="row g-3 mb-4 notes-stats-row">
+        <div class="col-6 col-md-3">
             <div class="stat-card total-notes" data-animate="true">
                 <div class="stat-icon">
                     <i class="fas fa-sticky-note"></i>
@@ -119,7 +121,7 @@ $this->registerCssFile('@web/css/notes-dashboard.css', ['depends' => [\yii\boots
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-6 col-md-3">
             <div class="stat-card pending-notes" data-animate="true">
                 <div class="stat-icon">
                     <i class="fas fa-clock"></i>
@@ -133,7 +135,7 @@ $this->registerCssFile('@web/css/notes-dashboard.css', ['depends' => [\yii\boots
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-6 col-md-3">
             <div class="stat-card processing-notes" data-animate="true">
                 <div class="stat-icon">
                     <i class="fas fa-sync-alt"></i>
@@ -147,7 +149,7 @@ $this->registerCssFile('@web/css/notes-dashboard.css', ['depends' => [\yii\boots
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-6 col-md-3">
             <div class="stat-card completed-notes" data-animate="true">
                 <div class="stat-icon">
                     <i class="fas fa-check-circle"></i>
@@ -167,9 +169,9 @@ $this->registerCssFile('@web/css/notes-dashboard.css', ['depends' => [\yii\boots
     <div class="row">
         <div class="col-12">
             <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="card-header notes-panel-header d-flex flex-column flex-sm-row justify-content-between align-items-stretch align-items-sm-center gap-2 gap-sm-3">
                     <h5 class="mb-0">📝 Notas Adhesivas</h5>
-                    <div class="d-flex align-items-center gap-3">
+                    <div class="d-flex flex-wrap align-items-center gap-2 gap-sm-3">
                         <span class="badge bg-info" id="filteredCount"><?= $stats['total'] ?> notas</span>
                         <div class="btn-group btn-group-sm">
                             <button class="btn btn-outline-primary active" data-view="grid" onclick="setViewMode('grid')">
@@ -196,42 +198,22 @@ $this->registerCssFile('@web/css/notes-dashboard.css', ['depends' => [\yii\boots
                              data-content="<?= Html::encode($note->content) ?>"
                              data-created="<?= $note->created_at ?>">
                             
-                            <!-- Botón de editar flotante -->
-                            <div class="note-float-edit">
-                                <?= Html::a('<i class="fas fa-edit"></i>', ['update', 'id' => $note->id], [
-                                    'class' => 'btn btn-warning btn-sm',
-                                    'title' => 'Editar Nota',
-                                    'onclick' => 'console.log("Botón flotante de editar clickeado para nota:", ' . $note->id . '); return true;'
-                                ]) ?>
-                            </div>
-                            
                             <!-- Header de la nota -->
                             <div class="note-header">
                                 <div class="note-title">
                                     <?= Html::encode($note->title) ?>
                                 </div>
-                                <div class="note-actions">
-                                    <button class="btn btn-sm btn-outline-primary" onclick="viewNote(<?= $note->id ?>)" title="Ver">
+                                <div class="note-actions d-none d-md-flex">
+                                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation(); viewNote(<?= (int) $note->id ?>)" title="Ver">
                                         <i class="fas fa-eye"></i>
                                     </button>
-                                    
-                                    <!-- Botón de editar con enlace directo -->
                                     <?= Html::a('<i class="fas fa-edit"></i>', ['update', 'id' => $note->id], [
                                         'class' => 'btn btn-sm btn-outline-warning',
                                         'title' => 'Editar Nota',
-                                        'data-note-id' => $note->id,
-                                        'onclick' => 'console.log("Enlace de editar clickeado para nota:", ' . $note->id . '); return true;'
                                     ]) ?>
-                                    
-                                    <!-- Botón de editar alternativo con JavaScript -->
-                                    <button class="btn btn-sm btn-outline-info" onclick="editNoteDirect(<?= $note->id ?>)" title="Editar (JS)">
-                                        <i class="fas fa-pen"></i>
-                                    </button>
-                                    
-                                    <button class="btn btn-sm btn-outline-success" onclick="changeStatus(<?= $note->id ?>)" title="Cambiar Estado">
+                                    <button type="button" class="btn btn-sm btn-outline-success" onclick="event.stopPropagation(); changeStatus(<?= (int) $note->id ?>)" title="Cambiar Estado">
                                         <i class="fas fa-exchange-alt"></i>
                                     </button>
-                                    
                                     <?= Html::a(
                                         '<span class="material-symbols-outlined" style="font-size:16px;">delete</span>',
                                         ['delete', 'id' => $note->id],
@@ -267,11 +249,19 @@ $this->registerCssFile('@web/css/notes-dashboard.css', ['depends' => [\yii\boots
                                 </div>
                                 
                                 <div class="note-footer-actions">
+                                    <button type="button" class="btn btn-sm btn-outline-primary d-md-none" onclick="event.stopPropagation(); viewNote(<?= (int) $note->id ?>)" title="Ver">
+                                        <span class="material-symbols-outlined align-middle" style="font-size:16px;">visibility</span>
+                                        Ver
+                                    </button>
                                     <?= Html::a(
                                         '<span class="material-symbols-outlined align-middle" style="font-size:16px;">edit</span> Editar',
                                         ['update', 'id' => $note->id],
                                         ['class' => 'btn btn-warning btn-sm', 'encode' => false, 'title' => 'Editar esta nota']
                                     ) ?>
+                                    <button type="button" class="btn btn-outline-success btn-sm d-md-none" onclick="event.stopPropagation(); changeStatus(<?= (int) $note->id ?>)" title="Estado">
+                                        <span class="material-symbols-outlined align-middle" style="font-size:16px;">sync_alt</span>
+                                        Estado
+                                    </button>
                                     <?= Html::a(
                                         '<span class="material-symbols-outlined align-middle" style="font-size:16px;">delete</span> Eliminar',
                                         ['delete', 'id' => $note->id],
@@ -310,7 +300,7 @@ $this->registerCssFile('@web/css/notes-dashboard.css', ['depends' => [\yii\boots
 
 <!-- Modal para crear nueva nota -->
 <div class="modal fade" id="createNoteModal" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-scrollable modal-fullscreen-sm-down">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">➕ Nueva Nota Adhesiva</h5>
@@ -345,8 +335,8 @@ $this->registerCssFile('@web/css/notes-dashboard.css', ['depends' => [\yii\boots
                         </div>
                     </div>
                 </div>
-                <div class="row">
-                    <div class="col-6">
+                <div class="row g-2">
+                    <div class="col-12 col-sm-6">
                         <div class="mb-3">
                             <?= Html::label('Color', 'note-color', ['class' => 'form-label']) ?>
                             <?= Html::dropDownList('Note[color]', 'yellow', \app\models\Note::COLORS, [
@@ -355,7 +345,7 @@ $this->registerCssFile('@web/css/notes-dashboard.css', ['depends' => [\yii\boots
                             ]) ?>
                         </div>
                     </div>
-                    <div class="col-6">
+                    <div class="col-12 col-sm-6">
                         <div class="mb-3">
                             <?= Html::label('Estado', 'note-status', ['class' => 'form-label']) ?>
                             <?= Html::dropDownList('Note[status]', 'pending', \app\models\Note::STATUSES, [
@@ -448,7 +438,7 @@ $this->registerCssFile('@web/css/notes-dashboard.css', ['depends' => [\yii\boots
 
 <!-- Modal para ver nota -->
 <div class="modal fade" id="viewNoteModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable modal-fullscreen-sm-down">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">
@@ -460,13 +450,13 @@ $this->registerCssFile('@web/css/notes-dashboard.css', ['depends' => [\yii\boots
             <div class="modal-body" id="noteModalContent">
                 <!-- Contenido se carga dinámicamente -->
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                <button type="button" class="btn btn-danger" id="deleteNoteBtn" style="display: none;" onclick="deleteNote(window._viewNoteId)">
+            <div class="modal-footer notes-modal-footer flex-column flex-sm-row gap-2">
+                <button type="button" class="btn btn-secondary w-100 w-sm-auto" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-danger w-100 w-sm-auto" id="deleteNoteBtn" style="display: none;" onclick="deleteNote(window._viewNoteId)">
                     <span class="material-symbols-outlined me-1" style="font-size: 16px;">delete</span>
                     Eliminar
                 </button>
-                <button type="button" class="btn btn-primary" id="editNoteBtn" style="display: none;">
+                <button type="button" class="btn btn-primary w-100 w-sm-auto" id="editNoteBtn" style="display: none;">
                     <span class="material-symbols-outlined me-1" style="font-size: 16px;">edit</span>
                     Editar Nota
                 </button>
@@ -514,34 +504,22 @@ function editNoteDirect(noteId) {
     console.log('Redirigiendo directamente a edición...');
     
     // Redirigir inmediatamente
-    const editUrl = '" . Url::to(['/notes/update']) . "/' + noteId;
-    console.log('URL de edición:', editUrl);
-    window.location.href = editUrl;
+    window.location.href = buildNoteEditUrl(noteId);
+}
+
+function buildNoteEditUrl(noteId) {
+    const base = document.querySelector('.notes-dashboard')?.dataset.updateUrl || '" . Url::to(['/notes/update']) . "';
+    const sep = base.indexOf('?') >= 0 ? '&' : '?';
+    return base + sep + 'id=' + encodeURIComponent(noteId);
 }
 
 // Función para editar nota (usada por botones y doble clic)
 function editNote(noteId) {
-    console.log('=== FUNCIÓN editNote LLAMADA ===');
-    console.log('ID recibido:', noteId);
-    console.log('Tipo de ID:', typeof noteId);
-    
     if (!noteId) {
-        console.error('ID de nota no válido');
         showNotification('error', 'Error: ID de nota no válido');
         return;
     }
-    
-    // Mostrar notificación de carga
-    console.log('Mostrando notificación de carga...');
-    showNotification('info', 'Abriendo editor de nota...');
-    
-    // Redirigir a la página de edición
-    const editUrl = '" . Url::to(['/notes/update']) . "/' + noteId;
-    console.log('URL de edición:', editUrl);
-    console.log('Redirigiendo a:', editUrl);
-    
-    // Redirigir inmediatamente
-    window.location.href = editUrl;
+    window.location.href = buildNoteEditUrl(noteId);
 }
 
 // Función para ver nota
@@ -573,8 +551,36 @@ function viewNote(noteId) {
 
 // Función para cambiar estado
 function changeStatus(noteId) {
-    console.log('Cambiar estado de nota:', noteId);
-    // Implementar lógica de cambio de estado si es necesario
+    const card = document.querySelector('.note-card[data-id=\"' + noteId + '\"]');
+    if (!card) {
+        return;
+    }
+    const order = ['pending', 'processing', 'completed'];
+    const current = card.dataset.status || 'pending';
+    const next = order[(order.indexOf(current) + 1) % order.length];
+    const labels = { pending: 'Pendiente', processing: 'Procesando', completed: 'Completada' };
+    if (!confirm('¿Cambiar estado a \"' + (labels[next] || next) + '\"?')) {
+        return;
+    }
+    const dash = document.querySelector('.notes-dashboard');
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = dash?.dataset.changeStatusUrl || '" . Url::to(['/notes/change-status']) . "';
+    form.style.display = 'none';
+    const addField = function(name, value) {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = name;
+        input.value = value;
+        form.appendChild(input);
+    };
+    addField('id', noteId);
+    addField('status', next);
+    if (dash?.dataset.csrfParam && dash?.dataset.csrfToken) {
+        addField(dash.dataset.csrfParam, dash.dataset.csrfToken);
+    }
+    document.body.appendChild(form);
+    form.submit();
 }
 
 // Eliminar nota (POST con CSRF; respaldo si data-method no está activo)
@@ -584,11 +590,14 @@ function deleteNote(noteId) {
     }
     const form = document.createElement('form');
     form.method = 'POST';
-    form.action = '" . Url::to(['/notes/delete']) . "?id=' + encodeURIComponent(noteId);
+    const dash = document.querySelector('.notes-dashboard');
+    const deleteBase = dash?.dataset.deleteUrl || '" . Url::to(['/notes/delete']) . "';
+    const sep = deleteBase.indexOf('?') >= 0 ? '&' : '?';
+    form.action = deleteBase + sep + 'id=' + encodeURIComponent(noteId);
     const csrf = document.createElement('input');
     csrf.type = 'hidden';
-    csrf.name = '" . Yii::$app->request->csrfParam . "';
-    csrf.value = '" . Yii::$app->request->csrfToken . "';
+    csrf.name = dash?.dataset.csrfParam || '" . Yii::$app->request->csrfParam . "';
+    csrf.value = dash?.dataset.csrfToken || '" . Yii::$app->request->csrfToken . "';
     form.appendChild(csrf);
     document.body.appendChild(form);
     form.submit();
