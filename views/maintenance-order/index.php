@@ -30,6 +30,34 @@ $this->registerCss(<<<'CSS'
 .maintenance-row-atendida:hover td {
     filter: brightness(0.97);
 }
+.maintenance-car-thumb-wrap {
+    width: 80px;
+    text-align: right;
+    vertical-align: middle;
+}
+.maintenance-car-thumb {
+    width: 72px;
+    height: 52px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    background: #fff;
+    display: inline-block;
+}
+.maintenance-car-thumb-placeholder {
+    width: 72px;
+    height: 52px;
+    border-radius: 6px;
+    border: 1px dashed rgba(0, 0, 0, 0.2);
+    background: rgba(255, 255, 255, 0.6);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #6c757d;
+}
+.maintenance-car-thumb-placeholder .material-symbols-outlined {
+    font-size: 28px;
+}
 CSS);
 ?>
 
@@ -96,12 +124,13 @@ CSS);
                             <th class="d-none d-lg-table-cell">Notas</th>
                             <th>Estado</th>
                             <th class="text-end">Acciones</th>
+                            <th class="text-end" style="width: 88px;">Foto</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php if ($dataProvider->getTotalCount() === 0): ?>
                             <tr>
-                                <td colspan="7" class="text-center text-muted py-4">No hay órdenes de mantenimiento.</td>
+                                <td colspan="8" class="text-center text-muted py-4">No hay órdenes de mantenimiento.</td>
                             </tr>
                         <?php endif; ?>
                         <?php foreach ($dataProvider->getModels() as $row): ?>
@@ -126,6 +155,22 @@ CSS);
                                         ['update', 'id' => $row->id],
                                         ['class' => 'btn btn-sm btn-outline-secondary', 'title' => 'Editar', 'encode' => false]
                                     ) ?>
+                                </td>
+                                <td class="maintenance-car-thumb-wrap">
+                                    <?php
+                                    $car = $row->car;
+                                    $imgUrl = $car ? $car->getImagenUrl() : null;
+                                    if ($imgUrl): ?>
+                                        <?= Html::img($imgUrl, [
+                                            'alt' => Html::encode($car->nombre ?? 'Vehículo'),
+                                            'class' => 'maintenance-car-thumb',
+                                            'loading' => 'lazy',
+                                        ]) ?>
+                                    <?php else: ?>
+                                        <span class="maintenance-car-thumb-placeholder" title="Sin foto">
+                                            <span class="material-symbols-outlined">directions_car</span>
+                                        </span>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
