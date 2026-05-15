@@ -1,6 +1,9 @@
 <?php
 /** @var yii\web\View $this */
 /** @var yii\data\ActiveDataProvider $dataProvider */
+/** @var string $search */
+/** @var string|null $status */
+/** @var string|null $empresa */
 
 use yii\helpers\Html;
 use yii\helpers\Url;
@@ -23,24 +26,25 @@ $this->params['breadcrumbs'][] = $this->title;
                 <div class="col-md-4">
                     <label class="form-label"><span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">search</span>Buscar</label>
                     <input type="text" name="search" class="form-control" 
-                           placeholder="Nombre, placa, VIN...">
+                           placeholder="Nombre, placa, VIN, marca..."
+                           value="<?= Html::encode($search ?? '') ?>">
                 </div>
                 <div class="col-md-3">
                     <label class="form-label"><span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">category</span>Estado</label>
                     <select name="status" class="form-select">
                         <option value="">Todos</option>
-                        <option value="disponible">Disponible</option>
-                        <option value="alquilado">Alquilado</option>
-                        <option value="mantenimiento">Mantenimiento</option>
-                        <option value="fuera_servicio">Fuera de Servicio</option>
+                        <option value="disponible" <?= ($status ?? '') === 'disponible' ? 'selected' : '' ?>>Disponible</option>
+                        <option value="alquilado" <?= ($status ?? '') === 'alquilado' ? 'selected' : '' ?>>Alquilado</option>
+                        <option value="mantenimiento" <?= ($status ?? '') === 'mantenimiento' ? 'selected' : '' ?>>Mantenimiento</option>
+                        <option value="fuera_servicio" <?= ($status ?? '') === 'fuera_servicio' ? 'selected' : '' ?>>Fuera de Servicio</option>
                     </select>
                 </div>
                 <div class="col-md-3">
                     <label class="form-label"><span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">business</span>Empresa</label>
                     <select name="empresa" class="form-select">
                         <option value="">Todas</option>
-                        <option value="Facto Rent a Car">Facto Rent a Car</option>
-                        <option value="Moviliza">Moviliza</option>
+                        <option value="Facto Rent a Car" <?= ($empresa ?? '') === 'Facto Rent a Car' ? 'selected' : '' ?>>Facto Rent a Car</option>
+                        <option value="Moviliza" <?= ($empresa ?? '') === 'Moviliza' ? 'selected' : '' ?>>Moviliza</option>
                     </select>
                 </div>
                 <div class="col-md-2 d-flex align-items-end">
@@ -110,9 +114,9 @@ $this->params['breadcrumbs'][] = $this->title;
                                 <span class="badge bg-secondary"><?= Html::encode($model->placa) ?></span>
                             </td>
                             <td class="d-none d-md-table-cell"><?= Html::encode($model->vin ?? 'N/A') ?></td>
-                            <td class="d-none d-md-table-cell"><?= Html::encode($model->marca ?? 'N/A') ?></td>
-                            <td class="d-none d-md-table-cell"><?= Html::encode($model->modelo ?? 'N/A') ?></td>
-                            <td class="d-none d-md-table-cell"><?= Html::encode($model->año ?? 'N/A') ?></td>
+                            <td class="d-none d-md-table-cell"><?= Html::encode($model->marca ? $model->marca->name : 'N/A') ?></td>
+                            <td class="d-none d-md-table-cell"><?= Html::encode($model->getDisplayModelo() ?: 'N/A') ?></td>
+                            <td class="d-none d-md-table-cell"><?= Html::encode($model->getDisplayAnio() ?: 'N/A') ?></td>
                             <td class="d-none d-md-table-cell">
                                 <?php
                                 $statusConfig = [

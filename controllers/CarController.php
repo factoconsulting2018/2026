@@ -58,21 +58,28 @@ class CarController extends Controller
 
     public function actionIndex()
     {
-        $query = Car::find();
-        
-        $search = Yii::$app->request->get('search');
-        if ($search) {
-            $query->andWhere([
-                'or',
-                ['like', 'brand', $search],
-                ['like', 'model', $search],
-                ['like', 'plate', $search],
-            ]);
+        $query = Car::find()->with(['marca']);
+
+        $search = trim((string) Yii::$app->request->get('search', ''));
+        if ($search !== '') {
+            $query->joinWith(['marca'])
+                ->andWhere([
+                    'or',
+                    ['like', 'cars.nombre', $search],
+                    ['like', 'cars.placa', $search],
+                    ['like', 'cars.vin', $search],
+                    ['like', 'brands.name', $search],
+                ]);
         }
         
         $status = Yii::$app->request->get('status');
         if ($status) {
-            $query->andWhere(['status' => $status]);
+            $query->andWhere(['cars.status' => $status]);
+        }
+
+        $empresa = Yii::$app->request->get('empresa');
+        if ($empresa) {
+            $query->andWhere(['cars.empresa' => $empresa]);
         }
         
         $dataProvider = new ActiveDataProvider([
@@ -85,6 +92,7 @@ class CarController extends Controller
             'dataProvider' => $dataProvider,
             'search' => $search,
             'status' => $status,
+            'empresa' => Yii::$app->request->get('empresa', ''),
         ]);
     }
 
@@ -142,7 +150,7 @@ class CarController extends Controller
 
     protected function findModel($id)
     {
-        if (($model = Car::findOne(['id' => $id])) !== null) {
+        if (($model = Car::find()->with(['marca'])->where(['id' => $id])->one()) !== null) {
             return $model;
         }
         throw new NotFoundHttpException('La página solicitada no existe.');

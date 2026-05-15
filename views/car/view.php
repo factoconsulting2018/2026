@@ -43,7 +43,9 @@ $this->params['breadcrumbs'][] = $this->title;
                             </p>
                             <p><strong>📅 Registro:</strong> <?= Yii::$app->formatter->asDate($model->created_at) ?></p>
                             <p><strong>🔄 Actualizado:</strong> <?= Yii::$app->formatter->asDate($model->updated_at) ?></p>
-                            <?php if ($model->marca_id): ?>
+                            <?php if ($model->marca): ?>
+                            <p><strong>🏷️ Marca:</strong> <?= Html::encode($model->marca->name) ?></p>
+                            <?php elseif ($model->marca_id): ?>
                             <p><strong>🏷️ Marca ID:</strong> <?= Html::encode($model->marca_id) ?></p>
                             <?php endif; ?>
                         </div>

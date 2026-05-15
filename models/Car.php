@@ -12,7 +12,8 @@ use yii\db\ActiveRecord;
  * @property string $car_id
  * @property string $nombre
  * @property string $imagen
- * @property int $marca_id
+ * @property int|null $marca_id
+ * @property-read Brand|null $marca Relación con la tabla brands
  * @property string $placa
  * @property string $vin
  * @property int $cantidad_pasajeros
@@ -129,6 +130,45 @@ class Car extends ActiveRecord
     public function getRentals()
     {
         return $this->hasMany(Rental::class, ['car_id' => 'id']);
+    }
+
+    /**
+     * Marca del vehículo (tabla brands).
+     */
+    public function getMarca()
+    {
+        return $this->hasOne(Brand::class, ['id' => 'marca_id']);
+    }
+
+    /**
+     * Texto para columna "Modelo": resto del nombre quitando la marca al inicio, o el nombre completo.
+     */
+    public function getDisplayModelo(): string
+    {
+        $nombre = trim((string) $this->nombre);
+        if ($nombre === '') {
+            return '';
+        }
+        $brand = $this->marca;
+        if ($brand !== null && $brand->name !== '') {
+            $prefix = trim($brand->name);
+            if ($prefix !== '' && stripos($nombre, $prefix) === 0) {
+                $rest = trim(mb_substr($nombre, mb_strlen($prefix)));
+                return $rest !== '' ? $rest : $nombre;
+            }
+        }
+        return $nombre;
+    }
+
+    /**
+     * Año extraído del nombre del vehículo (ej. "BEAT 2018") si existe.
+     */
+    public function getDisplayAnio(): string
+    {
+        if (preg_match('/\b(19[89]\d|20\d{2})\b/', (string) $this->nombre, $m)) {
+            return $m[1];
+        }
+        return '';
     }
 
     /**
