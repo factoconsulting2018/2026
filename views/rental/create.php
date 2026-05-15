@@ -12,6 +12,16 @@ use yii\helpers\ArrayHelper;
 $this->title = 'Crear Alquiler';
 $this->params['breadcrumbs'][] = ['label' => 'Alquileres', 'url' => ['index']];
 $this->params['breadcrumbs'][] = $this->title;
+
+$carDropdownItems = [];
+$carDropdownOptions = [];
+foreach ($cars as $car) {
+    $carDropdownItems[$car->id] = $car->nombre . ' (' . $car->placa . ')';
+    $carDropdownOptions[$car->id] = [
+        'data-empresa' => (string) ($car->empresa ?? ''),
+        'data-status' => (string) ($car->status ?? ''),
+    ];
+}
 ?>
 <div class="rental-create">
 
@@ -217,17 +227,20 @@ $this->params['breadcrumbs'][] = $this->title;
                 </div>
                 <div class="card-body">
                     <?= $form->field($model, 'car_id')->dropDownList(
-                        ArrayHelper::map($cars, 'id', function($car) {
-                            return $car->nombre . ' (' . $car->placa . ')';
-                        }),
+                        $carDropdownItems,
                         [
                             'prompt' => 'Seleccionar vehículo...',
                             'class' => 'form-select',
                             'required' => true,
+                            'options' => $carDropdownOptions,
                             'oninvalid' => "this.setCustomValidity('Debes seleccionar un vehículo.')",
-                            'oninput' => "this.setCustomValidity('')"
+                            'oninput' => "this.setCustomValidity('')",
                         ]
                     ) ?>
+                    <p class="small text-muted mb-0">
+                        <span class="text-success">Verde</span> = Facto Rent a Car disponible &nbsp;·&nbsp;
+                        <span class="text-secondary">Gris</span> = Moviliza
+                    </p>
 
                     <?= $form->field($model, 'precio_por_dia')->input('number', [
                         'step' => '0.01',
@@ -1336,8 +1349,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 data.data.available_cars.forEach(car => {
                     const option = document.createElement('option');
                     option.value = car.id;
-                    option.textContent = `${car.nombre} (${car.placa})`;
-                    option.dataset.status = car.status;
+                    const empresa = car.empresa || '';
+                    option.textContent = `${car.nombre} (${car.placa})${empresa === 'Moviliza' ? ' · Moviliza' : ''}`;
+                    option.dataset.status = car.status || '';
+                    option.dataset.empresa = empresa;
                     carSelect.appendChild(option);
                 });
                 
@@ -1593,12 +1608,19 @@ document.addEventListener('DOMContentLoaded', function() {
         font-style: italic;
     }
     
-    .form-select option[data-status="alquilado"] {
+    .form-select option[data-status="alquilado"]:not([data-empresa="Moviliza"]) {
         color: #dc3545;
     }
     
-    .form-select option[data-status="disponible"] {
+    .form-select option[data-status="disponible"]:not([data-empresa="Moviliza"]) {
         color: #28a745;
+    }
+
+    /* Vehículos Moviliza: gris (no rojo por estado alquilado/mantenimiento) */
+    #rental-car_id option[data-empresa="Moviliza"],
+    .form-select option[data-empresa="Moviliza"] {
+        color: #6c757d !important;
+        font-weight: 500;
     }
     
     /* Estilos para el texto de ayuda de fecha final */

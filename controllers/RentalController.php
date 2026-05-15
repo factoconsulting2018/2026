@@ -744,7 +744,8 @@ class RentalController extends Controller
                         'nombre' => $car->nombre,
                         'placa' => $car->placa,
                         'status' => $car->status,
-                        'disponible' => true
+                        'empresa' => (string) ($car->empresa ?? ''),
+                        'disponible' => true,
                     ];
                 }
             }
