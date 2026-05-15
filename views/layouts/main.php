@@ -436,6 +436,13 @@ $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => Yii
                 </a>
             </li>
             <li class="nav-item">
+                <a class="nav-link <?= Yii::$app->controller->id === 'car' && Yii::$app->controller->action->id === 'disponibles' ? 'active' : '' ?>" 
+                   href="<?= \yii\helpers\Url::to(['/car/disponibles']) ?>">
+                    <span class="nav-icon material-symbols-outlined">event_available</span>
+                    <span class="nav-text">Disponibles</span>
+                </a>
+            </li>
+            <li class="nav-item">
                 <a class="nav-link <?= Yii::$app->controller->id === 'rental' ? 'active' : '' ?>" 
                    href="<?= \yii\helpers\Url::to(['/rental/index']) ?>">
                     <span class="nav-icon material-symbols-outlined">assignment</span>

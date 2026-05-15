@@ -80,6 +80,35 @@ class CarAvailability
     }
 
     /**
+     * Vehículos sin renta activa (no cancelada, síncrona) que cubran el día calendario.
+     * Excluye estado mantenimiento y fuera de servicio.
+     *
+     * @param string $day Fecha Y-m-d (zona horaria del servidor / aplicación)
+     * @return Car[]
+     */
+    public static function getCarsAvailableOnDate(string $day): array
+    {
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $day)) {
+            $day = date('Y-m-d');
+        }
+
+        $month = substr($day, 0, 7);
+        $query = Car::find()
+            ->where(['not in', 'status', ['fuera_servicio', 'mantenimiento']])
+            ->orderBy(['nombre' => SORT_ASC]);
+
+        $available = [];
+        foreach ($query->each() as $car) {
+            $occupied = self::getOccupiedDates($car->id, $month);
+            if (!in_array($day, $occupied, true)) {
+                $available[] = $car;
+            }
+        }
+
+        return $available;
+    }
+
+    /**
      * Obtener la disponibilidad de todos los vehículos para un mes
      * @param string $month Mes en formato Y-m
      * @return array Array con la disponibilidad por vehículo

@@ -4,6 +4,7 @@ namespace app\controllers;
 use Yii;
 use app\models\Car;
 use app\models\Brand;
+use app\models\CarAvailability;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\AccessControl;
@@ -31,6 +32,28 @@ class CarController extends Controller
                 ],
             ],
         ];
+    }
+
+    /**
+     * Listado de vehículos sin renta activa en la fecha indicada (por defecto hoy).
+     */
+    public function actionDisponibles()
+    {
+        $fecha = Yii::$app->request->get('fecha');
+        if ($fecha === null || $fecha === '') {
+            $fecha = date('Y-m-d');
+        }
+        $dt = \DateTimeImmutable::createFromFormat('Y-m-d', $fecha);
+        if ($dt === false || $dt->format('Y-m-d') !== $fecha) {
+            $fecha = date('Y-m-d');
+        }
+
+        $cars = CarAvailability::getCarsAvailableOnDate($fecha);
+
+        return $this->render('disponibles', [
+            'cars' => $cars,
+            'fecha' => $fecha,
+        ]);
     }
 
     public function actionIndex()
