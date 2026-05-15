@@ -35,6 +35,27 @@ class PdfController extends Controller
         ];
     }
 
+    /** Identificador de orden para nombres de archivo (ej. FAA_R7561457). */
+    public static function rentalOrderFileBase(Rental $rental, string $suffix = ''): string
+    {
+        $orderId = trim((string) ($rental->rental_id ?? ''));
+        if ($orderId === '') {
+            $orderId = 'R' . str_pad((string) $rental->id, 6, '0', STR_PAD_LEFT);
+        }
+
+        return $orderId . $suffix;
+    }
+
+    public static function rentalOrderPdfFilename(Rental $rental, string $suffix = ''): string
+    {
+        return self::rentalOrderFileBase($rental, $suffix) . '.pdf';
+    }
+
+    public static function rentalOrderZipFilename(Rental $rental): string
+    {
+        return self::rentalOrderFileBase($rental) . '.zip';
+    }
+
     /**
      * Generar PDF y guardarlo en servidor
      */
@@ -58,7 +79,7 @@ class PdfController extends Controller
         $globalConditions = CompanyConfig::getConfig('rental_conditions_html', '');
         $hasCond = !empty($customConditions) || !empty($globalConditions) || !empty($companyInfo['conditions']);
 
-        $filename = 'Orden_Alquiler_' . $rental->rental_id . '_' . date('Y-m-d') . '.pdf';
+        $filename = self::rentalOrderPdfFilename($rental);
         $filepath = Yii::getAlias('@app') . '/pdfs/' . $filename;
 
         if ($isModernPdf) {
@@ -145,7 +166,7 @@ class PdfController extends Controller
         }
         
         $rental = $this->findRental($id);
-        $filename = 'Orden_Alquiler_' . $rental->rental_id . '_' . date('Y-m-d') . '.pdf';
+        $filename = self::rentalOrderPdfFilename($rental);
         $filepath = Yii::getAlias('@app') . '/runtime/' . $filename;
         
         if (!file_exists($filepath)) {
@@ -184,7 +205,7 @@ class PdfController extends Controller
     public function actionCheckRentalPdf($id)
     {
         $rental = $this->findRental($id);
-        $filename = 'Orden_Alquiler_' . $rental->rental_id . '_' . date('Y-m-d') . '.pdf';
+        $filename = self::rentalOrderPdfFilename($rental);
         $filepath = Yii::getAlias('@app') . '/runtime/' . $filename;
         
         return json_encode([
@@ -301,7 +322,7 @@ class PdfController extends Controller
             }
             
             // Generar nombre único del archivo
-            $filename = 'Orden_Alquiler_' . $rental->rental_id . '_' . date('Y-m-d') . '_PDF2.pdf';
+            $filename = self::rentalOrderPdfFilename($rental, '_PDF2');
             $filepath = $pdfDir . '/' . $filename;
             
             // Guardar PDF en disco
@@ -330,7 +351,7 @@ class PdfController extends Controller
         Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
         
         $rental = $this->findRental($id);
-        $filename = 'Orden_Alquiler_' . $rental->rental_id . '_' . date('Y-m-d') . '_PDF2.pdf';
+        $filename = self::rentalOrderPdfFilename($rental, '_PDF2');
         $filepath = Yii::getAlias('@app') . '/runtime/pdfs/' . $filename;
         
         return [
@@ -361,7 +382,7 @@ class PdfController extends Controller
         }
         
         $rental = $this->findRental($id);
-        $filename = 'Orden_Alquiler_' . $rental->rental_id . '_' . date('Y-m-d') . '_PDF2.pdf';
+        $filename = self::rentalOrderPdfFilename($rental, '_PDF2');
         $filepath = Yii::getAlias('@app') . '/runtime/pdfs/' . $filename;
         
         if (!file_exists($filepath)) {
@@ -428,7 +449,7 @@ class PdfController extends Controller
             $mpdf->SetAuthor('Facto Rent a Car');
             $mpdf->WriteHTML($html);
 
-            $filename = 'Orden_Alquiler_' . $rental->rental_id . '_' . date('Y-m-d') . '.pdf';
+            $filename = self::rentalOrderPdfFilename($rental);
 
             Yii::$app->response->format = \yii\web\Response::FORMAT_RAW;
             Yii::$app->response->headers->set('Content-Type', 'application/pdf');
@@ -493,7 +514,7 @@ class PdfController extends Controller
         $pdf->writeHTML($conditionsHtml, true, false, true, false, '');
         
         // Generar nombre del archivo
-        $filename = 'Orden_Alquiler_' . $rental->rental_id . '_' . date('Y-m-d') . '.pdf';
+        $filename = self::rentalOrderPdfFilename($rental);
         
         // Configurar la respuesta de Yii para descargar el PDF
         Yii::$app->response->format = \yii\web\Response::FORMAT_RAW;
@@ -1532,7 +1553,7 @@ class PdfController extends Controller
             Yii::info('HTML escrito en mPDF', 'pdf');
             
             // Nombre del archivo
-            $filename = 'Orden_Alquiler_' . $rental->rental_id . '_' . date('Y-m-d') . '_PDF2.pdf';
+            $filename = self::rentalOrderPdfFilename($rental, '_PDF2');
             
             Yii::info('Enviando PDF con nombre: ' . $filename, 'pdf');
             Yii::info('Headers actuales: ' . json_encode(headers_list()), 'pdf');
@@ -1651,12 +1672,12 @@ class PdfController extends Controller
                 mkdir($pdfDir, 0777, true);
             }
             
-            $pdfFilename = 'Orden_Alquiler_' . $rental->rental_id . '_' . date('Y-m-d') . '_PDF2.pdf';
+            $pdfFilename = self::rentalOrderPdfFilename($rental, '_PDF2');
             $pdfFilepath = $pdfDir . '/' . $pdfFilename;
             $mpdf->Output($pdfFilepath, 'F');
             
             // Crear ZIP
-            $zipFilename = 'Orden_Alquiler_' . $rental->rental_id . '_' . date('Y-m-d') . '.zip';
+            $zipFilename = self::rentalOrderZipFilename($rental);
             $zipFilepath = $zipDir . '/' . $zipFilename;
             
             $zip = new \ZipArchive();
@@ -1705,7 +1726,7 @@ class PdfController extends Controller
         }
         
         $rental = $this->findRental($id);
-        $zipFilename = 'Orden_Alquiler_' . $rental->rental_id . '_' . date('Y-m-d') . '.zip';
+        $zipFilename = self::rentalOrderZipFilename($rental);
         $zipFilepath = Yii::getAlias('@app') . '/runtime/zips/' . $zipFilename;
         
         if (!file_exists($zipFilepath)) {
@@ -1753,7 +1774,7 @@ class PdfController extends Controller
         Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
         
         $rental = $this->findRental($id);
-        $zipFilename = 'Orden_Alquiler_' . $rental->rental_id . '_' . date('Y-m-d') . '.zip';
+        $zipFilename = self::rentalOrderZipFilename($rental);
         $zipFilepath = Yii::getAlias('@app') . '/runtime/zips/' . $zipFilename;
         
         return [

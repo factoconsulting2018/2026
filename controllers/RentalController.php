@@ -842,7 +842,7 @@ class RentalController extends Controller
             $pdf->WriteHTML($html);
             
             // Generar nombre del archivo
-            $filename = 'Orden_Alquiler_' . $rental->rental_id . '_' . date('Y-m-d') . '.pdf';
+            $filename = PdfController::rentalOrderPdfFilename($rental);
             $filepath = Yii::getAlias('@app') . '/runtime/' . $filename;
             
             // Guardar PDF en disco
