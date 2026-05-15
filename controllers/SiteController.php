@@ -176,6 +176,7 @@ class SiteController extends Controller
 
         $model = new LoginForm();
         if ($model->load(Yii::$app->request->post()) && $model->login()) {
+            \app\components\IncidentNotificationHelper::onSuccessfulLogin();
             return $this->redirect(['/site/index']);
         }
 

@@ -6,6 +6,7 @@ use Yii;
 use app\models\CompanyConfig;
 use app\models\Client;
 use app\models\ApiKey;
+use yii\helpers\Url;
 use yii\web\Controller;
 use yii\web\UploadedFile;
 use yii\filters\AccessControl;
@@ -72,7 +73,50 @@ class ConfigController extends Controller
             'fileConfigs' => $fileConfigs,
             'model' => $model,
             'apiKeys' => $apiKeys,
+            'incidentNotifEnabled' => CompanyConfig::getConfig(CompanyConfig::INCIDENT_NOTIF_ENABLED, '0') === '1',
+            'incidentNotifFrequencyDays' => max(1, min(365, (int) CompanyConfig::getConfig(CompanyConfig::INCIDENT_NOTIF_FREQUENCY_DAYS, '3'))),
         ]);
+    }
+
+    /**
+     * Notificaciones post-login de insidentes con saldo pendiente.
+     */
+    public function actionUpdateIncidentNotifications()
+    {
+        if (!Yii::$app->request->isPost) {
+            return $this->redirect(Url::to(['config/index']) . '#notificaciones');
+        }
+
+        $post = Yii::$app->request->post();
+        $enabled = isset($post['incident_notifications_enabled']) && $post['incident_notifications_enabled'] === '1';
+        $freq = (int) ($post['incident_notifications_frequency_days'] ?? 3);
+        $freq = max(1, min(365, $freq));
+
+        $wasEnabled = CompanyConfig::getConfig(CompanyConfig::INCIDENT_NOTIF_ENABLED, '0') === '1';
+        if ($wasEnabled && !$enabled) {
+            $pwd = (string) ($post['disable_password'] ?? '');
+            $expected = (string) (Yii::$app->params['incidentDeletePassword'] ?? '3030');
+            if (!hash_equals($expected, $pwd)) {
+                Yii::$app->session->setFlash('error', 'Contraseña incorrecta. Las notificaciones siguen activas.');
+                return $this->redirect(Url::to(['config/index']) . '#notificaciones');
+            }
+        }
+
+        CompanyConfig::setConfig(
+            CompanyConfig::INCIDENT_NOTIF_ENABLED,
+            $enabled ? '1' : '0',
+            'Modal de insidentes pendientes tras el inicio de sesión'
+        );
+        CompanyConfig::setConfig(
+            CompanyConfig::INCIDENT_NOTIF_FREQUENCY_DAYS,
+            (string) $freq,
+            'Días de pausa tras cerrar el aviso tres veces antes de volver a mostrarlo'
+        );
+
+        Yii::$app->response->cookies->remove(\app\components\IncidentNotificationHelper::COOKIE_SNOOZE_UNTIL);
+
+        Yii::$app->session->setFlash('success', 'Configuración de notificaciones guardada.');
+        return $this->redirect(Url::to(['config/index']) . '#notificaciones');
     }
 
     /**

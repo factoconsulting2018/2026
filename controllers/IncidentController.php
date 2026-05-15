@@ -11,6 +11,8 @@ use yii\filters\AccessControl;
 use yii\filters\VerbFilter;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
+use yii\web\Response;
+use yii\web\Cookie;
 
 class IncidentController extends Controller
 {
@@ -32,6 +34,7 @@ class IncidentController extends Controller
                     'add-payment' => ['POST'],
                     'close' => ['POST'],
                     'delete' => ['POST'],
+                    'notification-dismiss' => ['POST'],
                 ],
             ],
         ];
@@ -170,6 +173,39 @@ class IncidentController extends Controller
         $model->save(false);
         Yii::$app->session->setFlash('success', 'Insidente cerrado.');
         return $this->redirect(['view', 'id' => $model->id]);
+    }
+
+    /**
+     * Incrementa el contador de cierres del modal post-login. Tras 3 cierres deja de mostrarse en la sesión
+     * y se fija una pausa en navegador según la frecuencia en días (cookie).
+     */
+    public function actionNotificationDismiss()
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        if (Yii::$app->user->isGuest) {
+            return ['ok' => false, 'message' => 'No autorizado'];
+        }
+        $d = (int) Yii::$app->session->get(\app\components\IncidentNotificationHelper::SESSION_DISMISS, 0) + 1;
+        Yii::$app->session->set(\app\components\IncidentNotificationHelper::SESSION_DISMISS, $d);
+        if ($d >= 3) {
+            Yii::$app->session->set(\app\components\IncidentNotificationHelper::SESSION_PROMPT, false);
+            $n = \app\components\IncidentNotificationHelper::getFrequencyDays();
+            if ($n > 0) {
+                $expiry = time() + $n * 86400;
+                Yii::$app->response->cookies->add(new Cookie([
+                    'name' => \app\components\IncidentNotificationHelper::COOKIE_SNOOZE_UNTIL,
+                    'value' => (string) $expiry,
+                    'expire' => time() + 86400 * 400,
+                    'httpOnly' => true,
+                    'sameSite' => Cookie::SAME_SITE_LAX,
+                ]));
+            }
+        }
+        return [
+            'ok' => true,
+            'dismiss' => $d,
+            'stopped' => $d >= 3,
+        ];
     }
 
     /**

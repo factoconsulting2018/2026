@@ -29,6 +29,8 @@ class CompanyConfig extends ActiveRecord
     const COMPANY_EMAIL = 'company_email';
     const BANK_ACCOUNTS = 'bank_accounts';
     const SIMPEMOVIL_NUMBER = 'simemovil_number';
+    const INCIDENT_NOTIF_ENABLED = 'incident_notifications_enabled';
+    const INCIDENT_NOTIF_FREQUENCY_DAYS = 'incident_notifications_frequency_days';
 
     // Directorios para archivos
     const UPLOAD_DIR = 'uploads/company/';

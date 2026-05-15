@@ -573,6 +573,17 @@ $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => Yii
     <?= $content ?>
 </main>
 
+<?php
+if (\app\components\IncidentNotificationHelper::shouldShowModal()) {
+    $incidentNotifRows = \app\components\IncidentNotificationHelper::getPendingIncidents();
+    $incidentNotifFreqDays = \app\components\IncidentNotificationHelper::getFrequencyDays();
+    echo $this->render('@app/views/layouts/_incident_notif_modal', [
+        'incidents' => $incidentNotifRows,
+        'frequencyDays' => $incidentNotifFreqDays,
+    ]);
+}
+?>
+
 <?php else: ?>
 <!-- Login Page Layout -->
 <div class="container-fluid min-vh-100 d-flex align-items-center justify-content-center">

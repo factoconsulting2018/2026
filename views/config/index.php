@@ -7,6 +7,8 @@ use yii\widgets\ActiveForm;
 /* @var $this yii\web\View */
 /* @var $companyInfo array */
 /* @var $fileConfigs array */
+/* @var $incidentNotifEnabled bool */
+/* @var $incidentNotifFrequencyDays int */
 
 $this->title = 'Configuración de la Empresa';
 $this->params['breadcrumbs'][] = $this->title;
@@ -66,6 +68,11 @@ $conditionsModel = new \app\models\CompanyConfig();
                         <li class="nav-item" role="presentation">
                             <button class="nav-link" id="api-tab" data-bs-toggle="tab" data-bs-target="#api" type="button" role="tab" aria-controls="api" aria-selected="false">
                                 <i class="fas fa-code"></i> API
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="notificaciones-tab" data-bs-toggle="tab" data-bs-target="#notificaciones" type="button" role="tab" aria-controls="notificaciones" aria-selected="false">
+                                <i class="fas fa-bell"></i> Notificaciones
                             </button>
                         </li>
                     </ul>
@@ -966,6 +973,35 @@ sudo docker-compose exec app php yii migrate</code></pre>
                                 </div>
                             </div>
                         </div>
+
+                        <div class="tab-pane fade" id="notificaciones" role="tabpanel" aria-labelledby="notificaciones-tab">
+                            <div class="row mt-4">
+                                <div class="col-lg-8">
+                                    <h5 class="mb-3"><i class="fas fa-bell"></i> Notificaciones de cobro (insidentes)</h5>
+                                    <p class="text-muted">Tras iniciar sesión, si hay insidentes abiertos con saldo pendiente, se muestra un aviso con el listado. El usuario debe cerrarlo hasta tres veces; después no volverá a mostrarse en esa sesión. Tras la tercera vez, el aviso permanece oculto durante la cantidad de días indicada en <strong>frecuencia</strong> (mediante una pausa en este navegador). Para desactivar por completo las notificaciones debe ingresar la contraseña de seguridad.</p>
+                                    <?php $notifForm = ActiveForm::begin([
+                                        'action' => ['config/update-incident-notifications'],
+                                        'method' => 'post',
+                                        'options' => ['class' => 'needs-validation', 'novalidate' => true, 'id' => 'incident-notifications-form'],
+                                    ]); ?>
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" role="switch" name="incident_notifications_enabled" value="1" id="incident_notifications_enabled" <?= !empty($incidentNotifEnabled) ? 'checked' : '' ?>>
+                                        <label class="form-check-label" for="incident_notifications_enabled">Activar notificaciones al iniciar sesión</label>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label" for="incident_notifications_frequency_days">Frecuencia (días de pausa tras cerrar 3 veces)</label>
+                                        <input type="number" class="form-control" name="incident_notifications_frequency_days" id="incident_notifications_frequency_days" min="1" max="365" value="<?= (int) ($incidentNotifFrequencyDays ?? 3) ?>" style="max-width: 120px;">
+                                        <small class="form-text text-muted">Ejemplo: 3 significa que, tras cerrar el aviso tres veces, no se volverá a mostrar hasta pasados 3 días (en este equipo). Use 1 para la pausa mínima.</small>
+                                    </div>
+                                    <div class="mb-3" id="incident-notif-disable-password-wrap" style="display: none;">
+                                        <label class="form-label" for="incident_notif_disable_password">Contraseña para desactivar</label>
+                                        <input type="password" class="form-control" name="disable_password" id="incident_notif_disable_password" autocomplete="off" style="max-width: 280px;">
+                                    </div>
+                                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar</button>
+                                    <?php ActiveForm::end(); ?>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -975,6 +1011,24 @@ sudo docker-compose exec app php yii migrate</code></pre>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    const notifEn = document.getElementById('incident_notifications_enabled');
+    const notifWrap = document.getElementById('incident-notif-disable-password-wrap');
+    const notifWasEnabled = <?= !empty($incidentNotifEnabled) ? 'true' : 'false' ?>;
+    if (notifEn && notifWrap) {
+        const syncNotifDisablePwd = function () {
+            notifWrap.style.display = (notifWasEnabled && !notifEn.checked) ? 'block' : 'none';
+        };
+        notifEn.addEventListener('change', syncNotifDisablePwd);
+        syncNotifDisablePwd();
+    }
+
+    if (window.location.hash === '#notificaciones' && window.bootstrap && window.bootstrap.Tab) {
+        var notifTabBtn = document.getElementById('notificaciones-tab');
+        if (notifTabBtn) {
+            (new bootstrap.Tab(notifTabBtn)).show();
+        }
+    }
+
     // Agregar cuenta bancaria
     const addBankAccountBtn = document.getElementById('add-bank-account');
     if (addBankAccountBtn) {
