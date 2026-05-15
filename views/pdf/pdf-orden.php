@@ -52,11 +52,22 @@ $vehImgColW = $vehImgMaxW + 10;
     .header .logo-cell { width: 110px; vertical-align: middle; }
     .header .logo-cell img { width: 90px; height: 90px; }
 
-    .empresa-band { background: #f3f5f8; padding: 18px 20px; }
+    .empresa-band { background: #f3f5f8; padding: 24px 20px; }
     .empresa-band table { width: 100%; border-collapse: collapse; }
-    .empresa-band .info { vertical-align: middle; }
-    .empresa-band .info b { font-size: 18pt; color: #0b1f4a; line-height: 1.1; }
-    .empresa-band .info p { margin: 2px 0; font-size: 12pt; line-height: 1.25; }
+    .empresa-band .info { vertical-align: middle; color: #0b1f4a; }
+    .empresa-band .info b {
+        font-size: 36pt;
+        color: #0b1f4a;
+        line-height: 1.08;
+        display: block;
+        margin: 0 0 8px;
+    }
+    .empresa-band .info p {
+        margin: 4px 0;
+        font-size: 24pt;
+        line-height: 1.2;
+        color: #0b1f4a;
+    }
     .empresa-band .veh-img { width: <?= $vehImgColW ?>px; text-align: right; vertical-align: middle; }
     .empresa-band .veh-img img { max-width: <?= $vehImgMaxW ?>px; max-height: <?= $vehImgMaxH ?>px; }
 
@@ -144,11 +155,11 @@ $vehImgColW = $vehImgMaxW + 10;
 <div class="empresa-band">
     <table>
         <tr>
-            <td class="info">
-                <b><?= $h($d['empresa']['nombre']) ?></b>
-                <p><?= $h($d['empresa']['razon_social']) ?> | Cédula Jurídica <?= $h($d['empresa']['cedula']) ?></p>
-                <p><?= $h($d['empresa']['direccion']) ?></p>
-                <p>WhatsApp: <?= $h($d['empresa']['whatsapp']) ?> | <?= $h($d['empresa']['telefono']) ?> | <?= $h($d['empresa']['web']) ?></p>
+            <td class="info" style="color: #0b1f4a;">
+                <b style="font-size: 36pt; color: #0b1f4a; line-height: 1.08;"><?= $h($d['empresa']['nombre']) ?></b>
+                <p style="font-size: 24pt; color: #0b1f4a; line-height: 1.2; margin: 4px 0;"><?= $h($d['empresa']['razon_social']) ?> | Cédula Jurídica <?= $h($d['empresa']['cedula']) ?></p>
+                <p style="font-size: 24pt; color: #0b1f4a; line-height: 1.2; margin: 4px 0;"><?= $h($d['empresa']['direccion']) ?></p>
+                <p style="font-size: 24pt; color: #0b1f4a; line-height: 1.2; margin: 4px 0;">WhatsApp: <?= $h($d['empresa']['whatsapp']) ?> | <?= $h($d['empresa']['telefono']) ?> | <?= $h($d['empresa']['web']) ?></p>
             </td>
             <td class="veh-img">
                 <?php if (!empty($d['vehiculo']['imagen_fs'])): ?>
