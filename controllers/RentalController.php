@@ -812,16 +812,18 @@ class RentalController extends Controller
                 mkdir($tempDir, 0777, true);
             }
             
+            $isModernRentalPdf = CompanyConfig::getRentalOrderPdfFormat() === 'moderna';
             $pdf = new Mpdf([
                 'mode' => 'utf-8',
                 'format' => 'Letter',
                 'orientation' => 'P',
-                'margin_left' => 10,
-                'margin_right' => 10,
-                'margin_top' => 8,
-                'margin_bottom' => 5,
+                'margin_left' => 14,
+                'margin_right' => 14,
+                'margin_top' => 12,
+                'margin_bottom' => 14,
                 'default_font' => 'dejavusans',
-                'tempDir' => $tempDir
+                'default_font_size' => $isModernRentalPdf ? 9.5 : 10,
+                'tempDir' => $tempDir,
             ]);
             
             // Generar contenido HTML

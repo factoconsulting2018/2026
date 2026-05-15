@@ -67,17 +67,21 @@ class PdfController extends Controller
         $pdf->SetFooterMargin(8);
         $pdf->SetAutoPageBreak(true, 14);
         $pdf->setImageScale(1.53);
-        
-        // Fuente base
-        $pdf->SetFont('helvetica', '', 10);
-        
+        $pdf->setPrintHeader(false);
+        $pdf->setPrintFooter(false);
+
+        $isModernPdf = CompanyConfig::getRentalOrderPdfFormat() === 'moderna';
+        $fontFamily = $isModernPdf ? 'dejavusans' : 'helvetica';
+        $fontSize = $isModernPdf ? 9.5 : 10;
+        $pdf->SetFont($fontFamily, '', $fontSize);
+
         // Agregar página
         $pdf->AddPage();
-        
+
         // Generar contenido
         $html = $this->generateRentalOrderHtml($rental, $companyInfo);
         $pdf->writeHTML($html, true, false, true, false, '');
-        
+
         // Agregar código QR con información de la orden en la esquina inferior derecha
         // IMPORTANTE: Las coordenadas en TCPDF son absolutas desde el TOP-LEFT
         $qrUrl = \yii\helpers\Url::to(['/rental/public-view', 'id' => $rental->id], true);
@@ -108,6 +112,7 @@ class PdfController extends Controller
         $globalConditions = CompanyConfig::getConfig('rental_conditions_html', '');
         if (!empty($customConditions) || !empty($globalConditions) || $companyInfo['conditions']) {
             $pdf->AddPage();
+            $pdf->SetFont($fontFamily, '', $fontSize);
             $conditionsHtml = CompanyConfig::wrapRentalConditionsHtml($this->generateConditionsHtml($companyInfo, $customConditions ?: $globalConditions));
             $pdf->writeHTML($conditionsHtml, true, false, true, false, '');
         }
@@ -440,17 +445,21 @@ class PdfController extends Controller
         $pdf->SetFooterMargin(8);
         $pdf->SetAutoPageBreak(true, 14);
         $pdf->setImageScale(1.53);
-        
-        // Fuente base
-        $pdf->SetFont('helvetica', '', 10);
-        
+        $pdf->setPrintHeader(false);
+        $pdf->setPrintFooter(false);
+
+        $isModernPdf = CompanyConfig::getRentalOrderPdfFormat() === 'moderna';
+        $fontFamily = $isModernPdf ? 'dejavusans' : 'helvetica';
+        $fontSize = $isModernPdf ? 9.5 : 10;
+        $pdf->SetFont($fontFamily, '', $fontSize);
+
         // Agregar página
         $pdf->AddPage();
-        
+
         // Generar contenido
         $html = $this->generateRentalOrderHtml($rental, $companyInfo);
         $pdf->writeHTML($html, true, false, true, false, '');
-        
+
         // Agregar código QR con información de la orden en la esquina inferior derecha
         // IMPORTANTE: Las coordenadas en TCPDF son absolutas desde el TOP-LEFT
         $qrUrl = \yii\helpers\Url::to(['/rental/public-view', 'id' => $rental->id], true);
@@ -478,6 +487,7 @@ class PdfController extends Controller
         
         // Agregar segunda página con condiciones (SIEMPRE se agrega, prioridad: personalizado > global > fallback por defecto)
         $pdf->AddPage();
+        $pdf->SetFont($fontFamily, '', $fontSize);
         $customConditions = $rental->condiciones_especiales ?? '';
         $globalConditions = CompanyConfig::getConfig('rental_conditions_html', '');
         $conditionsHtml = CompanyConfig::wrapRentalConditionsHtml($this->generateConditionsHtml($companyInfo, $customConditions ?: $globalConditions));

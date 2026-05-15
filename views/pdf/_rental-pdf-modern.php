@@ -5,7 +5,12 @@
  */
 require __DIR__ . '/_rental-pdf-setup.php';
 
-$companyNombre = pdf_escape($companyInfo['name'] ?? 'Facto Rent a Car');
+$brandRaw = trim((string) ($companyInfo['name'] ?? 'Facto Rent a Car'));
+if (function_exists('mb_convert_case')) {
+    $companyNombre = pdf_escape(mb_convert_case($brandRaw, MB_CASE_TITLE, 'UTF-8'));
+} else {
+    $companyNombre = pdf_escape(ucwords(strtolower($brandRaw)));
+}
 $addrRaw = trim((string) ($companyInfo['address'] ?? 'San Ramón, Alajuela, Costa Rica'));
 $addrParts = array_values(array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', $addrRaw))));
 if (count($addrParts) >= 2) {
@@ -89,17 +94,6 @@ $subtotalFmt = number_format($subtotalNum, 0, '.', ',');
 $ivaFmt = number_format($ivaNum, 0, '.', ',');
 $totalFmt = number_format($totalNum, 0, '.', ',');
 
-$ejecutivoTxt = trim((string) ($model->ejecutivo ?? ''));
-if ($ejecutivoTxt === '' && !empty($model->ejecutivo_otro)) {
-    $ejecutivoTxt = trim((string) $model->ejecutivo_otro);
-}
-$ejecutivoLinea = pdf_escape($ejecutivoTxt !== '' ? $ejecutivoTxt : 'Ejecutivo de turno.');
-
-$retiroTexto = 'Retiro en sucursal';
-if (!empty($model->lugar_retiro)) {
-    $retiroTexto = (string) $model->lugar_retiro;
-}
-
 /** Teléfono estilo 506 7265 6502 */
 $telRaw = '';
 if ($client) {
@@ -117,8 +111,8 @@ if ($telDisplay === '' || $telRaw === '') {
 }
 ?>
 <style>
-    * { font-family: helvetica, sans-serif; }
-    body { font-size: 10pt; line-height: 1.4; margin: 0; padding: 0; color: #000000; }
+    * { font-family: dejavusans, sans-serif; }
+    body { font-size: 10pt; line-height: 1.35; margin: 0; padding: 0; color: #000000; }
     .d-doc { max-width: 100%; }
     .d-title {
         font-size: 14pt;
@@ -137,7 +131,7 @@ if ($telDisplay === '' || $telRaw === '') {
         font-size: 10pt;
         font-weight: bold;
         text-transform: uppercase;
-        margin: 12px 0 6px;
+        margin: 10px 0 5px;
         padding-bottom: 3px;
         border-bottom: 0.75pt solid #000000;
         letter-spacing: 0.3px;
@@ -155,7 +149,9 @@ if ($telDisplay === '' || $telRaw === '') {
     .d-totals { width: 100%; max-width: 220px; margin: 10px 0 0; font-size: 10pt; border-collapse: collapse; }
     .d-totals td { padding: 2px 0; }
     .d-totals .r { text-align: right; white-space: nowrap; padding-left: 16px; }
-    .d-footer { margin-top: 14px; font-size: 9.5pt; text-align: center; line-height: 1.45; }
+    .d-footer { margin-top: 12px; font-size: 9.5pt; text-align: center; line-height: 1.45; }
+    .d-nobr-wrap { border-collapse: collapse; width: 100%; }
+    .d-nobr-wrap td { border: 0; padding: 0; vertical-align: top; }
 </style>
 
 <div class="d-doc">
@@ -197,15 +193,18 @@ if ($telDisplay === '' || $telRaw === '') {
     <div class="d-corre-val"><?= pdf_escape($fechaCorreapartir) ?></div>
 <?php endif; ?>
 
+<table nobr="true" class="d-nobr-wrap"><tr><td>
 <div class="d-sec">Devolución</div>
 <div class="d-fecha-ent"><?= pdf_escape($fechaDevLarga) ?></div>
 <div class="d-block"><?= pdf_escape($horaDevTxt) ?> • <?= $lugarRetiro ?></div>
-<div class="d-block"><?= pdf_escape($retiroTexto) ?></div>
+<div class="d-block">Retiro en sucursal</div>
 
 <div class="d-sec">Vehículo</div>
 <div class="d-block"><?= $vehiculoLinea ?></div>
 <div class="d-block">Placa: <?= $placaLinea ?></div>
-<div class="d-block"><?= pdf_escape($transmisionTxt) ?></div>
+<?php if ($transmisionTxt !== '—'): ?>
+    <div class="d-block"><?= pdf_escape($transmisionTxt) ?></div>
+<?php endif; ?>
 <div class="d-block">Cobertura: <?= pdf_escape($coberturaTxt) ?></div>
 <div class="d-block">Tarifa diaria: ¢<?= $tarifaDia ?></div>
 <?php if ($medioDiaActivo): ?>
@@ -231,11 +230,12 @@ if ($telDisplay === '' || $telRaw === '') {
     <tr><td>IVA:</td><td class="r">¢<?= $ivaFmt ?></td></tr>
     <tr><td><strong>Total:</strong></td><td class="r"><strong>¢<?= $totalFmt ?></strong></td></tr>
 </table>
+</td></tr></table>
 
 <div class="d-footer">
     <?= $clienteNombre ?><br>
     Cédula: <?= $clienteCedula ?><br>
-    <?= $ejecutivoLinea ?><br>
+    Ejecutivo de turno.<br>
     <?= pdf_escape($car ? ($car->nombre ?? '') : '') ?>
 </div>
 

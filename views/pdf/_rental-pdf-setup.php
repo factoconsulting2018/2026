@@ -100,7 +100,7 @@ if (!function_exists('formatHoraSpanish')) {
         if ($dt === false) {
             return htmlspecialchars($hhmm, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         }
-        $s = strtolower($dt->format('g:i a'));
+        $s = strtolower($dt->format('h:i a'));
 
         return str_replace(['am', 'pm'], ['a.m.', 'p.m.'], $s);
     }
@@ -155,7 +155,7 @@ if (!function_exists('formatDateCorreapartir')) {
         $meses = [1 => 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
         $diaSemana = $dias[(int) $dt->format('N')] ?? '';
         $dia = $dt->format('d');
-        $mes = ucfirst($meses[(int) $dt->format('n')] ?? '');
+        $mes = $meses[(int) $dt->format('n')] ?? '';
         if (!empty($time)) {
             $hora = strtolower($dt->format('h:i a'));
             $hora = str_replace(['am', 'pm'], ['a.m.', 'p.m.'], $hora);
