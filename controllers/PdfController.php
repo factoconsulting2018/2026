@@ -55,24 +55,30 @@ class PdfController extends Controller
         @ini_set('zlib.output_compression', 0);
         @ini_set('output_buffering', 0);
         
-        // Crear PDF con configuración compacta para Letter
-        $pdf = new TCPDF('P', 'mm', 'Letter', true, 'UTF-8', false);
+        $isModernPdf = CompanyConfig::getRentalOrderPdfFormat() === 'moderna';
+        $pageFormat = $isModernPdf ? 'A4' : 'Letter';
+        $pdf = new TCPDF('P', 'mm', $pageFormat, true, 'UTF-8', false);
         $pdf->SetCreator('Facto Rent a Car');
         $pdf->SetAuthor('Facto Rent a Car');
         $pdf->SetTitle('Orden de Alquiler - ' . $rental->rental_id);
-        
-        // Márgenes compactos según especificaciones
-        $pdf->SetMargins(14, 12, 14);
-        $pdf->SetHeaderMargin(6);
-        $pdf->SetFooterMargin(8);
-        $pdf->SetAutoPageBreak(true, 14);
+
+        if ($isModernPdf) {
+            $pdf->SetMargins(12, 10, 12);
+            $pdf->SetHeaderMargin(5);
+            $pdf->SetFooterMargin(10);
+            $pdf->SetAutoPageBreak(true, 10);
+        } else {
+            $pdf->SetMargins(14, 12, 14);
+            $pdf->SetHeaderMargin(6);
+            $pdf->SetFooterMargin(8);
+            $pdf->SetAutoPageBreak(true, 14);
+        }
         $pdf->setImageScale(1.53);
         $pdf->setPrintHeader(false);
         $pdf->setPrintFooter(false);
 
-        $isModernPdf = CompanyConfig::getRentalOrderPdfFormat() === 'moderna';
         $fontFamily = $isModernPdf ? 'dejavusans' : 'helvetica';
-        $fontSize = $isModernPdf ? 9.5 : 10;
+        $fontSize = 10;
         $pdf->SetFont($fontFamily, '', $fontSize);
 
         // Agregar página
@@ -83,7 +89,6 @@ class PdfController extends Controller
         $pdf->writeHTML($html, true, false, true, false, '');
 
         // Agregar código QR con información de la orden en la esquina inferior derecha
-        // IMPORTANTE: Las coordenadas en TCPDF son absolutas desde el TOP-LEFT
         $qrUrl = \yii\helpers\Url::to(['/rental/public-view', 'id' => $rental->id], true);
         $qrStyle = array(
             'border' => false,
@@ -93,18 +98,10 @@ class PdfController extends Controller
             'module_width' => 1,
             'module_height' => 1
         );
-        // Letter size: 215.9mm width x 279.4mm height
-        // QR position: bottom-right corner
-        // X = page width - right margin - QR width = 215.9 - 14 - 25 = 176.9mm
-        // Y = page height - bottom margin - QR height = 279.4 - 8 - 25 = 246.4mm
-        $pageHeight = 279.4; // Letter height in mm
-        $pageWidth = 215.9;  // Letter width in mm
-        $marginBottom = 8;   // Footer margin
-        $marginRight = 14;   // Right margin
-        $qrSize = 25;        // QR code size
-        $xPosition = $pageWidth - $marginRight - $qrSize;  // 176.9mm
-        $yPosition = $pageHeight - $marginBottom - $qrSize; // 246.4mm
-        // Escribir el código QR en coordenadas absolutas fijas
+        $dims = $pdf->getPageDimensions();
+        $qrSize = 25;
+        $xPosition = $dims['wk'] - $dims['rm'] - $qrSize;
+        $yPosition = $dims['hk'] - $dims['bm'] - $qrSize;
         $pdf->write2DBarcode($qrUrl, 'QRCODE,M', $xPosition, $yPosition, 25, 25, $qrStyle, 'N');
         
         // Agregar segunda página con condiciones (prioridad: alquiler > global > archivo)
@@ -431,26 +428,32 @@ class PdfController extends Controller
         @ini_set('output_buffering', 0);
         @ini_set('zlib.output_compression_level', 0);
         
-        // Crear PDF con configuración compacta para Letter
-        $pdf = new TCPDF('P', 'mm', 'Letter', true, 'UTF-8', false);
-        
+        $isModernPdf = CompanyConfig::getRentalOrderPdfFormat() === 'moderna';
+        $pageFormat = $isModernPdf ? 'A4' : 'Letter';
+        $pdf = new TCPDF('P', 'mm', $pageFormat, true, 'UTF-8', false);
+
         // Configuración del documento
         $pdf->SetCreator('Facto Rent a Car');
         $pdf->SetAuthor('Facto Rent a Car');
         $pdf->SetTitle('Orden de Alquiler - ' . $rental->rental_id);
-        
-        // Márgenes compactos según especificaciones
-        $pdf->SetMargins(14, 12, 14);
-        $pdf->SetHeaderMargin(6);
-        $pdf->SetFooterMargin(8);
-        $pdf->SetAutoPageBreak(true, 14);
+
+        if ($isModernPdf) {
+            $pdf->SetMargins(12, 10, 12);
+            $pdf->SetHeaderMargin(5);
+            $pdf->SetFooterMargin(10);
+            $pdf->SetAutoPageBreak(true, 10);
+        } else {
+            $pdf->SetMargins(14, 12, 14);
+            $pdf->SetHeaderMargin(6);
+            $pdf->SetFooterMargin(8);
+            $pdf->SetAutoPageBreak(true, 14);
+        }
         $pdf->setImageScale(1.53);
         $pdf->setPrintHeader(false);
         $pdf->setPrintFooter(false);
 
-        $isModernPdf = CompanyConfig::getRentalOrderPdfFormat() === 'moderna';
         $fontFamily = $isModernPdf ? 'dejavusans' : 'helvetica';
-        $fontSize = $isModernPdf ? 9.5 : 10;
+        $fontSize = 10;
         $pdf->SetFont($fontFamily, '', $fontSize);
 
         // Agregar página
@@ -461,7 +464,6 @@ class PdfController extends Controller
         $pdf->writeHTML($html, true, false, true, false, '');
 
         // Agregar código QR con información de la orden en la esquina inferior derecha
-        // IMPORTANTE: Las coordenadas en TCPDF son absolutas desde el TOP-LEFT
         $qrUrl = \yii\helpers\Url::to(['/rental/public-view', 'id' => $rental->id], true);
         $qrStyle = array(
             'border' => false,
@@ -471,18 +473,10 @@ class PdfController extends Controller
             'module_width' => 1,
             'module_height' => 1
         );
-        // Letter size: 215.9mm width x 279.4mm height
-        // QR position: bottom-right corner
-        // X = page width - right margin - QR width = 215.9 - 14 - 25 = 176.9mm
-        // Y = page height - bottom margin - QR height = 279.4 - 8 - 25 = 246.4mm
-        $pageHeight = 279.4; // Letter height in mm
-        $pageWidth = 215.9;  // Letter width in mm
-        $marginBottom = 8;   // Footer margin
-        $marginRight = 14;   // Right margin
-        $qrSize = 25;        // QR code size
-        $xPosition = $pageWidth - $marginRight - $qrSize;  // 176.9mm
-        $yPosition = $pageHeight - $marginBottom - $qrSize; // 246.4mm
-        // Escribir el código QR en coordenadas absolutas fijas
+        $dims = $pdf->getPageDimensions();
+        $qrSize = 25;
+        $xPosition = $dims['wk'] - $dims['rm'] - $qrSize;
+        $yPosition = $dims['hk'] - $dims['bm'] - $qrSize;
         $pdf->write2DBarcode($qrUrl, 'QRCODE,M', $xPosition, $yPosition, 25, 25, $qrStyle, 'N');
         
         // Agregar segunda página con condiciones (SIEMPRE se agrega, prioridad: personalizado > global > fallback por defecto)

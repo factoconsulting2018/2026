@@ -815,14 +815,14 @@ class RentalController extends Controller
             $isModernRentalPdf = CompanyConfig::getRentalOrderPdfFormat() === 'moderna';
             $pdf = new Mpdf([
                 'mode' => 'utf-8',
-                'format' => 'Letter',
+                'format' => $isModernRentalPdf ? 'A4' : 'Letter',
                 'orientation' => 'P',
-                'margin_left' => 14,
-                'margin_right' => 14,
-                'margin_top' => 12,
-                'margin_bottom' => 14,
+                'margin_left' => $isModernRentalPdf ? 12 : 14,
+                'margin_right' => $isModernRentalPdf ? 12 : 14,
+                'margin_top' => $isModernRentalPdf ? 10 : 12,
+                'margin_bottom' => $isModernRentalPdf ? 10 : 14,
                 'default_font' => 'dejavusans',
-                'default_font_size' => $isModernRentalPdf ? 9.5 : 10,
+                'default_font_size' => 10,
                 'tempDir' => $tempDir,
             ]);
             

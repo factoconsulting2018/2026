@@ -1,9 +1,14 @@
 <?php
 /**
- * Orden de alquiler — Formato Moderna (referencia ordendereferencia.pdf).
- * Maquetación tipo carta: texto negro, secciones en mayúsculas con línea inferior.
+ * Orden de alquiler — Formato moderna (plantilla factorentacar-pdf / mPDF de referencia).
+ * Página 1: diseño con cabecera azul, tablas y banda de bancos. La página 2 (condiciones)
+ * la añade PdfController / RentalController con el HTML configurado en el sistema.
  */
 require __DIR__ . '/_rental-pdf-setup.php';
+
+$fmtColones = static function ($n) {
+    return '¢' . number_format((float) $n, 0, '.', ',');
+};
 
 $brandRaw = trim((string) ($companyInfo['name'] ?? 'Facto Rent a Car'));
 if (function_exists('mb_convert_case')) {
@@ -11,6 +16,7 @@ if (function_exists('mb_convert_case')) {
 } else {
     $companyNombre = pdf_escape(ucwords(strtolower($brandRaw)));
 }
+
 $addrRaw = trim((string) ($companyInfo['address'] ?? 'San Ramón, Alajuela, Costa Rica'));
 $addrParts = array_values(array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', $addrRaw))));
 if (count($addrParts) >= 2) {
@@ -20,7 +26,7 @@ if (count($addrParts) >= 2) {
     $companyLineLegal = pdf_escape('Facto Autos de Alquiler S.A. | Cédula Jurídica ' . trim($m[1]));
     $companyLineGeo = pdf_escape(trim($m[2]));
 } else {
-    $companyLineLegal = pdf_escape($addrRaw !== '' ? $addrRaw : 'San Ramón, Alajuela, Costa Rica');
+    $companyLineLegal = pdf_escape($addrRaw !== '' ? $addrRaw : 'Facto Autos de Alquiler S.A. | Cédula Jurídica 3-101-880789');
     $companyLineGeo = '';
 }
 
@@ -47,25 +53,23 @@ try {
     $fechaEmisionDoc = date('j') . ' de ' . date('F') . ' de ' . date('Y');
 }
 
-$cuentasBancoHtml = '';
+$bancosList = [];
 if (is_array($accounts) && $accounts !== []) {
     foreach ($accounts as $acc) {
-        $b = pdf_escape(trim((string) ($acc['bank'] ?? '')));
+        $b = trim((string) ($acc['bank'] ?? ''));
         $a = trim((string) ($acc['account'] ?? ''));
         $a = preg_replace('/^IBAN:?\s*/i', '', $a);
         $a = preg_replace('/\s+/', '', $a);
-        if ($a !== '') {
-            $a = 'IBAN: ' . $a;
-        }
-        $a = pdf_escape($a);
         if ($b !== '' && $a !== '') {
-            $cuentasBancoHtml .= '<div class="d-line"><strong>' . $b . '</strong> ■ ' . $a . '</div>';
+            $bancosList[] = ['banco' => pdf_escape($b), 'iban' => pdf_escape($a)];
         }
     }
 }
-if ($cuentasBancoHtml === '') {
-    $cuentasBancoHtml = '<div class="d-line"><strong>BCR</strong> ■ IBAN: ' . pdf_escape($ibanBcr) . '</div>'
-        . '<div class="d-line"><strong>BN</strong> ■ IBAN: ' . pdf_escape($ibanBn) . '</div>';
+if ($bancosList === []) {
+    $bancosList = [
+        ['banco' => 'BCR', 'iban' => pdf_escape($ibanBcr)],
+        ['banco' => 'BN', 'iban' => pdf_escape($ibanBn)],
+    ];
 }
 
 $transmisionTxt = '—';
@@ -77,6 +81,12 @@ if ($car && !empty($car->caracteristicas)) {
         $transmisionTxt = 'Transmisión manual';
     }
 }
+$transmisionCorta = '—';
+if ($transmisionTxt !== '—') {
+    $short = str_ireplace('Transmisión ', '', $transmisionTxt);
+    $transmisionCorta = pdf_escape(function_exists('mb_strtolower') ? mb_strtolower($short, 'UTF-8') : strtolower($short));
+}
+
 $coberturaTxt = 'Full cobertura';
 
 $fechaEntregaLarga = formatFechaConDiaSemana($model->fecha_inicio);
@@ -84,17 +94,17 @@ $horaEntregaTxt = formatHoraSpanish($model->hora_inicio ?? '');
 $fechaDevLarga = formatFechaConDiaSemana($model->fecha_final);
 $horaDevTxt = formatHoraSpanish($model->hora_final ?? '');
 
-$vehiculoLinea = pdf_escape($car ? ($car->nombre ?? 'N/A') : 'N/A') . ' • ' . $capacidad . ' pasajeros';
+$vehiculoNombre = pdf_escape($car ? ($car->nombre ?? 'N/A') : 'N/A');
+$pasajerosNum = (int) ($car ? ($car->cantidad_pasajeros ?: 5) : 5);
 $placaLinea = $car && !empty($car->placa) ? pdf_escape($car->placa) : '—';
 
-$resumenTxt = (int) $model->cantidad_dias . ' día' . ((int) $model->cantidad_dias === 1 ? '' : 's')
+$resumenDiasTxt = (int) $model->cantidad_dias . ' día' . ((int) $model->cantidad_dias === 1 ? '' : 's')
     . ' • ' . $cantidadVehiculos . ' vehículo' . ($cantidadVehiculos === 1 ? '' : 's');
 
 $subtotalFmt = number_format($subtotalNum, 0, '.', ',');
 $ivaFmt = number_format($ivaNum, 0, '.', ',');
 $totalFmt = number_format($totalNum, 0, '.', ',');
 
-/** Teléfono estilo 506 7265 6502 */
 $telRaw = '';
 if ($client) {
     $telRaw = (string) ($client->whatsapp ?: $client->telefono ?: '');
@@ -109,134 +119,240 @@ if (strlen($digits) === 8) {
 if ($telDisplay === '' || $telRaw === '') {
     $telDisplay = $clienteTelefono;
 }
+
+$licVence = !empty($vencimientoLicencia) ? pdf_escape($vencimientoLicencia) : '—';
+$cedVence = !empty($vencimientoCedula) ? pdf_escape($vencimientoCedula) : '—';
+$correApartirTxt = !empty($fechaCorreapartir) ? pdf_escape($fechaCorreapartir) : '—';
+
+$vehiculoImgSrc = '';
+if ($car && !empty($car->imagen)) {
+    $im = trim((string) $car->imagen);
+    if (preg_match('#^https?://#i', $im)) {
+        $vehiculoImgSrc = $im;
+    } elseif (strpos($im, '@') === 0) {
+        $full = Yii::getAlias($im);
+        if (is_string($full) && is_file($full)) {
+            $vehiculoImgSrc = str_replace('\\', '/', $full);
+        }
+    } else {
+        $webroot = str_replace('\\', '/', Yii::getAlias('@webroot'));
+        $rel = ltrim(str_replace('\\', '/', $im), '/');
+        $full = ($im !== '' && $im[0] === '/') ? ($webroot . $im) : ($webroot . '/' . $rel);
+        if (is_file($full)) {
+            $vehiculoImgSrc = str_replace('\\', '/', $full);
+        }
+    }
+}
+
+$tarifaDiaNum = (float) $model->precio_por_dia;
 ?>
 <style>
-    * { font-family: dejavusans, sans-serif; }
-    body { font-size: 10pt; line-height: 1.35; margin: 0; padding: 0; color: #000000; }
-    .d-doc { max-width: 100%; }
-    .d-title {
-        font-size: 14pt;
-        font-weight: bold;
-        text-align: center;
-        letter-spacing: 1px;
-        margin: 0 0 4px;
+    @page { margin: 10mm 12mm; }
+    body { font-family: dejavusans, sans-serif; font-size: 10pt; color: #222; margin: 0; }
+
+    .header {
+        background: #0b1f4a;
+        color: #fff;
+        padding: 18px 20px;
+        position: relative;
     }
-    .d-no { text-align: center; font-size: 10.5pt; font-weight: bold; margin: 0 0 2px; }
-    .d-date { text-align: center; font-size: 10pt; margin: 0 0 14px; }
-    .d-center { text-align: center; }
-    .d-brand { font-size: 10.5pt; font-weight: bold; margin: 0 0 3px; }
-    .d-small { font-size: 9.5pt; margin: 0 0 2px; }
-    .d-contact { font-size: 9.5pt; margin: 0 0 16px; }
-    .d-sec {
+    .header table { width: 100%; border-collapse: collapse; }
+    .header .logo-cell { width: 110px; vertical-align: middle; }
+    .header .logo-cell img { width: 90px; height: 90px; }
+    .header h1 { font-size: 26pt; margin: 0; font-weight: 800; letter-spacing: 1px; }
+    .header .subtitle { font-size: 16pt; font-weight: 700; }
+    .header .meta { font-size: 9pt; margin-top: 4px; }
+
+    .empresa-band { background: #f3f5f8; padding: 12px 20px; }
+    .empresa-band table { width: 100%; }
+    .empresa-band .info { vertical-align: middle; }
+    .empresa-band .info b { font-size: 12pt; color: #0b1f4a; }
+    .empresa-band .info p { margin: 2px 0; font-size: 9pt; line-height: 1.4; }
+    .empresa-band .veh-img { width: 180px; text-align: right; vertical-align: middle; }
+    .empresa-band .veh-img img { max-width: 170px; max-height: 90px; }
+
+    .cuadro { width: 100%; border-collapse: collapse; margin-top: 14px; }
+    .cuadro th {
+        background: #2a64c8;
+        color: #fff;
+        text-align: left;
+        padding: 7px 10px;
         font-size: 10pt;
-        font-weight: bold;
-        text-transform: uppercase;
-        margin: 10px 0 5px;
-        padding-bottom: 3px;
-        border-bottom: 0.75pt solid #000000;
-        letter-spacing: 0.3px;
     }
-    .d-block { margin: 0 0 4px; font-size: 10pt; }
-    .d-line { margin: 2px 0; font-size: 9.5pt; }
-    .d-name { font-size: 10.5pt; font-weight: bold; margin: 2px 0 6px; }
-    .d-fecha-ent { font-weight: bold; margin-top: 2px; margin-bottom: 2px; }
-    .d-corre-label { margin-top: 6px; margin-bottom: 0; font-weight: bold; }
-    .d-corre-val { margin-top: 0; margin-bottom: 0; }
-    .d-resumen { font-size: 10pt; margin: 4px 0 10px; }
-    .d-sign { width: 100%; border-collapse: collapse; margin: 8px 0 12px; }
-    .d-sign td { width: 50%; text-align: center; font-size: 9pt; vertical-align: bottom; padding: 22px 8px 4px; }
-    .d-sign .d-rule { border-top: 0.5pt solid #000000; margin: 0 8px 4px; height: 1px; }
-    .d-totals { width: 100%; max-width: 220px; margin: 10px 0 0; font-size: 10pt; border-collapse: collapse; }
-    .d-totals td { padding: 2px 0; }
-    .d-totals .r { text-align: right; white-space: nowrap; padding-left: 16px; }
-    .d-footer { margin-top: 12px; font-size: 9.5pt; text-align: center; line-height: 1.45; }
-    .d-nobr-wrap { border-collapse: collapse; width: 100%; }
-    .d-nobr-wrap td { border: 0; padding: 0; vertical-align: top; }
+    .cuadro td {
+        padding: 6px 10px;
+        border-bottom: 1px solid #e5e7eb;
+        font-size: 9.5pt;
+    }
+
+    .tres-col { width: 100%; border-collapse: collapse; margin-top: 14px; }
+    .tres-col th {
+        background: #4ea24a;
+        color: #fff;
+        padding: 7px 10px;
+        text-align: left;
+        font-size: 10pt;
+        width: 33.33%;
+    }
+    .tres-col td {
+        padding: 8px 10px;
+        vertical-align: top;
+        border-bottom: 1px solid #e5e7eb;
+        font-size: 9.5pt;
+        width: 33.33%;
+    }
+    .tres-col .destacado { font-weight: 700; color: #0b1f4a; }
+
+    .bancos {
+        background: #0b1f4a;
+        color: #fff;
+        padding: 14px 20px;
+        margin-top: 18px;
+        font-size: 9.5pt;
+        line-height: 1.5;
+    }
+    .bancos b { display: block; margin-bottom: 4px; font-size: 10pt; }
+    .bancos .marker { display: inline-block; width: 8px; height: 8px; background: #fff; margin: 0 6px 0 4px; }
+
+    .firmas { margin-top: 60px; width: 100%; }
+    .firmas td { width: 50%; text-align: center; vertical-align: top; padding: 0 30px; }
+    .firmas .line { border-top: 1px solid #333; margin: 0 30px 6px; }
+    .firmas .label { font-size: 9pt; color: #555; }
+    .firmas .nombre { font-size: 11pt; margin-top: 4px; font-weight: 600; }
+    .firmas .ced { font-size: 9pt; color: #555; }
 </style>
 
-<div class="d-doc">
+<div class="header">
+    <table>
+        <tr>
+            <td class="logo-cell">
+                <?php if (!empty($logoPath)): ?>
+                    <img src="<?= pdf_escape($logoPath) ?>" alt="logo">
+                <?php endif; ?>
+            </td>
+            <td>
+                <h1>ORDEN DE ALQUILER</h1>
+                <div class="subtitle"><?= $vehiculoNombre ?></div>
+                <div class="meta">
+                    No. <b><?= pdf_escape($rentalId) ?></b> &nbsp;|&nbsp;
+                    <?= pdf_escape($fechaEmisionDoc) ?>
+                </div>
+            </td>
+        </tr>
+    </table>
+</div>
 
-<div class="d-title">ORDEN DE ALQUILER</div>
-<div class="d-no">No. <?= pdf_escape($rentalId) ?></div>
-<div class="d-date"><?= pdf_escape($fechaEmisionDoc) ?></div>
+<div class="empresa-band">
+    <table>
+        <tr>
+            <td class="info">
+                <b><?= $companyNombre ?></b>
+                <p><?= $companyLineLegal ?></p>
+                <?php if ($companyLineGeo !== ''): ?>
+                    <p><?= $companyLineGeo ?></p>
+                <?php endif; ?>
+                <p>WhatsApp: <?= $whatsappLine ?></p>
+            </td>
+            <td class="veh-img">
+                <?php if ($vehiculoImgSrc !== ''): ?>
+                    <img src="<?= pdf_escape($vehiculoImgSrc) ?>" alt="vehículo">
+                <?php endif; ?>
+            </td>
+        </tr>
+    </table>
+</div>
 
-<div class="d-center">
-    <div class="d-brand"><?= $companyNombre ?></div>
-    <div class="d-small"><?= $companyLineLegal ?></div>
-    <?php if ($companyLineGeo !== ''): ?>
-        <div class="d-small"><?= $companyLineGeo ?></div>
+<table class="cuadro">
+    <tr>
+        <th>CLIENTE</th>
+        <th>VEHÍCULO</th>
+    </tr>
+    <tr>
+        <td><?= $clienteNombre ?></td>
+        <td><?= $vehiculoNombre ?> • <?= (int) $pasajerosNum ?> pasajeros</td>
+    </tr>
+    <tr>
+        <td>Cédula: <?= $clienteCedula ?></td>
+        <td>Placa: <?= $placaLinea ?></td>
+    </tr>
+    <tr>
+        <td>Teléfono: <?= $telDisplay ?></td>
+        <td>Transmisión <?= $transmisionCorta ?></td>
+    </tr>
+    <tr>
+        <td>Licencia vence: <?= $licVence ?></td>
+        <td>Cobertura: <?= pdf_escape($coberturaTxt) ?></td>
+    </tr>
+    <tr>
+        <td>Cédula vence: <?= $cedVence ?></td>
+        <td>Tarifa diaria: <?= $fmtColones($tarifaDiaNum) ?></td>
+    </tr>
+    <?php if ($medioDiaActivo): ?>
+        <tr>
+            <td></td>
+            <td>Medio día: <?= $fmtColones($medioDiaValor) ?></td>
+        </tr>
     <?php endif; ?>
-    <div class="d-contact">WhatsApp: <?= $whatsappLine ?></div>
-</div>
-
-<div class="d-sec">Cuentas bancarias para depósito</div>
-<?= $cuentasBancoHtml ?>
-<div class="d-line" style="margin-top:6px;"><strong>SINPE Móvil:</strong> <?= pdf_escape($simpeDisplay) ?></div>
-<div class="d-line"><strong>Monto de la reservación:</strong> ¢<?= $total ?> — Reservación firme contra depósito.</div>
-
-<div class="d-sec">Cliente</div>
-<div class="d-name"><?= $clienteNombre ?></div>
-<div class="d-block">Cédula: <?= $clienteCedula ?></div>
-<div class="d-block">Teléfono: <?= $telDisplay ?></div>
-<?php if (!empty($vencimientoLicencia)): ?>
-    <div class="d-block">Licencia vence: <?= pdf_escape($vencimientoLicencia) ?></div>
-<?php endif; ?>
-<?php if (!empty($vencimientoCedula)): ?>
-    <div class="d-block">Cédula vence: <?= pdf_escape($vencimientoCedula) ?></div>
-<?php endif; ?>
-
-<div class="d-sec">Entrega</div>
-<div class="d-fecha-ent"><?= pdf_escape($fechaEntregaLarga) ?></div>
-<div class="d-block"><?= pdf_escape($horaEntregaTxt) ?> • <?= $entregaLugar ?></div>
-<?php if (!empty($fechaCorreapartir)): ?>
-    <div class="d-corre-label">Corre a partir:</div>
-    <div class="d-corre-val"><?= pdf_escape($fechaCorreapartir) ?></div>
-<?php endif; ?>
-
-<table nobr="true" class="d-nobr-wrap"><tr><td>
-<div class="d-sec">Devolución</div>
-<div class="d-fecha-ent"><?= pdf_escape($fechaDevLarga) ?></div>
-<div class="d-block"><?= pdf_escape($horaDevTxt) ?> • <?= $lugarRetiro ?></div>
-<div class="d-block">Retiro en sucursal</div>
-
-<div class="d-sec">Vehículo</div>
-<div class="d-block"><?= $vehiculoLinea ?></div>
-<div class="d-block">Placa: <?= $placaLinea ?></div>
-<?php if ($transmisionTxt !== '—'): ?>
-    <div class="d-block"><?= pdf_escape($transmisionTxt) ?></div>
-<?php endif; ?>
-<div class="d-block">Cobertura: <?= pdf_escape($coberturaTxt) ?></div>
-<div class="d-block">Tarifa diaria: ¢<?= $tarifaDia ?></div>
-<?php if ($medioDiaActivo): ?>
-    <div class="d-block">Medio día: ¢<?= $tarifaMedioDia ?></div>
-<?php endif; ?>
-
-<div class="d-sec">Resumen</div>
-<div class="d-resumen"><?= pdf_escape($resumenTxt) ?></div>
-
-<table class="d-sign"><tr>
-    <td>
-        <div class="d-rule"></div>
-        Firma del Cliente
-    </td>
-    <td>
-        <div class="d-rule"></div>
-        Firma de Facto Rent a Car
-    </td>
-</tr></table>
-
-<table class="d-totals">
-    <tr><td>Subtotal:</td><td class="r">¢<?= $subtotalFmt ?></td></tr>
-    <tr><td>IVA:</td><td class="r">¢<?= $ivaFmt ?></td></tr>
-    <tr><td><strong>Total:</strong></td><td class="r"><strong>¢<?= $totalFmt ?></strong></td></tr>
 </table>
-</td></tr></table>
 
-<div class="d-footer">
-    <?= $clienteNombre ?><br>
-    Cédula: <?= $clienteCedula ?><br>
-    Ejecutivo de turno.<br>
-    <?= pdf_escape($car ? ($car->nombre ?? '') : '') ?>
+<table class="tres-col">
+    <tr>
+        <th>ENTREGA</th>
+        <th>DEVOLUCIÓN</th>
+        <th>RESUMEN</th>
+    </tr>
+    <tr>
+        <td>
+            <span class="destacado"><?= pdf_escape($fechaEntregaLarga) ?></span><br>
+            <?= pdf_escape($horaEntregaTxt) ?> • <?= $entregaLugar ?>
+        </td>
+        <td>
+            <span class="destacado"><?= pdf_escape($fechaDevLarga) ?></span><br>
+            <?= pdf_escape($horaDevTxt) ?> • <?= $lugarRetiro ?>
+        </td>
+        <td><?= pdf_escape($resumenDiasTxt) ?></td>
+    </tr>
+    <tr>
+        <td>
+            <b>Corre a partir:</b><br>
+            <?= $correApartirTxt ?>
+        </td>
+        <td>Retiro en sucursal</td>
+        <td>Subtotal: ¢<?= $subtotalFmt ?></td>
+    </tr>
+    <tr>
+        <td></td>
+        <td></td>
+        <td>IVA: ¢<?= $ivaFmt ?></td>
+    </tr>
+    <tr>
+        <td></td>
+        <td></td>
+        <td><b>Total: ¢<?= $totalFmt ?></b></td>
+    </tr>
+</table>
+
+<div class="bancos">
+    <b>CUENTAS BANCARIAS PARA DEPÓSITO</b>
+    <?php foreach ($bancosList as $b): ?>
+        <?= $b['banco'] ?> <span class="marker"></span> IBAN: <?= $b['iban'] ?><br>
+    <?php endforeach; ?>
+    SINPE Móvil: <?= pdf_escape($simpeDisplay) ?><br><br>
+    <b>Monto de la reservación: <?= $fmtColones($totalNum) ?></b> — Reservación firme contra depósito.
 </div>
 
-</div>
+<table class="firmas">
+    <tr>
+        <td>
+            <div class="line"></div>
+            <div class="label">Firma del Cliente</div>
+            <div class="nombre"><?= $clienteNombre ?></div>
+            <div class="ced">Cédula: <?= $clienteCedula ?></div>
+        </td>
+        <td>
+            <div class="line"></div>
+            <div class="label">Firma de Facto Rent a Car</div>
+            <div class="nombre">Ejecutivo de turno.</div>
+        </td>
+    </tr>
+</table>
