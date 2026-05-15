@@ -78,6 +78,20 @@ class ConfigController extends Controller
             'rentalOrderPdfFormat' => CompanyConfig::getRentalOrderPdfFormat(),
             'rentalOrderPdfVehicleImgMaxW' => CompanyConfig::getRentalOrderPdfVehicleImageMaxWidth(),
             'rentalOrderPdfVehicleImgMaxH' => CompanyConfig::getRentalOrderPdfVehicleImageMaxHeight(),
+            'rentalOrderPdfTextMode' => CompanyConfig::getRentalOrderPdfTextMode(),
+            'rentalOrderPdfTextScale' => CompanyConfig::getRentalOrderPdfTextScalePercent(),
+            'rentalOrderPdfTextSizes' => CompanyConfig::getRentalOrderPdfTextSizes(),
+            'rentalOrderPdfTextBaseSizes' => CompanyConfig::getRentalOrderPdfTextBaseSizes(),
+            'rentalOrderPdfTextFormValues' => (function () {
+                $base = CompanyConfig::getRentalOrderPdfTextBaseSizes();
+                return [
+                    'header_titulo' => (int) CompanyConfig::getConfig(CompanyConfig::RENTAL_ORDER_PDF_TEXT_HEADER_TITULO, (string) $base['header_titulo']),
+                    'header_modelo' => (int) CompanyConfig::getConfig(CompanyConfig::RENTAL_ORDER_PDF_TEXT_HEADER_MODELO, (string) $base['header_modelo']),
+                    'header_meta' => (int) CompanyConfig::getConfig(CompanyConfig::RENTAL_ORDER_PDF_TEXT_HEADER_META, (string) $base['header_meta']),
+                    'empresa_nombre' => (int) CompanyConfig::getConfig(CompanyConfig::RENTAL_ORDER_PDF_TEXT_EMPRESA_NOMBRE, (string) $base['empresa_nombre']),
+                    'empresa_linea' => (int) CompanyConfig::getConfig(CompanyConfig::RENTAL_ORDER_PDF_TEXT_EMPRESA_LINEA, (string) $base['empresa_linea']),
+                ];
+            })(),
         ]);
     }
 
@@ -150,6 +164,35 @@ class ConfigController extends Controller
             (string) max(30, min(280, $imgH)),
             'Alto máximo (px) imagen vehículo en PDF moderna'
         );
+
+        $textMode = (string) Yii::$app->request->post('rental_order_pdf_text_mode', 'proporcional');
+        $textMode = $textMode === 'numeros' ? 'numeros' : 'proporcional';
+        CompanyConfig::setConfig(
+            CompanyConfig::RENTAL_ORDER_PDF_TEXT_MODE,
+            $textMode,
+            'Modo de tamaño de textos PDF moderna: proporcional o numeros'
+        );
+
+        $textScale = (int) Yii::$app->request->post('rental_order_pdf_text_scale', 100);
+        CompanyConfig::setConfig(
+            CompanyConfig::RENTAL_ORDER_PDF_TEXT_SCALE,
+            (string) max(50, min(300, $textScale)),
+            'Escala porcentual de textos PDF moderna'
+        );
+
+        $base = CompanyConfig::getRentalOrderPdfTextBaseSizes();
+        $numericFields = [
+            CompanyConfig::RENTAL_ORDER_PDF_TEXT_HEADER_TITULO => ['post' => 'rental_order_pdf_text_header_titulo', 'default' => $base['header_titulo']],
+            CompanyConfig::RENTAL_ORDER_PDF_TEXT_HEADER_MODELO => ['post' => 'rental_order_pdf_text_header_modelo', 'default' => $base['header_modelo']],
+            CompanyConfig::RENTAL_ORDER_PDF_TEXT_HEADER_META => ['post' => 'rental_order_pdf_text_header_meta', 'default' => $base['header_meta']],
+            CompanyConfig::RENTAL_ORDER_PDF_TEXT_EMPRESA_NOMBRE => ['post' => 'rental_order_pdf_text_empresa_nombre', 'default' => $base['empresa_nombre']],
+            CompanyConfig::RENTAL_ORDER_PDF_TEXT_EMPRESA_LINEA => ['post' => 'rental_order_pdf_text_empresa_linea', 'default' => $base['empresa_linea']],
+        ];
+        foreach ($numericFields as $configKey => $meta) {
+            $pt = (int) Yii::$app->request->post($meta['post'], $meta['default']);
+            $pt = max(8, min(120, $pt > 0 ? $pt : $meta['default']));
+            CompanyConfig::setConfig($configKey, (string) $pt, 'Tamaño de texto (pt) PDF moderna');
+        }
 
         Yii::$app->session->setFlash('success', 'Formato de orden de renta (PDF) guardado.');
 

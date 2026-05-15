@@ -219,6 +219,51 @@ $conditionsModel = new \app\models\CompanyConfig();
                                                     <div class="form-text">Entre 30 y 280. Predeterminado: 90.</div>
                                                 </div>
                                             </div>
+                                            <hr class="my-3">
+                                            <h6 class="mb-2"><i class="fas fa-text-height"></i> Tamaño de textos en PDF moderna</h6>
+                                            <p class="small text-muted mb-2">Encabezado azul y bloque de empresa (Facto Rent a Car, dirección, WhatsApp).</p>
+                                            <?php
+                                            $pdfTextForm = $rentalOrderPdfTextFormValues ?? [];
+                                            $pdfTextBase = $rentalOrderPdfTextBaseSizes ?? [];
+                                            $pdfTextModeVal = $rentalOrderPdfTextMode ?? 'proporcional';
+                                            ?>
+                                            <div class="form-check mb-1">
+                                                <input class="form-check-input" type="radio" name="rental_order_pdf_text_mode" id="rental_pdf_text_proporcional" value="proporcional" <?= $pdfTextModeVal === 'proporcional' ? 'checked' : '' ?>>
+                                                <label class="form-check-label" for="rental_pdf_text_proporcional"><strong>Proporcional</strong> — un porcentaje escala todos los textos.</label>
+                                            </div>
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" type="radio" name="rental_order_pdf_text_mode" id="rental_pdf_text_numeros" value="numeros" <?= $pdfTextModeVal === 'numeros' ? 'checked' : '' ?>>
+                                                <label class="form-check-label" for="rental_pdf_text_numeros"><strong>Números (pt)</strong> — define cada tamaño en puntos.</label>
+                                            </div>
+                                            <div id="rental-pdf-text-proporcional" class="mb-3" style="<?= $pdfTextModeVal === 'proporcional' ? '' : 'display:none;' ?>">
+                                                <label class="form-label" for="rental_order_pdf_text_scale">Escala de textos (%)</label>
+                                                <input type="number" class="form-control form-control-sm" name="rental_order_pdf_text_scale" id="rental_order_pdf_text_scale" min="50" max="300" step="5" value="<?= (int) ($rentalOrderPdfTextScale ?? 100) ?>">
+                                                <div class="form-text">100 = tamaño base. 200 = el doble. Rango: 50–300.</div>
+                                            </div>
+                                            <div id="rental-pdf-text-numeros" class="mb-2" style="<?= $pdfTextModeVal === 'numeros' ? '' : 'display:none;' ?>">
+                                                <div class="row g-2">
+                                                    <div class="col-md-6">
+                                                        <label class="form-label" for="rental_order_pdf_text_header_titulo">ORDEN DE ALQUILER (pt)</label>
+                                                        <input type="number" class="form-control form-control-sm" name="rental_order_pdf_text_header_titulo" id="rental_order_pdf_text_header_titulo" min="8" max="120" value="<?= (int) ($pdfTextForm['header_titulo'] ?? $pdfTextBase['header_titulo'] ?? 39) ?>">
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label" for="rental_order_pdf_text_header_modelo">Modelo vehículo (pt)</label>
+                                                        <input type="number" class="form-control form-control-sm" name="rental_order_pdf_text_header_modelo" id="rental_order_pdf_text_header_modelo" min="8" max="120" value="<?= (int) ($pdfTextForm['header_modelo'] ?? $pdfTextBase['header_modelo'] ?? 48) ?>">
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label" for="rental_order_pdf_text_header_meta">No. orden y fecha (pt)</label>
+                                                        <input type="number" class="form-control form-control-sm" name="rental_order_pdf_text_header_meta" id="rental_order_pdf_text_header_meta" min="8" max="120" value="<?= (int) ($pdfTextForm['header_meta'] ?? $pdfTextBase['header_meta'] ?? 27) ?>">
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label" for="rental_order_pdf_text_empresa_nombre">Nombre empresa (pt)</label>
+                                                        <input type="number" class="form-control form-control-sm" name="rental_order_pdf_text_empresa_nombre" id="rental_order_pdf_text_empresa_nombre" min="8" max="120" value="<?= (int) ($pdfTextForm['empresa_nombre'] ?? $pdfTextBase['empresa_nombre'] ?? 36) ?>">
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label" for="rental_order_pdf_text_empresa_linea">Líneas empresa / contacto (pt)</label>
+                                                        <input type="number" class="form-control form-control-sm" name="rental_order_pdf_text_empresa_linea" id="rental_order_pdf_text_empresa_linea" min="8" max="120" value="<?= (int) ($pdfTextForm['empresa_linea'] ?? $pdfTextBase['empresa_linea'] ?? 24) ?>">
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                         <?= Html::submitButton('<i class="fas fa-save"></i> Guardar formato PDF', ['class' => 'btn btn-primary btn-sm']) ?>
                                         <?php ActiveForm::end(); ?>
@@ -239,7 +284,7 @@ $conditionsModel = new \app\models\CompanyConfig();
                                                 <li>Las cuentas bancarias aparecerán en las órdenes</li>
                                                 <li>El número SIMPEMOVIL se usará para pagos</li>
                                                 <li>El formato <strong>General / Moderna</strong> aplica al PDF de la orden de renta (bloque inferior)</li>
-                                                <li>En <strong>Moderna</strong> puedes ajustar el tamaño de la foto del vehículo en el PDF</li>
+                                                <li>En <strong>Moderna</strong> puedes ajustar la foto del vehículo y el tamaño de textos del encabezado y empresa</li>
                                             </ul>
                                         </div>
                                     </div>
@@ -1088,6 +1133,23 @@ document.addEventListener('DOMContentLoaded', function() {
     if (rentalPdfGeneral) rentalPdfGeneral.addEventListener('change', syncRentalPdfModernaOptions);
     if (rentalPdfModerna) rentalPdfModerna.addEventListener('change', syncRentalPdfModernaOptions);
     syncRentalPdfModernaOptions();
+
+    var rentalPdfTextProporcional = document.getElementById('rental_pdf_text_proporcional');
+    var rentalPdfTextNumeros = document.getElementById('rental_pdf_text_numeros');
+    var rentalPdfTextProporcionalBlock = document.getElementById('rental-pdf-text-proporcional');
+    var rentalPdfTextNumerosBlock = document.getElementById('rental-pdf-text-numeros');
+    function syncRentalPdfTextMode() {
+        var useNumeros = rentalPdfTextNumeros && rentalPdfTextNumeros.checked;
+        if (rentalPdfTextProporcionalBlock) {
+            rentalPdfTextProporcionalBlock.style.display = useNumeros ? 'none' : 'block';
+        }
+        if (rentalPdfTextNumerosBlock) {
+            rentalPdfTextNumerosBlock.style.display = useNumeros ? 'block' : 'none';
+        }
+    }
+    if (rentalPdfTextProporcional) rentalPdfTextProporcional.addEventListener('change', syncRentalPdfTextMode);
+    if (rentalPdfTextNumeros) rentalPdfTextNumeros.addEventListener('change', syncRentalPdfTextMode);
+    syncRentalPdfTextMode();
 
     // Agregar cuenta bancaria
     const addBankAccountBtn = document.getElementById('add-bank-account');

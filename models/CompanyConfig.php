@@ -34,6 +34,13 @@ class CompanyConfig extends ActiveRecord
     const RENTAL_ORDER_PDF_FORMAT = 'rental_order_pdf_format';
     const RENTAL_ORDER_PDF_VEHICLE_IMG_MAX_W = 'rental_order_pdf_vehicle_img_max_w';
     const RENTAL_ORDER_PDF_VEHICLE_IMG_MAX_H = 'rental_order_pdf_vehicle_img_max_h';
+    const RENTAL_ORDER_PDF_TEXT_MODE = 'rental_order_pdf_text_mode';
+    const RENTAL_ORDER_PDF_TEXT_SCALE = 'rental_order_pdf_text_scale';
+    const RENTAL_ORDER_PDF_TEXT_HEADER_TITULO = 'rental_order_pdf_text_header_titulo';
+    const RENTAL_ORDER_PDF_TEXT_HEADER_MODELO = 'rental_order_pdf_text_header_modelo';
+    const RENTAL_ORDER_PDF_TEXT_HEADER_META = 'rental_order_pdf_text_header_meta';
+    const RENTAL_ORDER_PDF_TEXT_EMPRESA_NOMBRE = 'rental_order_pdf_text_empresa_nombre';
+    const RENTAL_ORDER_PDF_TEXT_EMPRESA_LINEA = 'rental_order_pdf_text_empresa_linea';
 
     // Directorios para archivos
     const UPLOAD_DIR = 'uploads/company/';
@@ -494,7 +501,7 @@ class CompanyConfig extends ActiveRecord
     public static function getRentalOrderPdfView(): string
     {
         return self::getRentalOrderPdfFormat() === 'moderna'
-            ? '@app/views/pdf/_rental-pdf-modern'
+            ? '@app/views/pdf/pdf-orden'
             : '@app/views/pdf/_rental-pdf';
     }
 
@@ -512,6 +519,79 @@ class CompanyConfig extends ActiveRecord
         $h = (int) self::getConfig(self::RENTAL_ORDER_PDF_VEHICLE_IMG_MAX_H, '90');
 
         return max(30, min(280, $h));
+    }
+
+    /** Tamaños base (pt) del PDF moderna cuando el modo es proporcional al 100%. */
+    public static function getRentalOrderPdfTextBaseSizes(): array
+    {
+        return [
+            'header_titulo' => 39,
+            'header_modelo' => 48,
+            'header_meta' => 27,
+            'empresa_nombre' => 36,
+            'empresa_linea' => 24,
+        ];
+    }
+
+    /** proporcional | numeros */
+    public static function getRentalOrderPdfTextMode(): string
+    {
+        $mode = (string) self::getConfig(self::RENTAL_ORDER_PDF_TEXT_MODE, 'proporcional');
+
+        return $mode === 'numeros' ? 'numeros' : 'proporcional';
+    }
+
+    public static function getRentalOrderPdfTextScalePercent(): int
+    {
+        return max(50, min(300, (int) self::getConfig(self::RENTAL_ORDER_PDF_TEXT_SCALE, '100')));
+    }
+
+    /** Tamaños finales en pt para encabezado y banda de empresa (PDF moderna). */
+    public static function getRentalOrderPdfTextSizes(): array
+    {
+        $base = self::getRentalOrderPdfTextBaseSizes();
+
+        if (self::getRentalOrderPdfTextMode() === 'numeros') {
+            return [
+                'header_titulo' => self::clampPdfTextPt(
+                    (int) self::getConfig(self::RENTAL_ORDER_PDF_TEXT_HEADER_TITULO, (string) $base['header_titulo']),
+                    $base['header_titulo']
+                ),
+                'header_modelo' => self::clampPdfTextPt(
+                    (int) self::getConfig(self::RENTAL_ORDER_PDF_TEXT_HEADER_MODELO, (string) $base['header_modelo']),
+                    $base['header_modelo']
+                ),
+                'header_meta' => self::clampPdfTextPt(
+                    (int) self::getConfig(self::RENTAL_ORDER_PDF_TEXT_HEADER_META, (string) $base['header_meta']),
+                    $base['header_meta']
+                ),
+                'empresa_nombre' => self::clampPdfTextPt(
+                    (int) self::getConfig(self::RENTAL_ORDER_PDF_TEXT_EMPRESA_NOMBRE, (string) $base['empresa_nombre']),
+                    $base['empresa_nombre']
+                ),
+                'empresa_linea' => self::clampPdfTextPt(
+                    (int) self::getConfig(self::RENTAL_ORDER_PDF_TEXT_EMPRESA_LINEA, (string) $base['empresa_linea']),
+                    $base['empresa_linea']
+                ),
+            ];
+        }
+
+        $factor = self::getRentalOrderPdfTextScalePercent() / 100;
+        $sizes = [];
+        foreach ($base as $key => $pt) {
+            $sizes[$key] = max(8, (int) round($pt * $factor));
+        }
+
+        return $sizes;
+    }
+
+    private static function clampPdfTextPt(int $value, int $default): int
+    {
+        if ($value <= 0) {
+            $value = $default;
+        }
+
+        return max(8, min(120, $value));
     }
 
     public static function wrapRentalConditionsHtml(string $html): string

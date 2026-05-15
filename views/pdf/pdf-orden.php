@@ -10,6 +10,18 @@ $h = static fn ($s) => htmlspecialchars((string) $s, ENT_QUOTES | ENT_SUBSTITUTE
 $vehImgMaxW = (int) ($d['vehiculo']['img_max_w'] ?? 170);
 $vehImgMaxH = (int) ($d['vehiculo']['img_max_h'] ?? 90);
 $vehImgColW = $vehImgMaxW + 10;
+$t = $d['tipografia'] ?? [
+    'header_titulo' => 39,
+    'header_modelo' => 48,
+    'header_meta' => 27,
+    'empresa_nombre' => 36,
+    'empresa_linea' => 24,
+];
+$txtHeaderTitulo = (int) ($t['header_titulo'] ?? 39);
+$txtHeaderModelo = (int) ($t['header_modelo'] ?? 48);
+$txtHeaderMeta = (int) ($t['header_meta'] ?? 27);
+$txtEmpresaNombre = (int) ($t['empresa_nombre'] ?? 36);
+$txtEmpresaLinea = (int) ($t['empresa_linea'] ?? 24);
 ?>
 <style>
     @page { margin: 10mm 12mm; }
@@ -27,7 +39,7 @@ $vehImgColW = $vehImgMaxW + 10;
         background-color: transparent;
     }
     .header h1 {
-        font-size: 39pt;
+        font-size: <?= $txtHeaderTitulo ?>pt;
         margin: 0 0 6px;
         font-weight: 800;
         letter-spacing: 1px;
@@ -35,14 +47,14 @@ $vehImgColW = $vehImgMaxW + 10;
         color: #ffffff;
     }
     .header .subtitle {
-        font-size: 48pt;
+        font-size: <?= $txtHeaderModelo ?>pt;
         font-weight: 700;
         line-height: 1.05;
         margin: 4px 0 8px;
         color: #ffffff;
     }
     .header .meta {
-        font-size: 27pt;
+        font-size: <?= $txtHeaderMeta ?>pt;
         margin-top: 6px;
         line-height: 1.2;
         color: #ffffff;
@@ -56,7 +68,7 @@ $vehImgColW = $vehImgMaxW + 10;
     .empresa-band table { width: 100%; border-collapse: collapse; }
     .empresa-band .info { vertical-align: middle; color: #0b1f4a; }
     .empresa-band .info b {
-        font-size: 36pt;
+        font-size: <?= $txtEmpresaNombre ?>pt;
         color: #0b1f4a;
         line-height: 1.08;
         display: block;
@@ -64,7 +76,7 @@ $vehImgColW = $vehImgMaxW + 10;
     }
     .empresa-band .info p {
         margin: 4px 0;
-        font-size: 24pt;
+        font-size: <?= $txtEmpresaLinea ?>pt;
         line-height: 1.2;
         color: #0b1f4a;
     }
@@ -141,9 +153,9 @@ $vehImgColW = $vehImgMaxW + 10;
                 <?php endif; ?>
             </td>
             <td style="color: #ffffff;">
-                <h1>ORDEN DE ALQUILER</h1>
-                <div class="subtitle"><?= $h($d['vehiculo']['modelo']) ?></div>
-                <div class="meta">
+                <h1 style="font-size: <?= $txtHeaderTitulo ?>pt; color: #ffffff;">ORDEN DE ALQUILER</h1>
+                <div class="subtitle" style="font-size: <?= $txtHeaderModelo ?>pt; color: #ffffff;"><?= $h($d['vehiculo']['modelo']) ?></div>
+                <div class="meta" style="font-size: <?= $txtHeaderMeta ?>pt; color: #ffffff;">
                     No. <b><?= $h($d['numero_orden']) ?></b> &nbsp;|&nbsp;
                     <?= $h($d['fecha_emision']) ?>
                 </div>
@@ -156,10 +168,10 @@ $vehImgColW = $vehImgMaxW + 10;
     <table>
         <tr>
             <td class="info" style="color: #0b1f4a;">
-                <b style="font-size: 36pt; color: #0b1f4a; line-height: 1.08;"><?= $h($d['empresa']['nombre']) ?></b>
-                <p style="font-size: 24pt; color: #0b1f4a; line-height: 1.2; margin: 4px 0;"><?= $h($d['empresa']['razon_social']) ?> | Cédula Jurídica <?= $h($d['empresa']['cedula']) ?></p>
-                <p style="font-size: 24pt; color: #0b1f4a; line-height: 1.2; margin: 4px 0;"><?= $h($d['empresa']['direccion']) ?></p>
-                <p style="font-size: 24pt; color: #0b1f4a; line-height: 1.2; margin: 4px 0;">WhatsApp: <?= $h($d['empresa']['whatsapp']) ?> | <?= $h($d['empresa']['telefono']) ?> | <?= $h($d['empresa']['web']) ?></p>
+                <b style="font-size: <?= $txtEmpresaNombre ?>pt; color: #0b1f4a; line-height: 1.08;"><?= $h($d['empresa']['nombre']) ?></b>
+                <p style="font-size: <?= $txtEmpresaLinea ?>pt; color: #0b1f4a; line-height: 1.2; margin: 4px 0;"><?= $h($d['empresa']['razon_social']) ?> | Cédula Jurídica <?= $h($d['empresa']['cedula']) ?></p>
+                <p style="font-size: <?= $txtEmpresaLinea ?>pt; color: #0b1f4a; line-height: 1.2; margin: 4px 0;"><?= $h($d['empresa']['direccion']) ?></p>
+                <p style="font-size: <?= $txtEmpresaLinea ?>pt; color: #0b1f4a; line-height: 1.2; margin: 4px 0;">WhatsApp: <?= $h($d['empresa']['whatsapp']) ?> | <?= $h($d['empresa']['telefono']) ?> | <?= $h($d['empresa']['web']) ?></p>
             </td>
             <td class="veh-img">
                 <?php if (!empty($d['vehiculo']['imagen_fs'])): ?>

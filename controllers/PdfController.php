@@ -778,6 +778,7 @@ class PdfController extends Controller
             'sinpe' => $simpeDisplay,
             'monto_reservacion' => $totalNum,
             'ejecutivo' => 'Ejecutivo de turno.',
+            'tipografia' => CompanyConfig::getRentalOrderPdfTextSizes(),
         ];
     }
 
