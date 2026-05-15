@@ -145,4 +145,17 @@ class MaintenanceOrder extends ActiveRecord
 
         return $parts !== [] ? implode(' — ', $parts) : 'Vehículo #' . $car->id;
     }
+
+    /** @param Car[] $cars */
+    public static function buildCarDropdownList(array $cars): array
+    {
+        $list = [];
+        foreach ($cars as $car) {
+            if ($car instanceof Car) {
+                $list[$car->id] = self::carDropdownLabel($car);
+            }
+        }
+
+        return $list;
+    }
 }

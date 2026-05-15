@@ -2,14 +2,15 @@
 /** @var yii\web\View $this */
 /** @var app\models\MaintenanceOrder $model */
 /** @var app\models\Car[] $cars */
+/** @var array<int, string> $carItems */
 /** @var bool $isUpdate */
 
 use app\models\MaintenanceOrder;
-use yii\helpers\ArrayHelper;
 use yii\helpers\Html;
 use yii\widgets\ActiveForm;
 
 $isUpdate = $isUpdate ?? false;
+$carItems = $carItems ?? MaintenanceOrder::buildCarDropdownList($cars ?? []);
 ?>
 
 <?php $form = ActiveForm::begin(['options' => ['class' => 'row g-3']]); ?>
@@ -22,8 +23,13 @@ $isUpdate = $isUpdate ?? false;
 <?php endif; ?>
 
 <div class="col-md-<?= $isUpdate ? '4' : '6' ?>">
+    <?php if ($carItems === []): ?>
+        <div class="alert alert-warning mb-0">
+            No hay vehículos registrados. <a href="<?= \yii\helpers\Url::to(['/car/create']) ?>">Agregar vehículo</a>
+        </div>
+    <?php endif; ?>
     <?= $form->field($model, 'car_id')->dropDownList(
-        ArrayHelper::map($cars, 'id', [MaintenanceOrder::class, 'carDropdownLabel']),
+        $carItems,
         ['prompt' => '— Seleccione un vehículo —', 'class' => 'form-select']
     ) ?>
 </div>

@@ -98,7 +98,8 @@ class MaintenanceOrderController extends Controller
 
         return $this->render('create', [
             'model' => $model,
-            'cars' => $this->getCarsForDropdown(),
+            'cars' => $cars = $this->getCarsForDropdown(),
+            'carItems' => MaintenanceOrder::buildCarDropdownList($cars),
         ]);
     }
 
@@ -113,7 +114,8 @@ class MaintenanceOrderController extends Controller
 
         return $this->render('update', [
             'model' => $model,
-            'cars' => $this->getCarsForDropdown(),
+            'cars' => $cars = $this->getCarsForDropdown(),
+            'carItems' => MaintenanceOrder::buildCarDropdownList($cars),
         ]);
     }
 
