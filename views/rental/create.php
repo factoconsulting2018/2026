@@ -242,13 +242,32 @@ foreach ($cars as $car) {
                         <span class="text-secondary">Gris</span> = Moviliza
                     </p>
 
-                    <?= $form->field($model, 'precio_por_dia')->input('number', [
-                        'step' => '0.01',
-                        'min' => 0,
-                        'required' => true,
-                        'oninvalid' => "this.setCustomValidity('Ingresa un precio por día válido (0 o mayor).')",
-                        'oninput' => "this.setCustomValidity('')"
-                    ]) ?>
+                    <?php
+                    $precioPorDiaValor = $model->precio_por_dia !== null && $model->precio_por_dia !== ''
+                        ? (float) $model->precio_por_dia
+                        : null;
+                    $precioPorDiaDisplay = $precioPorDiaValor > 0
+                        ? number_format($precioPorDiaValor, 0, '.', ',')
+                        : '';
+                    ?>
+                    <div class="form-group mb-3 field-rental-precio_por_dia required">
+                        <label class="form-label fw-bold" for="precio-por-dia-display">Precio por Día</label>
+                        <div class="input-group">
+                            <span class="input-group-text fw-semibold">₡</span>
+                            <input type="text"
+                                   id="precio-por-dia-display"
+                                   class="form-control"
+                                   inputmode="decimal"
+                                   autocomplete="off"
+                                   placeholder="35,000"
+                                   required
+                                   value="<?= Html::encode($precioPorDiaDisplay) ?>">
+                        </div>
+                        <?= Html::activeHiddenInput($model, 'precio_por_dia', ['id' => 'rental-precio_por_dia']) ?>
+                        <?php if ($model->hasErrors('precio_por_dia')): ?>
+                            <div class="invalid-feedback d-block"><?= Html::encode($model->getFirstError('precio_por_dia')) ?></div>
+                        <?php endif; ?>
+                    </div>
 
                     <!-- Checkbox 1/2 día -->
                     <div class="form-check mt-3 mb-3" style="background-color: #e3f2fd; border: 2px solid #2196f3; border-radius: 8px; padding: 12px;">
@@ -272,9 +291,12 @@ foreach ($cars as $car) {
 
                     <div class="form-group mb-3">
                         <label class="form-label fw-bold">Precio Total</label>
-                        <input type="text" id="total-preview" class="form-control" readonly 
-                               placeholder="Se calculará automáticamente" 
-                               style="background-color: #f8f9fa;">
+                        <div class="input-group">
+                            <span class="input-group-text fw-semibold">₡</span>
+                            <input type="text" id="total-preview" class="form-control" readonly
+                                   placeholder="Se calculará automáticamente"
+                                   style="background-color: #f8f9fa;">
+                        </div>
                         <small class="form-text text-muted">Se calcula automáticamente: <span id="precio-calculo-texto">Cantidad de días × Precio por día</span></small>
                     </div>
                 </div>
@@ -447,6 +469,100 @@ foreach ($cars as $car) {
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // ==========================================
+    // FORMATO MONEDA (₡) — precio por día y total
+    // ==========================================
+    function parseColonesValue(value) {
+        if (value === null || value === undefined || value === '') {
+            return 0;
+        }
+        const cleaned = String(value).replace(/[₡\s]/g, '').replace(/,/g, '');
+        const num = parseFloat(cleaned);
+        return isNaN(num) ? 0 : num;
+    }
+
+    function formatColonesNumber(num) {
+        const n = parseFloat(num);
+        if (isNaN(n) || n <= 0) {
+            return '';
+        }
+        return n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+    }
+
+    function formatColonesWithSymbol(num) {
+        const formatted = formatColonesNumber(num);
+        return formatted ? '₡' + formatted : '';
+    }
+
+    function syncPrecioPorDiaFromDisplay() {
+        const display = document.getElementById('precio-por-dia-display');
+        const hidden = document.getElementById('rental-precio_por_dia');
+        if (!display || !hidden) {
+            return 0;
+        }
+        const num = parseColonesValue(display.value);
+        hidden.value = num > 0 ? String(num) : '';
+        return num;
+    }
+
+    function formatPrecioPorDiaInputWhileTyping(raw) {
+        if (raw === '' || raw === '.') {
+            return raw;
+        }
+        const endsWithDot = raw.endsWith('.');
+        const parts = raw.split('.');
+        const intPart = parts[0].replace(/^0+(?=\d)/, '');
+        const intFormatted = intPart !== '' ? parseInt(intPart, 10).toLocaleString('en-US') : '';
+        if (endsWithDot) {
+            return intFormatted + '.';
+        }
+        if (parts.length > 1) {
+            const decimals = parts[1].replace(/[^\d]/g, '').slice(0, 2);
+            return decimals !== '' ? intFormatted + '.' + decimals : intFormatted;
+        }
+        return intFormatted;
+    }
+
+    function initPrecioPorDiaCurrencyInput() {
+        const display = document.getElementById('precio-por-dia-display');
+        const hidden = document.getElementById('rental-precio_por_dia');
+        if (!display || !hidden) {
+            return;
+        }
+
+        if (hidden.value) {
+            display.value = formatColonesNumber(parseFloat(hidden.value));
+        }
+
+        display.addEventListener('input', function() {
+            let raw = display.value.replace(/[^\d.,]/g, '').replace(/,/g, '');
+            const dotIndex = raw.indexOf('.');
+            if (dotIndex !== -1) {
+                raw = raw.slice(0, dotIndex + 1) + raw.slice(dotIndex + 1).replace(/\./g, '');
+            }
+            const num = parseColonesValue(raw);
+            hidden.value = num > 0 ? String(num) : '';
+            display.value = formatPrecioPorDiaInputWhileTyping(raw);
+            if (typeof calcularTotal === 'function') {
+                calcularTotal();
+            }
+        });
+
+        display.addEventListener('blur', function() {
+            const num = syncPrecioPorDiaFromDisplay();
+            display.value = formatColonesNumber(num);
+        });
+
+        display.addEventListener('focus', function() {
+            const num = parseColonesValue(display.value);
+            if (num > 0) {
+                display.value = String(num);
+            }
+        });
+    }
+
+    initPrecioPorDiaCurrencyInput();
+
+    // ==========================================
     // FUNCIONES DE CONVERSIÓN 12H ↔ 24H
     // ==========================================
     
@@ -587,7 +703,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const totalPreview = document.getElementById('total-preview');
     
     function calcularTotal() {
-        const precio = parseFloat(precioPorDia.value) || 0;
+        const precio = parseColonesValue(precioPorDia ? precioPorDia.value : 0);
         let total = 0;
         
         // Verificar si es alquiler por horas (mismo día)
@@ -616,7 +732,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         if (total > 0) {
-            totalPreview.value = '₡' + total.toLocaleString('es-CR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            totalPreview.value = formatColonesNumber(total);
         } else {
             totalPreview.value = '';
         }
@@ -624,7 +740,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (cantidadDias && precioPorDia && totalPreview) {
         cantidadDias.addEventListener('input', calcularTotal);
-        precioPorDia.addEventListener('input', calcularTotal);
         if (fechaInicio) {
             fechaInicio.addEventListener('change', calcularTotal);
         }
@@ -1079,8 +1194,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         // 8. Validar Precio por día (requerido)
+        syncPrecioPorDiaFromDisplay();
         const precioPorDia = document.getElementById('rental-precio_por_dia');
-        if (!precioPorDia || !precioPorDia.value || parseFloat(precioPorDia.value) <= 0) {
+        if (!precioPorDia || !precioPorDia.value || parseColonesValue(precioPorDia.value) <= 0) {
             errores.push('Precio por día: Debes ingresar un precio por día válido (mayor a 0).');
         }
         
@@ -1205,6 +1321,7 @@ document.addEventListener('DOMContentLoaded', function() {
         'rental-fecha_final',
         'rental-hora_final',
         'rental-cantidad_dias',
+        'precio-por-dia-display',
         'rental-precio_por_dia',
         'rental-lugar_entrega',
         'rental-lugar_retiro',
@@ -1246,6 +1363,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const form = document.querySelector('form.rental-form');
     if (form) {
         form.addEventListener('submit', function(e) {
+            syncPrecioPorDiaFromDisplay();
             if (!validarFormularioCompleto()) {
                 e.preventDefault();
                 // Scroll al informe total
