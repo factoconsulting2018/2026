@@ -52,11 +52,11 @@ $vehImgColW = $vehImgMaxW + 10;
     .header .logo-cell { width: 110px; vertical-align: middle; }
     .header .logo-cell img { width: 90px; height: 90px; }
 
-    .empresa-band { background: #f3f5f8; padding: 12px 20px; }
+    .empresa-band { background: #f3f5f8; padding: 18px 20px; }
     .empresa-band table { width: 100%; border-collapse: collapse; }
     .empresa-band .info { vertical-align: middle; }
-    .empresa-band .info b { font-size: 12pt; color: #0b1f4a; }
-    .empresa-band .info p { margin: 2px 0; font-size: 9pt; line-height: 1.4; }
+    .empresa-band .info b { font-size: 18pt; color: #0b1f4a; line-height: 1.1; }
+    .empresa-band .info p { margin: 2px 0; font-size: 12pt; line-height: 1.25; }
     .empresa-band .veh-img { width: <?= $vehImgColW ?>px; text-align: right; vertical-align: middle; }
     .empresa-band .veh-img img { max-width: <?= $vehImgMaxW ?>px; max-height: <?= $vehImgMaxH ?>px; }
 
