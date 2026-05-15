@@ -334,12 +334,30 @@
 .note-card .note-actions {
     display: flex;
     gap: 5px;
-    opacity: 0;
+    flex-wrap: wrap;
+    opacity: 0.85;
     transition: opacity 0.3s ease;
 }
 
 .note-card:hover .note-actions {
     opacity: 1;
+}
+
+@media (hover: none) {
+    .note-card .note-actions {
+        opacity: 1;
+    }
+}
+
+.note-card .note-footer-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+}
+
+.note-card .note-delete-btn {
+    opacity: 1 !important;
 }
 
 .note-card .note-actions .btn {

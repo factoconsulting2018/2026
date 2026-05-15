@@ -232,12 +232,19 @@ $this->registerCssFile('@web/css/notes-dashboard.css', ['depends' => [\yii\boots
                                         <i class="fas fa-exchange-alt"></i>
                                     </button>
                                     
-                                    <?= Html::a('<i class="fas fa-trash"></i>', ['delete', 'id' => $note->id], [
-                                        'class' => 'btn btn-sm btn-outline-danger',
-                                        'data-confirm' => '¿Estás seguro de que deseas eliminar esta nota?',
-                                        'data-method' => 'post',
-                                        'title' => 'Eliminar'
-                                    ]) ?>
+                                    <?= Html::a(
+                                        '<span class="material-symbols-outlined" style="font-size:16px;">delete</span>',
+                                        ['delete', 'id' => $note->id],
+                                        [
+                                            'class' => 'btn btn-sm btn-danger note-delete-btn',
+                                            'title' => 'Eliminar',
+                                            'encode' => false,
+                                            'data' => [
+                                                'confirm' => '¿Estás seguro de que deseas eliminar esta nota?',
+                                                'method' => 'post',
+                                            ],
+                                        ]
+                                    ) ?>
                                 </div>
                             </div>
 
@@ -259,13 +266,25 @@ $this->registerCssFile('@web/css/notes-dashboard.css', ['depends' => [\yii\boots
                                     </span>
                                 </div>
                                 
-                                <!-- Botón de editar prominente -->
-                                <div class="note-edit-action">
-                                    <?= Html::a('<i class="fas fa-edit"></i> Editar', ['update', 'id' => $note->id], [
-                                        'class' => 'btn btn-warning btn-sm',
-                                        'title' => 'Editar esta nota',
-                                        'onclick' => 'console.log("Botón prominente de editar clickeado para nota:", ' . $note->id . '); return true;'
-                                    ]) ?>
+                                <div class="note-footer-actions">
+                                    <?= Html::a(
+                                        '<span class="material-symbols-outlined align-middle" style="font-size:16px;">edit</span> Editar',
+                                        ['update', 'id' => $note->id],
+                                        ['class' => 'btn btn-warning btn-sm', 'encode' => false, 'title' => 'Editar esta nota']
+                                    ) ?>
+                                    <?= Html::a(
+                                        '<span class="material-symbols-outlined align-middle" style="font-size:16px;">delete</span> Eliminar',
+                                        ['delete', 'id' => $note->id],
+                                        [
+                                            'class' => 'btn btn-danger btn-sm note-delete-btn',
+                                            'encode' => false,
+                                            'title' => 'Eliminar esta nota',
+                                            'data' => [
+                                                'confirm' => '¿Estás seguro de que deseas eliminar esta nota?',
+                                                'method' => 'post',
+                                            ],
+                                        ]
+                                    ) ?>
                                 </div>
                             </div>
                         </div>
@@ -443,6 +462,10 @@ $this->registerCssFile('@web/css/notes-dashboard.css', ['depends' => [\yii\boots
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-danger" id="deleteNoteBtn" style="display: none;" onclick="deleteNote(window._viewNoteId)">
+                    <span class="material-symbols-outlined me-1" style="font-size: 16px;">delete</span>
+                    Eliminar
+                </button>
                 <button type="button" class="btn btn-primary" id="editNoteBtn" style="display: none;">
                     <span class="material-symbols-outlined me-1" style="font-size: 16px;">edit</span>
                     Editar Nota
@@ -523,14 +546,52 @@ function editNote(noteId) {
 
 // Función para ver nota
 function viewNote(noteId) {
-    console.log('Ver nota:', noteId);
-    // Implementar lógica de ver nota si es necesario
+    const card = document.querySelector('.note-card[data-id=\"' + noteId + '\"]');
+    if (!card) {
+        return;
+    }
+    window._viewNoteId = noteId;
+    const title = card.dataset.title || '';
+    const content = card.dataset.content || '';
+    const status = card.querySelector('.badge') ? card.querySelector('.badge').textContent.trim() : '';
+    document.getElementById('noteModalContent').innerHTML =
+        '<h5>' + title + '</h5>' +
+        '<p class=\"text-muted small mb-2\">' + status + '</p>' +
+        '<div class=\"border rounded p-3 bg-light\" style=\"white-space:pre-wrap;\">' + content + '</div>';
+    const editBtn = document.getElementById('editNoteBtn');
+    const deleteBtn = document.getElementById('deleteNoteBtn');
+    if (editBtn) {
+        editBtn.style.display = 'inline-block';
+        editBtn.onclick = function() { editNote(noteId); };
+    }
+    if (deleteBtn) {
+        deleteBtn.style.display = 'inline-block';
+    }
+    const modal = new bootstrap.Modal(document.getElementById('viewNoteModal'));
+    modal.show();
 }
 
 // Función para cambiar estado
 function changeStatus(noteId) {
     console.log('Cambiar estado de nota:', noteId);
     // Implementar lógica de cambio de estado si es necesario
+}
+
+// Eliminar nota (POST con CSRF; respaldo si data-method no está activo)
+function deleteNote(noteId) {
+    if (!noteId || !confirm('¿Estás seguro de que deseas eliminar esta nota?')) {
+        return;
+    }
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '" . Url::to(['/notes/delete']) . "?id=' + encodeURIComponent(noteId);
+    const csrf = document.createElement('input');
+    csrf.type = 'hidden';
+    csrf.name = '" . Yii::$app->request->csrfParam . "';
+    csrf.value = '" . Yii::$app->request->csrfToken . "';
+    form.appendChild(csrf);
+    document.body.appendChild(form);
+    form.submit();
 }
 ", View::POS_READY);
 ?>
