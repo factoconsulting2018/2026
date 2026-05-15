@@ -236,6 +236,96 @@ $this->registerJsFile('https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.um
     color: white;
 }
 
+/* Top clientes — acordeón móvil */
+.top-clients-desktop {
+    overflow-x: auto;
+}
+
+.top-clients-mobile .accordion-button {
+    white-space: normal;
+    line-height: 1.35;
+    font-size: 0.92rem;
+    padding: 0.7rem 0.85rem;
+}
+
+.top-clients-mobile .accordion-button:not(.collapsed) {
+    background-color: #eef4ff;
+    color: #1b305b;
+    font-weight: 600;
+}
+
+.top-clients-acc-rank {
+    flex-shrink: 0;
+}
+
+.top-clients-acc-name {
+    font-weight: 600;
+    color: #22487a;
+    font-size: 0.98rem;
+    word-break: break-word;
+}
+
+.top-clients-acc-meta {
+    font-size: 0.8rem;
+    color: #64748b;
+    margin-top: 0.15rem;
+}
+
+.top-clients-acc-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.35rem 0;
+    border-bottom: 1px solid #e9ecef;
+    font-size: 0.9rem;
+}
+
+.top-clients-acc-row:last-child {
+    border-bottom: none;
+}
+
+.top-clients-acc-label {
+    color: #6c757d;
+}
+
+.top-clients-acc-value {
+    font-weight: 600;
+    text-align: right;
+}
+
+@media (max-width: 767.98px) {
+    .table-card {
+        padding: 16px;
+    }
+
+    .table-card-title {
+        font-size: 1.05rem;
+        color: #3fa9f5;
+    }
+
+    .top-clients-mobile .accordion-item {
+        border-left: 3px solid #3fa9f5;
+    }
+}
+
+.dashboard-container.dark-mode .top-clients-mobile .accordion-button:not(.collapsed) {
+    background-color: #1f2937;
+    color: #e2e8f0;
+}
+
+.dashboard-container.dark-mode .top-clients-acc-name {
+    color: #6eb8ff;
+}
+
+.dashboard-container.dark-mode .top-clients-acc-meta,
+.dashboard-container.dark-mode .top-clients-acc-label {
+    color: #adb5bd;
+}
+
+.dashboard-container.dark-mode .top-clients-acc-row {
+    border-bottom-color: #404040;
+}
+
 .loading-overlay {
     position: fixed;
     top: 0;
@@ -491,7 +581,7 @@ $this->registerJsFile('https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.um
                 Top 10 Clientes
             </div>
         </div>
-        <div style="overflow-x: auto;">
+        <div class="top-clients-desktop d-none d-md-block">
             <table class="top-clients-table">
                 <thead>
                     <tr>
@@ -510,6 +600,14 @@ $this->registerJsFile('https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.um
                     </tr>
                 </tbody>
             </table>
+        </div>
+
+        <div class="d-md-none top-clients-mobile" id="top-clients-mobile">
+            <div class="accordion accordion-flush" id="topClientsAccordion">
+                <div class="text-center py-4 text-muted" id="top-clients-mobile-loading">
+                    Cargando datos...
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -824,32 +922,105 @@ function updateEmpresaChart(metrics) {
     });
 }
 
-// Función para actualizar tabla de top clientes
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text == null ? '' : String(text);
+    return div.innerHTML;
+}
+
+function getRankBadgeClass(rank) {
+    if (rank === 1) return 'gold';
+    if (rank === 2) return 'silver';
+    if (rank === 3) return 'bronze';
+    return '';
+}
+
+// Función para actualizar tabla de top clientes (escritorio) y acordeón (móvil)
 function updateTopClientsTable(clients) {
     const tbody = document.getElementById('top-clients-tbody');
-    
-    if (clients.length === 0) {
+    const accordion = document.getElementById('topClientsAccordion');
+    const emptyMsg = '<div class="text-center py-4 text-muted">No hay datos disponibles</div>';
+
+    if (!clients.length) {
         tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 40px; color: #6c757d;">No hay datos disponibles</td></tr>';
+        if (accordion) {
+            accordion.innerHTML = emptyMsg;
+        }
         return;
     }
-    
+
     tbody.innerHTML = clients.map((client, index) => {
         const rank = index + 1;
-        let rankBadgeClass = '';
-        if (rank === 1) rankBadgeClass = 'gold';
-        else if (rank === 2) rankBadgeClass = 'silver';
-        else if (rank === 3) rankBadgeClass = 'bronze';
-        
+        const rankBadgeClass = getRankBadgeClass(rank);
+        const name = escapeHtml(client.client_name || 'Sin nombre');
+
         return `
             <tr>
                 <td>
                     <span class="rank-badge ${rankBadgeClass}">${rank}</span>
                 </td>
-                <td><strong>${client.client_name || 'Sin nombre'}</strong></td>
+                <td><strong>${name}</strong></td>
                 <td>${client.total_rentals}</td>
                 <td><strong>${formatCurrency(client.total_amount)}</strong></td>
                 <td>${formatCurrency(client.average_rental)}</td>
             </tr>
+        `;
+    }).join('');
+
+    if (!accordion) {
+        return;
+    }
+
+    accordion.innerHTML = clients.map((client, index) => {
+        const rank = index + 1;
+        const rankBadgeClass = getRankBadgeClass(rank);
+        const name = escapeHtml(client.client_name || 'Sin nombre');
+        const accId = 'top-client-acc-' + rank;
+        const headingId = 'top-client-heading-' + rank;
+        const expanded = index === 0 ? 'true' : 'false';
+        const collapsed = index === 0 ? '' : 'collapsed';
+        const showClass = index === 0 ? 'show' : '';
+
+        return `
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="${headingId}">
+                    <button class="accordion-button ${collapsed}"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#${accId}"
+                            aria-expanded="${expanded}"
+                            aria-controls="${accId}">
+                        <div class="d-flex align-items-start gap-2 w-100">
+                            <span class="rank-badge top-clients-acc-rank ${rankBadgeClass}">${rank}</span>
+                            <div class="flex-grow-1 min-w-0">
+                                <div class="top-clients-acc-name">${name}</div>
+                                <div class="top-clients-acc-meta">
+                                    ${client.total_rentals} alquiler${client.total_rentals !== 1 ? 'es' : ''} · ${formatCurrency(client.total_amount)}
+                                </div>
+                            </div>
+                        </div>
+                    </button>
+                </h2>
+                <div id="${accId}"
+                     class="accordion-collapse collapse ${showClass}"
+                     aria-labelledby="${headingId}"
+                     data-bs-parent="#topClientsAccordion">
+                    <div class="accordion-body pt-2">
+                        <div class="top-clients-acc-row">
+                            <span class="top-clients-acc-label">Total alquileres</span>
+                            <span class="top-clients-acc-value">${client.total_rentals}</span>
+                        </div>
+                        <div class="top-clients-acc-row">
+                            <span class="top-clients-acc-label">Ingresos totales</span>
+                            <span class="top-clients-acc-value text-primary">${formatCurrency(client.total_amount)}</span>
+                        </div>
+                        <div class="top-clients-acc-row">
+                            <span class="top-clients-acc-label">Promedio / alquiler</span>
+                            <span class="top-clients-acc-value">${formatCurrency(client.average_rental)}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         `;
     }).join('');
 }
