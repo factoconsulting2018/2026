@@ -131,7 +131,7 @@ class SiteController extends Controller
             ];
             
             // Últimos alquileres (sin relaciones por ahora)
-            $recentRentalsQuery = Rental::find();
+            $recentRentalsQuery = Rental::find()->with(['client', 'car']);
             if ($dateColumn !== null) {
                 $recentRentalsQuery->orderBy([$dateColumn => SORT_DESC]);
             } else {

@@ -192,13 +192,16 @@ $this->params['breadcrumbs'][] = $this->title;
     <?php if (!empty($recentRentals)): ?>
     <div class="row mt-4">
         <div class="col-12">
-            <div class="card">
+            <div class="card dashboard-recent-rentals-card">
                 <div class="card-header">
-                    <h5 class="mb-0">📋 Últimos Alquileres</h5>
+                    <h5 class="mb-0 dashboard-recent-rentals-title">
+                        <span class="material-symbols-outlined align-middle me-1" style="font-size: 20px;">receipt_long</span>
+                        Últimos Alquileres
+                    </h5>
                 </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover">
+                <div class="card-body p-0 p-md-3">
+                    <div class="d-none d-md-block table-responsive">
+                        <table class="table table-hover mb-0">
                             <thead>
                                 <tr>
                                     <th>ID</th>
@@ -212,42 +215,30 @@ $this->params['breadcrumbs'][] = $this->title;
                             </thead>
                             <tbody>
                                 <?php foreach ($recentRentals as $rental): ?>
+                                    <?php
+                                    $clientName = $rental->client
+                                        ? ($rental->client->fullNameUppercase ?? $rental->client->full_name ?? 'Cliente')
+                                        : 'N/A';
+                                    $carName = $rental->car ? ($rental->car->nombre ?? 'N/A') : 'N/A';
+                                    $fechaInicio = $rental->fecha_inicio ? date('d/m/Y', strtotime($rental->fecha_inicio)) : 'N/A';
+                                    $fechaFin = $rental->fecha_final ? date('d/m/Y', strtotime($rental->fecha_final)) : 'N/A';
+                                    $estado = $rental->estado_pago ?? 'pendiente';
+                                    $badges = [
+                                        'pagado' => 'bg-success',
+                                        'pendiente' => 'bg-warning text-dark',
+                                        'reservado' => 'bg-info text-dark',
+                                        'cancelado' => 'bg-danger',
+                                    ];
+                                    $badge = $badges[$estado] ?? 'bg-secondary';
+                                    ?>
                                 <tr>
                                     <td><?= Html::encode($rental->rental_id ?? 'R' . $rental->id) ?></td>
+                                    <td><?= Html::encode($clientName) ?></td>
+                                    <td><?= Html::encode($carName) ?></td>
+                                    <td><?= Html::encode($fechaInicio) ?></td>
+                                    <td><?= Html::encode($fechaFin) ?></td>
                                     <td>
-                                        <?php
-                                        if ($rental->client_id) {
-                                            $client = \app\models\Client::findOne($rental->client_id);
-                                            echo $client ? Html::encode($client->fullNameUppercase ?? 'Cliente ' . $rental->client_id) : 'Cliente ' . $rental->client_id;
-                                        } else {
-                                            echo 'N/A';
-                                        }
-                                        ?>
-                                    </td>
-                                    <td>
-                                        <?php
-                                        if ($rental->car_id) {
-                                            $car = \app\models\Car::findOne($rental->car_id);
-                                            echo $car ? Html::encode($car->nombre ?? 'Vehículo ' . $rental->car_id) : 'Vehículo ' . $rental->car_id;
-                                        } else {
-                                            echo 'N/A';
-                                        }
-                                        ?>
-                                    </td>
-                                    <td><?= Html::encode($rental->fecha_inicio ? date('d/m/Y', strtotime($rental->fecha_inicio)) : 'N/A') ?></td>
-                                    <td><?= Html::encode($rental->fecha_final ? date('d/m/Y', strtotime($rental->fecha_final)) : 'N/A') ?></td>
-                                    <td>
-                                        <?php
-                                        $estado = $rental->estado_pago ?? 'pendiente';
-                                        $badges = [
-                                            'pagado' => 'bg-success',
-                                            'pendiente' => 'bg-warning',
-                                            'reservado' => 'bg-info',
-                                            'cancelado' => 'bg-danger',
-                                        ];
-                                        $badge = $badges[$estado] ?? 'bg-secondary';
-                                        echo '<span class="badge ' . $badge . '">' . Html::encode(ucfirst($estado)) . '</span>';
-                                        ?>
+                                        <span class="badge <?= $badge ?>"><?= Html::encode(ucfirst($estado)) ?></span>
                                     </td>
                                     <td>
                                         <a href="<?= Url::to(['/rental/view', 'id' => $rental->id]) ?>" class="btn btn-sm btn-outline-primary">Ver</a>
@@ -256,6 +247,76 @@ $this->params['breadcrumbs'][] = $this->title;
                                 <?php endforeach; ?>
                             </tbody>
                         </table>
+                    </div>
+
+                    <div class="d-md-none dashboard-recent-rentals-mobile">
+                        <div class="accordion accordion-flush" id="dashboardRecentRentalsAccordion">
+                            <?php foreach ($recentRentals as $i => $rental):
+                                $orderId = $rental->rental_id ?: ('R' . str_pad((string) $rental->id, 6, '0', STR_PAD_LEFT));
+                                $clientNameMobile = $rental->client
+                                    ? ($rental->client->fullNameUppercase ?? $rental->client->full_name ?? 'Sin cliente')
+                                    : 'Sin cliente';
+                                $carNameMobile = $rental->car ? ($rental->car->nombre ?? 'Sin vehículo') : 'Sin vehículo';
+                                $placaMobile = ($rental->car && $rental->car->placa) ? ' (' . $rental->car->placa . ')' : '';
+                                $fechaInicioMobile = $rental->fecha_inicio ? date('d/m/Y', strtotime($rental->fecha_inicio)) : '—';
+                                $fechaFinMobile = $rental->fecha_final ? date('d/m/Y', strtotime($rental->fecha_final)) : '—';
+                                $estadoMobile = $rental->estado_pago ?? 'pendiente';
+                                $badgesMobile = [
+                                    'pagado' => 'bg-success',
+                                    'pendiente' => 'bg-warning text-dark',
+                                    'reservado' => 'bg-info text-dark',
+                                    'cancelado' => 'bg-danger',
+                                ];
+                                $badgeMobile = $badgesMobile[$estadoMobile] ?? 'bg-secondary';
+                                $accId = 'dash-rental-acc-' . $rental->id;
+                                $headingId = 'dash-rental-heading-' . $rental->id;
+                                ?>
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header" id="<?= Html::encode($headingId) ?>">
+                                        <button class="accordion-button <?= $i !== 0 ? 'collapsed' : '' ?>"
+                                                type="button"
+                                                data-bs-toggle="collapse"
+                                                data-bs-target="#<?= Html::encode($accId) ?>"
+                                                aria-expanded="<?= $i === 0 ? 'true' : 'false' ?>"
+                                                aria-controls="<?= Html::encode($accId) ?>">
+                                            <div class="w-100">
+                                                <div class="fw-semibold dashboard-rental-client-name"><?= Html::encode($clientNameMobile) ?></div>
+                                                <div class="dashboard-rental-acc-meta">
+                                                    <span class="material-symbols-outlined align-middle" style="font-size:14px;">directions_car</span>
+                                                    <?= Html::encode($carNameMobile . $placaMobile) ?>
+                                                </div>
+                                                <div class="dashboard-rental-acc-meta">
+                                                    <span class="material-symbols-outlined align-middle" style="font-size:14px;">calendar_month</span>
+                                                    <?= Html::encode($fechaInicioMobile) ?> → <?= Html::encode($fechaFinMobile) ?>
+                                                </div>
+                                            </div>
+                                        </button>
+                                    </h2>
+                                    <div id="<?= Html::encode($accId) ?>"
+                                         class="accordion-collapse collapse <?= $i === 0 ? 'show' : '' ?>"
+                                         aria-labelledby="<?= Html::encode($headingId) ?>"
+                                         data-bs-parent="#dashboardRecentRentalsAccordion">
+                                        <div class="accordion-body">
+                                            <div class="row g-2 small mb-3">
+                                                <div class="col-6">
+                                                    <div class="text-muted">Orden</div>
+                                                    <div class="fw-semibold"><?= Html::encode($orderId) ?></div>
+                                                </div>
+                                                <div class="col-6">
+                                                    <div class="text-muted">Estado</div>
+                                                    <span class="badge <?= $badgeMobile ?>"><?= Html::encode(ucfirst($estadoMobile)) ?></span>
+                                                </div>
+                                            </div>
+                                            <?= Html::a(
+                                                '<span class="material-symbols-outlined align-middle" style="font-size:18px;">visibility</span> Ver alquiler',
+                                                ['/rental/view', 'id' => $rental->id],
+                                                ['class' => 'btn btn-outline-primary w-100', 'encode' => false]
+                                            ) ?>
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -373,6 +434,77 @@ body {
 [data-theme="dark"] .btn-light:hover {
     background-color: #6c757d;
     border-color: #adb5bd;
+}
+
+/* Últimos alquileres — título y móvil */
+.dashboard-recent-rentals-title {
+    color: #22487a;
+    font-weight: 700;
+}
+
+.dashboard-recent-rentals-title .material-symbols-outlined {
+    color: #3fa9f5;
+}
+
+.dashboard-recent-rentals-mobile .accordion-button {
+    white-space: normal;
+    line-height: 1.35;
+    font-size: 0.92rem;
+    padding: 0.75rem 0.85rem;
+}
+
+.dashboard-recent-rentals-mobile .accordion-button:not(.collapsed) {
+    background-color: #eef4ff;
+    color: #1b305b;
+    font-weight: 600;
+}
+
+.dashboard-rental-client-name {
+    color: #22487a !important;
+    font-size: 1rem;
+}
+
+.dashboard-rental-acc-meta {
+    font-size: 0.82rem;
+    color: #64748b;
+    margin-top: 0.2rem;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 767.98px) {
+    .dashboard-recent-rentals-title {
+        color: #3fa9f5;
+        font-size: 1.1rem;
+    }
+
+    .dashboard-recent-rentals-card .card-header {
+        background: linear-gradient(135deg, #eef4ff 0%, #f8fafc 100%);
+        border-bottom: 2px solid #3fa9f5;
+    }
+
+    .dashboard-recent-rentals-mobile .accordion-item {
+        border-left: 3px solid #3fa9f5;
+    }
+
+    .dashboard-recent-rentals-mobile .btn-outline-primary {
+        min-height: 44px;
+    }
+}
+
+[data-theme="dark"] .dashboard-recent-rentals-title {
+    color: #3fa9f5;
+}
+
+[data-theme="dark"] .dashboard-rental-client-name {
+    color: #6eb8ff !important;
+}
+
+[data-theme="dark"] .dashboard-recent-rentals-mobile .accordion-button:not(.collapsed) {
+    background-color: #2d3748;
+    color: #e2e8f0;
 }
 </style>
 
