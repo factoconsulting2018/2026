@@ -13,16 +13,37 @@ $h = static fn ($s) => htmlspecialchars((string) $s, ENT_QUOTES | ENT_SUBSTITUTE
     body { font-family: dejavusans, sans-serif; font-size: 10pt; color: #222; margin: 0; }
 
     .header {
-        background: #0b1f4a;
-        color: #fff;
+        background-color: #0b1f4a;
+        color: #ffffff;
         padding: 18px 20px;
     }
+    .header table,
+    .header td,
+    .header th {
+        color: #ffffff;
+        background-color: transparent;
+    }
+    .header h1 {
+        font-size: 26pt;
+        margin: 0;
+        font-weight: 800;
+        letter-spacing: 1px;
+        color: #ffffff;
+    }
+    .header .subtitle {
+        font-size: 16pt;
+        font-weight: 700;
+        color: #ffffff;
+    }
+    .header .meta {
+        font-size: 9pt;
+        margin-top: 4px;
+        color: #ffffff;
+    }
+    .header .meta b { color: #ffffff; }
     .header table { width: 100%; border-collapse: collapse; }
     .header .logo-cell { width: 110px; vertical-align: middle; }
     .header .logo-cell img { width: 90px; height: 90px; }
-    .header h1 { font-size: 26pt; margin: 0; font-weight: 800; letter-spacing: 1px; }
-    .header .subtitle { font-size: 16pt; font-weight: 700; }
-    .header .meta { font-size: 9pt; margin-top: 4px; }
 
     .empresa-band { background: #f3f5f8; padding: 12px 20px; }
     .empresa-band table { width: 100%; border-collapse: collapse; }
@@ -101,7 +122,7 @@ $h = static fn ($s) => htmlspecialchars((string) $s, ENT_QUOTES | ENT_SUBSTITUTE
                     <img src="<?= $h($d['empresa']['logo_fs']) ?>" alt="logo">
                 <?php endif; ?>
             </td>
-            <td>
+            <td style="color: #ffffff;">
                 <h1>ORDEN DE ALQUILER</h1>
                 <div class="subtitle"><?= $h($d['vehiculo']['modelo']) ?></div>
                 <div class="meta">
