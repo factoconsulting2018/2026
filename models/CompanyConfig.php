@@ -32,6 +32,8 @@ class CompanyConfig extends ActiveRecord
     const INCIDENT_NOTIF_ENABLED = 'incident_notifications_enabled';
     const INCIDENT_NOTIF_FREQUENCY_DAYS = 'incident_notifications_frequency_days';
     const RENTAL_ORDER_PDF_FORMAT = 'rental_order_pdf_format';
+    const RENTAL_ORDER_PDF_VEHICLE_IMG_MAX_W = 'rental_order_pdf_vehicle_img_max_w';
+    const RENTAL_ORDER_PDF_VEHICLE_IMG_MAX_H = 'rental_order_pdf_vehicle_img_max_h';
 
     // Directorios para archivos
     const UPLOAD_DIR = 'uploads/company/';
@@ -494,6 +496,22 @@ class CompanyConfig extends ActiveRecord
         return self::getRentalOrderPdfFormat() === 'moderna'
             ? '@app/views/pdf/_rental-pdf-modern'
             : '@app/views/pdf/_rental-pdf';
+    }
+
+    /** Ancho máximo (px) de la foto del vehículo en PDF formato moderna. */
+    public static function getRentalOrderPdfVehicleImageMaxWidth(): int
+    {
+        $w = (int) self::getConfig(self::RENTAL_ORDER_PDF_VEHICLE_IMG_MAX_W, '170');
+
+        return max(40, min(400, $w));
+    }
+
+    /** Alto máximo (px) de la foto del vehículo en PDF formato moderna. */
+    public static function getRentalOrderPdfVehicleImageMaxHeight(): int
+    {
+        $h = (int) self::getConfig(self::RENTAL_ORDER_PDF_VEHICLE_IMG_MAX_H, '90');
+
+        return max(30, min(280, $h));
     }
 
     public static function wrapRentalConditionsHtml(string $html): string

@@ -204,6 +204,22 @@ $conditionsModel = new \app\models\CompanyConfig();
                                             <input class="form-check-input" type="radio" name="rental_order_pdf_format" id="rental_pdf_moderna" value="moderna" <?= ($rentalOrderPdfFormat ?? '') === 'moderna' ? 'checked' : '' ?>>
                                             <label class="form-check-label" for="rental_pdf_moderna"><strong>Moderna</strong> — diseño tipo carta con secciones (cliente, entrega, devolución, vehículo, resumen y totales).</label>
                                         </div>
+                                        <div id="rental-pdf-moderna-options" class="border rounded p-3 mb-3 bg-white" style="<?= ($rentalOrderPdfFormat ?? '') === 'moderna' ? '' : 'display:none;' ?>">
+                                            <h6 class="mb-2"><i class="fas fa-car"></i> Imagen del vehículo en PDF moderna</h6>
+                                            <p class="small text-muted mb-3">Tamaño máximo de la foto en la banda gris bajo el encabezado (valores en píxeles).</p>
+                                            <div class="row g-3">
+                                                <div class="col-md-6">
+                                                    <label class="form-label" for="rental_order_pdf_vehicle_img_max_w">Ancho máximo (px)</label>
+                                                    <input type="number" class="form-control form-control-sm" name="rental_order_pdf_vehicle_img_max_w" id="rental_order_pdf_vehicle_img_max_w" min="40" max="400" step="5" value="<?= (int) ($rentalOrderPdfVehicleImgMaxW ?? 170) ?>">
+                                                    <div class="form-text">Entre 40 y 400. Predeterminado: 170.</div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label" for="rental_order_pdf_vehicle_img_max_h">Alto máximo (px)</label>
+                                                    <input type="number" class="form-control form-control-sm" name="rental_order_pdf_vehicle_img_max_h" id="rental_order_pdf_vehicle_img_max_h" min="30" max="280" step="5" value="<?= (int) ($rentalOrderPdfVehicleImgMaxH ?? 90) ?>">
+                                                    <div class="form-text">Entre 30 y 280. Predeterminado: 90.</div>
+                                                </div>
+                                            </div>
+                                        </div>
                                         <?= Html::submitButton('<i class="fas fa-save"></i> Guardar formato PDF', ['class' => 'btn btn-primary btn-sm']) ?>
                                         <?php ActiveForm::end(); ?>
                                     </div>
@@ -223,6 +239,7 @@ $conditionsModel = new \app\models\CompanyConfig();
                                                 <li>Las cuentas bancarias aparecerán en las órdenes</li>
                                                 <li>El número SIMPEMOVIL se usará para pagos</li>
                                                 <li>El formato <strong>General / Moderna</strong> aplica al PDF de la orden de renta (bloque inferior)</li>
+                                                <li>En <strong>Moderna</strong> puedes ajustar el tamaño de la foto del vehículo en el PDF</li>
                                             </ul>
                                         </div>
                                     </div>
@@ -1060,6 +1077,17 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     }
+
+    var rentalPdfGeneral = document.getElementById('rental_pdf_general');
+    var rentalPdfModerna = document.getElementById('rental_pdf_moderna');
+    var rentalPdfModernaOpts = document.getElementById('rental-pdf-moderna-options');
+    function syncRentalPdfModernaOptions() {
+        if (!rentalPdfModernaOpts) return;
+        rentalPdfModernaOpts.style.display = (rentalPdfModerna && rentalPdfModerna.checked) ? 'block' : 'none';
+    }
+    if (rentalPdfGeneral) rentalPdfGeneral.addEventListener('change', syncRentalPdfModernaOptions);
+    if (rentalPdfModerna) rentalPdfModerna.addEventListener('change', syncRentalPdfModernaOptions);
+    syncRentalPdfModernaOptions();
 
     // Agregar cuenta bancaria
     const addBankAccountBtn = document.getElementById('add-bank-account');

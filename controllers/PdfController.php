@@ -752,6 +752,8 @@ class PdfController extends Controller
                 'cobertura' => 'Full cobertura',
                 'tarifa_diaria' => (float) $model->precio_por_dia,
                 'imagen_fs' => $vehFs,
+                'img_max_w' => CompanyConfig::getRentalOrderPdfVehicleImageMaxWidth(),
+                'img_max_h' => CompanyConfig::getRentalOrderPdfVehicleImageMaxHeight(),
                 'medio_dia' => $medioDiaPrecio,
             ],
             'entrega' => [

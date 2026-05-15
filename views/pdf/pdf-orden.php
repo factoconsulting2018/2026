@@ -7,6 +7,9 @@
  */
 $fmt = static fn ($n) => '¢' . number_format((float) $n, 0, '.', ',');
 $h = static fn ($s) => htmlspecialchars((string) $s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+$vehImgMaxW = (int) ($d['vehiculo']['img_max_w'] ?? 170);
+$vehImgMaxH = (int) ($d['vehiculo']['img_max_h'] ?? 90);
+$vehImgColW = $vehImgMaxW + 10;
 ?>
 <style>
     @page { margin: 10mm 12mm; }
@@ -54,8 +57,8 @@ $h = static fn ($s) => htmlspecialchars((string) $s, ENT_QUOTES | ENT_SUBSTITUTE
     .empresa-band .info { vertical-align: middle; }
     .empresa-band .info b { font-size: 12pt; color: #0b1f4a; }
     .empresa-band .info p { margin: 2px 0; font-size: 9pt; line-height: 1.4; }
-    .empresa-band .veh-img { width: 180px; text-align: right; vertical-align: middle; }
-    .empresa-band .veh-img img { max-width: 170px; max-height: 90px; }
+    .empresa-band .veh-img { width: <?= $vehImgColW ?>px; text-align: right; vertical-align: middle; }
+    .empresa-band .veh-img img { max-width: <?= $vehImgMaxW ?>px; max-height: <?= $vehImgMaxH ?>px; }
 
     .cuadro { width: 100%; border-collapse: collapse; margin-top: 14px; }
     .cuadro th {
@@ -149,7 +152,7 @@ $h = static fn ($s) => htmlspecialchars((string) $s, ENT_QUOTES | ENT_SUBSTITUTE
             </td>
             <td class="veh-img">
                 <?php if (!empty($d['vehiculo']['imagen_fs'])): ?>
-                    <img src="<?= $h($d['vehiculo']['imagen_fs']) ?>" alt="vehículo">
+                    <img src="<?= $h($d['vehiculo']['imagen_fs']) ?>" alt="vehículo" style="max-width: <?= $vehImgMaxW ?>px; max-height: <?= $vehImgMaxH ?>px;">
                 <?php endif; ?>
             </td>
         </tr>

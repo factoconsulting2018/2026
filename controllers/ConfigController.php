@@ -76,6 +76,8 @@ class ConfigController extends Controller
             'incidentNotifEnabled' => CompanyConfig::getConfig(CompanyConfig::INCIDENT_NOTIF_ENABLED, '0') === '1',
             'incidentNotifFrequencyDays' => max(1, min(365, (int) CompanyConfig::getConfig(CompanyConfig::INCIDENT_NOTIF_FREQUENCY_DAYS, '3'))),
             'rentalOrderPdfFormat' => CompanyConfig::getRentalOrderPdfFormat(),
+            'rentalOrderPdfVehicleImgMaxW' => CompanyConfig::getRentalOrderPdfVehicleImageMaxWidth(),
+            'rentalOrderPdfVehicleImgMaxH' => CompanyConfig::getRentalOrderPdfVehicleImageMaxHeight(),
         ]);
     }
 
@@ -135,6 +137,20 @@ class ConfigController extends Controller
             $fmt,
             'Vista HTML para PDF de orden de alquiler: general o moderna'
         );
+
+        $imgW = (int) Yii::$app->request->post('rental_order_pdf_vehicle_img_max_w', 170);
+        $imgH = (int) Yii::$app->request->post('rental_order_pdf_vehicle_img_max_h', 90);
+        CompanyConfig::setConfig(
+            CompanyConfig::RENTAL_ORDER_PDF_VEHICLE_IMG_MAX_W,
+            (string) max(40, min(400, $imgW)),
+            'Ancho máximo (px) imagen vehículo en PDF moderna'
+        );
+        CompanyConfig::setConfig(
+            CompanyConfig::RENTAL_ORDER_PDF_VEHICLE_IMG_MAX_H,
+            (string) max(30, min(280, $imgH)),
+            'Alto máximo (px) imagen vehículo en PDF moderna'
+        );
+
         Yii::$app->session->setFlash('success', 'Formato de orden de renta (PDF) guardado.');
 
         return $this->redirect(Url::to(['config/index']) . '#orden-renta-pdf');
