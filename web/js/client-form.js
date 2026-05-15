@@ -1139,27 +1139,49 @@ function loadFiles(clientId = null, search = '') {
         if (!clientId && currentClientId) {
             clientId = currentClientId;
         }
+        // 4. window.currentClientId (p. ej. vista cliente que lo define en inline script)
+        if (!clientId && typeof window !== 'undefined' && window.currentClientId) {
+            clientId = parseInt(window.currentClientId, 10);
+        }
     }
     
     // Convertir a número para validar
-    clientId = parseInt(clientId);
+    clientId = parseInt(clientId, 10);
+    
+    const container = document.getElementById('files-container');
+    if (!container) {
+        console.warn('files-container no existe en el DOM');
+        return;
+    }
     
     if (!clientId || isNaN(clientId) || clientId <= 0) {
-        document.getElementById('files-container').innerHTML = '<div class="text-center text-muted py-5"><span class="material-symbols-outlined" style="font-size: 48px; display: block; margin-bottom: 16px;">error</span><p>No se pudo determinar el ID del cliente</p><small>URL: ' + window.location.pathname + '</small></div>';
+        container.innerHTML = '<div class="text-center text-muted py-5"><span class="material-symbols-outlined" style="font-size: 48px; display: block; margin-bottom: 16px;">error</span><p>No se pudo determinar el ID del cliente</p><small>URL: ' + window.location.pathname + '</small></div>';
         console.error('Client ID no disponible o inválido:', clientId);
         return;
     }
     
     currentClientId = clientId;
+    window.currentClientId = clientId;
     currentSearchTerm = search;
     
-    const url = `/client/list-files/${clientId}${search ? '?search=' + encodeURIComponent(search) : ''}`;
+    const term = (search || '').trim();
+    const initialCount = container.getAttribute('data-initial-file-count');
+    const forceFetch = container.getAttribute('data-force-files-fetch') === '1';
+    if (term === '' && initialCount === '0' && !forceFetch) {
+        displayFiles([]);
+        return;
+    }
+    if (forceFetch) {
+        container.removeAttribute('data-force-files-fetch');
+    }
+    
+    const url = `/client/list-files/${clientId}${term ? '?search=' + encodeURIComponent(term) : ''}`;
     
     console.log('Cargando archivos desde:', url);
     
-    document.getElementById('files-container').innerHTML = '<div class="text-center text-muted py-5"><div class="spinner-border" role="status"><span class="visually-hidden">Cargando...</span></div><p class="mt-3">Cargando archivos...</p></div>';
+    container.innerHTML = '<div class="text-center text-muted py-5"><div class="spinner-border" role="status"><span class="visually-hidden">Cargando...</span></div><p class="mt-3">Cargando archivos...</p></div>';
     
-    fetch(url)
+    fetch(url, { credentials: 'same-origin' })
         .then(response => {
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -1169,29 +1191,36 @@ function loadFiles(clientId = null, search = '') {
         .then(data => {
             console.log('Archivos cargados:', data);
             if (data.success) {
-                displayFiles(data.data);
+                if (typeof data.count !== 'undefined') {
+                    container.setAttribute('data-initial-file-count', String(parseInt(data.count, 10) || 0));
+                }
+                displayFiles(Array.isArray(data.data) ? data.data : []);
             } else {
-                document.getElementById('files-container').innerHTML = `<div class="alert alert-danger"><span class="material-symbols-outlined">error</span> ${data.message || 'Error al cargar archivos'}</div>`;
+                container.innerHTML = `<div class="alert alert-danger"><span class="material-symbols-outlined">error</span> ${data.message || 'Error al cargar archivos'}</div>`;
             }
         })
         .catch(error => {
             console.error('Error cargando archivos:', error);
-            document.getElementById('files-container').innerHTML = `<div class="alert alert-danger"><span class="material-symbols-outlined">error</span> Error al cargar archivos: ${error.message}</div>`;
+            container.innerHTML = `<div class="alert alert-danger"><span class="material-symbols-outlined">error</span> Error al cargar archivos: ${error.message}</div>`;
         });
 }
 
 // Función para mostrar archivos en la lista
 function displayFiles(files) {
     const container = document.getElementById('files-container');
+    if (!container) {
+        return;
+    }
+    const list = Array.isArray(files) ? files : [];
     
-    if (!files || files.length === 0) {
+    if (list.length === 0) {
         container.innerHTML = '<div class="text-center text-muted py-5"><span class="material-symbols-outlined" style="font-size: 48px; display: block; margin-bottom: 16px;">folder_off</span><p>No hay archivos subidos aún</p></div>';
         return;
     }
     
     let html = '<div class="row">';
     
-    files.forEach(file => {
+    list.forEach(file => {
         const fileIcon = getFileIcon(file.file_type);
         const createdDate = new Date(file.created_at).toLocaleDateString('es-CR', {
             year: 'numeric',
@@ -1546,6 +1575,7 @@ function uploadFile(clientId) {
             
             // Recargar lista de archivos
             if (clientId) {
+                markClientFilesNeedServerFetch();
                 setTimeout(() => {
                     loadFiles(clientId, currentSearchTerm);
                 }, 500);
@@ -1582,18 +1612,23 @@ function uploadFile(clientId) {
 // Función para buscar archivos
 function searchFiles() {
     const searchInput = document.getElementById('file-search-input');
-    const searchTerm = searchInput.value.trim();
-    
-    if (currentClientId) {
-        loadFiles(currentClientId, searchTerm);
-    }
+    const searchTerm = searchInput ? searchInput.value.trim() : '';
+    loadFiles(currentClientId || null, searchTerm);
 }
 
 // Función para limpiar búsqueda
 function clearFileSearch() {
-    document.getElementById('file-search-input').value = '';
-    if (currentClientId) {
-        loadFiles(currentClientId, '');
+    const searchInput = document.getElementById('file-search-input');
+    if (searchInput) {
+        searchInput.value = '';
+    }
+    loadFiles(currentClientId || null, '');
+}
+
+function markClientFilesNeedServerFetch() {
+    const c = document.getElementById('files-container');
+    if (c) {
+        c.setAttribute('data-force-files-fetch', '1');
     }
 }
 
@@ -1658,8 +1693,15 @@ function deleteFile(fileId) {
         if (data.success) {
             showNotification('✅ ' + data.message, 'success');
             // Recargar lista de archivos
+            markClientFilesNeedServerFetch();
             if (currentClientId) {
                 loadFiles(currentClientId, currentSearchTerm);
+            } else {
+                const uploadBtn = document.getElementById('upload-file-btn');
+                const cid = uploadBtn && uploadBtn.dataset.clientId ? parseInt(uploadBtn.dataset.clientId, 10) : null;
+                if (cid) {
+                    loadFiles(cid, currentSearchTerm);
+                }
             }
         } else {
             showNotification('❌ ' + (data.message || 'Error al eliminar el archivo'), 'danger');

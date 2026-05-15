@@ -640,6 +640,7 @@ $this->registerCssFile('/css/client-form.css');
                     </div>
                 </div>
             <?php else: ?>
+                <?php $clientLibraryFileCount = (int) \app\models\ClientFile::find()->where(['client_id' => $model->id])->count(); ?>
                 <!-- Contenido completo cuando el cliente ya existe -->
                 <div class="card mb-4">
                     <div class="card-header">
@@ -716,11 +717,20 @@ $this->registerCssFile('/css/client-form.css');
                     </div>
 
                     <!-- Lista de Archivos -->
-                    <div id="files-container">
+                    <div id="files-container"
+                         data-initial-file-count="<?= $clientLibraryFileCount ?>"
+                         data-client-id="<?= (int) $model->id ?>">
+                        <?php if ($clientLibraryFileCount === 0): ?>
                         <div class="text-center text-muted py-5">
-                            <span class="material-symbols-outlined" style="font-size: 48px; display: block; margin-bottom: 16px;">cloud_upload</span>
-                            <p>Cargando archivos...</p>
+                            <span class="material-symbols-outlined" style="font-size: 48px; display: block; margin-bottom: 16px;">folder_off</span>
+                            <p>No hay archivos subidos aún</p>
                         </div>
+                        <?php else: ?>
+                        <div class="text-center text-muted py-5">
+                            <span class="material-symbols-outlined" style="font-size: 48px; display: block; margin-bottom: 16px;">folder</span>
+                            <p class="mt-2 mb-0">Abre esta pestaña para cargar la lista de archivos</p>
+                        </div>
+                        <?php endif; ?>
                     </div>
                 </div>
                 </div>

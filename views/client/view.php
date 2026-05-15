@@ -8,6 +8,8 @@ use yii\helpers\Url;
 $this->title = 'Cliente: ' . $model->fullNameUppercase;
 $this->params['breadcrumbs'][] = ['label' => 'Clientes', 'url' => ['index']];
 $this->params['breadcrumbs'][] = $this->title;
+
+$clientLibraryFileCount = (int) \app\models\ClientFile::find()->where(['client_id' => $model->id])->count();
 ?>
 
 <div class="client-view">
@@ -125,13 +127,22 @@ $this->params['breadcrumbs'][] = $this->title;
                     </div>
 
                     <!-- Lista de Archivos -->
-                    <div id="files-container">
+                    <div id="files-container"
+                         data-initial-file-count="<?= $clientLibraryFileCount ?>"
+                         data-client-id="<?= (int) $model->id ?>">
+                        <?php if ($clientLibraryFileCount === 0): ?>
+                        <div class="text-center text-muted py-5">
+                            <span class="material-symbols-outlined" style="font-size: 48px; display: block; margin-bottom: 16px;">folder_off</span>
+                            <p>No hay archivos subidos aún</p>
+                        </div>
+                        <?php else: ?>
                         <div class="text-center text-muted py-5">
                             <div class="spinner-border" role="status">
                                 <span class="visually-hidden">Cargando...</span>
                             </div>
                             <p class="mt-3">Cargando archivos...</p>
                         </div>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -229,12 +240,8 @@ $this->registerJsFile('@web/js/client-form.js', ['depends' => [yii\web\JqueryAss
 
 // Inicializar carga de archivos al cargar la página
 $this->registerJs("
-    // Inicializar currentClientId cuando se carga la página
-    if (typeof currentClientId === 'undefined') {
-        window.currentClientId = {$model->id};
-    }
+    window.currentClientId = {$model->id};
     
-    // Cargar archivos del cliente al inicializar
     document.addEventListener('DOMContentLoaded', function() {
         if (typeof loadFiles === 'function') {
             loadFiles({$model->id}, '');
