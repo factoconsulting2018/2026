@@ -13,6 +13,8 @@ $this->params['breadcrumbs'][] = $this->title;
 $balance = $model->getBalance();
 $paid = $model->getPaidTotal();
 $isOpen = $model->isOpen();
+$isPaid = ($balance < 0.01);
+$mainCardBorder = $isPaid ? 'border-success' : 'border-danger';
 ?>
 
 <div class="incident-view">
@@ -25,6 +27,11 @@ $isOpen = $model->isOpen();
             <?php else: ?>
                 <span class="badge bg-secondary ms-2">Cerrado</span>
             <?php endif; ?>
+            <?php if ($isPaid): ?>
+                <span class="badge bg-success ms-1">Pagado</span>
+            <?php else: ?>
+                <span class="badge bg-danger ms-1">Saldo pendiente</span>
+            <?php endif; ?>
         </h1>
         <div class="d-flex gap-2">
             <?= Html::a('← Listado', ['index'], ['class' => 'btn btn-outline-secondary']) ?>
@@ -34,11 +41,11 @@ $isOpen = $model->isOpen();
         </div>
     </div>
 
-    <div class="card mb-4 border-danger">
-        <div class="card-header fw-bold">
+    <div class="card mb-4 <?= $mainCardBorder ?>">
+        <div class="card-header fw-bold <?= $isPaid ? 'bg-success text-white' : 'bg-danger text-white' ?>">
             <?= Html::encode($model->client->full_name ?? '') ?>
             <?php if (!empty($model->client->cedula_fisica)): ?>
-                <span class="text-muted fw-normal"> · <?= Html::encode($model->client->cedula_fisica) ?></span>
+                <span class="text-white-50 fw-normal"> · <?= Html::encode($model->client->cedula_fisica) ?></span>
             <?php endif; ?>
         </div>
         <div class="card-body">
@@ -56,9 +63,9 @@ $isOpen = $model->isOpen();
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <div class="p-3 bg-warning bg-opacity-25 rounded border border-warning">
+                    <div class="p-3 rounded border <?= $isPaid ? 'bg-success bg-opacity-10 border-success' : 'bg-warning bg-opacity-25 border-warning' ?>">
                         <div class="text-muted small">Saldo pendiente</div>
-                        <div class="fs-4 fw-bold text-danger">¢<?= number_format($balance, 2) ?></div>
+                        <div class="fs-4 fw-bold <?= $isPaid ? 'text-success' : 'text-danger' ?>">¢<?= number_format($balance, 2) ?></div>
                     </div>
                 </div>
             </div>
@@ -147,6 +154,24 @@ $isOpen = $model->isOpen();
                     </table>
                 </div>
             <?php endif; ?>
+        </div>
+    </div>
+
+    <div class="card border-danger">
+        <div class="card-header bg-danger text-white fw-bold">Eliminar insidente</div>
+        <div class="card-body">
+            <?php $df = Html::beginForm(['delete', 'id' => $model->id], 'post'); ?>
+            <p class="text-muted small mb-3">Elimina este caso y <strong>todos los abonos</strong>. La acción no se puede deshacer. Ingrese la contraseña de autorización.</p>
+            <div class="row g-2 align-items-end flex-wrap">
+                <div class="col-md-4 col-lg-3">
+                    <label class="form-label" for="delete_password_view">Contraseña</label>
+                    <input type="password" name="delete_password" id="delete_password_view" class="form-control" required autocomplete="off" placeholder="Contraseña">
+                </div>
+                <div class="col-md-auto">
+                    <?= Html::submitButton('Eliminar insidente', ['class' => 'btn btn-danger']) ?>
+                </div>
+            </div>
+            <?= Html::endForm() ?>
         </div>
     </div>
 </div>

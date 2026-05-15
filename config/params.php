@@ -20,4 +20,6 @@ return [
         'https://www.factorentacar.com',
         'https://app.factorentacar.com',
     ],
+    /** Contraseña para eliminar un insidente (listado o ficha). */
+    'incidentDeletePassword' => '3030',
 ];

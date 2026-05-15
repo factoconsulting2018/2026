@@ -31,6 +31,7 @@ class IncidentController extends Controller
                 'actions' => [
                     'add-payment' => ['POST'],
                     'close' => ['POST'],
+                    'delete' => ['POST'],
                 ],
             ],
         ];
@@ -169,6 +170,40 @@ class IncidentController extends Controller
         $model->save(false);
         Yii::$app->session->setFlash('success', 'Insidente cerrado.');
         return $this->redirect(['view', 'id' => $model->id]);
+    }
+
+    /**
+     * Elimina un insidente y sus abonos (requiere contraseña en POST).
+     */
+    public function actionDelete($id)
+    {
+        $expected = (string) (Yii::$app->params['incidentDeletePassword'] ?? '3030');
+        $pwd = (string) Yii::$app->request->post('delete_password', '');
+        if (!hash_equals($expected, $pwd)) {
+            Yii::$app->session->setFlash('error', 'Contraseña incorrecta. No se eliminó el registro.');
+            return $this->redirectAfterDeleteAttempt();
+        }
+
+        $model = $this->findModel($id);
+        if ($model->delete() !== false) {
+            Yii::$app->session->setFlash('success', 'Insidente eliminado correctamente.');
+            return $this->redirect(['index']);
+        }
+
+        Yii::$app->session->setFlash('error', 'No se pudo eliminar el insidente.');
+        return $this->redirectAfterDeleteAttempt((int) $id);
+    }
+
+    private function redirectAfterDeleteAttempt(?int $id = null)
+    {
+        $ref = Yii::$app->request->referrer;
+        if ($ref && strpos($ref, Yii::$app->request->hostInfo) === 0) {
+            return $this->redirect($ref);
+        }
+        if ($id) {
+            return $this->redirect(['view', 'id' => $id]);
+        }
+        return $this->redirect(['index']);
     }
 
     protected function findModel($id): Incident
