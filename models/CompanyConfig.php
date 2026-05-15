@@ -31,6 +31,7 @@ class CompanyConfig extends ActiveRecord
     const SIMPEMOVIL_NUMBER = 'simemovil_number';
     const INCIDENT_NOTIF_ENABLED = 'incident_notifications_enabled';
     const INCIDENT_NOTIF_FREQUENCY_DAYS = 'incident_notifications_frequency_days';
+    const RENTAL_ORDER_PDF_FORMAT = 'rental_order_pdf_format';
 
     // Directorios para archivos
     const UPLOAD_DIR = 'uploads/company/';
@@ -478,5 +479,29 @@ class CompanyConfig extends ActiveRecord
                 FileHelper::createDirectory($directory);
             }
         }
+    }
+
+    /** general | moderna */
+    public static function getRentalOrderPdfFormat(): string
+    {
+        $v = (string) self::getConfig(self::RENTAL_ORDER_PDF_FORMAT, 'general');
+
+        return $v === 'moderna' ? 'moderna' : 'general';
+    }
+
+    public static function getRentalOrderPdfView(): string
+    {
+        return self::getRentalOrderPdfFormat() === 'moderna'
+            ? '@app/views/pdf/_rental-pdf-modern'
+            : '@app/views/pdf/_rental-pdf';
+    }
+
+    public static function wrapRentalConditionsHtml(string $html): string
+    {
+        if (self::getRentalOrderPdfFormat() !== 'moderna') {
+            return $html;
+        }
+
+        return '<div style="padding-top:8px;"><h2 style="font-size:13pt;text-align:center;margin:0 0 12px;font-family:helvetica,sans-serif;">TÉRMINOS Y CONDICIONES DEL<br>ALQUILER</h2>' . $html . '</div>';
     }
 }

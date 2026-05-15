@@ -9,6 +9,7 @@ use yii\widgets\ActiveForm;
 /* @var $fileConfigs array */
 /* @var $incidentNotifEnabled bool */
 /* @var $incidentNotifFrequencyDays int */
+/* @var $rentalOrderPdfFormat string */
 
 $this->title = 'Configuración de la Empresa';
 $this->params['breadcrumbs'][] = $this->title;
@@ -186,6 +187,26 @@ $conditionsModel = new \app\models\CompanyConfig();
                                     </div>
 
                                     <?php ActiveForm::end(); ?>
+
+                                    <div class="mb-4 mt-3 border rounded p-3 bg-light" id="orden-renta-pdf">
+                                        <h5 class="mb-2"><i class="fas fa-file-pdf"></i> Formato PDF — Orden de renta</h5>
+                                        <p class="small text-muted mb-3">Define cómo se maqueta la primera página del PDF de la orden de alquiler. La segunda página sigue siendo las condiciones configuradas en el sistema.</p>
+                                        <?php $pdfFmtForm = ActiveForm::begin([
+                                            'action' => ['config/update-rental-order-pdf-format'],
+                                            'method' => 'post',
+                                            'options' => ['id' => 'rental-order-pdf-format-form'],
+                                        ]); ?>
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="radio" name="rental_order_pdf_format" id="rental_pdf_general" value="general" <?= ($rentalOrderPdfFormat ?? 'general') === 'general' ? 'checked' : '' ?>>
+                                            <label class="form-check-label" for="rental_pdf_general"><strong>General</strong> — formato actual en dos columnas con colores de acento.</label>
+                                        </div>
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="radio" name="rental_order_pdf_format" id="rental_pdf_moderna" value="moderna" <?= ($rentalOrderPdfFormat ?? '') === 'moderna' ? 'checked' : '' ?>>
+                                            <label class="form-check-label" for="rental_pdf_moderna"><strong>Moderna</strong> — diseño tipo carta con secciones (cliente, entrega, devolución, vehículo, resumen y totales).</label>
+                                        </div>
+                                        <?= Html::submitButton('<i class="fas fa-save"></i> Guardar formato PDF', ['class' => 'btn btn-primary btn-sm']) ?>
+                                        <?php ActiveForm::end(); ?>
+                                    </div>
                                 </div>
                                 <div class="col-md-4">
                                     <div class="card bg-light">
@@ -201,6 +222,7 @@ $conditionsModel = new \app\models\CompanyConfig();
                                                 <li>La dirección se mostrará en todos los documentos</li>
                                                 <li>Las cuentas bancarias aparecerán en las órdenes</li>
                                                 <li>El número SIMPEMOVIL se usará para pagos</li>
+                                                <li>El formato <strong>General / Moderna</strong> aplica al PDF de la orden de renta (bloque inferior)</li>
                                             </ul>
                                         </div>
                                     </div>
@@ -1026,6 +1048,16 @@ document.addEventListener('DOMContentLoaded', function() {
         var notifTabBtn = document.getElementById('notificaciones-tab');
         if (notifTabBtn) {
             (new bootstrap.Tab(notifTabBtn)).show();
+        }
+    }
+    if (window.location.hash === '#orden-renta-pdf' && window.bootstrap && window.bootstrap.Tab) {
+        var infoTabBtn = document.getElementById('info-tab');
+        if (infoTabBtn) {
+            (new bootstrap.Tab(infoTabBtn)).show();
+            var el = document.getElementById('orden-renta-pdf');
+            if (el) {
+                setTimeout(function () { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 200);
+            }
         }
     }
 

@@ -13,6 +13,7 @@ use yii\data\ActiveDataProvider;
 use yii\web\UploadedFile;
 use yii\web\Response;
 use app\models\CarAvailability;
+use app\models\CompanyConfig;
 use Mpdf\Mpdf;
 
 class RentalController extends Controller
@@ -829,7 +830,7 @@ class RentalController extends Controller
             // Agregar condiciones como página 2 (SIEMPRE se agrega, prioridad: personalizado > global > fallback por defecto)
             $customConditions = $rental->condiciones_especiales ?? '';
             $globalConditions = \app\models\CompanyConfig::getConfig('rental_conditions_html', '');
-            $conditionsHtml = $this->generateConditionsHtml($companyInfo, $customConditions ?: $globalConditions);
+            $conditionsHtml = CompanyConfig::wrapRentalConditionsHtml($this->generateConditionsHtml($companyInfo, $customConditions ?: $globalConditions));
             $html .= '<div style="page-break-before: always;"></div>' . $conditionsHtml;
             
             // Escribir HTML al PDF
@@ -875,8 +876,8 @@ class RentalController extends Controller
      */
     private function generateRentalOrderHtml($rental, $companyInfo)
     {
-        // Unificar generación: usar la vista _rental-pdf para todas las órdenes
-        return $this->renderPartial('@app/views/pdf/_rental-pdf', [
+        // Vista según configuración (General o Moderna)
+        return $this->renderPartial(CompanyConfig::getRentalOrderPdfView(), [
             'model' => $rental,
             'companyInfo' => $companyInfo,
         ], true);

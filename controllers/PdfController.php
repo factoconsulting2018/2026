@@ -108,7 +108,7 @@ class PdfController extends Controller
         $globalConditions = CompanyConfig::getConfig('rental_conditions_html', '');
         if (!empty($customConditions) || !empty($globalConditions) || $companyInfo['conditions']) {
             $pdf->AddPage();
-            $conditionsHtml = $this->generateConditionsHtml($companyInfo, $customConditions ?: $globalConditions);
+            $conditionsHtml = CompanyConfig::wrapRentalConditionsHtml($this->generateConditionsHtml($companyInfo, $customConditions ?: $globalConditions));
             $pdf->writeHTML($conditionsHtml, true, false, true, false, '');
         }
         
@@ -205,7 +205,7 @@ class PdfController extends Controller
         $companyInfo = CompanyConfig::getCompanyInfo();
         
         // Renderizar el HTML del PDF
-        $html = $this->renderPartial('_rental-pdf', [
+        $html = $this->renderPartial(CompanyConfig::getRentalOrderPdfView(), [
             'model' => $rental,
             'companyInfo' => $companyInfo
         ], true);
@@ -268,7 +268,7 @@ class PdfController extends Controller
             ]);
             
             // Generar HTML usando la vista completa del PDF
-            $html = $this->renderPartial('_rental-pdf', [
+            $html = $this->renderPartial(CompanyConfig::getRentalOrderPdfView(), [
                 'model' => $rental,
                 'companyInfo' => $companyInfo
             ], true);
@@ -480,7 +480,7 @@ class PdfController extends Controller
         $pdf->AddPage();
         $customConditions = $rental->condiciones_especiales ?? '';
         $globalConditions = CompanyConfig::getConfig('rental_conditions_html', '');
-        $conditionsHtml = $this->generateConditionsHtml($companyInfo, $customConditions ?: $globalConditions);
+        $conditionsHtml = CompanyConfig::wrapRentalConditionsHtml($this->generateConditionsHtml($companyInfo, $customConditions ?: $globalConditions));
         $pdf->writeHTML($conditionsHtml, true, false, true, false, '');
         
         // Generar nombre del archivo
@@ -570,10 +570,9 @@ class PdfController extends Controller
      */
     public function generateRentalOrderHtml($rental, $companyInfo)
     {
-        // Usar la vista _rental-pdf para unificar la generación
-        return $this->renderPartial('_rental-pdf', [
+        return $this->renderPartial(CompanyConfig::getRentalOrderPdfView(), [
             'model' => $rental,
-            'companyInfo' => $companyInfo
+            'companyInfo' => $companyInfo,
         ], true);
     }
     
@@ -1259,7 +1258,7 @@ class PdfController extends Controller
             Yii::info('mPDF inicializado correctamente', 'pdf');
             
             // Generar HTML usando la vista completa del PDF
-            $html = $this->renderPartial('_rental-pdf', [
+            $html = $this->renderPartial(CompanyConfig::getRentalOrderPdfView(), [
                 'model' => $rental,
                 'companyInfo' => $companyInfo
             ], true);
@@ -1379,7 +1378,7 @@ class PdfController extends Controller
             ]);
             
             // Generar HTML usando la vista completa del PDF
-            $html = $this->renderPartial('_rental-pdf', [
+            $html = $this->renderPartial(CompanyConfig::getRentalOrderPdfView(), [
                 'model' => $rental,
                 'companyInfo' => $companyInfo
             ], true);
