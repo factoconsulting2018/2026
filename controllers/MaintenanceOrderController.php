@@ -51,6 +51,7 @@ class MaintenanceOrderController extends Controller
                 'or',
                 ['like', 'm.order_id', $search],
                 ['like', 'm.notes', $search],
+                ['like', 'm.taller', $search],
                 ['like', 'c.nombre', $search],
                 ['like', 'c.placa', $search],
                 ['like', 'c.car_id', $search],

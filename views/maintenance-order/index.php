@@ -89,7 +89,7 @@ CSS);
                         <span class="input-group-text"><span class="material-symbols-outlined">search</span></span>
                         <input type="text" name="search" id="maintenance-search" class="form-control"
                                value="<?= Html::encode($search) ?>"
-                               placeholder="Nº orden, vehículo, placa, notas…">
+                               placeholder="Nº orden, vehículo, placa, taller, notas…">
                     </div>
                 </div>
                 <div class="col-md-3">
@@ -121,6 +121,7 @@ CSS);
                             <th>Vehículo</th>
                             <th class="d-none d-md-table-cell">Placa</th>
                             <th>Fecha</th>
+                            <th class="d-none d-md-table-cell">Taller</th>
                             <th class="d-none d-lg-table-cell">Notas</th>
                             <th>Estado</th>
                             <th class="text-end">Acciones</th>
@@ -130,7 +131,7 @@ CSS);
                     <tbody>
                         <?php if ($dataProvider->getTotalCount() === 0): ?>
                             <tr>
-                                <td colspan="8" class="text-center text-muted py-4">No hay órdenes de mantenimiento.</td>
+                                <td colspan="9" class="text-center text-muted py-4">No hay órdenes de mantenimiento.</td>
                             </tr>
                         <?php endif; ?>
                         <?php foreach ($dataProvider->getModels() as $row): ?>
@@ -140,6 +141,7 @@ CSS);
                                 <td><?= Html::encode($row->car->nombre ?? '—') ?></td>
                                 <td class="d-none d-md-table-cell"><?= Html::encode($row->car->placa ?? '—') ?></td>
                                 <td><?= Html::encode(Yii::$app->formatter->asDate($row->order_date, 'php:d/m/Y')) ?></td>
+                                <td class="d-none d-md-table-cell small"><?= Html::encode($row->taller ?: '—') ?></td>
                                 <td class="d-none d-lg-table-cell small text-truncate" style="max-width:220px;">
                                     <?= Html::encode(mb_strimwidth((string) $row->notes, 0, 80, '…')) ?>
                                 </td>

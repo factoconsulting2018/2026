@@ -49,6 +49,11 @@ CSS);
                     <div class="fw-semibold"><?= Html::encode($model->getStatusLabel()) ?></div>
                 </div>
                 <div class="col-12">
+                    <div class="text-muted small">Taller</div>
+                    <div class="fw-semibold"><?= Html::encode($model->taller ?: '—') ?></div>
+                    <p class="small text-muted mb-0 mt-1">Taller o talleres donde se programará el envío del vehículo.</p>
+                </div>
+                <div class="col-12">
                     <div class="text-muted small">Notas pendientes</div>
                     <div class="border rounded p-3 bg-white bg-opacity-75" style="white-space: pre-wrap;"><?= Html::encode($model->notes ?: '—') ?></div>
                 </div>

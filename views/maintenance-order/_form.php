@@ -38,6 +38,14 @@ $carItems = $carItems ?? MaintenanceOrder::buildCarDropdownList($cars ?? []);
     <?= $form->field($model, 'order_date')->input('date', ['class' => 'form-control']) ?>
 </div>
 
+<div class="col-12 col-lg-<?= $isUpdate ? '8' : '6' ?>">
+    <?= $form->field($model, 'taller')->textInput([
+        'maxlength' => true,
+        'class' => 'form-control',
+        'placeholder' => 'Ej: Taller López, Agencia Toyota Escazú…',
+    ])->hint('Debe indicar a qué taller o talleres se enviará el vehículo para programar el envío.') ?>
+</div>
+
 <?php if ($isUpdate): ?>
 <div class="col-md-4">
     <?= $form->field($model, 'status')->dropDownList(

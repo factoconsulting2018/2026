@@ -14,6 +14,7 @@ use yii\db\Expression;
  * @property string $order_id
  * @property int $car_id
  * @property string $order_date
+ * @property string|null $taller
  * @property string|null $notes
  * @property string $status pendiente|en_proceso|atendida
  * @property string $created_at
@@ -49,6 +50,7 @@ class MaintenanceOrder extends ActiveRecord
             [['car_id'], 'integer'],
             [['order_date'], 'date', 'format' => 'php:Y-m-d'],
             [['notes'], 'string'],
+            [['taller'], 'string', 'max' => 255],
             [['order_id'], 'string', 'max' => 32],
             [['status'], 'in', 'range' => [
                 self::STATUS_PENDIENTE,
@@ -66,6 +68,7 @@ class MaintenanceOrder extends ActiveRecord
             'order_id' => 'Número de orden',
             'car_id' => 'Vehículo',
             'order_date' => 'Fecha',
+            'taller' => 'Taller',
             'notes' => 'Notas pendientes',
             'status' => 'Estado',
             'created_at' => 'Registrado',
