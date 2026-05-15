@@ -70,7 +70,7 @@ $this->registerJsFile('@web/js/form-validation.js', ['depends' => [yii\web\Jquer
                     
                     <?= $form->field($model, 'telefono_seguro')->textInput(['maxlength' => true, 'placeholder' => 'Teléfono de contacto']) ?>
                     
-                    <?= $form->field($model, 'imagen')->textInput(['maxlength' => true, 'placeholder' => 'URL de la imagen']) ?>
+                    <?= $this->render('_imagen_field', ['form' => $form, 'model' => $model]) ?>
                     
                     <h5 class="mb-3 mt-4">📋 Características</h5>
                     

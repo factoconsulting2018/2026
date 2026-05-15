@@ -624,27 +624,7 @@ class PdfController extends Controller
             }
         }
 
-        $vehFs = '';
-        if ($car !== null && !empty($car->imagen)) {
-            $im = trim((string) $car->imagen);
-            if (!preg_match('#^https?://#i', $im)) {
-                $webroot = str_replace('\\', '/', Yii::getAlias('@webroot'));
-                if (strpos($im, '@') === 0) {
-                    $aliasPath = Yii::getAlias($im);
-                    if (is_string($aliasPath) && is_file($aliasPath)) {
-                        $vehFs = str_replace('\\', '/', $aliasPath);
-                    }
-                } else {
-                    $pathPart = str_replace('\\', '/', $im);
-                    $full = (strlen($pathPart) > 0 && $pathPart[0] === '/')
-                        ? ($webroot . $pathPart)
-                        : ($webroot . '/' . ltrim($pathPart, '/'));
-                    if (is_file($full)) {
-                        $vehFs = $full;
-                    }
-                }
-            }
-        }
+        $vehFs = $car !== null ? ($car->getImagenFilesystemPath() ?? '') : '';
 
         $brandRaw = trim((string) ($companyInfo['name'] ?? 'Facto Rent a Car'));
         $nombreComercial = function_exists('mb_convert_case')

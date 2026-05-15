@@ -15,7 +15,7 @@ $h = static fn ($s) => htmlspecialchars((string) $s, ENT_QUOTES | ENT_SUBSTITUTE
     .header {
         background-color: #0b1f4a;
         color: #ffffff;
-        padding: 18px 20px;
+        padding: 22px 20px 26px;
     }
     .header table,
     .header td,
@@ -24,20 +24,24 @@ $h = static fn ($s) => htmlspecialchars((string) $s, ENT_QUOTES | ENT_SUBSTITUTE
         background-color: transparent;
     }
     .header h1 {
-        font-size: 26pt;
-        margin: 0;
+        font-size: 39pt;
+        margin: 0 0 6px;
         font-weight: 800;
         letter-spacing: 1px;
+        line-height: 1.1;
         color: #ffffff;
     }
     .header .subtitle {
-        font-size: 16pt;
+        font-size: 48pt;
         font-weight: 700;
+        line-height: 1.05;
+        margin: 4px 0 8px;
         color: #ffffff;
     }
     .header .meta {
-        font-size: 9pt;
-        margin-top: 4px;
+        font-size: 27pt;
+        margin-top: 6px;
+        line-height: 1.2;
         color: #ffffff;
     }
     .header .meta b { color: #ffffff; }

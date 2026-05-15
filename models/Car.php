@@ -3,6 +3,7 @@ namespace app\models;
 
 use Yii;
 use yii\db\ActiveRecord;
+use yii\web\UploadedFile;
 
 /**
  * Modelo de Vehículo
@@ -27,6 +28,12 @@ use yii\db\ActiveRecord;
  */
 class Car extends ActiveRecord
 {
+    /** Ruta relativa bajo @webroot donde se guardan fotos de vehículos */
+    public const IMAGE_UPLOAD_DIR = 'uploads/cars';
+
+    /** @var UploadedFile|null Archivo subido en el formulario (no se persiste en BD) */
+    public $imagenFile;
+
     /**
      * {@inheritdoc}
      */
@@ -45,6 +52,14 @@ class Car extends ActiveRecord
             [['marca_id', 'cantidad_pasajeros'], 'integer'],
             [['created_at', 'updated_at'], 'safe'],
             [['car_id', 'nombre', 'imagen', 'placa', 'vin'], 'string', 'max' => 255],
+            [
+                ['imagenFile'],
+                'file',
+                'skipOnEmpty' => true,
+                'extensions' => ['png', 'jpg', 'jpeg', 'webp', 'gif'],
+                'maxSize' => 5 * 1024 * 1024,
+                'tooBig' => 'La imagen no puede superar 5 MB.',
+            ],
             [['caracteristicas'], 'string'],
             [['empresa_seguro'], 'string', 'max' => 255],
             [['telefono_seguro'], 'string', 'max' => 20],
@@ -64,6 +79,7 @@ class Car extends ActiveRecord
             'car_id' => 'ID del Vehículo',
             'nombre' => 'Nombre',
             'imagen' => 'Imagen',
+            'imagenFile' => 'Foto del vehículo',
             'marca_id' => 'Marca ID',
             'placa' => 'Placa',
             'vin' => 'VIN',
@@ -169,6 +185,91 @@ class Car extends ActiveRecord
             return $m[1];
         }
         return '';
+    }
+
+    /**
+     * URL pública para mostrar la imagen (ruta local o URL externa legacy).
+     */
+    public function getImagenUrl(): ?string
+    {
+        $imagen = trim((string) $this->imagen);
+        if ($imagen === '') {
+            return null;
+        }
+        if (preg_match('#^https?://#i', $imagen)) {
+            return $imagen;
+        }
+        $rel = ltrim(str_replace('\\', '/', $imagen), '/');
+        $full = Yii::getAlias('@webroot/' . $rel);
+        if (is_file($full)) {
+            return Yii::getAlias('@web/' . $rel);
+        }
+
+        return $imagen;
+    }
+
+    /**
+     * Ruta absoluta en disco para PDF u otros usos internos.
+     */
+    public function getImagenFilesystemPath(): ?string
+    {
+        $imagen = trim((string) $this->imagen);
+        if ($imagen === '' || preg_match('#^https?://#i', $imagen)) {
+            return null;
+        }
+        $rel = ltrim(str_replace('\\', '/', $imagen), '/');
+        $full = Yii::getAlias('@webroot/' . $rel);
+
+        return is_file($full) ? str_replace('\\', '/', $full) : null;
+    }
+
+    /**
+     * Guarda el archivo subido en {@see imagenFile} y actualiza {@see imagen}.
+     */
+    public function uploadImagenFile(): bool
+    {
+        if (!$this->imagenFile instanceof UploadedFile || $this->imagenFile->error === UPLOAD_ERR_NO_FILE) {
+            return true;
+        }
+
+        if (!$this->validate(['imagenFile'])) {
+            return false;
+        }
+
+        $dir = Yii::getAlias('@webroot/' . self::IMAGE_UPLOAD_DIR);
+        if (!is_dir($dir) && !mkdir($dir, 0755, true) && !is_dir($dir)) {
+            $this->addError('imagenFile', 'No se pudo crear la carpeta de imágenes.');
+            return false;
+        }
+
+        $this->deleteStoredImagenFile();
+
+        $base = preg_replace('/[^a-zA-Z0-9_-]+/', '_', (string) $this->placa);
+        if ($base === '' || $base === '_') {
+            $base = 'vehiculo';
+        }
+        $fileName = strtolower($base) . '_' . time() . '.' . strtolower($this->imagenFile->extension);
+        $filePath = $dir . DIRECTORY_SEPARATOR . $fileName;
+
+        if (!$this->imagenFile->saveAs($filePath)) {
+            $this->addError('imagenFile', 'No se pudo guardar la imagen en el servidor.');
+            return false;
+        }
+
+        $this->imagen = '/' . self::IMAGE_UPLOAD_DIR . '/' . $fileName;
+
+        return true;
+    }
+
+    /**
+     * Elimina el archivo local asociado a {@see imagen} (no borra URLs externas).
+     */
+    public function deleteStoredImagenFile(): void
+    {
+        $path = $this->getImagenFilesystemPath();
+        if ($path !== null && is_file($path)) {
+            @unlink($path);
+        }
     }
 
     /**

@@ -100,13 +100,14 @@ $this->params['breadcrumbs'][] = $this->title;
                 </div>
             </div>
 
-            <?php if ($model->imagen): ?>
+            <?php $imagenUrl = $model->getImagenUrl(); ?>
+            <?php if ($imagenUrl): ?>
             <div class="card mb-4">
                 <div class="card-header">
                     <h5 class="mb-0">🖼️ Imagen</h5>
                 </div>
                 <div class="card-body">
-                    <img src="<?= Html::encode($model->imagen) ?>" class="img-fluid" alt="Imagen del vehículo">
+                    <img src="<?= Html::encode($imagenUrl) ?>" class="img-fluid" alt="Imagen del vehículo">
                 </div>
             </div>
             <?php endif; ?>

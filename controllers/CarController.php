@@ -7,6 +7,7 @@ use app\models\Brand;
 use app\models\CarAvailability;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
+use yii\web\UploadedFile;
 use yii\filters\AccessControl;
 use yii\filters\VerbFilter;
 use yii\data\ActiveDataProvider;
@@ -108,7 +109,7 @@ class CarController extends Controller
         $model = new Car();
         $model->status = 'disponible';
 
-        if ($model->load(Yii::$app->request->post()) && $model->save()) {
+        if ($this->loadAndSaveCar($model)) {
             Yii::$app->session->setFlash('success', '✅ Vehículo creado exitosamente');
             return $this->redirect(['view', 'id' => $model->id]);
         }
@@ -125,7 +126,7 @@ class CarController extends Controller
     {
         $model = $this->findModel($id);
 
-        if ($model->load(Yii::$app->request->post()) && $model->save()) {
+        if ($this->loadAndSaveCar($model)) {
             Yii::$app->session->setFlash('success', '✅ Vehículo actualizado exitosamente');
             return $this->redirect(['view', 'id' => $model->id]);
         }
@@ -146,6 +147,38 @@ class CarController extends Controller
 
         Yii::$app->session->setFlash('success', '🗑️ Vehículo eliminado exitosamente');
         return $this->redirect(['index']);
+    }
+
+    /**
+     * Carga POST, sube imagen si corresponde y guarda el vehículo.
+     */
+    protected function loadAndSaveCar(Car $model): bool
+    {
+        if (!$model->load(Yii::$app->request->post())) {
+            return false;
+        }
+
+        $model->imagenFile = UploadedFile::getInstance($model, 'imagenFile');
+
+        if (!$model->validate()) {
+            return false;
+        }
+
+        $hasNewImage = $model->imagenFile instanceof UploadedFile
+            && $model->imagenFile->error !== UPLOAD_ERR_NO_FILE;
+
+        if (!$model->save(false)) {
+            return false;
+        }
+
+        if ($hasNewImage) {
+            if (!$model->uploadImagenFile()) {
+                return false;
+            }
+            $model->save(false, ['imagen']);
+        }
+
+        return true;
     }
 
     protected function findModel($id)
