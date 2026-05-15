@@ -42,89 +42,84 @@ class PdfController extends Controller
     {
         $rental = $this->findRental($id);
         $companyInfo = CompanyConfig::getCompanyInfo();
-        
-        // Limpiar buffers
+
         while (ob_get_level()) {
             ob_end_clean();
         }
-        
-        // Desactivar compresión
+
         if (function_exists('apache_setenv')) {
             @apache_setenv('no-gzip', 1);
         }
         @ini_set('zlib.output_compression', 0);
         @ini_set('output_buffering', 0);
-        
+
         $isModernPdf = CompanyConfig::getRentalOrderPdfFormat() === 'moderna';
-        $pageFormat = $isModernPdf ? 'A4' : 'Letter';
-        $pdf = new TCPDF('P', 'mm', $pageFormat, true, 'UTF-8', false);
-        $pdf->SetCreator('Facto Rent a Car');
-        $pdf->SetAuthor('Facto Rent a Car');
-        $pdf->SetTitle('Orden de Alquiler - ' . $rental->rental_id);
+        $customConditions = $rental->condiciones_especiales ?? '';
+        $globalConditions = CompanyConfig::getConfig('rental_conditions_html', '');
+        $hasCond = !empty($customConditions) || !empty($globalConditions) || !empty($companyInfo['conditions']);
+
+        $filename = 'Orden_Alquiler_' . $rental->rental_id . '_' . date('Y-m-d') . '.pdf';
+        $filepath = Yii::getAlias('@app') . '/pdfs/' . $filename;
 
         if ($isModernPdf) {
-            $pdf->SetMargins(12, 10, 12);
-            $pdf->SetHeaderMargin(5);
-            $pdf->SetFooterMargin(10);
-            $pdf->SetAutoPageBreak(true, 10);
+            $html = $this->generateRentalOrderHtml($rental, $companyInfo, $hasCond);
+            $mpdf = $this->createMpdfForModernRentalOrder();
+            $mpdf->SetTitle('Orden de Alquiler ' . ($rental->rental_id ?? ''));
+            $mpdf->SetAuthor('Facto Rent a Car');
+            $mpdf->WriteHTML($html);
+            $mpdf->Output($filepath, 'F');
         } else {
+            $pdf = new TCPDF('P', 'mm', 'Letter', true, 'UTF-8', false);
+            $pdf->SetCreator('Facto Rent a Car');
+            $pdf->SetAuthor('Facto Rent a Car');
+            $pdf->SetTitle('Orden de Alquiler - ' . $rental->rental_id);
             $pdf->SetMargins(14, 12, 14);
             $pdf->SetHeaderMargin(6);
             $pdf->SetFooterMargin(8);
             $pdf->SetAutoPageBreak(true, 14);
-        }
-        $pdf->setImageScale(1.53);
-        $pdf->setPrintHeader(false);
-        $pdf->setPrintFooter(false);
-
-        $fontFamily = $isModernPdf ? 'dejavusans' : 'helvetica';
-        $fontSize = 10;
-        $pdf->SetFont($fontFamily, '', $fontSize);
-
-        // Agregar página
-        $pdf->AddPage();
-
-        // Generar contenido
-        $html = $this->generateRentalOrderHtml($rental, $companyInfo);
-        $pdf->writeHTML($html, true, false, true, false, '');
-
-        // Agregar código QR con información de la orden en la esquina inferior derecha
-        $qrUrl = \yii\helpers\Url::to(['/rental/public-view', 'id' => $rental->id], true);
-        $qrStyle = array(
-            'border' => false,
-            'padding' => 2,
-            'fgcolor' => array(0,0,0),
-            'bgcolor' => false,
-            'module_width' => 1,
-            'module_height' => 1
-        );
-        $dims = $pdf->getPageDimensions();
-        $qrSize = 25;
-        $xPosition = $dims['wk'] - $dims['rm'] - $qrSize;
-        $yPosition = $dims['hk'] - $dims['bm'] - $qrSize;
-        $pdf->write2DBarcode($qrUrl, 'QRCODE,M', $xPosition, $yPosition, 25, 25, $qrStyle, 'N');
-        
-        // Agregar segunda página con condiciones (prioridad: alquiler > global > archivo)
-        $customConditions = $rental->condiciones_especiales ?? '';
-        $globalConditions = CompanyConfig::getConfig('rental_conditions_html', '');
-        if (!empty($customConditions) || !empty($globalConditions) || $companyInfo['conditions']) {
+            $pdf->setImageScale(1.53);
+            $pdf->setPrintHeader(false);
+            $pdf->setPrintFooter(false);
+            $pdf->SetFont('helvetica', '', 10);
             $pdf->AddPage();
-            $pdf->SetFont($fontFamily, '', $fontSize);
-            $conditionsHtml = CompanyConfig::wrapRentalConditionsHtml($this->generateConditionsHtml($companyInfo, $customConditions ?: $globalConditions));
-            $pdf->writeHTML($conditionsHtml, true, false, true, false, '');
+            $html = $this->generateRentalOrderHtml($rental, $companyInfo, false);
+            $pdf->writeHTML($html, true, false, true, false, '');
+            $qrUrl = \yii\helpers\Url::to(['/rental/public-view', 'id' => $rental->id], true);
+            $qrStyle = [
+                'border' => false,
+                'padding' => 2,
+                'fgcolor' => [0, 0, 0],
+                'bgcolor' => false,
+                'module_width' => 1,
+                'module_height' => 1,
+            ];
+            $dims = $pdf->getPageDimensions();
+            $qrSize = 25;
+            $pdf->write2DBarcode(
+                $qrUrl,
+                'QRCODE,M',
+                $dims['wk'] - $dims['rm'] - $qrSize,
+                $dims['hk'] - $dims['bm'] - $qrSize,
+                25,
+                25,
+                $qrStyle,
+                'N'
+            );
+            if ($hasCond) {
+                $pdf->AddPage();
+                $pdf->SetFont('helvetica', '', 10);
+                $conditionsHtml = CompanyConfig::wrapRentalConditionsHtml(
+                    $this->generateConditionsHtml($companyInfo, $customConditions ?: $globalConditions)
+                );
+                $pdf->writeHTML($conditionsHtml, true, false, true, false, '');
+            }
+            $pdf->Output($filepath, 'F');
         }
-        
-        // Generar nombre del archivo
-        $filename = 'Orden_Alquiler_' . $rental->rental_id . '_' . date('Y-m-d') . '.pdf';
-        $filepath = Yii::getAlias('@app') . '/pdfs/' . $filename;
-        
-        // Guardar PDF en disco
-        $pdf->Output($filepath, 'F');
-        
+
         return json_encode([
             'success' => true,
             'filename' => $filename,
-            'url' => '/pdf/download-rental?id=' . $id
+            'url' => '/pdf/download-rental?id=' . $id,
         ]);
     }
 
@@ -206,11 +201,8 @@ class PdfController extends Controller
         $rental = $this->findRental($id);
         $companyInfo = CompanyConfig::getCompanyInfo();
         
-        // Renderizar el HTML del PDF
-        $html = $this->renderPartial(CompanyConfig::getRentalOrderPdfView(), [
-            'model' => $rental,
-            'companyInfo' => $companyInfo
-        ], true);
+        // Renderizar el HTML del PDF (misma lógica que la descarga)
+        $html = $this->generateRentalOrderHtml($rental, $companyInfo, true);
         
         // Retornar el HTML para mostrarlo en el iframe
         return $this->renderPartial('_pdf-preview', [
@@ -269,12 +261,11 @@ class PdfController extends Controller
                 'dpi' => 96,
             ]);
             
-            // Generar HTML usando la vista completa del PDF
-            $html = $this->renderPartial(CompanyConfig::getRentalOrderPdfView(), [
-                'model' => $rental,
-                'companyInfo' => $companyInfo
-            ], true);
-            
+            $customConditions = $rental->condiciones_especiales ?? '';
+            $globalConditions = CompanyConfig::getConfig('rental_conditions_html', '');
+            $hasCond = !empty($customConditions) || !empty($globalConditions) || !empty($companyInfo['conditions']);
+            $html = $this->generateRentalOrderHtml($rental, $companyInfo, CompanyConfig::getRentalOrderPdfFormat() === 'moderna' ? $hasCond : false);
+
             // Log del HTML generado para debug
             Yii::info('HTML generado para PDF asíncrono: ' . substr($html, 0, 500) . '...', 'pdf');
             Yii::info('Tamaño del HTML: ' . strlen($html) . ' caracteres', 'pdf');
@@ -429,30 +420,44 @@ class PdfController extends Controller
         @ini_set('zlib.output_compression_level', 0);
         
         $isModernPdf = CompanyConfig::getRentalOrderPdfFormat() === 'moderna';
-        $pageFormat = $isModernPdf ? 'A4' : 'Letter';
-        $pdf = new TCPDF('P', 'mm', $pageFormat, true, 'UTF-8', false);
+
+        if ($isModernPdf) {
+            $html = $this->generateRentalOrderHtml($rental, $companyInfo, true);
+            $mpdf = $this->createMpdfForModernRentalOrder();
+            $mpdf->SetTitle('Orden de Alquiler ' . ($rental->rental_id ?? ''));
+            $mpdf->SetAuthor('Facto Rent a Car');
+            $mpdf->WriteHTML($html);
+
+            $filename = 'Orden_Alquiler_' . $rental->rental_id . '_' . date('Y-m-d') . '.pdf';
+
+            Yii::$app->response->format = \yii\web\Response::FORMAT_RAW;
+            Yii::$app->response->headers->set('Content-Type', 'application/pdf');
+            Yii::$app->response->headers->set('Content-Disposition', 'attachment; filename="' . $filename . '"');
+            Yii::$app->response->headers->set('Content-Transfer-Encoding', 'binary');
+            Yii::$app->response->headers->set('Cache-Control', 'private, max-age=0, must-revalidate');
+            Yii::$app->response->headers->set('Pragma', 'no-cache');
+
+            Yii::$app->response->data = $mpdf->Output('', 'S');
+            Yii::$app->response->send();
+            Yii::$app->end();
+        }
+
+        $pdf = new TCPDF('P', 'mm', 'Letter', true, 'UTF-8', false);
 
         // Configuración del documento
         $pdf->SetCreator('Facto Rent a Car');
         $pdf->SetAuthor('Facto Rent a Car');
         $pdf->SetTitle('Orden de Alquiler - ' . $rental->rental_id);
 
-        if ($isModernPdf) {
-            $pdf->SetMargins(12, 10, 12);
-            $pdf->SetHeaderMargin(5);
-            $pdf->SetFooterMargin(10);
-            $pdf->SetAutoPageBreak(true, 10);
-        } else {
-            $pdf->SetMargins(14, 12, 14);
-            $pdf->SetHeaderMargin(6);
-            $pdf->SetFooterMargin(8);
-            $pdf->SetAutoPageBreak(true, 14);
-        }
+        $pdf->SetMargins(14, 12, 14);
+        $pdf->SetHeaderMargin(6);
+        $pdf->SetFooterMargin(8);
+        $pdf->SetAutoPageBreak(true, 14);
         $pdf->setImageScale(1.53);
         $pdf->setPrintHeader(false);
         $pdf->setPrintFooter(false);
 
-        $fontFamily = $isModernPdf ? 'dejavusans' : 'helvetica';
+        $fontFamily = 'helvetica';
         $fontSize = 10;
         $pdf->SetFont($fontFamily, '', $fontSize);
 
@@ -460,7 +465,7 @@ class PdfController extends Controller
         $pdf->AddPage();
 
         // Generar contenido
-        $html = $this->generateRentalOrderHtml($rental, $companyInfo);
+        $html = $this->generateRentalOrderHtml($rental, $companyInfo, false);
         $pdf->writeHTML($html, true, false, true, false, '');
 
         // Agregar código QR con información de la orden en la esquina inferior derecha
@@ -570,13 +575,257 @@ class PdfController extends Controller
     }
 
     /**
-     * Generar HTML para orden de alquiler
+     * Instancia mPDF para orden de alquiler formato moderna (A4, márgenes del diseño).
      */
-    public function generateRentalOrderHtml($rental, $companyInfo)
+    private function createMpdfForModernRentalOrder(): Mpdf
     {
-        return $this->renderPartial(CompanyConfig::getRentalOrderPdfView(), [
-            'model' => $rental,
-            'companyInfo' => $companyInfo,
+        $tempDir = Yii::getAlias('@app') . '/runtime/mpdf_temp';
+        if (!is_dir($tempDir)) {
+            mkdir($tempDir, 0777, true);
+        }
+
+        return new Mpdf([
+            'mode' => 'utf-8',
+            'format' => 'A4',
+            'orientation' => 'P',
+            'margin_left' => 12,
+            'margin_right' => 12,
+            'margin_top' => 10,
+            'margin_bottom' => 10,
+            'default_font' => 'dejavusans',
+            'tempDir' => $tempDir,
+        ]);
+    }
+
+    /**
+     * Datos para la plantilla views/pdf/pdf-orden.php (formato moderna).
+     */
+    private function buildRentalOrderPdfDatos(Rental $rental, array $companyInfo): array
+    {
+        $model = $rental;
+        require Yii::getAlias('@app/views/pdf/_rental-pdf-setup.php');
+
+        $transmision = 'automática';
+        if ($car !== null && $car->caracteristicas !== null && $car->caracteristicas !== '') {
+            $cx = function_exists('mb_strtolower')
+                ? mb_strtolower((string) $car->caracteristicas, 'UTF-8')
+                : strtolower((string) $car->caracteristicas);
+            if (strpos($cx, 'manual') !== false) {
+                $transmision = 'manual';
+            }
+        }
+
+        $logoFs = '';
+        if (!empty($companyInfo['logo'])) {
+            $abs = Yii::getAlias('@webroot' . str_replace(Yii::getAlias('@web'), '', $companyInfo['logo']));
+            $abs = str_replace('\\', '/', $abs);
+            if (is_file($abs)) {
+                $logoFs = $abs;
+            }
+        }
+
+        $vehFs = '';
+        if ($car !== null && !empty($car->imagen)) {
+            $im = trim((string) $car->imagen);
+            if (!preg_match('#^https?://#i', $im)) {
+                $webroot = str_replace('\\', '/', Yii::getAlias('@webroot'));
+                if (strpos($im, '@') === 0) {
+                    $aliasPath = Yii::getAlias($im);
+                    if (is_string($aliasPath) && is_file($aliasPath)) {
+                        $vehFs = str_replace('\\', '/', $aliasPath);
+                    }
+                } else {
+                    $pathPart = str_replace('\\', '/', $im);
+                    $full = (strlen($pathPart) > 0 && $pathPart[0] === '/')
+                        ? ($webroot . $pathPart)
+                        : ($webroot . '/' . ltrim($pathPart, '/'));
+                    if (is_file($full)) {
+                        $vehFs = $full;
+                    }
+                }
+            }
+        }
+
+        $brandRaw = trim((string) ($companyInfo['name'] ?? 'Facto Rent a Car'));
+        $nombreComercial = function_exists('mb_convert_case')
+            ? mb_convert_case($brandRaw, MB_CASE_TITLE, 'UTF-8')
+            : ucwords(strtolower($brandRaw));
+
+        $addrRaw = trim((string) ($companyInfo['address'] ?? '3-101-880789, San Ramón, Alajuela, Costa Rica'));
+        $razon = 'Facto Autos de Alquiler S.A.';
+        $cedJur = '3-101-880789';
+        $direccionGeo = 'San Ramón, Alajuela, Costa Rica';
+        if (preg_match('/^([\d\-]+)\s*,\s*(.+)$/u', $addrRaw, $m)) {
+            $cedJur = trim($m[1]);
+            $direccionGeo = trim($m[2]);
+        } else {
+            $parts = array_values(array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', $addrRaw))));
+            if (count($parts) >= 1) {
+                $direccionGeo = $parts[count($parts) - 1];
+            }
+        }
+
+        $rawPhone = (string) ($companyInfo['phone'] ?? '');
+        $partsPhone = array_values(array_filter(array_map('trim', preg_split('/[|\/,]+/', $rawPhone))));
+        $simpeDisplay = strlen($simpe) === 8 ? substr($simpe, 0, 4) . '-' . substr($simpe, 4) : $simpe;
+        $telefonoExtra = '';
+        foreach ($partsPhone as $p) {
+            if ($p !== '' && stripos($p, 'www.') === false) {
+                $telefonoExtra = $p;
+                break;
+            }
+        }
+
+        $telRaw = '';
+        if ($client) {
+            $telRaw = (string) ($client->whatsapp ?: $client->telefono ?: '');
+        }
+        $telFmt = $telRaw;
+        $digits = preg_replace('/\D/', '', $telRaw);
+        if (strlen($digits) === 8) {
+            $telFmt = '506 ' . substr($digits, 0, 4) . ' ' . substr($digits, 4, 4);
+        } elseif (strlen($digits) === 11 && substr($digits, 0, 3) === '506') {
+            $telFmt = '506 ' . substr($digits, 3, 4) . ' ' . substr($digits, 7, 4);
+        }
+
+        $licV = '';
+        if ($client && !empty($client->fecha_vencimiento_licencia)) {
+            try {
+                $licV = (new \DateTime($client->fecha_vencimiento_licencia))->format('d/m/Y');
+            } catch (\Exception $e) {
+            }
+        }
+        $cedClienteV = '';
+        if ($client && !empty($client->fecha_vencimiento_cedula)) {
+            try {
+                $cedClienteV = (new \DateTime($client->fecha_vencimiento_cedula))->format('d/m/Y');
+            } catch (\Exception $e) {
+            }
+        }
+
+        $fechaEntregaLarga = formatFechaConDiaSemana($model->fecha_inicio);
+        $horaEntregaTxt = formatHoraSpanish($model->hora_inicio ?? '');
+        $fechaDevLarga = formatFechaConDiaSemana($model->fecha_final);
+        $horaDevTxt = formatHoraSpanish($model->hora_final ?? '');
+        $correTxt = ($model->correapartir_enabled && !empty($fechaCorreapartir)) ? $fechaCorreapartir : '—';
+
+        try {
+            $dtEm = new \DateTime($model->created_at ?: date('Y-m-d'));
+            $mesesEm = [1 => 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+            $fechaEmisionDoc = (int) $dtEm->format('j') . ' de ' . $mesesEm[(int) $dtEm->format('n')] . ' de ' . $dtEm->format('Y');
+        } catch (\Exception $e) {
+            $fechaEmisionDoc = date('j') . ' de ' . date('F') . ' de ' . date('Y');
+        }
+
+        $bancosList = [];
+        if (is_array($accounts)) {
+            foreach ($accounts as $acc) {
+                $b = trim((string) ($acc['bank'] ?? ''));
+                $a = trim((string) ($acc['account'] ?? ''));
+                $a = preg_replace('/^IBAN:?\s*/i', '', $a);
+                $a = preg_replace('/\s+/', '', $a);
+                if ($b !== '' && $a !== '') {
+                    $bancosList[] = ['banco' => $b, 'iban' => $a];
+                }
+            }
+        }
+        if ($bancosList === []) {
+            $bancosList = [
+                ['banco' => 'BCR', 'iban' => $ibanBcr],
+                ['banco' => 'BN', 'iban' => $ibanBn],
+            ];
+        }
+
+        $resumenDiasTxt = (int) $model->cantidad_dias . ' día' . ((int) $model->cantidad_dias === 1 ? '' : 's')
+            . ' • ' . $cantidadVehiculos . ' vehículo' . ($cantidadVehiculos === 1 ? '' : 's');
+
+        $medioDiaPrecio = null;
+        if ($medioDiaActivo) {
+            $medioDiaPrecio = (float) $medioDiaValor;
+        }
+
+        return [
+            'numero_orden' => $rentalId,
+            'fecha_emision' => $fechaEmisionDoc,
+            'empresa' => [
+                'nombre' => $nombreComercial,
+                'razon_social' => $razon,
+                'cedula' => $cedJur,
+                'direccion' => $direccionGeo,
+                'whatsapp' => $simpeDisplay,
+                'telefono' => $telefonoExtra !== '' ? $telefonoExtra : '—',
+                'web' => 'www.factorentacar.com',
+                'logo_fs' => $logoFs,
+            ],
+            'cliente' => [
+                'nombre' => $client ? ($client->full_name ?? 'N/A') : 'N/A',
+                'cedula' => $client ? ($client->cedula_fisica ?? 'N/A') : 'N/A',
+                'telefono' => $telFmt !== '' ? $telFmt : '—',
+                'licencia_vence' => $licV !== '' ? $licV : '—',
+                'cedula_vence' => $cedClienteV !== '' ? $cedClienteV : '—',
+            ],
+            'vehiculo' => [
+                'modelo' => $car ? ($car->nombre ?? 'N/A') : 'N/A',
+                'pasajeros' => (int) ($car ? ($car->cantidad_pasajeros ?: 5) : 5),
+                'placa' => $car && !empty($car->placa) ? (string) $car->placa : '—',
+                'transmision' => $transmision,
+                'cobertura' => 'Full cobertura',
+                'tarifa_diaria' => (float) $model->precio_por_dia,
+                'imagen_fs' => $vehFs,
+                'medio_dia' => $medioDiaPrecio,
+            ],
+            'entrega' => [
+                'fecha' => $fechaEntregaLarga,
+                'hora' => $horaEntregaTxt,
+                'sucursal' => (string) ($model->lugar_entrega ?: 'Base 1'),
+                'corre_desde' => $correTxt,
+            ],
+            'devolucion' => [
+                'fecha' => $fechaDevLarga,
+                'hora' => $horaDevTxt,
+                'sucursal' => (string) ($model->lugar_retiro ?: 'Base 1'),
+                'tipo' => 'Retiro en sucursal',
+            ],
+            'resumen' => [
+                'texto_dias' => $resumenDiasTxt,
+                'subtotal' => $subtotalNum,
+                'iva' => $ivaNum,
+                'total' => $totalNum,
+            ],
+            'bancos' => $bancosList,
+            'sinpe' => $simpeDisplay,
+            'monto_reservacion' => $totalNum,
+            'ejecutivo' => 'Ejecutivo de turno.',
+        ];
+    }
+
+    /**
+     * Generar HTML para orden de alquiler.
+     *
+     * @param bool $includeConditionsPage Si true y formato moderna, incluye página 2 de condiciones en el HTML.
+     */
+    public function generateRentalOrderHtml($rental, $companyInfo, $includeConditionsPage = true)
+    {
+        if (CompanyConfig::getRentalOrderPdfFormat() !== 'moderna') {
+            return $this->renderPartial(CompanyConfig::getRentalOrderPdfView(), [
+                'model' => $rental,
+                'companyInfo' => $companyInfo,
+            ], true);
+        }
+
+        $d = $this->buildRentalOrderPdfDatos($rental, $companyInfo);
+        $condHtml = '';
+        if ($includeConditionsPage) {
+            $customConditions = $rental->condiciones_especiales ?? '';
+            $globalConditions = CompanyConfig::getConfig('rental_conditions_html', '');
+            $condHtml = CompanyConfig::wrapRentalConditionsHtml(
+                $this->generateConditionsHtml($companyInfo, $customConditions ?: $globalConditions)
+            );
+        }
+
+        return $this->renderPartial('@app/views/pdf/pdf-orden', [
+            'd' => $d,
+            'condicionesHtml' => $condHtml,
         ], true);
     }
     
@@ -1261,12 +1510,11 @@ class PdfController extends Controller
             
             Yii::info('mPDF inicializado correctamente', 'pdf');
             
-            // Generar HTML usando la vista completa del PDF
-            $html = $this->renderPartial(CompanyConfig::getRentalOrderPdfView(), [
-                'model' => $rental,
-                'companyInfo' => $companyInfo
-            ], true);
-            
+            $customConditions = $rental->condiciones_especiales ?? '';
+            $globalConditions = CompanyConfig::getConfig('rental_conditions_html', '');
+            $hasCond = !empty($customConditions) || !empty($globalConditions) || !empty($companyInfo['conditions']);
+            $html = $this->generateRentalOrderHtml($rental, $companyInfo, CompanyConfig::getRentalOrderPdfFormat() === 'moderna' ? $hasCond : false);
+
             Yii::info('HTML generado. Tamaño: ' . strlen($html) . ' bytes', 'pdf');
             
             // Verificar que el HTML no esté vacío
@@ -1381,25 +1629,24 @@ class PdfController extends Controller
                 'dpi' => 96,
             ]);
             
-            // Generar HTML usando la vista completa del PDF
-            $html = $this->renderPartial(CompanyConfig::getRentalOrderPdfView(), [
-                'model' => $rental,
-                'companyInfo' => $companyInfo
-            ], true);
-            
+            $customConditions = $rental->condiciones_especiales ?? '';
+            $globalConditions = CompanyConfig::getConfig('rental_conditions_html', '');
+            $hasCond = !empty($customConditions) || !empty($globalConditions) || !empty($companyInfo['conditions']);
+            $html = $this->generateRentalOrderHtml($rental, $companyInfo, CompanyConfig::getRentalOrderPdfFormat() === 'moderna' ? $hasCond : false);
+
             // Verificar que el HTML no esté vacío
             if (empty(trim($html))) {
                 throw new \Exception('El HTML generado está vacío');
             }
-            
+
             // Limpiar HTML de caracteres problemáticos
             $html = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $html);
             $html = str_replace(["\r\n", "\r"], "\n", $html);
-            
+
             // Limpiar espacios en blanco excesivos que pueden causar páginas vacías
             $html = preg_replace('/\n{3,}/', "\n\n", $html);
             $html = preg_replace('/\s{4,}/', ' ', $html);
-            
+
             $mpdf->WriteHTML($html, \Mpdf\HTMLParserMode::HTML_BODY);
             
             // Verificar número de páginas

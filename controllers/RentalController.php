@@ -14,6 +14,7 @@ use yii\web\UploadedFile;
 use yii\web\Response;
 use app\models\CarAvailability;
 use app\models\CompanyConfig;
+use app\controllers\PdfController;
 use Mpdf\Mpdf;
 
 class RentalController extends Controller
@@ -825,16 +826,18 @@ class RentalController extends Controller
                 'default_font_size' => 10,
                 'tempDir' => $tempDir,
             ]);
-            
-            // Generar contenido HTML
-            $html = $this->generateRentalOrderHtml($rental, $companyInfo);
-            
-            // Agregar condiciones como página 2 (SIEMPRE se agrega, prioridad: personalizado > global > fallback por defecto)
+
+            $pdfCtrl = new PdfController('pdf', Yii::$app);
             $customConditions = $rental->condiciones_especiales ?? '';
-            $globalConditions = \app\models\CompanyConfig::getConfig('rental_conditions_html', '');
-            $conditionsHtml = CompanyConfig::wrapRentalConditionsHtml($this->generateConditionsHtml($companyInfo, $customConditions ?: $globalConditions));
-            $html .= '<div style="page-break-before: always;"></div>' . $conditionsHtml;
-            
+            $globalConditions = CompanyConfig::getConfig('rental_conditions_html', '');
+            $hasCond = !empty($customConditions) || !empty($globalConditions) || !empty($companyInfo['conditions']);
+            $includeCond = $isModernRentalPdf ? $hasCond : false;
+            $html = $pdfCtrl->generateRentalOrderHtml($rental, $companyInfo, $includeCond);
+            if (!$isModernRentalPdf) {
+                $conditionsHtml = CompanyConfig::wrapRentalConditionsHtml($pdfCtrl->generateConditionsHtml($companyInfo, $customConditions ?: $globalConditions));
+                $html .= '<div style="page-break-before: always;"></div>' . $conditionsHtml;
+            }
+
             // Escribir HTML al PDF
             $pdf->WriteHTML($html);
             
@@ -871,18 +874,6 @@ class RentalController extends Controller
         } catch (\Exception $e) {
             Yii::error('Error initiating ZIP generation: ' . $e->getMessage(), 'rental');
         }
-    }
-    
-    /**
-     * Generar HTML para orden de alquiler
-     */
-    private function generateRentalOrderHtml($rental, $companyInfo)
-    {
-        // Vista según configuración (General o Moderna)
-        return $this->renderPartial(CompanyConfig::getRentalOrderPdfView(), [
-            'model' => $rental,
-            'companyInfo' => $companyInfo,
-        ], true);
     }
     
     /**
