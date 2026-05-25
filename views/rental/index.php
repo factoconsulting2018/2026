@@ -3,7 +3,6 @@
 /** @var yii\data\ActiveDataProvider $dataProvider */
 /** @var string $status */
 
-use Yii;
 use yii\helpers\Html;
 use yii\helpers\Url;
 use yii\grid\GridView;
