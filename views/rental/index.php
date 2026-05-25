@@ -1660,6 +1660,37 @@ $this->registerCss('
     </div>
 </div>
 
+<!-- Sub-modal: órdenes en conflicto al elegir un vehículo ocupado en el swap -->
+<div class="modal fade" id="carConflictsModal" tabindex="-1" aria-labelledby="carConflictsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title" id="carConflictsModalLabel">
+                    <span class="material-symbols-outlined" style="font-size:22px;vertical-align:middle;margin-right:6px;">report</span>
+                    Vehículo con órdenes en conflicto
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small mb-2" id="carConflictsSubtitle"></p>
+                <div id="carConflictsLoading" class="text-center py-4">
+                    <div class="spinner-border text-warning" role="status"><span class="visually-hidden">Cargando...</span></div>
+                </div>
+                <div id="carConflictsError" class="alert alert-danger d-none"></div>
+                <div id="carConflictsList"></div>
+                <div id="carConflictsEmpty" class="text-center py-3 d-none text-success fw-bold">
+                    <span class="material-symbols-outlined" style="font-size:36px;vertical-align:middle;">check_circle</span>
+                    Sin conflictos restantes. Puedes continuar con el cambio.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="carConflictsBackBtn">Elegir otro vehículo</button>
+                <button type="button" class="btn btn-success d-none" id="carConflictsContinueBtn">Continuar con este vehículo</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Modal "Órdenes que requieren atención" -->
 <div class="modal fade" id="overdueRentalsModal" tabindex="-1" aria-labelledby="overdueRentalsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
@@ -2462,10 +2493,210 @@ const SWAP_VEHICLE_POST_URL = <?= json_encode(Url::to(['swap-vehicle'])) ?>;
 const PDF_CHOICES_URL = <?= json_encode(Url::to(['pdf-choices'])) ?>;
 const GET_AVAILABLE_CARS_URL = <?= json_encode(Url::to(['get-available-cars'])) ?>;
 const OVERDUE_RENTALS_URL = <?= json_encode(Url::to(['overdue-rentals'])) ?>;
+const CONFLICTING_RENTALS_URL = <?= json_encode(Url::to(['conflicting-rentals'])) ?>;
 const UPDATE_PAYMENT_STATUS_URL = <?= json_encode(Url::to(['update-payment-status'])) ?>;
+const RENTAL_UPDATE_URL = <?= json_encode(Url::to(['update'])) ?>;
 const OVERDUE_TODAY_KEY = 'overdueRentalsDismissed:' + (new Date().toISOString().slice(0, 10));
 
 let overdueRentalsModalInstance = null;
+let carConflictsModalInstance = null;
+let carConflictsContext = { carId: null, startDate: null, endDate: null };
+
+function openCarConflictsModal(carId, startDate, endDate) {
+    carConflictsContext = { carId, startDate, endDate };
+    const modalEl = document.getElementById('carConflictsModal');
+    const loading = document.getElementById('carConflictsLoading');
+    const errBox = document.getElementById('carConflictsError');
+    const list = document.getElementById('carConflictsList');
+    const empty = document.getElementById('carConflictsEmpty');
+    const continueBtn = document.getElementById('carConflictsContinueBtn');
+    const subtitle = document.getElementById('carConflictsSubtitle');
+    const car = swapAllCarsCache.byId[carId];
+
+    loading.classList.remove('d-none');
+    errBox.classList.add('d-none');
+    empty.classList.add('d-none');
+    continueBtn.classList.add('d-none');
+    list.innerHTML = '';
+    const fmtDate = d => d ? new Date(d).toLocaleDateString('es-CR') : '—';
+    subtitle.textContent = (car ? (car.nombre + (car.placa ? ' (' + car.placa + ')' : '')) : 'Vehículo') +
+        ' tiene órdenes que chocan con ' + fmtDate(startDate) + ' → ' + fmtDate(endDate) +
+        '. Cancela o ajusta las fechas para liberarlo.';
+
+    if (!carConflictsModalInstance && typeof bootstrap !== 'undefined') {
+        carConflictsModalInstance = new bootstrap.Modal(modalEl);
+    }
+    carConflictsModalInstance ? carConflictsModalInstance.show() : (window.jQuery && jQuery(modalEl).modal('show'));
+
+    fetchConflictsAndRender();
+}
+
+function fetchConflictsAndRender() {
+    const { carId, startDate, endDate } = carConflictsContext;
+    const loading = document.getElementById('carConflictsLoading');
+    const errBox = document.getElementById('carConflictsError');
+    const list = document.getElementById('carConflictsList');
+    const empty = document.getElementById('carConflictsEmpty');
+    const continueBtn = document.getElementById('carConflictsContinueBtn');
+
+    loading.classList.remove('d-none');
+    errBox.classList.add('d-none');
+    empty.classList.add('d-none');
+    continueBtn.classList.add('d-none');
+    list.innerHTML = '';
+
+    const params = new URLSearchParams({
+        car_id: String(carId),
+        start_date: startDate,
+        end_date: endDate,
+    });
+    fetch(CONFLICTING_RENTALS_URL + '?' + params.toString(), { headers: { 'Accept': 'application/json' } })
+        .then(r => r.json())
+        .then(data => {
+            loading.classList.add('d-none');
+            if (!data.success) {
+                errBox.textContent = data.message || 'No se pudieron cargar las órdenes en conflicto.';
+                errBox.classList.remove('d-none');
+                return;
+            }
+            renderConflictsList(data.rentals || []);
+        })
+        .catch(() => {
+            loading.classList.add('d-none');
+            errBox.textContent = 'Error de conexión.';
+            errBox.classList.remove('d-none');
+        });
+}
+
+function renderConflictsList(rentals) {
+    const list = document.getElementById('carConflictsList');
+    const empty = document.getElementById('carConflictsEmpty');
+    const continueBtn = document.getElementById('carConflictsContinueBtn');
+    const escapeHtml = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const fmtDate = d => d ? new Date(d).toLocaleDateString('es-CR') : '—';
+    const fmtMoney = n => '₡' + (Number(n) || 0).toLocaleString('es-CR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const statusClass = {
+        pagado: 'bg-success',
+        pendiente: 'bg-warning text-dark',
+        reservado: 'bg-info text-dark',
+        cancelado: 'bg-danger'
+    };
+
+    if (!rentals || rentals.length === 0) {
+        list.innerHTML = '';
+        empty.classList.remove('d-none');
+        continueBtn.classList.remove('d-none');
+        return;
+    }
+    empty.classList.add('d-none');
+    continueBtn.classList.add('d-none');
+
+    list.innerHTML = rentals.map(r => `
+        <div class="card mb-2 shadow-sm border-warning" data-rental-id="${r.id}">
+            <div class="card-body p-3">
+                <div class="d-flex justify-content-between align-items-start flex-wrap mb-2">
+                    <div>
+                        <strong class="me-2">${escapeHtml(r.rental_id)}</strong>
+                        <span class="badge ${statusClass[r.estado_pago] || 'bg-secondary'}">${escapeHtml(r.estado_pago)}</span>
+                    </div>
+                    <strong class="text-success">${fmtMoney(r.total_precio)}</strong>
+                </div>
+                <div class="row small text-muted mb-2">
+                    <div class="col-md-6">
+                        <span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;">person</span>
+                        ${escapeHtml(r.client_name)}${r.client_phone ? ' · ' + escapeHtml(r.client_phone) : ''}
+                    </div>
+                    <div class="col-md-6">
+                        <span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;">event</span>
+                        ${fmtDate(r.fecha_inicio)} → ${fmtDate(r.fecha_final)}
+                    </div>
+                </div>
+                <div class="d-flex gap-2 flex-wrap">
+                    <button type="button" class="btn btn-sm btn-danger" onclick="cancelConflictingRental(${r.id}, this)">
+                        <span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;">cancel</span>
+                        Cancelar orden
+                    </button>
+                    <a href="${r.update_url}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary">
+                        <span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;">edit</span>
+                        Modificar fechas
+                    </a>
+                    <a href="${r.view_url}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary">
+                        <span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;">visibility</span>
+                        Ver
+                    </a>
+                </div>
+                <div class="conflict-feedback small mt-2 d-none"></div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function cancelConflictingRental(rentalId, btn) {
+    if (!confirm('¿Cancelar la orden seleccionada? El vehículo quedará libre para el cambio.')) return;
+    const card = btn.closest('.card');
+    const feedback = card ? card.querySelector('.conflict-feedback') : null;
+    const buttons = card ? card.querySelectorAll('button, a') : [];
+    buttons.forEach(b => { if (b.tagName === 'BUTTON') b.disabled = true; });
+    if (feedback) {
+        feedback.textContent = 'Cancelando...';
+        feedback.className = 'conflict-feedback small mt-2 text-muted';
+    }
+
+    const formData = new FormData();
+    formData.append('rentalId', rentalId);
+    formData.append('newStatus', 'cancelado');
+    formData.append('observaciones', 'Cancelado para liberar vehículo en cambio de orden');
+
+    const csrf = document.querySelector('meta[name="csrf-token"]');
+    const headers = { 'X-Requested-With': 'XMLHttpRequest' };
+    if (csrf) headers['X-CSRF-Token'] = csrf.getAttribute('content');
+
+    fetch(UPDATE_PAYMENT_STATUS_URL, { method: 'POST', body: formData, headers })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                if (card) card.remove();
+                fetchConflictsAndRender();
+            } else {
+                buttons.forEach(b => { if (b.tagName === 'BUTTON') b.disabled = false; });
+                if (feedback) {
+                    feedback.className = 'conflict-feedback small mt-2 text-danger';
+                    feedback.textContent = 'Error: ' + (data.message || 'no se pudo cancelar.');
+                }
+            }
+        })
+        .catch(() => {
+            buttons.forEach(b => { if (b.tagName === 'BUTTON') b.disabled = false; });
+            if (feedback) {
+                feedback.className = 'conflict-feedback small mt-2 text-danger';
+                feedback.textContent = 'Error de conexión.';
+            }
+        });
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    const backBtn = document.getElementById('carConflictsBackBtn');
+    if (backBtn) {
+        backBtn.addEventListener('click', function () {
+            const sel = document.getElementById('swapNewCarId');
+            if (sel) sel.value = '';
+            if (carConflictsModalInstance) carConflictsModalInstance.hide();
+        });
+    }
+    const continueBtn = document.getElementById('carConflictsContinueBtn');
+    if (continueBtn) {
+        continueBtn.addEventListener('click', function () {
+            const sel = document.getElementById('swapNewCarId');
+            if (sel) {
+                const startDate = document.getElementById('swapDate').value;
+                const endDate = document.getElementById('swapFechaFinal').value;
+                const excludeCarId = document.getElementById('swapOriginalRentalId').dataset.carId || null;
+                loadSwapAvailableCars(startDate, endDate, excludeCarId);
+            }
+            if (carConflictsModalInstance) carConflictsModalInstance.hide();
+        });
+    }
+});
 
 function fetchOverdueRentals() {
     return fetch(OVERDUE_RENTALS_URL, { headers: { 'Accept': 'application/json' } })
@@ -2727,26 +2958,62 @@ function openSwapVehicleModal(rentalId) {
         });
 }
 
+let swapAllCarsCache = { byId: {}, startDate: null, endDate: null };
+
 function loadSwapAvailableCars(startDate, endDate, excludeCarId) {
     const sel = document.getElementById('swapNewCarId');
     sel.innerHTML = '<option value="">Cargando...</option>';
+    swapAllCarsCache = { byId: {}, startDate: startDate, endDate: endDate };
     if (!startDate || !endDate) return;
     const start = new Date(startDate);
     const end = new Date(endDate);
     let duration = Math.max(1, Math.round((end - start) / (86400000)) + 1);
-    fetch(GET_AVAILABLE_CARS_URL + '?start_date=' + encodeURIComponent(startDate) + '&duration=' + duration)
+    const params = new URLSearchParams({
+        start_date: startDate,
+        duration: String(duration),
+        include_busy: '1',
+    });
+    fetch(GET_AVAILABLE_CARS_URL + '?' + params.toString())
         .then(r => r.json())
         .then(data => {
             sel.innerHTML = '<option value="">Seleccione vehículo</option>';
-            if (data.success && data.data && data.data.available_cars) {
-                data.data.available_cars.forEach(car => {
+            if (!data.success || !data.data) return;
+            const available = (data.data.available_cars || []);
+            const busy = (data.data.busy_cars || []);
+            if (available.length > 0) {
+                const og = document.createElement('optgroup');
+                og.label = 'Disponibles';
+                available.forEach(car => {
                     if (parseInt(car.id, 10) === parseInt(excludeCarId, 10)) return;
+                    swapAllCarsCache.byId[car.id] = car;
                     const opt = document.createElement('option');
                     opt.value = car.id;
                     opt.textContent = car.nombre + ' (' + car.placa + ')';
-                    sel.appendChild(opt);
+                    opt.dataset.busy = '0';
+                    og.appendChild(opt);
                 });
+                sel.appendChild(og);
             }
+            if (busy.length > 0) {
+                const og = document.createElement('optgroup');
+                og.label = 'Con orden en estas fechas (requiere acción)';
+                busy.forEach(car => {
+                    if (parseInt(car.id, 10) === parseInt(excludeCarId, 10)) return;
+                    swapAllCarsCache.byId[car.id] = car;
+                    const opt = document.createElement('option');
+                    opt.value = car.id;
+                    opt.textContent = car.nombre + ' (' + car.placa + ') — ocupado';
+                    opt.dataset.busy = '1';
+                    og.appendChild(opt);
+                });
+                sel.appendChild(og);
+            }
+            sel.onchange = function () {
+                const opt = sel.options[sel.selectedIndex];
+                if (opt && opt.dataset.busy === '1') {
+                    openCarConflictsModal(parseInt(sel.value, 10), startDate, endDate);
+                }
+            };
         });
 }
 

@@ -46,6 +46,7 @@ class RentalController extends Controller
                     'swap-vehicle-data' => ['GET'],
                     'pdf-choices' => ['GET'],
                     'overdue-rentals' => ['GET'],
+                    'conflicting-rentals' => ['GET'],
                 ],
             ],
         ];
@@ -738,30 +739,40 @@ class RentalController extends Controller
                 Yii::error('syncAllStatuses falló: ' . $e->getMessage(), 'rental');
             }
 
-            // Excluir solo estados manuales duros: fuera_servicio y mantenimiento.
-            // El estado "alquilado" se ignora a propósito; la única fuente de verdad
-            // sobre disponibilidad para el rango pedido es CarAvailability::isCarAvailable.
+            // include_busy=1 devuelve TODOS los vehículos (excepto fuera_servicio y
+            // mantenimiento) marcando cuáles están ocupados en el rango. Esto permite
+            // al cliente ofrecer una acción rápida sobre los conflictos.
+            $includeBusy = (int) Yii::$app->request->get('include_busy', 0) === 1;
+            $excludeRentalId = (int) Yii::$app->request->get('exclude_rental_id', 0) ?: null;
+
             $allCars = Car::find()
                 ->where(['not in', 'status', ['fuera_servicio', 'mantenimiento']])
+                ->orderBy(['nombre' => SORT_ASC])
                 ->all();
 
             $availableCars = [];
+            $busyCars = [];
             foreach ($allCars as $car) {
                 $isAvailable = \app\models\CarAvailability::isCarAvailable(
                     $car->id,
                     $startDate,
-                    $endDate
+                    $endDate,
+                    $excludeRentalId
                 );
 
+                $entry = [
+                    'id' => $car->id,
+                    'nombre' => $car->nombre,
+                    'placa' => $car->placa,
+                    'status' => $car->status,
+                    'empresa' => (string) ($car->empresa ?? ''),
+                    'disponible' => $isAvailable,
+                ];
+
                 if ($isAvailable) {
-                    $availableCars[] = [
-                        'id' => $car->id,
-                        'nombre' => $car->nombre,
-                        'placa' => $car->placa,
-                        'status' => $car->status,
-                        'empresa' => (string) ($car->empresa ?? ''),
-                        'disponible' => true,
-                    ];
+                    $availableCars[] = $entry;
+                } elseif ($includeBusy) {
+                    $busyCars[] = $entry;
                 }
             }
             
@@ -769,12 +780,13 @@ class RentalController extends Controller
                 'success' => true,
                 'data' => [
                     'available_cars' => $availableCars,
+                    'busy_cars' => $busyCars,
                     'search_date' => $startDate,
                     'search_end_date' => $endDate,
-                    'duration' => $duration
-                ]
+                    'duration' => $duration,
+                ],
             ];
-            
+
             return $response;
         } catch (\Exception $e) {
             return [
@@ -782,6 +794,77 @@ class RentalController extends Controller
                 'message' => 'Error al obtener vehículos disponibles: ' . $e->getMessage()
             ];
         }
+    }
+
+    /**
+     * Listado JSON de órdenes que chocan con un rango para un vehículo dado.
+     * Usado por el modal de cambio de vehículo cuando el usuario elige un vehículo
+     * ocupado, para ofrecerle cancelar/editar las órdenes conflictivas.
+     */
+    public function actionConflictingRentals()
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+
+        $carId = (int) Yii::$app->request->get('car_id', 0);
+        $startDate = trim((string) Yii::$app->request->get('start_date', ''));
+        $endDate = trim((string) Yii::$app->request->get('end_date', ''));
+        $excludeRentalId = (int) Yii::$app->request->get('exclude_rental_id', 0) ?: null;
+
+        if ($carId <= 0 || $startDate === '' || $endDate === '') {
+            return ['success' => false, 'message' => 'Parámetros incompletos.'];
+        }
+
+        $startDay = substr($startDate, 0, 10);
+        $endDay = substr($endDate, 0, 10);
+
+        $query = Rental::find()
+            ->with(['client', 'car'])
+            ->where(['car_id' => $carId])
+            ->andWhere(['is_async' => 0])
+            ->andWhere(['!=', 'estado_pago', 'cancelado'])
+            ->andWhere(['swapped_to_rental_id' => null])
+            ->andWhere([
+                'not',
+                [
+                    'or',
+                    ['>=', new \yii\db\Expression(
+                        'IF(correapartir_enabled = 1 AND fecha_correapartir IS NOT NULL, DATE(fecha_correapartir), DATE(fecha_inicio))'
+                    ), $endDay],
+                    ['<=', new \yii\db\Expression('DATE(fecha_final)'), $startDay],
+                ],
+            ]);
+
+        if ($excludeRentalId) {
+            $query->andWhere(['!=', 'id', $excludeRentalId]);
+        }
+
+        $rentals = $query->orderBy(['fecha_inicio' => SORT_ASC])->all();
+
+        $items = [];
+        foreach ($rentals as $rental) {
+            $client = $rental->client;
+            $items[] = [
+                'id' => $rental->id,
+                'rental_id' => $rental->rental_id ?: ('R' . $rental->id),
+                'fecha_inicio' => $rental->fecha_inicio,
+                'fecha_final' => $rental->fecha_final,
+                'estado_pago' => $rental->estado_pago,
+                'total_precio' => (float) $rental->total_precio,
+                'client_name' => $client ? ($client->full_name ?? $client->nombre) : 'Sin cliente',
+                'client_phone' => $client ? ($client->whatsapp ?: $client->telefono ?: $client->celular ?: '') : '',
+                'view_url' => \yii\helpers\Url::to(['view', 'id' => $rental->id]),
+                'update_url' => \yii\helpers\Url::to(['update', 'id' => $rental->id]),
+            ];
+        }
+
+        return [
+            'success' => true,
+            'car_id' => $carId,
+            'start_date' => $startDay,
+            'end_date' => $endDay,
+            'count' => count($items),
+            'rentals' => $items,
+        ];
     }
 
     /**
