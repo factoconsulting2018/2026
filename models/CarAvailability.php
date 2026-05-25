@@ -12,6 +12,10 @@ class CarAvailability
     /**
      * Condición SQL: el alquiler NO se solapa con el rango solicitado.
      * Si la orden fue reemplazada, solo bloquea hasta el día anterior a swap_date.
+     *
+     * DATE(fecha_final) y el operador <= permiten que una orden que termina el mismo día
+     * calendario que inicia el rango nuevo no bloquee (devolución temprana / cambio de vehículo).
+     * hora_final no se usa en esta comparación.
      */
     private static function noOverlapCondition($startDate, $endDate): array
     {
@@ -87,7 +91,7 @@ class CarAvailability
 
         $occupiedDates = [];
         foreach ($rentals as $rental) {
-            $blockEnd = self::getEffectiveBlockEndDate($rental);
+            $blockEnd = Rental::getEffectiveBlockEndDate($rental);
             $start = max($rental->fecha_inicio, $startOfMonth);
             $end = min($blockEnd . ' 23:59:59', $endOfMonth);
 
