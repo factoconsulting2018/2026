@@ -305,7 +305,8 @@ $this->params['breadcrumbs'][] = 'Actualizar';
                         'pendiente' => 'Pendiente',
                         'pagado' => 'Pagado',
                         'reservado' => 'Reservado',
-                        'cancelado' => 'Cancelado'
+                        'finalizado' => 'Finalizado',
+                        'cancelado' => 'Cancelado',
                     ], [
                         'class' => 'form-select'
                     ]) ?>

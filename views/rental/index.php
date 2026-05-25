@@ -897,6 +897,8 @@ $this->registerCss('
                         <option value="pendiente" <?= $status === 'pendiente' ? 'selected' : '' ?>>Pendiente</option>
                         <option value="pagado" <?= $status === 'pagado' ? 'selected' : '' ?>>Pagado</option>
                         <option value="reservado" <?= $status === 'reservado' ? 'selected' : '' ?>>Reservado</option>
+                        <option value="finalizado" <?= $status === 'finalizado' ? 'selected' : '' ?>>Finalizado</option>
+                        <option value="cancelado" <?= $status === 'cancelado' ? 'selected' : '' ?>>Cancelado</option>
                     </select>
                 </div>
                 <div class="col-md-4 d-flex align-items-end">
@@ -978,7 +980,7 @@ $this->registerCss('
                             $diferencia = $fechaFin ? $hoy->diff($fechaFin)->days : null;
                             
                             $rowClass = 'rental-row';
-                            if ($fechaFin && $fechaFin < $hoy && $estado !== 'cancelado') {
+                            if ($fechaFin && $fechaFin < $hoy && !in_array($estado, $estadosCerrados, true)) {
                                 $rowClass .= ' expired';
                             } elseif ($diferencia && $diferencia <= 2 && $estado === 'pagado') {
                                 $rowClass .= ' expiring';
@@ -1066,7 +1068,7 @@ $this->registerCss('
                                                 ?>
                                             </span>
                                         </div>
-                                        <div class="end-date <?= $fechaFin && $fechaFin < $hoy && $estado !== 'cancelado' ? 'expired' : ($diferencia && $diferencia <= 2 && $estado === 'pagado' ? 'expiring' : '') ?>">
+                                        <div class="end-date <?= $fechaFin && $fechaFin < $hoy && !in_array($estado, $estadosCerrados, true) ? 'expired' : ($diferencia && $diferencia <= 2 && $estado === 'pagado' ? 'expiring' : '') ?>">
                                             <span class="material-symbols-outlined">stop</span>
                                             <span>
                                                 <?php
@@ -1077,7 +1079,7 @@ $this->registerCss('
                                                     
                                                     if ($fechaFinObj->format('Y-m-d') === $hoyObj->format('Y-m-d')) {
                                                         echo '<strong>Hoy (' . $fechaFinFormatted . ')</strong>';
-                                                    } elseif ($fechaFinObj < $hoyObj && $estado !== 'cancelado') {
+                                                    } elseif ($fechaFinObj < $hoyObj && !in_array($estado, $estadosCerrados, true)) {
                                                         $diasVencido = $hoyObj->diff($fechaFinObj)->days;
                                                         echo '<strong>Vencido hace ' . $diasVencido . ' día' . ($diasVencido != 1 ? 's' : '') . ' (' . $fechaFinFormatted . ')</strong>';
                                                     } elseif ($diferencia && $diferencia <= 2 && $estado === 'pagado') {
@@ -1165,8 +1167,8 @@ $this->registerCss('
                                             <span class="material-symbols-outlined">description</span>
                                         </a>
                                         <a href="<?= Url::to(['delete', 'id' => $model->id]) ?>" class="action-btn delete-btn" 
-                                           title="Cancelar Alquiler"
-                                           data-confirm="¿Estás seguro de cancelar este alquiler?" 
+                                           title="Eliminar Alquiler"
+                                           data-confirm="¿Estás seguro de eliminar este alquiler?" 
                                            data-method="post">
                                             <span class="material-symbols-outlined">delete</span>
                                         </a>
@@ -1210,8 +1212,10 @@ $this->registerCss('
                 'pendiente' => 'Pendiente',
                 'pagado' => 'Pagado',
                 'reservado' => 'Reservado',
+                'finalizado' => 'Finalizado',
                 'cancelado' => 'Cancelado',
             ];
+            $estadosCerrados = ['cancelado', 'pagado', 'finalizado'];
             $estadoLabel = $estadoLabels[$estado] ?? ucfirst($estado);
             $estadoClass = 'estado-' . $estado;
 
@@ -1307,7 +1311,7 @@ $this->registerCss('
                                 <div class="accordion-info-value">
                                     <?php
                                     $fechaFinClass = '';
-                                    if ($fechaFin instanceof \DateTime && $fechaFin < $hoy && $estado !== 'cancelado') {
+                                    if ($fechaFin instanceof \DateTime && $fechaFin < $hoy && !in_array($estado, $estadosCerrados, true)) {
                                         $fechaFinClass = 'vencida';
                                     } elseif ($fechaFin instanceof \DateTime && $diferencia !== null && $diferencia <= 2 && $estado === 'pagado') {
                                         $fechaFinClass = 'por-vencer';
@@ -1322,7 +1326,7 @@ $this->registerCss('
                                             
                                             if ($fechaFinObj->format('Y-m-d') === $hoyObj->format('Y-m-d')) {
                                                 echo '<strong>Hoy (' . $fechaFinFormatted . ')</strong>';
-                                            } elseif ($fechaFinObj < $hoyObj && $estado !== 'cancelado') {
+                                            } elseif ($fechaFinObj < $hoyObj && !in_array($estado, $estadosCerrados, true)) {
                                                 $diasVencido = $hoyObj->diff($fechaFinObj)->days;
                                                 echo '<strong>Vencido hace ' . $diasVencido . ' día' . ($diasVencido != 1 ? 's' : '') . ' (' . $fechaFinFormatted . ')</strong>';
                                             } elseif ($diferencia !== null && $diferencia <= 2 && $estado === 'pagado') {
@@ -1406,8 +1410,8 @@ $this->registerCss('
                                     <span class="material-symbols-outlined">description</span>
                                 </a>
                                 <a href="<?= $deleteUrl ?>" class="action-btn delete-btn" 
-                                   title="Cancelar Alquiler"
-                                   data-confirm="¿Estás seguro de cancelar este alquiler?" 
+                                   title="Eliminar Alquiler"
+                                   data-confirm="¿Estás seguro de eliminar este alquiler?" 
                                    data-method="post">
                                     <span class="material-symbols-outlined">delete</span>
                                 </a>
@@ -1764,6 +1768,7 @@ $this->registerCss('
                             <option value="pendiente">Pendiente</option>
                             <option value="pagado">Pagado</option>
                             <option value="reservado">Reservado</option>
+                            <option value="finalizado">Finalizado</option>
                             <option value="cancelado">Cancelado</option>
                         </select>
                     </div>
@@ -2579,6 +2584,7 @@ function renderConflictsList(rentals) {
         pagado: 'bg-success',
         pendiente: 'bg-warning text-dark',
         reservado: 'bg-info text-dark',
+        finalizado: 'bg-dark',
         cancelado: 'bg-danger'
     };
 
@@ -2730,6 +2736,7 @@ function renderOverdueList(rentals) {
         pagado: 'bg-success',
         pendiente: 'bg-warning text-dark',
         reservado: 'bg-info text-dark',
+        finalizado: 'bg-dark',
         cancelado: 'bg-danger'
     };
 

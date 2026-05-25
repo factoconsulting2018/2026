@@ -54,7 +54,7 @@ class CarAvailability
     {
         $query = Rental::find()
             ->where(['car_id' => $carId])
-            ->andWhere(['!=', 'estado_pago', 'cancelado'])
+            ->andWhere(['not in', 'estado_pago', ['cancelado', 'finalizado']])
             ->andWhere(['is_async' => 0])
             ->andWhere(self::noOverlapCondition($startDate, $endDate));
 
@@ -78,7 +78,7 @@ class CarAvailability
 
         $rentals = Rental::find()
             ->where(['car_id' => $carId])
-            ->andWhere(['!=', 'estado_pago', 'cancelado'])
+            ->andWhere(['not in', 'estado_pago', ['cancelado', 'finalizado']])
             ->andWhere(['is_async' => 0])
             ->andWhere(['<=', 'fecha_inicio', $endOfMonth])
             ->andWhere([
@@ -201,7 +201,7 @@ class CarAvailability
     {
         $query = Rental::find()
             ->where(['car_id' => $carId])
-            ->andWhere(['!=', 'estado_pago', 'cancelado'])
+            ->andWhere(['not in', 'estado_pago', ['cancelado', 'finalizado']])
             ->andWhere(['is_async' => 0]);
 
         if ($startDate && $endDate) {

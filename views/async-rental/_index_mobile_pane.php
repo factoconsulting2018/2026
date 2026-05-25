@@ -10,6 +10,7 @@ $estadoColors = [
     'pendiente' => 'bg-warning text-dark',
     'pagado' => 'bg-success',
     'reservado' => 'bg-info text-dark',
+    'finalizado' => 'bg-dark',
     'cancelado' => 'bg-danger',
 ];
 $estadoClass = $estadoColors[$estado] ?? 'bg-secondary';

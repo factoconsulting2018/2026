@@ -130,7 +130,7 @@ class Rental extends ActiveRecord
             [['comprobante_pago'], 'string', 'max' => 500],
             [['condiciones_especiales', 'choferes_autorizados'], 'string'],
             [['custom_conditions_html'], 'string'],
-            [['estado_pago'], 'in', 'range' => ['pendiente', 'pagado', 'reservado', 'cancelado']],
+            [['estado_pago'], 'in', 'range' => ['pendiente', 'pagado', 'reservado', 'cancelado', 'finalizado']],
             [['fecha_inicio', 'fecha_final'], 'validateDates'],
             // Mover la validación de disponibilidad al final para que se ejecute después de calcular fecha_final
             [['car_id'], 'validateCarAvailability'],
@@ -571,7 +571,8 @@ class Rental extends ActiveRecord
             'pendiente' => 'Pendiente',
             'pagado' => 'Pagado',
             'reservado' => 'Reservado',
-            'cancelado' => 'Cancelado'
+            'finalizado' => 'Finalizado',
+            'cancelado' => 'Cancelado',
         ];
     }
 

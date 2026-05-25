@@ -69,6 +69,7 @@ $this->params['breadcrumbs'][] = $this->title;
                                         'pendiente' => '<span class="badge bg-warning">Pendiente</span>',
                                         'pagado' => '<span class="badge bg-success">Pagado</span>',
                                         'reservado' => '<span class="badge bg-info">Reservado</span>',
+                                        'finalizado' => '<span class="badge bg-dark">Finalizado</span>',
                                         'cancelado' => '<span class="badge bg-danger">Cancelado</span>',
                                     ];
                                     return $badges[$model->estado_pago] ?? '<span class="badge bg-secondary">' . $model->estado_pago . '</span>';
@@ -116,10 +117,10 @@ $this->params['breadcrumbs'][] = $this->title;
                             Descargar ZIP
                         </button>
 
-                        <?= Html::a('<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">delete</span>Cancelar Orden', ['delete', 'id' => $model->id], [
+                        <?= Html::a('<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">delete</span>Eliminar Alquiler', ['delete', 'id' => $model->id], [
                             'class' => 'btn btn-danger btn-lg',
                             'data' => [
-                                'confirm' => '¿Estás seguro de que quieres cancelar este alquiler?',
+                                'confirm' => '¿Estás seguro de que quieres eliminar este alquiler?',
                                 'method' => 'post',
                             ],
                         ]) ?>

@@ -359,7 +359,8 @@ foreach ($cars as $car) {
                     <?= $form->field($model, 'estado_pago')->dropDownList([
                         'pendiente' => 'Pendiente',
                         'pagado' => 'Pagado',
-                        'reservado' => 'Reservado'
+                        'reservado' => 'Reservado',
+                        'finalizado' => 'Finalizado',
                     ], [
                         'class' => 'form-select',
                         'value' => 'pendiente'

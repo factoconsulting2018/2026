@@ -138,6 +138,7 @@ $formatFechaConDia = static function ($raw) use ($diasSemanaEs) {
                                         'pendiente' => '<span class="badge bg-warning">Pendiente</span>',
                                         'pagado' => '<span class="badge bg-success">Pagado</span>',
                                         'reservado' => '<span class="badge bg-info">Reservado</span>',
+                                        'finalizado' => '<span class="badge bg-dark">Finalizado</span>',
                                         'cancelado' => '<span class="badge bg-danger">Cancelado</span>',
                                     ];
                                     return $badges[$model->estado_pago] ?? '<span class="badge bg-secondary">' . $model->estado_pago . '</span>';
@@ -229,10 +230,10 @@ $formatFechaConDia = static function ($raw) use ($diasSemanaEs) {
                             'target' => '_blank'
                         ]) ?>
 
-                        <?= Html::a('<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">delete</span>Cancelar Alquiler', ['delete', 'id' => $model->id], [
+                        <?= Html::a('<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">delete</span>Eliminar Alquiler', ['delete', 'id' => $model->id], [
                             'class' => 'btn btn-danger btn-lg',
                             'data' => [
-                                'confirm' => '¿Estás seguro de que quieres cancelar este alquiler?',
+                                'confirm' => '¿Estás seguro de que quieres eliminar este alquiler?',
                                 'method' => 'post',
                             ],
                         ]) ?>

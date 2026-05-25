@@ -158,6 +158,7 @@ $this->title = 'Orden de Alquiler #' . $model->rental_id;
                                 'pendiente' => '<span class="badge bg-warning">Pendiente</span>',
                                 'pagado' => '<span class="badge bg-success">Pagado</span>',
                                 'reservado' => '<span class="badge bg-info">Reservado</span>',
+                                'finalizado' => '<span class="badge bg-dark">Finalizado</span>',
                                 'cancelado' => '<span class="badge bg-danger">Cancelado</span>',
                             ];
                             echo $badges[$model->estado_pago] ?? '<span class="badge bg-secondary">' . $model->estado_pago . '</span>';

@@ -284,10 +284,10 @@ class RentalController extends Controller
                 Car::syncStatusFromRentals($deletedCarId);
             }
 
-            Yii::$app->session->setFlash('success', '🗑️ Alquiler eliminado exitosamente');
+            Yii::$app->session->setFlash('success', '🗑️ El alquiler fue anulado correctamente');
         } catch (\Exception $e) {
             $transaction->rollBack();
-            Yii::$app->session->setFlash('error', '❌ Error al eliminar el alquiler: ' . $e->getMessage());
+            Yii::$app->session->setFlash('error', '❌ Error al anular el alquiler: ' . $e->getMessage());
             Yii::error('Error en actionDelete: ' . $e->getMessage(), 'rental');
         }
         
@@ -317,7 +317,7 @@ class RentalController extends Controller
             $model = $this->findModel($rentalId);
             
             // Validar estados permitidos
-            $allowedStatuses = ['pendiente', 'pagado', 'reservado', 'cancelado'];
+            $allowedStatuses = ['pendiente', 'pagado', 'reservado', 'cancelado', 'finalizado'];
             if (!in_array($newStatus, $allowedStatuses)) {
                 return [
                     'success' => false,
@@ -821,7 +821,7 @@ class RentalController extends Controller
             ->with(['client', 'car'])
             ->where(['car_id' => $carId])
             ->andWhere(['is_async' => 0])
-            ->andWhere(['!=', 'estado_pago', 'cancelado'])
+            ->andWhere(['not in', 'estado_pago', ['cancelado', 'finalizado']])
             ->andWhere(['swapped_to_rental_id' => null])
             ->andWhere([
                 'not',
@@ -879,7 +879,7 @@ class RentalController extends Controller
         $rentals = Rental::find()
             ->with(['client', 'car'])
             ->where(['is_async' => 0])
-            ->andWhere(['not in', 'estado_pago', ['cancelado', 'pagado']])
+            ->andWhere(['not in', 'estado_pago', ['cancelado', 'pagado', 'finalizado']])
             ->andWhere(['swapped_to_rental_id' => null])
             ->andWhere(['<', 'fecha_final', $today])
             ->orderBy(['fecha_final' => SORT_ASC])

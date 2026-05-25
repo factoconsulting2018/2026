@@ -866,6 +866,8 @@ $this->registerCss('
                         <option value="pendiente" <?= $status === 'pendiente' ? 'selected' : '' ?>>Pendiente</option>
                         <option value="pagado" <?= $status === 'pagado' ? 'selected' : '' ?>>Pagado</option>
                         <option value="reservado" <?= $status === 'reservado' ? 'selected' : '' ?>>Reservado</option>
+                        <option value="finalizado" <?= $status === 'finalizado' ? 'selected' : '' ?>>Finalizado</option>
+                        <option value="cancelado" <?= $status === 'cancelado' ? 'selected' : '' ?>>Cancelado</option>
                     </select>
                 </div>
                 <div class="col-md-3 d-flex align-items-end">
@@ -947,7 +949,7 @@ $this->registerCss('
                             $diferencia = $fechaFin ? $hoy->diff($fechaFin)->days : null;
                             
                             $rowClass = 'rental-row';
-                            if ($fechaFin && $fechaFin < $hoy && $estado !== 'cancelado') {
+                            if ($fechaFin && $fechaFin < $hoy && !in_array($estado, ['cancelado', 'pagado', 'finalizado'], true)) {
                                 $rowClass .= ' expired';
                             } elseif ($diferencia && $diferencia <= 2 && $estado === 'pagado') {
                                 $rowClass .= ' expiring';
@@ -1007,7 +1009,7 @@ $this->registerCss('
                                                 ?>
                                         </span>
                                 </div>
-                                        <div class="end-date <?= $fechaFin && $fechaFin < $hoy && $estado !== 'cancelado' ? 'expired' : ($diferencia && $diferencia <= 2 && $estado === 'pagado' ? 'expiring' : '') ?>">
+                                        <div class="end-date <?= $fechaFin && $fechaFin < $hoy && !in_array($estado, ['cancelado', 'pagado', 'finalizado'], true) ? 'expired' : ($diferencia && $diferencia <= 2 && $estado === 'pagado' ? 'expiring' : '') ?>">
                                             <span class="material-symbols-outlined">stop</span>
                                             <span>
                                                 <?php
@@ -1018,7 +1020,7 @@ $this->registerCss('
                                                     
                                                     if ($fechaFinObj->format('Y-m-d') === $hoyObj->format('Y-m-d')) {
                                                         echo '<strong>Hoy (' . $fechaFinFormatted . ')</strong>';
-                                                    } elseif ($fechaFinObj < $hoyObj && $estado !== 'cancelado') {
+                                                    } elseif ($fechaFinObj < $hoyObj && !in_array($estado, ['cancelado', 'pagado', 'finalizado'], true)) {
                                                         $diasVencido = $hoyObj->diff($fechaFinObj)->days;
                                                         echo '<strong>Vencido hace ' . $diasVencido . ' día' . ($diasVencido != 1 ? 's' : '') . ' (' . $fechaFinFormatted . ')</strong>';
                                                     } elseif ($diferencia && $diferencia <= 2 && $estado === 'pagado') {
@@ -1108,8 +1110,8 @@ $this->registerCss('
                                             <span class="material-symbols-outlined">public</span>
                                         </button>
                                         <a href="<?= Url::to(['delete', 'id' => $model->id]) ?>" class="action-btn delete-btn" 
-                                           title="Cancelar Alquiler"
-                                           data-confirm="¿Estás seguro de cancelar este alquiler?" 
+                                           title="Eliminar Alquiler"
+                                           data-confirm="¿Estás seguro de eliminar este alquiler?" 
                                            data-method="post">
                                             <span class="material-symbols-outlined">delete</span>
                             </a>
@@ -1251,7 +1253,7 @@ $this->registerCss('
                                             
                                             if ($fechaFinObj->format('Y-m-d') === $hoyObj->format('Y-m-d')) {
                                                 echo '<strong>Hoy (' . $fechaFinFormatted . ')</strong>';
-                                            } elseif ($fechaFinObj < $hoyObj && $estado !== 'cancelado') {
+                                            } elseif ($fechaFinObj < $hoyObj && !in_array($estado, ['cancelado', 'pagado', 'finalizado'], true)) {
                                                 $diasVencido = $hoyObj->diff($fechaFinObj)->days;
                                                 echo '<strong>Vencido hace ' . $diasVencido . ' día' . ($diasVencido != 1 ? 's' : '') . ' (' . $fechaFinFormatted . ')</strong>';
                                             } elseif ($diferencia && $diferencia <= 2 && $estado === 'pagado') {
@@ -1342,8 +1344,8 @@ $this->registerCss('
                                     <span class="material-symbols-outlined">public</span>
                                 </button>
                                 <a href="<?= $deleteUrl ?>" class="action-icon delete-icon" 
-                                   title="Cancelar Alquiler"
-                                   data-confirm="¿Estás seguro de cancelar este alquiler?" 
+                                   title="Eliminar Alquiler"
+                                   data-confirm="¿Estás seguro de eliminar este alquiler?" 
                                    data-method="post">
                                     <span class="material-symbols-outlined">delete</span>
                                 </a>
@@ -1490,6 +1492,7 @@ $this->registerCss('
                             <option value="pendiente">Pendiente</option>
                             <option value="pagado">Pagado</option>
                             <option value="reservado">Reservado</option>
+                            <option value="finalizado">Finalizado</option>
                             <option value="cancelado">Cancelado</option>
                         </select>
                     </div>

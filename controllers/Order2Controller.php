@@ -123,7 +123,7 @@ class Order2Controller extends Controller
         $model = $this->findModel($id);
         $model->delete();
 
-        Yii::$app->session->setFlash('success', '🗑️ Alquiler eliminado exitosamente');
+        Yii::$app->session->setFlash('success', '🗑️ El alquiler fue anulado correctamente');
         return $this->redirect(['index']);
     }
 

@@ -80,6 +80,7 @@ $gridColumns = [
                 'pendiente' => 'badge bg-warning text-dark',
                 'pagado' => 'badge bg-success',
                 'reservado' => 'badge bg-info text-dark',
+                'finalizado' => 'badge bg-dark',
                 'cancelado' => 'badge bg-danger',
             ];
             $class = $colors[$model->estado_pago] ?? 'badge bg-secondary';

@@ -58,6 +58,19 @@
     opacity: 0.9;
 }
 
+/* Estado: Finalizado - GRIS OSCURO (cerrado, sin afectar disponibilidad) */
+.rental-table tbody tr.estado-finalizado {
+    background-color: rgba(33, 37, 41, 0.07) !important;
+    border-left-color: #212529 !important;
+    opacity: 0.85;
+}
+
+.rental-table tbody tr.estado-finalizado:hover {
+    background-color: rgba(33, 37, 41, 0.15) !important;
+    transform: translateX(2px);
+    box-shadow: 0 2px 8px rgba(33, 37, 41, 0.25);
+}
+
 /* Estado: Completado - VERDE OSCURO */
 .rental-table tbody tr.estado-completado {
     background-color: rgba(25, 135, 84, 0.1) !important;

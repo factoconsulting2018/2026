@@ -227,6 +227,7 @@ $this->params['breadcrumbs'][] = $this->title;
                                         'pagado' => 'bg-success',
                                         'pendiente' => 'bg-warning text-dark',
                                         'reservado' => 'bg-info text-dark',
+                                        'finalizado' => 'bg-dark',
                                         'cancelado' => 'bg-danger',
                                     ];
                                     $badge = $badges[$estado] ?? 'bg-secondary';
@@ -265,6 +266,7 @@ $this->params['breadcrumbs'][] = $this->title;
                                     'pagado' => 'bg-success',
                                     'pendiente' => 'bg-warning text-dark',
                                     'reservado' => 'bg-info text-dark',
+                                    'finalizado' => 'bg-dark',
                                     'cancelado' => 'bg-danger',
                                 ];
                                 $badgeMobile = $badgesMobile[$estadoMobile] ?? 'bg-secondary';

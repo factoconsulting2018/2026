@@ -173,6 +173,7 @@ if (!empty($model->fecha_correapartir)) {
             'pendiente' => 'Pendiente',
             'pagado' => 'Pagado',
             'reservado' => 'Reservado',
+            'finalizado' => 'Finalizado',
             'cancelado' => 'Cancelado',
         ], ['prompt' => 'Seleccionar estado...']) ?>
     </div>

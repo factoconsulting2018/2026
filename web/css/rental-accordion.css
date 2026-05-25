@@ -148,8 +148,13 @@
     color: #ffffff;
 }
 
+.accordion-status-finalizado {
+    background: #212529;
+    color: #ffffff;
+}
+
 /* Estado desconocido / legado (sin clase de color) */
-.accordion-status-badge:not([class*="accordion-status-pendiente"]):not([class*="accordion-status-pagado"]):not([class*="accordion-status-reservado"]):not([class*="accordion-status-cancelado"]) {
+.accordion-status-badge:not([class*="accordion-status-pendiente"]):not([class*="accordion-status-pagado"]):not([class*="accordion-status-reservado"]):not([class*="accordion-status-cancelado"]):not([class*="accordion-status-finalizado"]) {
     background: #495057;
     color: #ffffff;
 }
