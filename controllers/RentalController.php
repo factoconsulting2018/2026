@@ -45,6 +45,7 @@ class RentalController extends Controller
                     'swap-vehicle' => ['POST'],
                     'swap-vehicle-data' => ['GET'],
                     'pdf-choices' => ['GET'],
+                    'overdue-rentals' => ['GET'],
                 ],
             ],
         ];
@@ -729,18 +730,29 @@ class RentalController extends Controller
                 $endDate = $startDateTime->format('Y-m-d');
             }
             
-            // Obtener todos los vehículos (excepto fuera de servicio)
-            $allCars = Car::find()->where(['!=', 'status', 'fuera_servicio'])->all();
-            
+            // Sincronizar status de todos los vehículos para que no contaminen el filtro
+            // (rentas viejas en "reservado" sin cerrar dejaban carros como "alquilado").
+            try {
+                Car::syncAllStatuses();
+            } catch (\Throwable $e) {
+                Yii::error('syncAllStatuses falló: ' . $e->getMessage(), 'rental');
+            }
+
+            // Excluir solo estados manuales duros: fuera_servicio y mantenimiento.
+            // El estado "alquilado" se ignora a propósito; la única fuente de verdad
+            // sobre disponibilidad para el rango pedido es CarAvailability::isCarAvailable.
+            $allCars = Car::find()
+                ->where(['not in', 'status', ['fuera_servicio', 'mantenimiento']])
+                ->all();
+
             $availableCars = [];
             foreach ($allCars as $car) {
-                // Verificar disponibilidad usando CarAvailability
                 $isAvailable = \app\models\CarAvailability::isCarAvailable(
-                    $car->id, 
-                    $startDate, 
+                    $car->id,
+                    $startDate,
                     $endDate
                 );
-                
+
                 if ($isAvailable) {
                     $availableCars[] = [
                         'id' => $car->id,
@@ -770,6 +782,60 @@ class RentalController extends Controller
                 'message' => 'Error al obtener vehículos disponibles: ' . $e->getMessage()
             ];
         }
+    }
+
+    /**
+     * Listado JSON de órdenes vencidas (fecha_final < hoy, no canceladas, no pagadas
+     * y no reemplazadas). Sirve al modal "Órdenes que requieren atención".
+     */
+    public function actionOverdueRentals()
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+
+        $today = date('Y-m-d');
+        $rentals = Rental::find()
+            ->with(['client', 'car'])
+            ->where(['is_async' => 0])
+            ->andWhere(['not in', 'estado_pago', ['cancelado', 'pagado']])
+            ->andWhere(['swapped_to_rental_id' => null])
+            ->andWhere(['<', 'fecha_final', $today])
+            ->orderBy(['fecha_final' => SORT_ASC])
+            ->all();
+
+        $items = [];
+        $hoy = new \DateTime($today);
+        foreach ($rentals as $rental) {
+            $fin = \DateTime::createFromFormat('Y-m-d', substr((string) $rental->fecha_final, 0, 10));
+            if (!$fin) {
+                continue;
+            }
+            $diasVencido = (int) $hoy->diff($fin)->days;
+            $client = $rental->client;
+            $car = $rental->car;
+            $items[] = [
+                'id' => $rental->id,
+                'rental_id' => $rental->rental_id ?: ('R' . $rental->id),
+                'fecha_inicio' => $rental->fecha_inicio,
+                'fecha_final' => $rental->fecha_final,
+                'estado_pago' => $rental->estado_pago,
+                'total_precio' => (float) $rental->total_precio,
+                'dias_vencido' => $diasVencido,
+                'client_name' => $client ? ($client->full_name ?? $client->nombre) : 'Sin cliente',
+                'client_phone' => $client ? ($client->whatsapp ?: $client->telefono ?: $client->celular ?: '') : '',
+                'car_name' => $car ? $car->nombre : 'N/A',
+                'car_placa' => $car ? (string) ($car->placa ?? '') : '',
+                'view_url' => \yii\helpers\Url::to(['view', 'id' => $rental->id]),
+                'update_url' => \yii\helpers\Url::to(['update', 'id' => $rental->id]),
+                'pdf_url' => \yii\helpers\Url::to(['/pdf/rental-order', 'id' => $rental->id]),
+            ];
+        }
+
+        return [
+            'success' => true,
+            'today' => $today,
+            'count' => count($items),
+            'rentals' => $items,
+        ];
     }
 
     /**

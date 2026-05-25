@@ -788,9 +788,20 @@ $this->registerCss('
 ?>
 
 <div class="rental-index">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <h1><span class="material-symbols-outlined" style="font-size: 32px; vertical-align: middle; margin-right: 8px;">receipt_long</span><?= Html::encode($this->title) ?></h1>
-        <?= Html::a('<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">add</span>Nuevo Alquiler', ['create'], ['class' => 'btn btn-success']) ?>
+        <div class="d-flex gap-2 flex-wrap">
+            <button type="button"
+                    id="overdueRentalsBtn"
+                    class="btn btn-outline-danger position-relative d-none"
+                    onclick="openOverdueRentalsModal()"
+                    title="Órdenes vencidas que requieren atención">
+                <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">notification_important</span>
+                Requieren atención
+                <span id="overdueRentalsBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">0</span>
+            </button>
+            <?= Html::a('<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">add</span>Nuevo Alquiler', ['create'], ['class' => 'btn btn-success']) ?>
+        </div>
     </div>
 
     <!-- Sistema de Tabs -->
@@ -1649,6 +1660,43 @@ $this->registerCss('
     </div>
 </div>
 
+<!-- Modal "Órdenes que requieren atención" -->
+<div class="modal fade" id="overdueRentalsModal" tabindex="-1" aria-labelledby="overdueRentalsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="overdueRentalsModalLabel">
+                    <span class="material-symbols-outlined" style="font-size:22px;vertical-align:middle;margin-right:6px;">notification_important</span>
+                    Órdenes que requieren atención
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small mb-2">
+                    Alquileres con fecha final vencida y estado distinto a "Pagado" o "Cancelado".
+                    Cierra cada orden marcándola Pagado o Cancelado para que el sistema libere correctamente los vehículos.
+                </p>
+                <div id="overdueRentalsLoading" class="text-center py-4">
+                    <div class="spinner-border text-danger" role="status"><span class="visually-hidden">Cargando...</span></div>
+                </div>
+                <div id="overdueRentalsError" class="alert alert-danger d-none"></div>
+                <div id="overdueRentalsEmpty" class="text-center py-4 d-none">
+                    <span class="material-symbols-outlined" style="font-size:48px;color:#28a745;">verified</span>
+                    <p class="mb-0 text-success fw-bold">No hay órdenes vencidas pendientes. Todo en orden.</p>
+                </div>
+                <div id="overdueRentalsList"></div>
+            </div>
+            <div class="modal-footer d-flex justify-content-between">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="overdueDontShowToday">
+                    <label class="form-check-label small" for="overdueDontShowToday">No mostrar de nuevo hoy</label>
+                </div>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Modal para cambiar estado de pago -->
 <div class="modal fade" id="paymentStatusModal" tabindex="-1" aria-labelledby="paymentStatusModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
@@ -2413,6 +2461,213 @@ const SWAP_VEHICLE_DATA_URL = <?= json_encode(Url::to(['swap-vehicle-data'])) ?>
 const SWAP_VEHICLE_POST_URL = <?= json_encode(Url::to(['swap-vehicle'])) ?>;
 const PDF_CHOICES_URL = <?= json_encode(Url::to(['pdf-choices'])) ?>;
 const GET_AVAILABLE_CARS_URL = <?= json_encode(Url::to(['get-available-cars'])) ?>;
+const OVERDUE_RENTALS_URL = <?= json_encode(Url::to(['overdue-rentals'])) ?>;
+const UPDATE_PAYMENT_STATUS_URL = <?= json_encode(Url::to(['update-payment-status'])) ?>;
+const OVERDUE_TODAY_KEY = 'overdueRentalsDismissed:' + (new Date().toISOString().slice(0, 10));
+
+let overdueRentalsModalInstance = null;
+
+function fetchOverdueRentals() {
+    return fetch(OVERDUE_RENTALS_URL, { headers: { 'Accept': 'application/json' } })
+        .then(r => r.json())
+        .catch(() => ({ success: false, count: 0, rentals: [] }));
+}
+
+function refreshOverdueBadge() {
+    fetchOverdueRentals().then(data => {
+        const btn = document.getElementById('overdueRentalsBtn');
+        const badge = document.getElementById('overdueRentalsBadge');
+        if (!btn || !badge) return;
+        const count = (data && data.success) ? (data.count || 0) : 0;
+        if (count > 0) {
+            badge.textContent = String(count);
+            btn.classList.remove('d-none');
+        } else {
+            btn.classList.add('d-none');
+        }
+        return { data, count };
+    });
+}
+
+function renderOverdueList(rentals) {
+    const list = document.getElementById('overdueRentalsList');
+    const empty = document.getElementById('overdueRentalsEmpty');
+    const escapeHtml = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const fmtDate = d => d ? new Date(d).toLocaleDateString('es-CR') : '—';
+    const fmtMoney = n => '₡' + (Number(n) || 0).toLocaleString('es-CR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const statusClass = {
+        pagado: 'bg-success',
+        pendiente: 'bg-warning text-dark',
+        reservado: 'bg-info text-dark',
+        cancelado: 'bg-danger'
+    };
+
+    if (!rentals || rentals.length === 0) {
+        list.innerHTML = '';
+        empty.classList.remove('d-none');
+        return;
+    }
+    empty.classList.add('d-none');
+    list.innerHTML = rentals.map(r => `
+        <div class="card mb-2 shadow-sm border-danger" data-rental-id="${r.id}">
+            <div class="card-body p-3">
+                <div class="d-flex justify-content-between align-items-start flex-wrap mb-2">
+                    <div>
+                        <strong class="me-2">${escapeHtml(r.rental_id)}</strong>
+                        <span class="badge ${statusClass[r.estado_pago] || 'bg-secondary'}">${escapeHtml(r.estado_pago)}</span>
+                        <span class="badge bg-danger ms-1">Vencido hace ${r.dias_vencido} día${r.dias_vencido === 1 ? '' : 's'}</span>
+                    </div>
+                    <strong class="text-success">${fmtMoney(r.total_precio)}</strong>
+                </div>
+                <div class="row small text-muted mb-2">
+                    <div class="col-md-6">
+                        <span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;">person</span>
+                        ${escapeHtml(r.client_name)}${r.client_phone ? ' · ' + escapeHtml(r.client_phone) : ''}
+                    </div>
+                    <div class="col-md-6">
+                        <span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;">directions_car</span>
+                        ${escapeHtml(r.car_name)}${r.car_placa ? ' (' + escapeHtml(r.car_placa) + ')' : ''}
+                    </div>
+                    <div class="col-md-6">
+                        <span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;">event</span>
+                        ${fmtDate(r.fecha_inicio)} → ${fmtDate(r.fecha_final)}
+                    </div>
+                </div>
+                <div class="d-flex gap-2 flex-wrap">
+                    <button type="button" class="btn btn-sm btn-success" onclick="quickUpdateOverdueStatus(${r.id}, 'pagado', this)">
+                        <span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;">check_circle</span>
+                        Marcar pagado
+                    </button>
+                    <button type="button" class="btn btn-sm btn-danger" onclick="quickUpdateOverdueStatus(${r.id}, 'cancelado', this)">
+                        <span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;">cancel</span>
+                        Cancelar
+                    </button>
+                    <a href="${r.view_url}" class="btn btn-sm btn-outline-primary">
+                        <span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;">visibility</span>
+                        Ver
+                    </a>
+                    <a href="${r.update_url}" class="btn btn-sm btn-outline-secondary">
+                        <span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;">edit</span>
+                        Editar
+                    </a>
+                </div>
+                <div class="quick-status-feedback small mt-2 d-none"></div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function openOverdueRentalsModal() {
+    const modalEl = document.getElementById('overdueRentalsModal');
+    const loading = document.getElementById('overdueRentalsLoading');
+    const errBox = document.getElementById('overdueRentalsError');
+    const list = document.getElementById('overdueRentalsList');
+    const empty = document.getElementById('overdueRentalsEmpty');
+
+    loading.classList.remove('d-none');
+    errBox.classList.add('d-none');
+    empty.classList.add('d-none');
+    list.innerHTML = '';
+
+    if (!overdueRentalsModalInstance && typeof bootstrap !== 'undefined') {
+        overdueRentalsModalInstance = new bootstrap.Modal(modalEl);
+    }
+    overdueRentalsModalInstance ? overdueRentalsModalInstance.show() : (window.jQuery && jQuery(modalEl).modal('show'));
+
+    fetchOverdueRentals().then(data => {
+        loading.classList.add('d-none');
+        if (!data || !data.success) {
+            errBox.textContent = (data && data.message) || 'No se pudo cargar la lista.';
+            errBox.classList.remove('d-none');
+            return;
+        }
+        renderOverdueList(data.rentals || []);
+    });
+}
+
+function quickUpdateOverdueStatus(rentalId, newStatus, btn) {
+    const card = btn.closest('.card');
+    const feedback = card ? card.querySelector('.quick-status-feedback') : null;
+    const allBtns = card ? card.querySelectorAll('button') : [];
+    allBtns.forEach(b => b.disabled = true);
+    if (feedback) {
+        feedback.textContent = 'Actualizando...';
+        feedback.className = 'quick-status-feedback small mt-2 text-muted';
+    }
+
+    const formData = new FormData();
+    formData.append('rentalId', rentalId);
+    formData.append('newStatus', newStatus);
+    formData.append('observaciones', 'Cierre rápido desde modal de órdenes vencidas');
+
+    const csrf = document.querySelector('meta[name="csrf-token"]');
+    const headers = { 'X-Requested-With': 'XMLHttpRequest' };
+    if (csrf) headers['X-CSRF-Token'] = csrf.getAttribute('content');
+
+    fetch(UPDATE_PAYMENT_STATUS_URL, { method: 'POST', body: formData, headers })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                if (card) {
+                    card.classList.add('border-success');
+                    if (feedback) {
+                        feedback.className = 'quick-status-feedback small mt-2 text-success fw-bold';
+                        feedback.textContent = 'Listo. Estado: ' + newStatus + '. Refrescando...';
+                    }
+                    setTimeout(() => card.remove(), 600);
+                }
+                setTimeout(() => {
+                    refreshOverdueBadge();
+                    const remaining = document.querySelectorAll('#overdueRentalsList .card').length;
+                    if (remaining === 0) {
+                        document.getElementById('overdueRentalsEmpty').classList.remove('d-none');
+                    }
+                }, 700);
+            } else {
+                allBtns.forEach(b => b.disabled = false);
+                if (feedback) {
+                    feedback.className = 'quick-status-feedback small mt-2 text-danger';
+                    feedback.textContent = 'Error: ' + (data.message || 'no se pudo actualizar.');
+                }
+            }
+        })
+        .catch(() => {
+            allBtns.forEach(b => b.disabled = false);
+            if (feedback) {
+                feedback.className = 'quick-status-feedback small mt-2 text-danger';
+                feedback.textContent = 'Error de conexión.';
+            }
+        });
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    const dontShowCheckbox = document.getElementById('overdueDontShowToday');
+    if (dontShowCheckbox) {
+        dontShowCheckbox.addEventListener('change', function () {
+            if (this.checked) {
+                try { localStorage.setItem(OVERDUE_TODAY_KEY, '1'); } catch (e) {}
+            } else {
+                try { localStorage.removeItem(OVERDUE_TODAY_KEY); } catch (e) {}
+            }
+        });
+    }
+
+    fetchOverdueRentals().then(data => {
+        const btn = document.getElementById('overdueRentalsBtn');
+        const badge = document.getElementById('overdueRentalsBadge');
+        if (!btn || !badge || !data || !data.success) return;
+        const count = data.count || 0;
+        if (count > 0) {
+            badge.textContent = String(count);
+            btn.classList.remove('d-none');
+            let dismissed = false;
+            try { dismissed = localStorage.getItem(OVERDUE_TODAY_KEY) === '1'; } catch (e) {}
+            if (!dismissed) {
+                setTimeout(() => openOverdueRentalsModal(), 600);
+            }
+        }
+    });
+});
 
 let swapVehicleModalInstance = null;
 let pdfChoiceModalInstance = null;
