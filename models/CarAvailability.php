@@ -11,29 +11,33 @@ class CarAvailability
 {
     /**
      * Condición SQL: el alquiler NO se solapa con el rango solicitado.
-     * Si la orden fue reemplazada, solo bloquea hasta el día anterior a swap_date.
      *
-     * DATE(fecha_final) y el operador <= permiten que una orden que termina el mismo día
-     * calendario que inicia el rango nuevo no bloquee (devolución temprana / cambio de vehículo).
-     * hora_final no se usa en esta comparación.
+     * - Inicio efectivo: si correapartir_enabled = 1 y fecha_correapartir está definida,
+     *   se usa DATE(fecha_correapartir); de lo contrario, fecha_inicio. Así un vehículo
+     *   con una orden marcada con "correapartir" el mismo día del cambio sigue disponible
+     *   hasta esa fecha.
+     * - Fin efectivo: si la orden fue reemplazada (swap), se bloquea solo hasta el día
+     *   anterior a swap_date; de lo contrario, DATE(fecha_final). El operador <= permite
+     *   devoluciones tempranas el mismo día.
      */
     private static function noOverlapCondition($startDate, $endDate): array
     {
         $startDay = substr((string) $startDate, 0, 10);
         $endDay = substr((string) $endDate, 0, 10);
 
+        $effectiveStart = new Expression(
+            'IF(correapartir_enabled = 1 AND fecha_correapartir IS NOT NULL, DATE(fecha_correapartir), DATE(fecha_inicio))'
+        );
+        $effectiveEnd = new Expression(
+            'IF(swapped_to_rental_id IS NOT NULL AND swap_date IS NOT NULL, DATE_SUB(swap_date, INTERVAL 1 DAY), DATE(fecha_final))'
+        );
+
         return [
             'not',
             [
                 'or',
-                ['>=', 'fecha_inicio', $endDay],
-                [
-                    '<=',
-                    new Expression(
-                        'IF(swapped_to_rental_id IS NOT NULL AND swap_date IS NOT NULL, DATE_SUB(swap_date, INTERVAL 1 DAY), DATE(fecha_final))'
-                    ),
-                    $startDay,
-                ],
+                ['>=', $effectiveStart, $endDay],
+                ['<=', $effectiveEnd, $startDay],
             ],
         ];
     }
