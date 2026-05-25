@@ -3,6 +3,7 @@
 /** @var yii\data\ActiveDataProvider $dataProvider */
 /** @var string $status */
 
+use Yii;
 use yii\helpers\Html;
 use yii\helpers\Url;
 use yii\grid\GridView;
@@ -1019,6 +1020,18 @@ $this->registerCss('
                                         </div>
                                         <div class="vehicle-details">
                                             <span class="vehicle-plate">🚗 <?= $model->car ? Html::encode($model->car->placa ?? 'Sin placa') : 'N/A' ?></span>
+                                            <?php if ($model->isSwapped()): ?>
+                                                <?php $repCar = $model->replacementRental->car ?? null; ?>
+                                                <span class="badge bg-warning text-dark ms-1" title="Cambio de vehículo">
+                                                    <span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;">published_with_changes</span>
+                                                    Cambiado<?= $repCar ? ' a ' . Html::encode($repCar->nombre) : '' ?>
+                                                </span>
+                                            <?php elseif ($model->isReplacement()): ?>
+                                                <span class="badge bg-info text-dark ms-1" title="Reemplazo de <?= Html::encode($model->parentRental->rental_id ?? '') ?>">
+                                                    <span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;">sync_alt</span>
+                                                    Reemplazo<?= $model->parentRental ? ' #' . Html::encode($model->parentRental->rental_id) : '' ?>
+                                                </span>
+                                            <?php endif; ?>
                                         </div>
                                     </div>
                                 </div>
@@ -1127,9 +1140,18 @@ $this->registerCss('
                                                 onclick="shareRental(<?= $model->id ?>)">
                                             <span class="material-symbols-outlined">share</span>
                                         </button>
+                                        <?php if ($model->canSwapVehicle()): ?>
+                                        <button type="button" class="action-btn swap-vehicle-btn"
+                                                title="Cambiar vehículo"
+                                                data-rental-id="<?= $model->id ?>"
+                                                onclick="openSwapVehicleModal(<?= $model->id ?>)">
+                                            <span class="material-symbols-outlined">directions_car</span>
+                                            <span class="material-symbols-outlined" style="font-size:10px;vertical-align:super;">sync</span>
+                                        </button>
+                                        <?php endif; ?>
                                         <a href="<?= Url::to(['/pdf/rental-order', 'id' => $model->id]) ?>" class="action-btn pdf-btn" 
-                                           title="Descargar PDF de Orden (TCPDF)" 
-                                           onclick="downloadPdfDirect(this.href); return false;">
+                                           title="Descargar PDF de Orden" 
+                                           onclick="openPdfChoice(<?= $model->id ?>, <?= ($model->isSwapped() || $model->isReplacement()) ? 'true' : 'false' ?>); return false;">
                                             <span class="material-symbols-outlined">description</span>
                                         </a>
                                         <a href="<?= Url::to(['delete', 'id' => $model->id]) ?>" class="action-btn delete-btn" 
@@ -1228,6 +1250,11 @@ $this->registerCss('
                                 echo $model->car ? Html::encode($model->car->nombre . ' (' . $model->car->placa . ')') : 'N/A';
                                 ?>
                             </div>
+                            <?php if ($model->isSwapped()): ?>
+                                <span class="badge bg-warning text-dark mt-1">Cambiado</span>
+                            <?php elseif ($model->isReplacement()): ?>
+                                <span class="badge bg-info text-dark mt-1">Reemplazo</span>
+                            <?php endif; ?>
                         </div>
                     </div>
                     <div class="accordion-toggle-icon">
@@ -1355,9 +1382,17 @@ $this->registerCss('
                                         onclick="shareRental(<?= $model->id ?>)">
                                     <span class="material-symbols-outlined">share</span>
                                 </button>
+                                <?php if ($model->canSwapVehicle()): ?>
+                                <button type="button" class="action-btn swap-vehicle-btn"
+                                        title="Cambiar vehículo"
+                                        onclick="openSwapVehicleModal(<?= $model->id ?>)">
+                                    <span class="material-symbols-outlined">directions_car</span>
+                                    <span class="material-symbols-outlined" style="font-size:10px;vertical-align:super;">sync</span>
+                                </button>
+                                <?php endif; ?>
                                 <a href="<?= Url::to(['/pdf/rental-order', 'id' => $model->id]) ?>" class="action-btn pdf-btn" 
-                                   title="Descargar PDF de Orden (TCPDF)" 
-                                   onclick="downloadPdfDirect(this.href); return false;">
+                                   title="Descargar PDF de Orden" 
+                                   onclick="openPdfChoice(<?= $model->id ?>, <?= ($model->isSwapped() || $model->isReplacement()) ? 'true' : 'false' ?>); return false;">
                                     <span class="material-symbols-outlined">description</span>
                                 </a>
                                 <a href="<?= $deleteUrl ?>" class="action-btn delete-btn" 
@@ -1501,6 +1536,115 @@ $this->registerCss('
                 <small class="text-muted d-block">
                     <span class="text-warning">⏰</span> <strong>Por vencer:</strong> Próximo a vencer (2 días o menos)
                 </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal cambio de vehículo -->
+<div class="modal fade" id="swapVehicleModal" tabindex="-1" aria-labelledby="swapVehicleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="swapVehicleModalLabel">
+                    <span class="material-symbols-outlined" style="font-size:20px;vertical-align:middle;margin-right:8px;">sync_alt</span>
+                    Cambio de vehículo
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <div id="swapVehicleLoading" class="text-center py-4 d-none">
+                    <div class="spinner-border text-primary" role="status"></div>
+                </div>
+                <form id="swapVehicleForm" class="d-none">
+                    <?= Html::hiddenInput(Yii::$app->request->csrfParam, Yii::$app->request->getCsrfToken()) ?>
+                    <input type="hidden" id="swapOriginalRentalId" name="id">
+                    <p class="text-muted small" id="swapVehicleSummary"></p>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Vehículo actual</label>
+                            <input type="text" class="form-control" id="swapCurrentCar" readonly>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="swapNewCarId" class="form-label">Vehículo nuevo *</label>
+                            <select class="form-select" id="swapNewCarId" name="new_car_id" required></select>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="swapDate" class="form-label">Fecha del cambio *</label>
+                            <input type="date" class="form-control" id="swapDate" name="swap_date" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="swapFechaFinal" class="form-label">Fecha final del alquiler</label>
+                            <input type="date" class="form-control" id="swapFechaFinal" name="fecha_final">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="swapReason" class="form-label">Motivo del cambio *</label>
+                        <textarea class="form-control" id="swapReason" name="swap_reason" rows="2" required placeholder="Ej.: falla mecánica, cliente solicita otro modelo"></textarea>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label for="swapPrecioDia" class="form-label">Precio por día</label>
+                            <input type="number" step="0.01" class="form-control" id="swapPrecioDia" name="precio_por_dia">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="swapLugarEntrega" class="form-label">Lugar entrega</label>
+                            <input type="text" class="form-control" id="swapLugarEntrega" name="lugar_entrega">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="swapLugarRetiro" class="form-label">Lugar retiro</label>
+                            <input type="text" class="form-control" id="swapLugarRetiro" name="lugar_retiro">
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="swapComprobante" class="form-label">Comprobante de pago</label>
+                            <input type="text" class="form-control" id="swapComprobante" name="comprobante_pago">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="swapEjecutivo" class="form-label">Ejecutivo</label>
+                            <input type="text" class="form-control" id="swapEjecutivo" name="ejecutivo">
+                        </div>
+                    </div>
+                </form>
+                <div id="swapVehicleError" class="alert alert-danger d-none"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="swapVehicleSubmitBtn" onclick="submitSwapVehicleForm()">
+                    <span class="material-symbols-outlined" style="font-size:18px;vertical-align:middle;">check</span>
+                    Confirmar cambio
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal selección de PDF (original / cambio) -->
+<div class="modal fade" id="pdfChoiceModal" tabindex="-1" aria-labelledby="pdfChoiceModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="pdfChoiceModalLabel">
+                    <span class="material-symbols-outlined" style="font-size:20px;vertical-align:middle;margin-right:8px;">description</span>
+                    Descargar PDF
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body text-center">
+                <p class="text-muted">Esta orden tiene cambio de vehículo. Elija qué PDF abrir:</p>
+                <div class="d-grid gap-2">
+                    <a href="#" id="pdfChoiceOriginal" class="btn btn-outline-primary btn-lg" target="_blank" rel="noopener">
+                        <span class="material-symbols-outlined" style="vertical-align:middle;">history</span>
+                        PDF Original <small id="pdfChoiceOriginalLabel" class="d-block"></small>
+                    </a>
+                    <a href="#" id="pdfChoiceSwap" class="btn btn-outline-warning btn-lg text-dark" target="_blank" rel="noopener">
+                        <span class="material-symbols-outlined" style="vertical-align:middle;">published_with_changes</span>
+                        PDF Cambio <small id="pdfChoiceSwapLabel" class="d-block"></small>
+                    </a>
+                </div>
             </div>
         </div>
     </div>
@@ -2264,6 +2408,149 @@ function renderCarMiniCalendar(carData, monthStr) {
     
     html += '</div>';
     return html;
+}
+
+const SWAP_VEHICLE_DATA_URL = <?= json_encode(Url::to(['swap-vehicle-data'])) ?>;
+const SWAP_VEHICLE_POST_URL = <?= json_encode(Url::to(['swap-vehicle'])) ?>;
+const PDF_CHOICES_URL = <?= json_encode(Url::to(['pdf-choices'])) ?>;
+const GET_AVAILABLE_CARS_URL = <?= json_encode(Url::to(['get-available-cars'])) ?>;
+
+let swapVehicleModalInstance = null;
+let pdfChoiceModalInstance = null;
+
+function openSwapVehicleModal(rentalId) {
+    const modalEl = document.getElementById('swapVehicleModal');
+    const form = document.getElementById('swapVehicleForm');
+    const loading = document.getElementById('swapVehicleLoading');
+    const errBox = document.getElementById('swapVehicleError');
+    errBox.classList.add('d-none');
+    form.classList.add('d-none');
+    loading.classList.remove('d-none');
+
+    if (!swapVehicleModalInstance && typeof bootstrap !== 'undefined') {
+        swapVehicleModalInstance = new bootstrap.Modal(modalEl);
+    }
+    swapVehicleModalInstance ? swapVehicleModalInstance.show() : $(modalEl).modal('show');
+
+    fetch(SWAP_VEHICLE_DATA_URL + '?id=' + rentalId, { headers: { 'Accept': 'application/json' } })
+        .then(r => r.json())
+        .then(data => {
+            loading.classList.add('d-none');
+            if (!data.success) {
+                errBox.textContent = data.message || 'No se pudo cargar la orden.';
+                errBox.classList.remove('d-none');
+                return;
+            }
+            const r = data.rental;
+            document.getElementById('swapOriginalRentalId').value = r.id;
+            document.getElementById('swapCurrentCar').value = r.car_name;
+            document.getElementById('swapDate').value = r.fecha_inicio;
+            document.getElementById('swapDate').min = r.fecha_inicio;
+            document.getElementById('swapDate').max = r.fecha_final;
+            document.getElementById('swapFechaFinal').value = r.fecha_final;
+            document.getElementById('swapPrecioDia').value = r.precio_por_dia;
+            document.getElementById('swapLugarEntrega').value = r.lugar_entrega || '';
+            document.getElementById('swapLugarRetiro').value = r.lugar_retiro || '';
+            document.getElementById('swapComprobante').value = r.comprobante_pago || '';
+            document.getElementById('swapEjecutivo').value = r.ejecutivo || '';
+            document.getElementById('swapReason').value = '';
+            document.getElementById('swapVehicleSummary').textContent =
+                'Orden ' + r.rental_id + ' — ' + (r.client_name || '') + '. Se creará una nueva orden; la original no se modifica salvo el registro del cambio.';
+            form.classList.remove('d-none');
+            loadSwapAvailableCars(r.fecha_inicio, r.fecha_final, r.car_id);
+            document.getElementById('swapDate').onchange = function () {
+                const fd = document.getElementById('swapFechaFinal').value;
+                loadSwapAvailableCars(this.value, fd, r.car_id);
+            };
+            document.getElementById('swapFechaFinal').onchange = function () {
+                loadSwapAvailableCars(document.getElementById('swapDate').value, this.value, r.car_id);
+            };
+        })
+        .catch(() => {
+            loading.classList.add('d-none');
+            errBox.textContent = 'Error de conexión al cargar datos.';
+            errBox.classList.remove('d-none');
+        });
+}
+
+function loadSwapAvailableCars(startDate, endDate, excludeCarId) {
+    const sel = document.getElementById('swapNewCarId');
+    sel.innerHTML = '<option value="">Cargando...</option>';
+    if (!startDate || !endDate) return;
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    let duration = Math.max(1, Math.round((end - start) / (86400000)) + 1);
+    fetch(GET_AVAILABLE_CARS_URL + '?start_date=' + encodeURIComponent(startDate) + '&duration=' + duration)
+        .then(r => r.json())
+        .then(data => {
+            sel.innerHTML = '<option value="">Seleccione vehículo</option>';
+            if (data.success && data.data && data.data.available_cars) {
+                data.data.available_cars.forEach(car => {
+                    if (parseInt(car.id, 10) === parseInt(excludeCarId, 10)) return;
+                    const opt = document.createElement('option');
+                    opt.value = car.id;
+                    opt.textContent = car.nombre + ' (' + car.placa + ')';
+                    sel.appendChild(opt);
+                });
+            }
+        });
+}
+
+function submitSwapVehicleForm() {
+    const rentalId = document.getElementById('swapOriginalRentalId').value;
+    const btn = document.getElementById('swapVehicleSubmitBtn');
+    const errBox = document.getElementById('swapVehicleError');
+    errBox.classList.add('d-none');
+    btn.disabled = true;
+
+    const body = new FormData(document.getElementById('swapVehicleForm'));
+    const csrf = document.querySelector('meta[name="csrf-token"]');
+    const headers = { 'X-Requested-With': 'XMLHttpRequest' };
+    if (csrf) headers['X-CSRF-Token'] = csrf.getAttribute('content');
+
+    fetch(SWAP_VEHICLE_POST_URL + '?id=' + rentalId, { method: 'POST', body: body, headers: headers })
+        .then(r => r.json())
+        .then(data => {
+            btn.disabled = false;
+            if (data.success) {
+                if (swapVehicleModalInstance) swapVehicleModalInstance.hide();
+                window.location.reload();
+            } else {
+                errBox.textContent = data.message || 'Error al registrar el cambio.';
+                errBox.classList.remove('d-none');
+            }
+        })
+        .catch(() => {
+            btn.disabled = false;
+            errBox.textContent = 'Error de conexión.';
+            errBox.classList.remove('d-none');
+        });
+}
+
+function openPdfChoice(rentalId, hasSwap) {
+    const pdfUrl = <?= json_encode(Url::to(['/pdf/rental-order'])) ?> + '?id=' + rentalId;
+    if (!hasSwap) {
+        downloadPdfDirect(pdfUrl);
+        return;
+    }
+    fetch(PDF_CHOICES_URL + '?id=' + rentalId, { headers: { 'Accept': 'application/json' } })
+        .then(r => r.json())
+        .then(data => {
+            if (!data.success || !data.has_swap) {
+                downloadPdfDirect(data.original_pdf_url || pdfUrl);
+                return;
+            }
+            document.getElementById('pdfChoiceOriginal').href = data.original_pdf_url;
+            document.getElementById('pdfChoiceSwap').href = data.swap_pdf_url;
+            document.getElementById('pdfChoiceOriginalLabel').textContent = data.original_label || '';
+            document.getElementById('pdfChoiceSwapLabel').textContent = data.swap_label || '';
+            const modalEl = document.getElementById('pdfChoiceModal');
+            if (!pdfChoiceModalInstance && typeof bootstrap !== 'undefined') {
+                pdfChoiceModalInstance = new bootstrap.Modal(modalEl);
+            }
+            pdfChoiceModalInstance ? pdfChoiceModalInstance.show() : $(modalEl).modal('show');
+        })
+        .catch(() => downloadPdfDirect(pdfUrl));
 }
 
 // Función para descargar PDF directamente sin mostrar preview

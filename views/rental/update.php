@@ -23,6 +23,29 @@ $this->params['breadcrumbs'][] = 'Actualizar';
         <?= Html::encode($this->title) ?>
     </h1>
 
+    <?php if ($model->isSwapped()): ?>
+        <?php $rep = $model->replacementRental; ?>
+        <div class="alert alert-warning" role="alert">
+            <strong>Orden con cambio de vehículo registrado.</strong>
+            Esta orden ya fue reemplazada<?= $rep ? ' por la orden <strong>' . Html::encode($rep->rental_id ?: ('R' . $rep->id)) . '</strong>' : '' ?>.
+            <?php if ($model->swap_date): ?>
+                Fecha del cambio: <?= Html::encode(date('d/m/Y', strtotime($model->swap_date))) ?>.
+            <?php endif; ?>
+            <?php if ($model->swap_reason): ?>
+                Motivo: <?= Html::encode($model->swap_reason) ?>.
+            <?php endif; ?>
+            Editar aquí puede afectar el historial; use la orden de reemplazo para ajustes del vehículo nuevo.
+        </div>
+    <?php elseif ($model->isReplacement()): ?>
+        <div class="alert alert-info" role="alert">
+            <strong>Orden de reemplazo.</strong>
+            Referencia a la orden original
+            <?php if ($model->parentRental): ?>
+                <strong><?= Html::encode($model->parentRental->rental_id ?: ('R' . $model->parent_rental_id)) ?></strong>.
+            <?php endif; ?>
+        </div>
+    <?php endif; ?>
+
     <?php $form = ActiveForm::begin([
         'options' => ['class' => 'rental-form'],
         'fieldConfig' => [

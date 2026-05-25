@@ -42,6 +42,9 @@ class RentalController extends Controller
                     'delete' => ['POST'],
                     'update-payment-status' => ['POST'],
                     'get-available-cars' => ['GET'],
+                    'swap-vehicle' => ['POST'],
+                    'swap-vehicle-data' => ['GET'],
+                    'pdf-choices' => ['GET'],
                 ],
             ],
         ];
@@ -79,7 +82,7 @@ class RentalController extends Controller
             ]);
         } else {
             // Solo hacer eager loading si no hay búsqueda
-            $query->with(['client', 'car']);
+            $query->with(['client', 'car', 'parentRental', 'replacementRental', 'replacementRental.car']);
         }
         
         // Asegurar que todos los alquileres tengan rental_id
@@ -766,6 +769,227 @@ class RentalController extends Controller
                 'success' => false,
                 'message' => 'Error al obtener vehículos disponibles: ' . $e->getMessage()
             ];
+        }
+    }
+
+    /**
+     * Datos para el modal de cambio de vehículo (GET JSON)
+     */
+    public function actionSwapVehicleData($id)
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        $original = $this->findModel($id);
+
+        if (!$original->canSwapVehicle()) {
+            return [
+                'success' => false,
+                'message' => 'Esta orden no permite cambio de vehículo (ya fue reemplazada, es un reemplazo, está cancelada o es asincrónica).',
+            ];
+        }
+
+        $original->populateRelation('car', $original->car ?? Car::findOne($original->car_id));
+        $original->populateRelation('client', $original->client ?? Client::findOne($original->client_id));
+
+        return [
+            'success' => true,
+            'rental' => [
+                'id' => $original->id,
+                'rental_id' => $original->rental_id ?: ('R' . $original->id),
+                'car_id' => $original->car_id,
+                'car_name' => $original->car ? ($original->car->nombre . ' (' . $original->car->placa . ')') : '',
+                'client_name' => $original->client ? ($original->client->full_name ?? $original->client->nombre) : '',
+                'fecha_inicio' => $original->fecha_inicio,
+                'fecha_final' => $original->fecha_final,
+                'precio_por_dia' => $original->precio_por_dia,
+                'lugar_entrega' => $original->lugar_entrega,
+                'lugar_retiro' => $original->lugar_retiro,
+                'comprobante_pago' => $original->comprobante_pago,
+                'ejecutivo' => $original->ejecutivo,
+                'cantidad_dias' => $original->cantidad_dias,
+            ],
+            'swap_vehicle_url' => \yii\helpers\Url::to(['swap-vehicle', 'id' => $original->id]),
+            'available_cars_url' => \yii\helpers\Url::to(['get-available-cars']),
+        ];
+    }
+
+    /**
+     * Registrar cambio de vehículo: nueva orden hija + enlace en la original
+     */
+    public function actionSwapVehicle($id)
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        $original = $this->findModel($id);
+
+        if (!$original->canSwapVehicle()) {
+            return ['success' => false, 'message' => 'Esta orden no permite cambio de vehículo.'];
+        }
+
+        $post = Yii::$app->request->post();
+        $newCarId = (int) ($post['new_car_id'] ?? 0);
+        $swapDate = trim((string) ($post['swap_date'] ?? ''));
+        $swapReason = trim((string) ($post['swap_reason'] ?? ''));
+
+        if ($newCarId <= 0) {
+            return ['success' => false, 'message' => 'Seleccione el vehículo de reemplazo.'];
+        }
+        if ($swapDate === '') {
+            return ['success' => false, 'message' => 'Indique la fecha del cambio.'];
+        }
+        if ($swapReason === '') {
+            return ['success' => false, 'message' => 'Indique el motivo del cambio.'];
+        }
+        if ($newCarId === (int) $original->car_id) {
+            return ['success' => false, 'message' => 'El vehículo nuevo debe ser distinto al actual.'];
+        }
+
+        $fechaFinal = trim((string) ($post['fecha_final'] ?? $original->fecha_final));
+        if (strtotime($swapDate) < strtotime(substr((string) $original->fecha_inicio, 0, 10))) {
+            return ['success' => false, 'message' => 'La fecha de cambio no puede ser anterior al inicio del alquiler.'];
+        }
+        if (strtotime($swapDate) > strtotime(substr((string) $fechaFinal, 0, 10))) {
+            return ['success' => false, 'message' => 'La fecha de cambio no puede ser posterior al fin del alquiler.'];
+        }
+
+        if (!CarAvailability::isCarAvailable($newCarId, $swapDate, $fechaFinal)) {
+            return ['success' => false, 'message' => 'El vehículo seleccionado no está disponible desde la fecha de cambio hasta el fin del alquiler.'];
+        }
+
+        $oldCarId = (int) $original->car_id;
+        $inicio = new \DateTime($swapDate);
+        $fin = new \DateTime($fechaFinal);
+        $cantidadDias = max(1, (int) $inicio->diff($fin)->days + 1);
+
+        $transaction = Yii::$app->db->beginTransaction();
+        try {
+            $overrides = [
+                'car_id' => $newCarId,
+                'fecha_inicio' => $swapDate,
+                'fecha_final' => $fechaFinal,
+                'cantidad_dias' => $cantidadDias,
+                'precio_por_dia' => $post['precio_por_dia'] ?? $original->precio_por_dia,
+                'lugar_entrega' => $post['lugar_entrega'] ?? $original->lugar_entrega,
+                'lugar_retiro' => $post['lugar_retiro'] ?? $original->lugar_retiro,
+                'comprobante_pago' => $post['comprobante_pago'] ?? $original->comprobante_pago,
+                'ejecutivo' => $post['ejecutivo'] ?? $original->ejecutivo,
+            ];
+
+            $replacement = Rental::createReplacementFrom($original, $overrides);
+            if (!$replacement->save()) {
+                $transaction->rollBack();
+                return [
+                    'success' => false,
+                    'message' => 'No se pudo crear la orden de reemplazo: ' . implode(' ', $replacement->getFirstErrors()),
+                ];
+            }
+
+            $original->swapped_to_rental_id = $replacement->id;
+            $original->swap_date = $swapDate;
+            $original->swap_reason = $swapReason;
+            if (!$original->save(false)) {
+                $transaction->rollBack();
+                return ['success' => false, 'message' => 'No se pudo actualizar la orden original.'];
+            }
+
+            $transaction->commit();
+
+            $this->syncCarStatusAfterSwap($oldCarId, $newCarId);
+            $this->generateOrderPdf($replacement->id);
+
+            $oldCar = Car::findOne($oldCarId);
+            $newCar = Car::findOne($newCarId);
+            $msg = sprintf(
+                'Cambio registrado: %s reemplazado por %s desde %s. Nueva orden %s.',
+                $oldCar ? $oldCar->nombre : 'vehículo anterior',
+                $newCar ? $newCar->nombre : 'vehículo nuevo',
+                date('d/m/Y', strtotime($swapDate)),
+                $replacement->rental_id ?: ('R' . $replacement->id)
+            );
+            Yii::$app->session->setFlash('success', '✅ ' . $msg);
+
+            return [
+                'success' => true,
+                'message' => $msg,
+                'replacement_id' => $replacement->id,
+                'replacement_rental_id' => $replacement->rental_id,
+            ];
+        } catch (\Exception $e) {
+            $transaction->rollBack();
+            Yii::error('swap-vehicle: ' . $e->getMessage(), 'rental');
+            return ['success' => false, 'message' => 'Error al registrar el cambio: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * URLs de PDF original y de cambio para el modal de descarga
+     */
+    public function actionPdfChoices($id)
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        $model = $this->findModel($id);
+
+        $buildUrl = static function (int $rentalPk): string {
+            return \yii\helpers\Url::to(['/pdf/rental-order', 'id' => $rentalPk], true);
+        };
+
+        if ($model->isSwapped()) {
+            $replacement = Rental::findOne($model->swapped_to_rental_id);
+            if (!$replacement) {
+                return ['success' => false, 'message' => 'No se encontró la orden de reemplazo.'];
+            }
+            return [
+                'success' => true,
+                'has_swap' => true,
+                'original_pdf_url' => $buildUrl($model->id),
+                'swap_pdf_url' => $buildUrl($replacement->id),
+                'original_label' => $model->rental_id ?: ('R' . $model->id),
+                'swap_label' => $replacement->rental_id ?: ('R' . $replacement->id),
+            ];
+        }
+
+        if ($model->isReplacement() && $model->parentRental) {
+            $parent = $model->parentRental;
+            return [
+                'success' => true,
+                'has_swap' => true,
+                'original_pdf_url' => $buildUrl($parent->id),
+                'swap_pdf_url' => $buildUrl($model->id),
+                'original_label' => $parent->rental_id ?: ('R' . $parent->id),
+                'swap_label' => $model->rental_id ?: ('R' . $model->id),
+            ];
+        }
+
+        return [
+            'success' => true,
+            'has_swap' => false,
+            'original_pdf_url' => $buildUrl($model->id),
+        ];
+    }
+
+    /**
+     * Actualiza estado disponible/alquilado según rentas activas hoy
+     */
+    private function syncCarStatusAfterSwap(int $oldCarId, int $newCarId): void
+    {
+        $this->syncCarAvailabilityStatus($oldCarId);
+        $this->syncCarAvailabilityStatus($newCarId);
+    }
+
+    private function syncCarAvailabilityStatus(int $carId): void
+    {
+        $car = Car::findOne($carId);
+        if (!$car || in_array($car->status, ['fuera_servicio', 'mantenimiento'], true)) {
+            return;
+        }
+
+        $today = date('Y-m-d');
+        $available = CarAvailability::isCarAvailable($carId, $today, $today);
+
+        if ($available && $car->status === 'alquilado') {
+            $car->status = 'disponible';
+            $car->save(false);
+        } elseif (!$available && $car->status === 'disponible') {
+            $car->status = 'alquilado';
+            $car->save(false);
         }
     }
 

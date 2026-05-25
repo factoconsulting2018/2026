@@ -745,8 +745,21 @@ class PdfController extends Controller
             $medioDiaPrecio = (float) $medioDiaValor;
         }
 
+        $ordenCambio = null;
+        if ($model->isReplacement()) {
+            if ($model->parentRental === null && $model->parent_rental_id) {
+                $model->populateRelation('parentRental', Rental::findOne($model->parent_rental_id));
+            }
+            $parent = $model->parentRental;
+            $ordenCambio = [
+                'referencia' => $parent ? ($parent->rental_id ?: ('R' . $parent->id)) : '',
+                'motivo' => $parent ? (string) ($parent->swap_reason ?? '') : '',
+            ];
+        }
+
         return [
             'numero_orden' => $rentalId,
+            'orden_cambio' => $ordenCambio,
             'fecha_emision' => $fechaEmisionDoc,
             'empresa' => [
                 'nombre' => $nombreComercial,

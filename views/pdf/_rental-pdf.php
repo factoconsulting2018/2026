@@ -24,6 +24,15 @@ require __DIR__ . '/_rental-pdf-setup.php';
 
 <div class="title">ORDEN DE ALQUILER</div>
 
+<?php if ($model->isReplacement() && $model->parentRental): ?>
+<div style="background:#fff3cd;border:1px solid #ffc107;padding:10px;margin:0 0 10px;text-align:center;font-weight:bold;font-size:11pt;">
+    ORDEN DE CAMBIO DE VEHÍCULO — Referencia: <?= pdf_escape($model->parentRental->rental_id ?? ('R' . $model->parent_rental_id)) ?>
+    <?php if (!empty($model->parentRental->swap_reason)): ?>
+    <br><span style="font-weight:normal;">Motivo: <?= pdf_escape($model->parentRental->swap_reason) ?></span>
+    <?php endif; ?>
+</div>
+<?php endif; ?>
+
 <table class="meta" style="margin-bottom:6px;">
     <tr>
         <td style="width:55%; text-align:left;">

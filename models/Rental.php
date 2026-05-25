@@ -46,9 +46,44 @@ use yii\db\ActiveRecord;
  * @property float $abono4_monto
  * @property string $abono5_descripcion
  * @property float $abono5_monto
+ * @property int|null $parent_rental_id
+ * @property int|null $swapped_to_rental_id
+ * @property string|null $swap_date
+ * @property string|null $swap_reason
  */
 class Rental extends ActiveRecord
 {
+    /** Atributos copiados al crear una orden de reemplazo por cambio de vehículo */
+    public const SWAP_COPY_ATTRIBUTES = [
+        'client_id',
+        'correapartir_enabled',
+        'fecha_correapartir',
+        'hora_inicio',
+        'hora_final',
+        'lugar_entrega',
+        'lugar_retiro',
+        'precio_por_dia',
+        'medio_dia_enabled',
+        'medio_dia_valor',
+        'condiciones_especiales',
+        'choferes_autorizados',
+        'estado_pago',
+        'comprobante_pago',
+        'ejecutivo',
+        'ejecutivo_otro',
+        'numero_factura',
+        'fecha_factura',
+        'abono1_descripcion',
+        'abono1_monto',
+        'abono2_descripcion',
+        'abono2_monto',
+        'abono3_descripcion',
+        'abono3_monto',
+        'abono4_descripcion',
+        'abono4_monto',
+        'abono5_descripcion',
+        'abono5_monto',
+    ];
     // Campo virtual de compatibilidad: algunas vistas antiguas envían este nombre
     public $custom_conditions_html;
     /**
@@ -87,8 +122,9 @@ class Rental extends ActiveRecord
     {
         return [
             [['client_id', 'car_id', 'fecha_inicio', 'cantidad_dias'], 'required'],
-            [['client_id', 'car_id', 'correapartir_enabled', 'medio_dia_enabled', 'cantidad_dias', 'is_async'], 'integer'],
-            [['fecha_inicio', 'fecha_final', 'hora_inicio', 'hora_final', 'fecha_correapartir', 'fecha_factura', 'created_at', 'updated_at'], 'safe'],
+            [['client_id', 'car_id', 'correapartir_enabled', 'medio_dia_enabled', 'cantidad_dias', 'is_async', 'parent_rental_id', 'swapped_to_rental_id'], 'integer'],
+            [['fecha_inicio', 'fecha_final', 'hora_inicio', 'hora_final', 'fecha_correapartir', 'fecha_factura', 'swap_date', 'created_at', 'updated_at'], 'safe'],
+            [['swap_reason'], 'string'],
             [['precio_por_dia', 'medio_dia_valor', 'abono1_monto', 'abono2_monto', 'abono3_monto', 'abono4_monto', 'abono5_monto'], 'number'], // Removido total_precio porque es columna generada
             [['rental_id', 'lugar_entrega', 'lugar_retiro', 'estado_pago', 'numero_factura', 'ejecutivo', 'ejecutivo_otro', 'abono1_descripcion', 'abono2_descripcion', 'abono3_descripcion', 'abono4_descripcion', 'abono5_descripcion'], 'string', 'max' => 255],
             [['comprobante_pago'], 'string', 'max' => 500],
@@ -143,6 +179,10 @@ class Rental extends ActiveRecord
             'abono4_monto' => 'Abono 4 Monto',
             'abono5_descripcion' => 'Abono 5 Descripción',
             'abono5_monto' => 'Abono 5 Monto',
+            'parent_rental_id' => 'Orden padre (reemplazo)',
+            'swapped_to_rental_id' => 'Orden de reemplazo',
+            'swap_date' => 'Fecha de cambio de vehículo',
+            'swap_reason' => 'Motivo del cambio',
         ];
     }
 
@@ -279,6 +319,88 @@ class Rental extends ActiveRecord
     public function getCar()
     {
         return $this->hasOne(Car::class, ['id' => 'car_id']);
+    }
+
+    /**
+     * Orden original de la que proviene este reemplazo
+     */
+    public function getParentRental()
+    {
+        return $this->hasOne(self::class, ['id' => 'parent_rental_id']);
+    }
+
+    /**
+     * Orden de reemplazo creada tras cambio de vehículo
+     */
+    public function getReplacementRental()
+    {
+        return $this->hasOne(self::class, ['id' => 'swapped_to_rental_id']);
+    }
+
+    /**
+     * Esta orden fue sustituida por otra (vehículo cambiado)
+     */
+    public function isSwapped(): bool
+    {
+        return !empty($this->swapped_to_rental_id);
+    }
+
+    /**
+     * Esta orden es el reemplazo de una orden anterior
+     */
+    public function isReplacement(): bool
+    {
+        return !empty($this->parent_rental_id);
+    }
+
+    /**
+     * Fecha efectiva de fin de bloqueo del vehículo (antes del cambio si aplica)
+     */
+    public function getEffectiveFinalDate(): ?string
+    {
+        if ($this->isSwapped() && !empty($this->swap_date)) {
+            return $this->swap_date;
+        }
+        return $this->fecha_final ? substr((string) $this->fecha_final, 0, 10) : null;
+    }
+
+    /**
+     * Último día en que el vehículo de esta orden bloquea disponibilidad
+     */
+    public static function getEffectiveBlockEndDate(Rental $rental): string
+    {
+        if ($rental->isSwapped() && !empty($rental->swap_date)) {
+            return date('Y-m-d', strtotime($rental->swap_date . ' -1 day'));
+        }
+        return substr((string) $rental->fecha_final, 0, 10);
+    }
+
+    /**
+     * Indica si se puede iniciar un cambio de vehículo desde esta orden
+     */
+    public function canSwapVehicle(): bool
+    {
+        return !$this->isSwapped()
+            && !$this->isReplacement()
+            && (int) $this->is_async === 0
+            && $this->estado_pago !== 'cancelado';
+    }
+
+    /**
+     * Crea una renta hija copiando campos de la original
+     */
+    public static function createReplacementFrom(Rental $original, array $overrides = []): Rental
+    {
+        $replacement = new self();
+        foreach (self::SWAP_COPY_ATTRIBUTES as $attr) {
+            $replacement->$attr = $original->$attr;
+        }
+        foreach ($overrides as $key => $value) {
+            $replacement->$key = $value;
+        }
+        $replacement->parent_rental_id = $original->id;
+        $replacement->is_async = 0;
+        return $replacement;
     }
 
     /**

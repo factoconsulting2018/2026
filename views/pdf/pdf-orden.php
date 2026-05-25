@@ -142,7 +142,26 @@ $txtEmpresaLinea = (int) ($t['empresa_linea'] ?? 24);
         margin-bottom: 16px;
     }
     .cond-body { font-size: 10pt; line-height: 1.45; }
+    .orden-cambio-banner {
+        background: #fff3cd;
+        border: 1px solid #ffc107;
+        color: #664d03;
+        padding: 12px 16px;
+        margin-bottom: 12px;
+        font-size: 10pt;
+        font-weight: 700;
+        text-align: center;
+    }
 </style>
+
+<?php if (!empty($d['orden_cambio'])): ?>
+<div class="orden-cambio-banner">
+    ORDEN DE CAMBIO DE VEHÍCULO — Referencia: <?= $h($d['orden_cambio']['referencia'] ?? '') ?>
+    <?php if (!empty($d['orden_cambio']['motivo'])): ?>
+    <br><span style="font-weight:400;">Motivo: <?= $h($d['orden_cambio']['motivo']) ?></span>
+    <?php endif; ?>
+</div>
+<?php endif; ?>
 
 <div class="header">
     <table>

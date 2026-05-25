@@ -2,14 +2,38 @@
 namespace app\models;
 
 use Yii;
-use yii\db\ActiveRecord;
-use yii\db\Query;
+use yii\db\Expression;
 
 /**
  * Modelo para manejar la disponibilidad de vehículos
  */
 class CarAvailability
 {
+    /**
+     * Condición SQL: el alquiler NO se solapa con el rango solicitado.
+     * Si la orden fue reemplazada, solo bloquea hasta el día anterior a swap_date.
+     */
+    private static function noOverlapCondition($startDate, $endDate): array
+    {
+        $startDay = substr((string) $startDate, 0, 10);
+        $endDay = substr((string) $endDate, 0, 10);
+
+        return [
+            'not',
+            [
+                'or',
+                ['>=', 'fecha_inicio', $endDay],
+                [
+                    '<=',
+                    new Expression(
+                        'IF(swapped_to_rental_id IS NOT NULL AND swap_date IS NOT NULL, DATE_SUB(swap_date, INTERVAL 1 DAY), DATE(fecha_final))'
+                    ),
+                    $startDay,
+                ],
+            ],
+        ];
+    }
+
     /**
      * Verificar si un vehículo está disponible en un rango de fechas
      * @param int $carId ID del vehículo
@@ -24,18 +48,8 @@ class CarAvailability
             ->where(['car_id' => $carId])
             ->andWhere(['!=', 'estado_pago', 'cancelado'])
             ->andWhere(['is_async' => 0])
-            ->andWhere([
-                'not',
-                [
-                    'or',
-                    // El alquiler existente comienza después (o igual) de que termina el nuevo rango
-                    ['>=', 'fecha_inicio', $endDate],
-                    // El alquiler existente termina antes (o igual) de que inicia el nuevo rango
-                    ['<=', 'fecha_final', $startDate],
-                ]
-            ]);
+            ->andWhere(self::noOverlapCondition($startDate, $endDate));
 
-        // Excluir el alquiler actual si se está editando
         if ($excludeRentalId) {
             $query->andWhere(['!=', 'id', $excludeRentalId]);
         }
@@ -59,17 +73,31 @@ class CarAvailability
             ->andWhere(['!=', 'estado_pago', 'cancelado'])
             ->andWhere(['is_async' => 0])
             ->andWhere(['<=', 'fecha_inicio', $endOfMonth])
-            ->andWhere(['>=', 'fecha_final', $startOfMonth])
+            ->andWhere([
+                'or',
+                ['>=', 'fecha_final', $startOfMonth],
+                [
+                    'and',
+                    ['not', ['swapped_to_rental_id' => null]],
+                    ['not', ['swap_date' => null]],
+                    ['>=', new Expression('DATE_SUB(swap_date, INTERVAL 1 DAY)'), substr($startOfMonth, 0, 10)],
+                ],
+            ])
             ->all();
 
         $occupiedDates = [];
         foreach ($rentals as $rental) {
+            $blockEnd = self::getEffectiveBlockEndDate($rental);
             $start = max($rental->fecha_inicio, $startOfMonth);
-            $end = min($rental->fecha_final, $endOfMonth);
-            
+            $end = min($blockEnd . ' 23:59:59', $endOfMonth);
+
             $current = strtotime($start);
             $endTime = strtotime($end);
-            
+
+            if ($current === false || $endTime === false || $current > $endTime) {
+                continue;
+            }
+
             while ($current <= $endTime) {
                 $occupiedDates[] = date('Y-m-d', $current);
                 $current = strtotime('+1 day', $current);
@@ -122,7 +150,7 @@ class CarAvailability
             $availability[$car->id] = [
                 'car' => $car,
                 'occupied_dates' => self::getOccupiedDates($car->id, $month),
-                'available_dates' => self::getAvailableDates($car->id, $month)
+                'available_dates' => self::getAvailableDates($car->id, $month),
             ];
         }
 
@@ -139,18 +167,18 @@ class CarAvailability
     {
         $startOfMonth = $month . '-01';
         $endOfMonth = date('Y-m-t', strtotime($startOfMonth));
-        
+
         $allDates = [];
         $current = strtotime($startOfMonth);
         $endTime = strtotime($endOfMonth);
-        
+
         while ($current <= $endTime) {
             $allDates[] = date('Y-m-d', $current);
             $current = strtotime('+1 day', $current);
         }
-        
+
         $occupiedDates = self::getOccupiedDates($carId, $month);
-        
+
         return array_diff($allDates, $occupiedDates);
     }
 
@@ -169,14 +197,7 @@ class CarAvailability
             ->andWhere(['is_async' => 0]);
 
         if ($startDate && $endDate) {
-            $query->andWhere([
-                'not',
-                [
-                    'or',
-                    ['>=', 'fecha_inicio', $endDate],
-                    ['<=', 'fecha_final', $startDate],
-                ]
-            ]);
+            $query->andWhere(self::noOverlapCondition($startDate, $endDate));
         }
 
         return $query->orderBy(['fecha_inicio' => SORT_ASC])->all();
@@ -192,33 +213,30 @@ class CarAvailability
      */
     public static function validateRentalDates($carId, $startDate, $endDate, $excludeRentalId = null)
     {
-        // Verificar que la fecha de inicio no sea en el pasado
         if (strtotime($startDate) < strtotime('today')) {
             return [
                 'valid' => false,
-                'message' => 'La fecha de inicio no puede ser en el pasado.'
+                'message' => 'La fecha de inicio no puede ser en el pasado.',
             ];
         }
 
-        // Verificar que la fecha de fin sea posterior a la de inicio
         if (strtotime($endDate) <= strtotime($startDate)) {
             return [
                 'valid' => false,
-                'message' => 'La fecha de fin debe ser posterior a la fecha de inicio.'
+                'message' => 'La fecha de fin debe ser posterior a la fecha de inicio.',
             ];
         }
 
-        // Verificar disponibilidad del vehículo
         if (!self::isCarAvailable($carId, $startDate, $endDate, $excludeRentalId)) {
             return [
                 'valid' => false,
-                'message' => 'El vehículo no está disponible en las fechas seleccionadas.'
+                'message' => 'El vehículo no está disponible en las fechas seleccionadas.',
             ];
         }
 
         return [
             'valid' => true,
-            'message' => 'Fechas válidas.'
+            'message' => 'Fechas válidas.',
         ];
     }
 
@@ -235,23 +253,23 @@ class CarAvailability
             $fromDate = date('Y-m-d');
         }
 
-        $searchDays = 90; // Buscar en los próximos 90 días
+        $searchDays = 90;
         $current = strtotime($fromDate);
-        
+
         for ($i = 0; $i < $searchDays; $i++) {
             $startDate = date('Y-m-d H:i:s', $current);
             $endDate = date('Y-m-d H:i:s', strtotime("+{$durationDays} days", $current));
-            
+
             if (self::isCarAvailable($carId, $startDate, $endDate)) {
                 return [
                     'start_date' => $startDate,
-                    'end_date' => $endDate
+                    'end_date' => $endDate,
                 ];
             }
-            
+
             $current = strtotime('+1 day', $current);
         }
-        
+
         return null;
     }
 }
