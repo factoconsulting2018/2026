@@ -961,8 +961,9 @@ $this->registerCss('
                     </div>
                     
                     <div class="table-body">
+                        <?php $estadosCerrados = ['cancelado', 'pagado', 'finalizado']; ?>
                         <?php foreach ($dataProvider->getModels() as $model): ?>
-                            <?php
+                <?php
                             $estado = $model->estado_pago ?? 'pendiente';
                             $rentalId = !empty($model->rental_id) ? $model->rental_id : ('R' . str_pad($model->id, 6, '0', STR_PAD_LEFT));
                             
