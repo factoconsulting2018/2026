@@ -1103,7 +1103,10 @@ class RentalController extends Controller
         $model = $this->findModel($id);
 
         $buildUrl = static function (int $rentalPk): string {
-            return \yii\helpers\Url::to(['/pdf/rental-order', 'id' => $rentalPk], true);
+            // URL relativa: hereda el esquema (http/https) de la pagina actual.
+            // Evita mixed-content cuando el sitio es HTTPS y request->hostInfo
+            // reporta http detras de un proxy/Cloudflare.
+            return \yii\helpers\Url::to(['/pdf/rental-order', 'id' => $rentalPk]);
         };
 
         if ($model->isSwapped()) {
