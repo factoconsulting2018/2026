@@ -3043,7 +3043,7 @@ function submitSwapVehicleForm() {
             btn.disabled = false;
             if (data.success) {
                 if (swapVehicleModalInstance) swapVehicleModalInstance.hide();
-                window.location.reload();
+                openPdfChoice(data.replacement_id || rentalId, true, true);
             } else {
                 errBox.textContent = data.message || 'Error al registrar el cambio.';
                 errBox.classList.remove('d-none');
@@ -3056,7 +3056,7 @@ function submitSwapVehicleForm() {
         });
 }
 
-function openPdfChoice(rentalId, hasSwap) {
+function openPdfChoice(rentalId, hasSwap, reloadAfterClose) {
     const pdfUrl = <?= json_encode(Url::to(['/pdf/rental-order'])) ?> + '?id=' + rentalId;
     if (!hasSwap) {
         downloadPdfDirect(pdfUrl);
@@ -3073,9 +3073,22 @@ function openPdfChoice(rentalId, hasSwap) {
             document.getElementById('pdfChoiceSwap').href = data.swap_pdf_url;
             document.getElementById('pdfChoiceOriginalLabel').textContent = data.original_label || '';
             document.getElementById('pdfChoiceSwapLabel').textContent = data.swap_label || '';
+            document.getElementById('pdfChoiceOriginal').onclick = function (e) {
+                e.preventDefault();
+                downloadPdfDirect(data.original_pdf_url);
+            };
+            document.getElementById('pdfChoiceSwap').onclick = function (e) {
+                e.preventDefault();
+                downloadPdfDirect(data.swap_pdf_url);
+            };
             const modalEl = document.getElementById('pdfChoiceModal');
             if (!pdfChoiceModalInstance && typeof bootstrap !== 'undefined') {
                 pdfChoiceModalInstance = new bootstrap.Modal(modalEl);
+            }
+            if (reloadAfterClose) {
+                modalEl.addEventListener('hidden.bs.modal', function () {
+                    window.location.reload();
+                }, { once: true });
             }
             pdfChoiceModalInstance ? pdfChoiceModalInstance.show() : $(modalEl).modal('show');
         })
@@ -3092,11 +3105,6 @@ function downloadPdfDirect(url) {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
-    // Recargar la página después de un breve delay
-    setTimeout(function() {
-        window.location.reload();
-    }, 1000);
 }
 </script>
 
