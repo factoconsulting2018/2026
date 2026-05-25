@@ -126,11 +126,23 @@ $this->params['breadcrumbs'][] = $this->title;
                                     'fuera_servicio' => ['class' => 'bg-danger', 'text' => 'Fuera de Servicio', 'icon' => 'error']
                                 ];
                                 $currentStatus = $statusConfig[$model->status] ?? $statusConfig['fuera_servicio'];
+                                $isRented = $model->status === 'alquilado';
                                 ?>
+                                <?php if ($isRented): ?>
+                                <button type="button"
+                                        class="badge <?= $currentStatus['class'] ?> border-0 car-status-rented"
+                                        style="cursor: pointer;"
+                                        title="Ver alquiler(es) activo(s)"
+                                        onclick="openCarActiveRentalsModal(<?= $model->id ?>)">
+                                    <span class="material-symbols-outlined" style="font-size: 14px; vertical-align: middle; margin-right: 4px;"><?= $currentStatus['icon'] ?></span>
+                                    <?= $currentStatus['text'] ?>
+                                </button>
+                                <?php else: ?>
                                 <span class="badge <?= $currentStatus['class'] ?>">
                                     <span class="material-symbols-outlined" style="font-size: 14px; vertical-align: middle; margin-right: 4px;"><?= $currentStatus['icon'] ?></span>
                                     <?= $currentStatus['text'] ?>
                                 </span>
+                                <?php endif; ?>
                             </td>
                             <td class="d-none d-md-table-cell"><?= Html::encode($model->empresa ?? 'N/A') ?></td>
                             <td class="d-none d-md-table-cell">
@@ -195,3 +207,138 @@ $this->params['breadcrumbs'][] = $this->title;
 
     <?php Pjax::end(); ?>
 </div>
+
+<!-- Modal de alquileres activos del vehículo -->
+<div class="modal fade" id="carActiveRentalsModal" tabindex="-1" aria-labelledby="carActiveRentalsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="carActiveRentalsModalLabel">
+                    <span class="material-symbols-outlined" style="font-size: 20px; vertical-align: middle; margin-right: 6px;">schedule</span>
+                    Alquileres activos
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <div id="carActiveRentalsLoading" class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Cargando...</span></div>
+                </div>
+                <div id="carActiveRentalsError" class="alert alert-danger d-none"></div>
+                <div id="carActiveRentalsCarInfo" class="mb-3 d-none">
+                    <h6 class="mb-1" id="carActiveRentalsCarName"></h6>
+                    <small class="text-muted">Placa: <span id="carActiveRentalsCarPlate"></span> · Al <span id="carActiveRentalsToday"></span></small>
+                </div>
+                <div id="carActiveRentalsList"></div>
+                <div id="carActiveRentalsEmpty" class="text-center py-4 d-none">
+                    <span class="material-symbols-outlined" style="font-size: 48px; color: #ccc;">info</span>
+                    <p class="text-muted mb-0">No se encontró alquiler activo hoy para este vehículo.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<?php
+$activeRentalsUrl = Url::to(['active-rentals']);
+$js = <<<JS
+const CAR_ACTIVE_RENTALS_URL = '$activeRentalsUrl';
+let carActiveRentalsModalInstance = null;
+
+function openCarActiveRentalsModal(carId) {
+    const modalEl = document.getElementById('carActiveRentalsModal');
+    const loading = document.getElementById('carActiveRentalsLoading');
+    const errBox = document.getElementById('carActiveRentalsError');
+    const info = document.getElementById('carActiveRentalsCarInfo');
+    const list = document.getElementById('carActiveRentalsList');
+    const empty = document.getElementById('carActiveRentalsEmpty');
+
+    loading.classList.remove('d-none');
+    errBox.classList.add('d-none');
+    info.classList.add('d-none');
+    empty.classList.add('d-none');
+    list.innerHTML = '';
+
+    if (!carActiveRentalsModalInstance && typeof bootstrap !== 'undefined') {
+        carActiveRentalsModalInstance = new bootstrap.Modal(modalEl);
+    }
+    carActiveRentalsModalInstance ? carActiveRentalsModalInstance.show() : window.jQuery && jQuery(modalEl).modal('show');
+
+    fetch(CAR_ACTIVE_RENTALS_URL + '?id=' + carId, { headers: { 'Accept': 'application/json' } })
+        .then(r => r.json())
+        .then(data => {
+            loading.classList.add('d-none');
+            if (!data.success) {
+                errBox.textContent = data.message || 'No se pudo cargar la información.';
+                errBox.classList.remove('d-none');
+                return;
+            }
+            document.getElementById('carActiveRentalsCarName').textContent = data.car.nombre || '';
+            document.getElementById('carActiveRentalsCarPlate').textContent = data.car.placa || '—';
+            document.getElementById('carActiveRentalsToday').textContent = data.today || '';
+            info.classList.remove('d-none');
+
+            if (!data.rentals || data.rentals.length === 0) {
+                empty.classList.remove('d-none');
+                return;
+            }
+
+            const fmtDate = d => d ? new Date(d).toLocaleDateString('es-CR') : '—';
+            const fmtMoney = n => '₡' + (Number(n) || 0).toLocaleString('es-CR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const escapeHtml = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+            const statusClass = {
+                pagado: 'bg-success',
+                pendiente: 'bg-warning text-dark',
+                reservado: 'bg-info text-dark',
+                cancelado: 'bg-danger'
+            };
+
+            const html = data.rentals.map(r => `
+                <div class="card mb-2 shadow-sm">
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <strong>\${escapeHtml(r.rental_id)}</strong>
+                                <span class="badge \${statusClass[r.estado_pago] || 'bg-secondary'} ms-2">\${escapeHtml(r.estado_pago)}</span>
+                                \${r.is_replacement ? '<span class="badge bg-info text-dark ms-1">Reemplazo</span>' : ''}
+                            </div>
+                            <strong class="text-success">\${fmtMoney(r.total_precio)}</strong>
+                        </div>
+                        <div class="row small text-muted">
+                            <div class="col-sm-6">
+                                <span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;">person</span>
+                                \${escapeHtml(r.client_name)}
+                                \${r.client_phone ? ' · ' + escapeHtml(r.client_phone) : ''}
+                            </div>
+                            <div class="col-sm-6 text-sm-end">
+                                <span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;">event</span>
+                                \${fmtDate(r.fecha_inicio)} → \${fmtDate(r.fecha_final)}
+                            </div>
+                        </div>
+                        <div class="mt-2 d-flex gap-2">
+                            <a href="\${r.view_url}" class="btn btn-sm btn-outline-primary">
+                                <span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;">visibility</span>
+                                Ver
+                            </a>
+                            <a href="\${r.pdf_url}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary">
+                                <span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;">description</span>
+                                PDF
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            list.innerHTML = html;
+        })
+        .catch(() => {
+            loading.classList.add('d-none');
+            errBox.textContent = 'Error de conexión.';
+            errBox.classList.remove('d-none');
+        });
+}
+JS;
+$this->registerJs($js, \yii\web\View::POS_END);
+?>

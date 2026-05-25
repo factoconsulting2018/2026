@@ -5,8 +5,10 @@ use Yii;
 use app\models\Car;
 use app\models\Brand;
 use app\models\CarAvailability;
+use app\models\Rental;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
+use yii\web\Response;
 use yii\web\UploadedFile;
 use yii\filters\AccessControl;
 use yii\filters\VerbFilter;
@@ -179,6 +181,59 @@ class CarController extends Controller
         }
 
         return true;
+    }
+
+    /**
+     * Retorna las rentas activas que cubren la fecha actual para un vehículo.
+     * Usado por el modal del listado al hacer clic en el badge "Alquilado".
+     */
+    public function actionActiveRentals($id)
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        $car = $this->findModel($id);
+        $today = date('Y-m-d');
+
+        $rentals = Rental::find()
+            ->with(['client'])
+            ->where(['car_id' => $car->id])
+            ->andWhere(['is_async' => 0])
+            ->andWhere(['!=', 'estado_pago', 'cancelado'])
+            ->andWhere(['<=', 'fecha_inicio', $today])
+            ->andWhere(['>=', 'fecha_final', $today])
+            ->orderBy(['fecha_inicio' => SORT_DESC])
+            ->all();
+
+        $items = [];
+        foreach ($rentals as $rental) {
+            if ($rental->isSwapped() && !empty($rental->swap_date) && $rental->swap_date <= $today) {
+                continue;
+            }
+            $client = $rental->client;
+            $items[] = [
+                'id' => $rental->id,
+                'rental_id' => $rental->rental_id ?: ('R' . $rental->id),
+                'fecha_inicio' => $rental->fecha_inicio,
+                'fecha_final' => $rental->fecha_final,
+                'estado_pago' => $rental->estado_pago,
+                'total_precio' => (float) $rental->total_precio,
+                'client_name' => $client ? ($client->full_name ?? $client->nombre) : 'Sin cliente',
+                'client_phone' => $client ? ($client->whatsapp ?: $client->telefono ?: $client->celular ?: '') : '',
+                'view_url' => \yii\helpers\Url::to(['/rental/view', 'id' => $rental->id]),
+                'pdf_url' => \yii\helpers\Url::to(['/pdf/rental-order', 'id' => $rental->id]),
+                'is_replacement' => $rental->isReplacement(),
+            ];
+        }
+
+        return [
+            'success' => true,
+            'car' => [
+                'id' => $car->id,
+                'nombre' => $car->nombre,
+                'placa' => $car->placa,
+            ],
+            'today' => $today,
+            'rentals' => $items,
+        ];
     }
 
     protected function findModel($id)
