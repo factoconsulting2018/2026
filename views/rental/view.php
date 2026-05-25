@@ -129,7 +129,23 @@ $this->params['breadcrumbs'][] = $this->title;
                                 'attribute' => 'correapartir_enabled',
                                 'value' => $model->correapartir_enabled ? 'Sí' : 'No',
                             ],
-                            'fecha_correapartir',
+                            [
+                                'attribute' => 'fecha_correapartir',
+                                'value' => function ($model) {
+                                    if (empty($model->fecha_correapartir)) {
+                                        return '—';
+                                    }
+                                    $ts = strtotime($model->fecha_correapartir);
+                                    if ($ts === false) {
+                                        return '—';
+                                    }
+                                    $fecha = date('d/m/Y', $ts);
+                                    $hora = date('H:i', $ts);
+                                    return $hora === '00:00'
+                                        ? $fecha
+                                        : $fecha . ' ' . \app\helpers\TimeHelper::convertTo12Hour($hora);
+                                },
+                            ],
                             'comprobante_pago',
                             'numero_factura',
                             [
@@ -138,8 +154,32 @@ $this->params['breadcrumbs'][] = $this->title;
                                     ? Yii::$app->formatter->asDate($model->fecha_factura, 'php:d/m/Y')
                                     : '—',
                             ],
-                            'created_at',
-                            'updated_at',
+                            [
+                                'attribute' => 'created_at',
+                                'value' => function ($model) {
+                                    if (empty($model->created_at)) {
+                                        return '—';
+                                    }
+                                    $ts = strtotime($model->created_at);
+                                    if ($ts === false) {
+                                        return '—';
+                                    }
+                                    return date('d/m/Y', $ts) . ' ' . \app\helpers\TimeHelper::convertTo12Hour(date('H:i', $ts));
+                                },
+                            ],
+                            [
+                                'attribute' => 'updated_at',
+                                'value' => function ($model) {
+                                    if (empty($model->updated_at)) {
+                                        return '—';
+                                    }
+                                    $ts = strtotime($model->updated_at);
+                                    if ($ts === false) {
+                                        return '—';
+                                    }
+                                    return date('d/m/Y', $ts) . ' ' . \app\helpers\TimeHelper::convertTo12Hour(date('H:i', $ts));
+                                },
+                            ],
                         ],
                     ]) ?>
                 </div>
