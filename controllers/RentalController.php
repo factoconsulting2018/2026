@@ -52,8 +52,28 @@ class RentalController extends Controller
         ];
     }
 
+    /**
+     * Finaliza ordenes pagadas vencidas antes de consultar disponibilidad/listados.
+     */
+    private function autoFinalizeCompletedRentals(): int
+    {
+        try {
+            $finalized = Rental::autoFinalizeCompleted();
+            if ($finalized > 0) {
+                Car::syncAllStatuses();
+            }
+
+            return $finalized;
+        } catch (\Throwable $e) {
+            Yii::error('autoFinalizeCompleted falló: ' . $e->getMessage(), 'rental');
+            return 0;
+        }
+    }
+
     public function actionIndex()
     {
+        $this->autoFinalizeCompletedRentals();
+
         // Crear query base
         $query = Rental::find()
             ->where(['is_async' => 0])
@@ -713,6 +733,8 @@ class RentalController extends Controller
         Yii::$app->response->format = Response::FORMAT_JSON;
         
         try {
+            $this->autoFinalizeCompletedRentals();
+
             $startDate = Yii::$app->request->get('start_date');
             $duration = Yii::$app->request->get('duration', 1);
             
@@ -805,6 +827,8 @@ class RentalController extends Controller
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
 
+        $this->autoFinalizeCompletedRentals();
+
         $carId = (int) Yii::$app->request->get('car_id', 0);
         $startDate = trim((string) Yii::$app->request->get('start_date', ''));
         $endDate = trim((string) Yii::$app->request->get('end_date', ''));
@@ -874,6 +898,8 @@ class RentalController extends Controller
     public function actionOverdueRentals()
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
+
+        $this->autoFinalizeCompletedRentals();
 
         $today = date('Y-m-d');
         $rentals = Rental::find()

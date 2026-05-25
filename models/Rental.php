@@ -587,6 +587,34 @@ class Rental extends ActiveRecord
     }
 
     /**
+     * Cierra automaticamente las ordenes pagadas cuya fecha final ya paso.
+     *
+     * "Pagado" confirma el dinero; "Finalizado" libera el vehiculo para
+     * disponibilidad, conflictos y sincronizacion de estados.
+     *
+     * @param string|null $today Fecha de corte en formato Y-m-d. Si se omite, usa hoy.
+     * @return int cantidad de ordenes actualizadas.
+     */
+    public static function autoFinalizeCompleted($today = null): int
+    {
+        $cutoff = $today ?: date('Y-m-d');
+
+        return (int) static::updateAll(
+            [
+                'estado_pago' => 'finalizado',
+                'updated_at' => new \yii\db\Expression('NOW()'),
+            ],
+            [
+                'and',
+                ['estado_pago' => 'pagado'],
+                ['is_async' => 0],
+                ['swapped_to_rental_id' => null],
+                ['<', 'fecha_final', $cutoff],
+            ]
+        );
+    }
+
+    /**
      * Validar fechas de alquiler
      */
     public function validateDates($attribute, $params)

@@ -61,6 +61,12 @@ class CarController extends Controller
 
     public function actionIndex()
     {
+        try {
+            Rental::autoFinalizeCompleted();
+        } catch (\Throwable $e) {
+            Yii::error('Error finalizando alquileres vencidos: ' . $e->getMessage(), 'car');
+        }
+
         // Sincronizar Disponible/Alquilado con las rentas activas antes de listar.
         // Respeta estados manuales 'fuera_servicio' y 'mantenimiento'.
         try {
@@ -198,6 +204,13 @@ class CarController extends Controller
     public function actionActiveRentals($id)
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
+        try {
+            Rental::autoFinalizeCompleted();
+            Car::syncStatusFromRentals((int) $id);
+        } catch (\Throwable $e) {
+            Yii::error('Error finalizando alquileres vencidos para vehículo: ' . $e->getMessage(), 'car');
+        }
+
         $car = $this->findModel($id);
         $today = date('Y-m-d');
 
@@ -205,7 +218,7 @@ class CarController extends Controller
             ->with(['client'])
             ->where(['car_id' => $car->id])
             ->andWhere(['is_async' => 0])
-            ->andWhere(['!=', 'estado_pago', 'cancelado'])
+            ->andWhere(['not in', 'estado_pago', ['cancelado', 'finalizado']])
             ->andWhere(['<=', 'fecha_inicio', $today])
             ->andWhere(['>=', 'fecha_final', $today])
             ->orderBy(['fecha_inicio' => SORT_DESC])
