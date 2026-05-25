@@ -10,6 +10,27 @@ $this->title = 'Alquiler #' . $model->rental_id;
 $this->params['breadcrumbs'][] = ['label' => 'Alquileres', 'url' => ['index']];
 $this->params['breadcrumbs'][] = $this->title;
 \yii\web\YiiAsset::register($this);
+
+$diasSemanaEs = [
+    'Sunday' => 'Domingo',
+    'Monday' => 'Lunes',
+    'Tuesday' => 'Martes',
+    'Wednesday' => 'Miércoles',
+    'Thursday' => 'Jueves',
+    'Friday' => 'Viernes',
+    'Saturday' => 'Sábado',
+];
+$formatFechaConDia = static function ($raw) use ($diasSemanaEs) {
+    if (empty($raw)) {
+        return null;
+    }
+    $ts = strtotime((string) $raw);
+    if ($ts === false) {
+        return null;
+    }
+    $dia = $diasSemanaEs[date('l', $ts)] ?? '';
+    return date('d/m/Y', $ts) . ($dia !== '' ? ' ' . $dia : '');
+};
 ?>
 <div class="rental-view">
 
@@ -46,8 +67,8 @@ $this->params['breadcrumbs'][] = $this->title;
                             ],
                             [
                                 'attribute' => 'fecha_inicio',
-                                'value' => function($model) {
-                                    return !empty($model->fecha_inicio) ? date('d/m/Y', strtotime($model->fecha_inicio)) : 'N/A';
+                                'value' => function ($model) use ($formatFechaConDia) {
+                                    return $formatFechaConDia($model->fecha_inicio) ?? 'N/A';
                                 },
                             ],
                             [
@@ -59,8 +80,8 @@ $this->params['breadcrumbs'][] = $this->title;
                             ],
                             [
                                 'attribute' => 'fecha_final',
-                                'value' => function($model) {
-                                    return !empty($model->fecha_final) ? date('d/m/Y', strtotime($model->fecha_final)) : 'N/A';
+                                'value' => function ($model) use ($formatFechaConDia) {
+                                    return $formatFechaConDia($model->fecha_final) ?? 'N/A';
                                 },
                             ],
                             [
@@ -131,7 +152,7 @@ $this->params['breadcrumbs'][] = $this->title;
                             ],
                             [
                                 'attribute' => 'fecha_correapartir',
-                                'value' => function ($model) {
+                                'value' => function ($model) use ($formatFechaConDia) {
                                     if (empty($model->fecha_correapartir)) {
                                         return '—';
                                     }
@@ -139,24 +160,24 @@ $this->params['breadcrumbs'][] = $this->title;
                                     if ($ts === false) {
                                         return '—';
                                     }
-                                    $fecha = date('d/m/Y', $ts);
+                                    $fechaConDia = $formatFechaConDia($model->fecha_correapartir);
                                     $hora = date('H:i', $ts);
                                     return $hora === '00:00'
-                                        ? $fecha
-                                        : $fecha . ' ' . \app\helpers\TimeHelper::convertTo12Hour($hora);
+                                        ? $fechaConDia
+                                        : $fechaConDia . ' ' . \app\helpers\TimeHelper::convertTo12Hour($hora);
                                 },
                             ],
                             'comprobante_pago',
                             'numero_factura',
                             [
                                 'attribute' => 'fecha_factura',
-                                'value' => $model->fecha_factura
-                                    ? Yii::$app->formatter->asDate($model->fecha_factura, 'php:d/m/Y')
-                                    : '—',
+                                'value' => function ($model) use ($formatFechaConDia) {
+                                    return $formatFechaConDia($model->fecha_factura) ?? '—';
+                                },
                             ],
                             [
                                 'attribute' => 'created_at',
-                                'value' => function ($model) {
+                                'value' => function ($model) use ($formatFechaConDia) {
                                     if (empty($model->created_at)) {
                                         return '—';
                                     }
@@ -164,12 +185,12 @@ $this->params['breadcrumbs'][] = $this->title;
                                     if ($ts === false) {
                                         return '—';
                                     }
-                                    return date('d/m/Y', $ts) . ' ' . \app\helpers\TimeHelper::convertTo12Hour(date('H:i', $ts));
+                                    return $formatFechaConDia($model->created_at) . ' ' . \app\helpers\TimeHelper::convertTo12Hour(date('H:i', $ts));
                                 },
                             ],
                             [
                                 'attribute' => 'updated_at',
-                                'value' => function ($model) {
+                                'value' => function ($model) use ($formatFechaConDia) {
                                     if (empty($model->updated_at)) {
                                         return '—';
                                     }
@@ -177,7 +198,7 @@ $this->params['breadcrumbs'][] = $this->title;
                                     if ($ts === false) {
                                         return '—';
                                     }
-                                    return date('d/m/Y', $ts) . ' ' . \app\helpers\TimeHelper::convertTo12Hour(date('H:i', $ts));
+                                    return $formatFechaConDia($model->updated_at) . ' ' . \app\helpers\TimeHelper::convertTo12Hour(date('H:i', $ts));
                                 },
                             ],
                         ],
