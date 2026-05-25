@@ -4,6 +4,7 @@ namespace app\controllers;
 
 use Yii;
 use app\models\Car;
+use app\models\CompanyConfig;
 use app\models\MaintenanceOrder;
 use yii\data\ActiveDataProvider;
 use yii\filters\AccessControl;
@@ -40,14 +41,11 @@ class MaintenanceOrderController extends Controller
         $search = trim((string) Yii::$app->request->get('search', ''));
         $status = trim((string) Yii::$app->request->get('status', ''));
 
+        // Generar recordatorios Dekra en segundo plano. No mostramos aviso ni
+        // los recordatorios programados a futuro: solo aparecerán cuando llegue
+        // su mes (ver filtro más abajo).
         try {
-            $createdDekra = MaintenanceOrder::ensureDekraReminders();
-            if ($createdDekra > 0) {
-                Yii::$app->session->setFlash(
-                    'info',
-                    'Se generaron ' . $createdDekra . ' recordatorios automáticos de Dekra (Revisión Vehicular) según el último dígito de la placa.'
-                );
-            }
+            MaintenanceOrder::ensureDekraReminders();
         } catch (\Throwable $e) {
             Yii::error('Error generando recordatorios Dekra: ' . $e->getMessage(), __METHOD__);
         }
@@ -57,6 +55,22 @@ class MaintenanceOrderController extends Controller
             ->with(['car'])
             ->joinWith(['car c'])
             ->orderBy(['m.order_date' => SORT_DESC, 'm.id' => SORT_DESC]);
+
+        // Ocultar recordatorios Dekra programados a futuro: solo se ven cuando
+        // ya estamos en su mes (mes/año actual o anterior). Otras órdenes se
+        // muestran sin filtro de fecha.
+        try {
+            $dekraTaller = (string) (CompanyConfig::getDekraConfig()['taller_name'] ?? 'Dekra (Revisión Vehicular)');
+        } catch (\Throwable $e) {
+            $dekraTaller = 'Dekra (Revisión Vehicular)';
+        }
+        $endOfCurrentMonth = date('Y-m-t');
+        $query->andWhere([
+            'or',
+            ['!=', 'm.taller', $dekraTaller],
+            ['is', 'm.taller', null],
+            ['<=', 'm.order_date', $endOfCurrentMonth],
+        ]);
 
         if ($search !== '') {
             $conds = [
