@@ -3069,18 +3069,14 @@ function openPdfChoice(rentalId, hasSwap, reloadAfterClose) {
                 downloadPdfDirect(data.original_pdf_url || pdfUrl);
                 return;
             }
-            document.getElementById('pdfChoiceOriginal').href = data.original_pdf_url;
-            document.getElementById('pdfChoiceSwap').href = data.swap_pdf_url;
+            const originalBtn = document.getElementById('pdfChoiceOriginal');
+            const swapBtn = document.getElementById('pdfChoiceSwap');
+            originalBtn.href = data.original_pdf_url;
+            swapBtn.href = data.swap_pdf_url;
             document.getElementById('pdfChoiceOriginalLabel').textContent = data.original_label || '';
             document.getElementById('pdfChoiceSwapLabel').textContent = data.swap_label || '';
-            document.getElementById('pdfChoiceOriginal').onclick = function (e) {
-                e.preventDefault();
-                downloadPdfDirect(data.original_pdf_url);
-            };
-            document.getElementById('pdfChoiceSwap').onclick = function (e) {
-                e.preventDefault();
-                downloadPdfDirect(data.swap_pdf_url);
-            };
+            originalBtn.onclick = null;
+            swapBtn.onclick = null;
             const modalEl = document.getElementById('pdfChoiceModal');
             if (!pdfChoiceModalInstance && typeof bootstrap !== 'undefined') {
                 pdfChoiceModalInstance = new bootstrap.Modal(modalEl);
@@ -3095,12 +3091,11 @@ function openPdfChoice(rentalId, hasSwap, reloadAfterClose) {
         .catch(() => downloadPdfDirect(pdfUrl));
 }
 
-// Función para descargar PDF directamente sin mostrar preview
 function downloadPdfDirect(url) {
-    // Crear un elemento <a> temporal para forzar descarga
     var link = document.createElement('a');
     link.href = url;
-    link.download = ''; // Forzar descarga
+    link.target = '_blank';
+    link.rel = 'noopener';
     link.style.display = 'none';
     document.body.appendChild(link);
     link.click();
