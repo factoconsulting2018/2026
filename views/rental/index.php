@@ -1162,6 +1162,23 @@ $this->registerCss('
                                             <span class="material-symbols-outlined" style="font-size:10px;vertical-align:super;">sync</span>
                                         </button>
                                         <?php endif; ?>
+                                        <?php if ($model->isSwapped()): ?>
+                                            <?php if ($model->canUndoSwap()): ?>
+                                            <button type="button" class="action-btn undo-swap-btn"
+                                                    title="Deshacer cambio de vehículo"
+                                                    data-rental-id="<?= $model->id ?>"
+                                                    onclick="confirmUndoSwap(<?= $model->id ?>)">
+                                                <span class="material-symbols-outlined">undo</span>
+                                            </button>
+                                            <?php else: ?>
+                                            <button type="button" class="action-btn undo-swap-btn"
+                                                    title="No se puede deshacer: el reemplazo tiene precio distinto o ya está facturado."
+                                                    disabled
+                                                    style="opacity:.45;cursor:not-allowed;">
+                                                <span class="material-symbols-outlined">undo</span>
+                                            </button>
+                                            <?php endif; ?>
+                                        <?php endif; ?>
                                         <a href="<?= Url::to(['/pdf/rental-order', 'id' => $model->id]) ?>" class="action-btn pdf-btn" 
                                            title="Descargar PDF de Orden" 
                                            onclick="openPdfChoice(<?= $model->id ?>, <?= ($model->isSwapped() || $model->isReplacement()) ? 'true' : 'false' ?>); return false;">
@@ -1404,6 +1421,22 @@ $this->registerCss('
                                     <span class="material-symbols-outlined">directions_car</span>
                                     <span class="material-symbols-outlined" style="font-size:10px;vertical-align:super;">sync</span>
                                 </button>
+                                <?php endif; ?>
+                                <?php if ($model->isSwapped()): ?>
+                                    <?php if ($model->canUndoSwap()): ?>
+                                    <button type="button" class="action-btn undo-swap-btn"
+                                            title="Deshacer cambio de vehículo"
+                                            onclick="confirmUndoSwap(<?= $model->id ?>)">
+                                        <span class="material-symbols-outlined">undo</span>
+                                    </button>
+                                    <?php else: ?>
+                                    <button type="button" class="action-btn undo-swap-btn"
+                                            title="No se puede deshacer: el reemplazo tiene precio distinto o ya está facturado."
+                                            disabled
+                                            style="opacity:.45;cursor:not-allowed;">
+                                        <span class="material-symbols-outlined">undo</span>
+                                    </button>
+                                    <?php endif; ?>
                                 <?php endif; ?>
                                 <a href="<?= Url::to(['/pdf/rental-order', 'id' => $model->id]) ?>" class="action-btn pdf-btn" 
                                    title="Descargar PDF de Orden" 
@@ -2496,6 +2529,7 @@ function renderCarMiniCalendar(carData, monthStr) {
 
 const SWAP_VEHICLE_DATA_URL = <?= json_encode(Url::to(['swap-vehicle-data'])) ?>;
 const SWAP_VEHICLE_POST_URL = <?= json_encode(Url::to(['swap-vehicle'])) ?>;
+const UNDO_SWAP_URL = <?= json_encode(Url::to(['undo-swap'])) ?>;
 const PDF_CHOICES_URL = <?= json_encode(Url::to(['pdf-choices'])) ?>;
 const GET_AVAILABLE_CARS_URL = <?= json_encode(Url::to(['get-available-cars'])) ?>;
 const OVERDUE_RENTALS_URL = <?= json_encode(Url::to(['overdue-rentals'])) ?>;
@@ -3100,6 +3134,27 @@ function downloadPdfDirect(url) {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+}
+
+function confirmUndoSwap(rentalId) {
+    if (!confirm('¿Deshacer el cambio de vehículo? La orden volverá al vehículo original y el reemplazo se conservará en el historial como cancelado.')) {
+        return;
+    }
+    const csrf = document.querySelector('meta[name="csrf-token"]');
+    const headers = { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' };
+    if (csrf) headers['X-CSRF-Token'] = csrf.getAttribute('content');
+    const body = new FormData();
+
+    fetch(UNDO_SWAP_URL + '?id=' + rentalId, { method: 'POST', body: body, headers: headers })
+        .then(r => r.json())
+        .then(data => {
+            if (data && data.success) {
+                window.location.reload();
+            } else {
+                alert((data && data.message) || 'No se pudo deshacer el cambio.');
+            }
+        })
+        .catch(() => alert('Error de conexión al deshacer el cambio.'));
 }
 </script>
 

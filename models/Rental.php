@@ -387,6 +387,45 @@ class Rental extends ActiveRecord
     }
 
     /**
+     * Indica si el precio por dia del reemplazo es igual al de esta orden.
+     * Si retorna true, el reemplazo no implica venta adicional.
+     */
+    public function swapPriceMatches(): bool
+    {
+        if (!$this->isSwapped()) {
+            return false;
+        }
+        $replacement = $this->replacementRental;
+        if (!$replacement) {
+            return false;
+        }
+        return (float) $replacement->precio_por_dia === (float) $this->precio_por_dia;
+    }
+
+    /**
+     * Indica si esta orden permite deshacer el cambio de vehiculo. Solo cuando
+     * el reemplazo conservo el mismo precio por dia (sin venta adicional) y
+     * aun no se ha cobrado/facturado.
+     */
+    public function canUndoSwap(): bool
+    {
+        if (!$this->isSwapped()) {
+            return false;
+        }
+        $replacement = $this->replacementRental;
+        if (!$replacement) {
+            return false;
+        }
+        if ((float) $replacement->precio_por_dia !== (float) $this->precio_por_dia) {
+            return false;
+        }
+        if (!empty($replacement->numero_factura)) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
      * Crea una renta hija copiando campos de la original
      */
     public static function createReplacementFrom(Rental $original, array $overrides = []): Rental

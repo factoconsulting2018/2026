@@ -230,6 +230,22 @@ $formatFechaConDia = static function ($raw) use ($diasSemanaEs) {
                             'target' => '_blank'
                         ]) ?>
 
+                        <?php if ($model->isSwapped()): ?>
+                            <?php if ($model->canUndoSwap()): ?>
+                            <button type="button" class="btn btn-warning btn-lg" onclick="confirmUndoSwapView(<?= $model->id ?>)">
+                                <span class="material-symbols-outlined" style="font-size:18px;vertical-align:middle;margin-right:4px;">undo</span>
+                                Deshacer cambio de vehículo
+                            </button>
+                            <?php else: ?>
+                            <button type="button" class="btn btn-warning btn-lg" disabled
+                                    title="El reemplazo tiene un precio distinto o ya está facturado."
+                                    style="opacity:.65;cursor:not-allowed;">
+                                <span class="material-symbols-outlined" style="font-size:18px;vertical-align:middle;margin-right:4px;">undo</span>
+                                Deshacer cambio (no disponible)
+                            </button>
+                            <?php endif; ?>
+                        <?php endif; ?>
+
                         <?= Html::a('<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">delete</span>Eliminar Alquiler', ['delete', 'id' => $model->id], [
                             'class' => 'btn btn-danger btn-lg',
                             'data' => [
@@ -286,6 +302,33 @@ $formatFechaConDia = static function ($raw) use ($diasSemanaEs) {
     </div>
 
 </div>
+
+<?php if ($model->isSwapped()): ?>
+<script>
+function confirmUndoSwapView(rentalId) {
+    if (!confirm('¿Deshacer el cambio de vehículo? La orden volverá al vehículo original y el reemplazo se conservará en el historial como cancelado.')) {
+        return;
+    }
+    var csrf = document.querySelector('meta[name="csrf-token"]');
+    var headers = { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' };
+    if (csrf) headers['X-CSRF-Token'] = csrf.getAttribute('content');
+    fetch(<?= json_encode(\yii\helpers\Url::to(['undo-swap'])) ?> + '?id=' + rentalId, {
+        method: 'POST',
+        body: new FormData(),
+        headers: headers
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+        if (data && data.success) {
+            window.location.href = <?= json_encode(\yii\helpers\Url::to(['view', 'id' => $model->id])) ?>;
+        } else {
+            alert((data && data.message) || 'No se pudo deshacer el cambio.');
+        }
+    })
+    .catch(function () { alert('Error de conexión al deshacer el cambio.'); });
+}
+</script>
+<?php endif; ?>
 
 <?php
 // Descargar PDF automáticamente si viene de crear orden

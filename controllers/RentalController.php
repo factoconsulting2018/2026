@@ -44,6 +44,7 @@ class RentalController extends Controller
                     'get-available-cars' => ['GET'],
                     'swap-vehicle' => ['POST'],
                     'swap-vehicle-data' => ['GET'],
+                    'undo-swap' => ['POST'],
                     'pdf-choices' => ['GET'],
                     'overdue-rentals' => ['GET'],
                     'conflicting-rentals' => ['GET'],
@@ -1091,6 +1092,86 @@ class RentalController extends Controller
             $transaction->rollBack();
             Yii::error('swap-vehicle: ' . $e->getMessage(), 'rental');
             return ['success' => false, 'message' => 'Error al registrar el cambio: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Deshace el cambio de vehiculo cuando el precio por dia coincide con la
+     * orden original (no implica venta adicional). El reemplazo se conserva
+     * como historial pero se marca cancelado para liberar disponibilidad.
+     */
+    public function actionUndoSwap($id)
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        $original = $this->findModel($id);
+
+        if (!$original->isSwapped()) {
+            return ['success' => false, 'message' => 'Esta orden no tiene un cambio de vehículo pendiente de deshacer.'];
+        }
+
+        $replacement = $original->replacementRental;
+        if (!$replacement) {
+            return ['success' => false, 'message' => 'No se encontró la orden de reemplazo.'];
+        }
+
+        if ((float) $replacement->precio_por_dia !== (float) $original->precio_por_dia) {
+            return [
+                'success' => false,
+                'message' => 'No se puede deshacer: el reemplazo tiene un precio distinto al original y ya cuenta como una venta separada.',
+            ];
+        }
+
+        if (!empty($replacement->numero_factura)) {
+            return [
+                'success' => false,
+                'message' => 'No se puede deshacer: la orden de reemplazo ya fue facturada.',
+            ];
+        }
+
+        $oldCarId = (int) $original->car_id;
+        $newCarId = (int) $replacement->car_id;
+        $previousReason = (string) ($original->swap_reason ?? '');
+
+        $transaction = Yii::$app->db->beginTransaction();
+        try {
+            $replacement->estado_pago = 'cancelado';
+            $undoNote = 'Deshecho desde orden ' . ($original->rental_id ?: ('R' . $original->id))
+                . ' el ' . date('Y-m-d H:i')
+                . ($previousReason !== '' ? ' — Motivo original: ' . $previousReason : '');
+            $replacement->swap_reason = trim(($replacement->swap_reason ? $replacement->swap_reason . ' | ' : '') . $undoNote);
+            if (!$replacement->save(false)) {
+                $transaction->rollBack();
+                return ['success' => false, 'message' => 'No se pudo actualizar la orden de reemplazo.'];
+            }
+
+            $original->swapped_to_rental_id = null;
+            $original->swap_date = null;
+            $original->swap_reason = null;
+            if (!$original->save(false)) {
+                $transaction->rollBack();
+                return ['success' => false, 'message' => 'No se pudo actualizar la orden original.'];
+            }
+
+            $transaction->commit();
+
+            try {
+                Car::syncStatusFromRentals($oldCarId);
+                Car::syncStatusFromRentals($newCarId);
+            } catch (\Throwable $e) {
+                Yii::error('undo-swap sync: ' . $e->getMessage(), 'rental');
+            }
+
+            $msg = sprintf(
+                'Cambio deshecho: la orden %s vuelve al vehículo original. El reemplazo se conservó como cancelado en el historial.',
+                $original->rental_id ?: ('R' . $original->id)
+            );
+            Yii::$app->session->setFlash('success', '✅ ' . $msg);
+
+            return ['success' => true, 'message' => $msg];
+        } catch (\Exception $e) {
+            $transaction->rollBack();
+            Yii::error('undo-swap: ' . $e->getMessage(), 'rental');
+            return ['success' => false, 'message' => 'Error al deshacer el cambio: ' . $e->getMessage()];
         }
     }
 
