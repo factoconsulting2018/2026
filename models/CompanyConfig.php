@@ -42,6 +42,13 @@ class CompanyConfig extends ActiveRecord
     const RENTAL_ORDER_PDF_TEXT_EMPRESA_NOMBRE = 'rental_order_pdf_text_empresa_nombre';
     const RENTAL_ORDER_PDF_TEXT_EMPRESA_LINEA = 'rental_order_pdf_text_empresa_linea';
 
+    // Recordatorios automáticos Dekra (Revisión Vehicular)
+    const DEKRA_ENABLED = 'dekra_reminders_enabled';
+    const DEKRA_YEARS_AHEAD = 'dekra_reminders_years_ahead';
+    const DEKRA_PLATE_MONTH_MAP = 'dekra_plate_month_map';
+    const DEKRA_TALLER_NAME = 'dekra_taller_name';
+    const DEKRA_DAY_OF_MONTH = 'dekra_day_of_month';
+
     // Directorios para archivos
     const UPLOAD_DIR = 'uploads/company/';
     const LOGO_DIR = 'uploads/company/logo/';
@@ -135,6 +142,97 @@ class CompanyConfig extends ActiveRecord
         }
         
         return $config->save();
+    }
+
+    /**
+     * Configuración de recordatorios automáticos de Dekra (Revisión Vehicular).
+     *
+     * @return array{
+     *     enabled: bool,
+     *     years_ahead: int,
+     *     day_of_month: int,
+     *     taller_name: string,
+     *     plate_month_map: array<int,int>,
+     * }
+     */
+    public static function getDekraConfig(): array
+    {
+        $defaultMap = self::getDekraDefaultPlateMonthMap();
+
+        $rawMap = self::getConfig(self::DEKRA_PLATE_MONTH_MAP);
+        $decoded = $rawMap ? json_decode((string) $rawMap, true) : null;
+        $map = is_array($decoded) ? $decoded : [];
+
+        $sanitized = [];
+        for ($digit = 0; $digit <= 9; $digit++) {
+            $month = isset($map[$digit]) ? (int) $map[$digit] : (int) ($map[(string) $digit] ?? $defaultMap[$digit]);
+            if ($month < 1 || $month > 12) {
+                $month = $defaultMap[$digit];
+            }
+            $sanitized[$digit] = $month;
+        }
+
+        return [
+            'enabled' => self::getConfig(self::DEKRA_ENABLED, '1') === '1',
+            'years_ahead' => max(0, min(20, (int) self::getConfig(self::DEKRA_YEARS_AHEAD, '3'))),
+            'day_of_month' => max(1, min(28, (int) self::getConfig(self::DEKRA_DAY_OF_MONTH, '1'))),
+            'taller_name' => (string) self::getConfig(self::DEKRA_TALLER_NAME, 'Dekra (Revisión Vehicular)'),
+            'plate_month_map' => $sanitized,
+        ];
+    }
+
+    /**
+     * Mapa por defecto dígito → mes (1=enero, …, 8=agosto, 9=septiembre, 0=octubre).
+     *
+     * @return array<int,int>
+     */
+    public static function getDekraDefaultPlateMonthMap(): array
+    {
+        return [
+            0 => 10,
+            1 => 1,
+            2 => 2,
+            3 => 3,
+            4 => 4,
+            5 => 5,
+            6 => 6,
+            7 => 7,
+            8 => 8,
+            9 => 9,
+        ];
+    }
+
+    /**
+     * Persistir configuración de recordatorios Dekra.
+     *
+     * @param array<int,int> $plateMonthMap Dígito (0-9) → mes (1-12).
+     */
+    public static function saveDekraConfig(
+        bool $enabled,
+        int $yearsAhead,
+        int $dayOfMonth,
+        string $tallerName,
+        array $plateMonthMap
+    ): void {
+        $yearsAhead = max(0, min(20, $yearsAhead));
+        $dayOfMonth = max(1, min(28, $dayOfMonth));
+        $tallerName = trim($tallerName) !== '' ? trim($tallerName) : 'Dekra (Revisión Vehicular)';
+
+        $defaultMap = self::getDekraDefaultPlateMonthMap();
+        $sanitized = [];
+        for ($digit = 0; $digit <= 9; $digit++) {
+            $month = isset($plateMonthMap[$digit]) ? (int) $plateMonthMap[$digit] : $defaultMap[$digit];
+            if ($month < 1 || $month > 12) {
+                $month = $defaultMap[$digit];
+            }
+            $sanitized[$digit] = $month;
+        }
+
+        self::setConfig(self::DEKRA_ENABLED, $enabled ? '1' : '0', 'Activar recordatorios automáticos de Dekra');
+        self::setConfig(self::DEKRA_YEARS_AHEAD, (string) $yearsAhead, 'Años hacia adelante a generar recordatorios Dekra');
+        self::setConfig(self::DEKRA_DAY_OF_MONTH, (string) $dayOfMonth, 'Día del mes para programar recordatorio Dekra');
+        self::setConfig(self::DEKRA_TALLER_NAME, $tallerName, 'Nombre del taller / etiqueta de orden Dekra');
+        self::setConfig(self::DEKRA_PLATE_MONTH_MAP, (string) json_encode($sanitized), 'Mapeo dígito de placa → mes para recordatorios Dekra');
     }
 
     /**

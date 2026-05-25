@@ -30,6 +30,8 @@ use yii\db\ActiveRecord;
  * @property string $choferes_autorizados
  * @property string $estado_pago
  * @property string $comprobante_pago
+ * @property string|null $numero_factura
+ * @property string|null $fecha_factura
  * @property string $ejecutivo
  * @property string $ejecutivo_otro
  * @property string $created_at
@@ -86,9 +88,9 @@ class Rental extends ActiveRecord
         return [
             [['client_id', 'car_id', 'fecha_inicio', 'cantidad_dias'], 'required'],
             [['client_id', 'car_id', 'correapartir_enabled', 'medio_dia_enabled', 'cantidad_dias', 'is_async'], 'integer'],
-            [['fecha_inicio', 'fecha_final', 'hora_inicio', 'hora_final', 'fecha_correapartir', 'created_at', 'updated_at'], 'safe'],
+            [['fecha_inicio', 'fecha_final', 'hora_inicio', 'hora_final', 'fecha_correapartir', 'fecha_factura', 'created_at', 'updated_at'], 'safe'],
             [['precio_por_dia', 'medio_dia_valor', 'abono1_monto', 'abono2_monto', 'abono3_monto', 'abono4_monto', 'abono5_monto'], 'number'], // Removido total_precio porque es columna generada
-            [['rental_id', 'lugar_entrega', 'lugar_retiro', 'estado_pago', 'ejecutivo', 'ejecutivo_otro', 'abono1_descripcion', 'abono2_descripcion', 'abono3_descripcion', 'abono4_descripcion', 'abono5_descripcion'], 'string', 'max' => 255],
+            [['rental_id', 'lugar_entrega', 'lugar_retiro', 'estado_pago', 'numero_factura', 'ejecutivo', 'ejecutivo_otro', 'abono1_descripcion', 'abono2_descripcion', 'abono3_descripcion', 'abono4_descripcion', 'abono5_descripcion'], 'string', 'max' => 255],
             [['comprobante_pago'], 'string', 'max' => 500],
             [['condiciones_especiales', 'choferes_autorizados'], 'string'],
             [['custom_conditions_html'], 'string'],
@@ -127,6 +129,8 @@ class Rental extends ActiveRecord
             'choferes_autorizados' => 'Choferes Autorizados',
             'estado_pago' => 'Estado de Pago',
             'comprobante_pago' => 'Comprobante de Pago',
+            'numero_factura' => 'Número de Factura',
+            'fecha_factura' => 'Fecha de Factura',
             'created_at' => 'Fecha de Creación',
             'updated_at' => 'Fecha de Actualización',
             'abono1_descripcion' => 'Abono 1 Descripción',

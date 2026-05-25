@@ -131,6 +131,13 @@ $this->params['breadcrumbs'][] = $this->title;
                             ],
                             'fecha_correapartir',
                             'comprobante_pago',
+                            'numero_factura',
+                            [
+                                'attribute' => 'fecha_factura',
+                                'value' => $model->fecha_factura
+                                    ? Yii::$app->formatter->asDate($model->fecha_factura, 'php:d/m/Y')
+                                    : '—',
+                            ],
                             'created_at',
                             'updated_at',
                         ],

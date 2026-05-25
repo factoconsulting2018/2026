@@ -75,6 +75,8 @@ class ConfigController extends Controller
             'apiKeys' => $apiKeys,
             'incidentNotifEnabled' => CompanyConfig::getConfig(CompanyConfig::INCIDENT_NOTIF_ENABLED, '0') === '1',
             'incidentNotifFrequencyDays' => max(1, min(365, (int) CompanyConfig::getConfig(CompanyConfig::INCIDENT_NOTIF_FREQUENCY_DAYS, '3'))),
+            'dekraConfig' => CompanyConfig::getDekraConfig(),
+            'dekraDefaultMap' => CompanyConfig::getDekraDefaultPlateMonthMap(),
             'rentalOrderPdfFormat' => CompanyConfig::getRentalOrderPdfFormat(),
             'rentalOrderPdfVehicleImgMaxW' => CompanyConfig::getRentalOrderPdfVehicleImageMaxWidth(),
             'rentalOrderPdfVehicleImgMaxH' => CompanyConfig::getRentalOrderPdfVehicleImageMaxHeight(),
@@ -728,5 +730,47 @@ class ConfigController extends Controller
     public function actionApiDocs()
     {
         return $this->render('api-docs');
+    }
+
+    /**
+     * Guardar configuración de recordatorios automáticos de Dekra.
+     */
+    public function actionUpdateDekraConfig()
+    {
+        if (!Yii::$app->request->isPost) {
+            return $this->redirect(Url::to(['config/index']) . '#dekra');
+        }
+
+        $post = Yii::$app->request->post();
+        $enabled = isset($post['dekra_enabled']) && $post['dekra_enabled'] === '1';
+        $yearsAhead = (int) ($post['dekra_years_ahead'] ?? 3);
+        $dayOfMonth = (int) ($post['dekra_day_of_month'] ?? 1);
+        $tallerName = (string) ($post['dekra_taller_name'] ?? 'Dekra (Revisión Vehicular)');
+
+        $defaultMap = CompanyConfig::getDekraDefaultPlateMonthMap();
+        $rawMap = is_array($post['dekra_map'] ?? null) ? $post['dekra_map'] : [];
+        $plateMap = [];
+        for ($digit = 0; $digit <= 9; $digit++) {
+            $plateMap[$digit] = isset($rawMap[$digit]) ? (int) $rawMap[$digit] : $defaultMap[$digit];
+        }
+
+        CompanyConfig::saveDekraConfig($enabled, $yearsAhead, $dayOfMonth, $tallerName, $plateMap);
+
+        $regenerated = 0;
+        if ($enabled) {
+            try {
+                $regenerated = \app\models\MaintenanceOrder::ensureDekraReminders();
+            } catch (\Throwable $e) {
+                Yii::error('Error regenerando recordatorios Dekra: ' . $e->getMessage(), __METHOD__);
+            }
+        }
+
+        $message = 'Configuración de recordatorios Dekra guardada.';
+        if ($regenerated > 0) {
+            $message .= ' Se generaron ' . $regenerated . ' órdenes nuevas con el mapeo actualizado.';
+        }
+        Yii::$app->session->setFlash('success', $message);
+
+        return $this->redirect(Url::to(['config/index']) . '#dekra');
     }
 }

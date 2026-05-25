@@ -97,7 +97,7 @@ $reports = [
     [
         'id' => 10,
         'name' => 'Reporte de Ventas por Cliente',
-        'description' => 'Análisis de ventas agrupadas por cliente con totales y estadísticas',
+        'description' => 'Análisis de ventas por cliente con desglose de facturas (número y fecha), totales y estadísticas',
         'icon' => 'analytics',
         'color' => 'warning',
         'actions' => [

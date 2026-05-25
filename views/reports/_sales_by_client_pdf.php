@@ -1,6 +1,8 @@
 <?php
 /** @var array $salesByClient */
 /** @var string $reportNumber */
+
+use yii\helpers\Html;
 ?>
 
 <style>
@@ -153,8 +155,10 @@ foreach ($salesByClient as $clientId => $clientData):
         <thead>
             <tr>
                 <th style="width: 6%;">#</th>
-                <th style="width: 10%;">ID Alquiler</th>
-                <th style="width: 12%;">Fecha Creación</th>
+                <th style="width: 9%;">ID Alquiler</th>
+                <th style="width: 10%;">Nº Factura</th>
+                <th style="width: 9%;">Fecha Factura</th>
+                <th style="width: 10%;">Fecha Creación</th>
                 <th style="width: 10%;">Fecha Inicio</th>
                 <th style="width: 10%;">Fecha Final</th>
                 <th style="width: 8%;">Días</th>
@@ -168,7 +172,9 @@ foreach ($salesByClient as $clientId => $clientData):
             <?php foreach ($orders as $index => $order): ?>
             <tr>
                 <td class="center"><?= $index + 1 ?></td>
-                <td><?= $order->rental_id ?></td>
+                <td><?= Html::encode($order->rental_id ?: ('R' . str_pad($order->id, 6, '0', STR_PAD_LEFT))) ?></td>
+                <td><?= $order->numero_factura ? Html::encode($order->numero_factura) : '—' ?></td>
+                <td><?= $order->fecha_factura ? date('d/m/Y', strtotime($order->fecha_factura)) : '—' ?></td>
                 <td><?= date('d/m/Y', strtotime($order->created_at)) ?></td>
                 <td><?= $order->fecha_inicio ? date('d/m/Y', strtotime($order->fecha_inicio)) : 'N/A' ?></td>
                 <td><?= $order->fecha_final ? date('d/m/Y', strtotime($order->fecha_final)) : 'N/A' ?></td>

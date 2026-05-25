@@ -76,6 +76,11 @@ $conditionsModel = new \app\models\CompanyConfig();
                                 <i class="fas fa-bell"></i> Notificaciones
                             </button>
                         </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="dekra-tab" data-bs-toggle="tab" data-bs-target="#dekra" type="button" role="tab" aria-controls="dekra" aria-selected="false">
+                                <i class="fas fa-car-side"></i> Mantenimiento Dekra
+                            </button>
+                        </li>
                     </ul>
 
                     <div class="tab-content" id="configTabsContent">
@@ -1058,6 +1063,112 @@ sudo docker-compose exec app php yii migrate</code></pre>
                             </div>
                         </div>
 
+                        <div class="tab-pane fade" id="dekra" role="tabpanel" aria-labelledby="dekra-tab">
+                            <?php
+                            $dekraConfig = $dekraConfig ?? \app\models\CompanyConfig::getDekraConfig();
+                            $dekraDefaultMap = $dekraDefaultMap ?? \app\models\CompanyConfig::getDekraDefaultPlateMonthMap();
+                            $monthNames = [
+                                1 => 'Enero', 2 => 'Febrero', 3 => 'Marzo', 4 => 'Abril',
+                                5 => 'Mayo', 6 => 'Junio', 7 => 'Julio', 8 => 'Agosto',
+                                9 => 'Septiembre', 10 => 'Octubre', 11 => 'Noviembre', 12 => 'Diciembre',
+                            ];
+                            ?>
+                            <div class="row mt-4">
+                                <div class="col-lg-10">
+                                    <h5 class="mb-3"><i class="fas fa-car-side"></i> Recordatorios automáticos de Dekra (Revisión Vehicular)</h5>
+                                    <p class="text-muted">
+                                        Cuando entres a <strong>Mantenimiento</strong>, el sistema genera automáticamente una orden por vehículo y por año (la Revisión Técnica Vehicular se realiza una vez al año). El mes se asigna según el <strong>último dígito numérico de la placa</strong> y el <strong>mapeo</strong> que definas abajo.
+                                    </p>
+
+                                    <?php $dekraForm = ActiveForm::begin([
+                                        'action' => ['config/update-dekra-config'],
+                                        'method' => 'post',
+                                        'options' => ['class' => 'needs-validation', 'novalidate' => true, 'id' => 'dekra-config-form'],
+                                    ]); ?>
+
+                                    <div class="row g-3 mb-3">
+                                        <div class="col-md-4">
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" role="switch" name="dekra_enabled" value="1" id="dekra_enabled" <?= $dekraConfig['enabled'] ? 'checked' : '' ?>>
+                                                <label class="form-check-label" for="dekra_enabled">Generar recordatorios automáticamente</label>
+                                            </div>
+                                            <small class="text-muted">Si lo desactivas, no se crearán órdenes al abrir el módulo de mantenimiento.</small>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label" for="dekra_years_ahead">Años futuros</label>
+                                            <input type="number" class="form-control" min="0" max="20" name="dekra_years_ahead" id="dekra_years_ahead" value="<?= (int) $dekraConfig['years_ahead'] ?>">
+                                            <small class="text-muted">Cantidad de años a partir del actual (0 = solo año en curso).</small>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label" for="dekra_day_of_month">Día del mes</label>
+                                            <input type="number" class="form-control" min="1" max="28" name="dekra_day_of_month" id="dekra_day_of_month" value="<?= (int) $dekraConfig['day_of_month'] ?>">
+                                            <small class="text-muted">Día programado de la orden (1-28).</small>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label" for="dekra_taller_name">Nombre del taller / etiqueta</label>
+                                            <input type="text" class="form-control" name="dekra_taller_name" id="dekra_taller_name" maxlength="255" value="<?= Html::encode($dekraConfig['taller_name']) ?>">
+                                            <small class="text-muted">Texto que se guarda en el campo "Taller" para detectar duplicados.</small>
+                                        </div>
+                                    </div>
+
+                                    <h6 class="mt-4 mb-2"><i class="fas fa-map"></i> Mapeo: último dígito de la placa → mes</h6>
+                                    <p class="text-muted small mb-3">
+                                        Ejemplo: si una placa termina en <strong>8</strong> y el dígito 8 está asignado a <em>Agosto</em>, se generará una orden para el <strong>1 de agosto</strong> de cada año configurado.
+                                    </p>
+
+                                    <div class="row g-2">
+                                        <?php for ($digit = 0; $digit <= 9; $digit++): ?>
+                                            <?php $current = $dekraConfig['plate_month_map'][$digit] ?? $dekraDefaultMap[$digit]; ?>
+                                            <div class="col-6 col-sm-4 col-md-3 col-lg-2">
+                                                <label class="form-label mb-1">
+                                                    Dígito <strong><?= $digit ?></strong>
+                                                </label>
+                                                <select name="dekra_map[<?= $digit ?>]" class="form-select form-select-sm">
+                                                    <?php foreach ($monthNames as $monthNum => $monthLabel): ?>
+                                                        <option value="<?= $monthNum ?>" <?= $current === $monthNum ? 'selected' : '' ?>>
+                                                            <?= $monthNum ?> · <?= Html::encode($monthLabel) ?>
+                                                        </option>
+                                                    <?php endforeach; ?>
+                                                </select>
+                                                <small class="text-muted">Por defecto: <?= Html::encode($monthNames[$dekraDefaultMap[$digit]]) ?></small>
+                                            </div>
+                                        <?php endfor; ?>
+                                    </div>
+
+                                    <div class="alert alert-info mt-3 mb-0">
+                                        <i class="fas fa-info-circle"></i>
+                                        Al guardar, se aplicará el mapeo y se intentará generar de inmediato los recordatorios faltantes para el año actual y los años configurados. Los recordatorios ya creados no se borran ni modifican.
+                                    </div>
+
+                                    <div class="alert alert-secondary mt-3 mb-0">
+                                        <h6 class="mb-2"><i class="fas fa-clock"></i> Ejecución automática sin abrir mantenimiento</h6>
+                                        <p class="mb-2">
+                                            Para programarlo en Windows Task Scheduler, usa el archivo:
+                                        </p>
+                                        <code>c:\Users\ronal\OneDrive\Escritorio\RAA\run-dekra-reminders.bat</code>
+                                        <p class="mt-2 mb-2">
+                                            También se puede ejecutar manualmente desde la consola:
+                                        </p>
+                                        <code>php yii dekra</code>
+                                        <p class="mt-2 mb-0 small text-muted">
+                                            El comando usa esta misma configuración, genera el año actual y los años futuros indicados, y no duplica órdenes ya existentes.
+                                        </p>
+                                    </div>
+
+                                    <div class="mt-3">
+                                        <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar configuración Dekra</button>
+                                        <?= Html::a(
+                                            '<i class="fas fa-wrench"></i> Ir a Mantenimiento',
+                                            ['/maintenance-order/index'],
+                                            ['class' => 'btn btn-outline-secondary', 'encode' => false]
+                                        ) ?>
+                                    </div>
+
+                                    <?php ActiveForm::end(); ?>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="tab-pane fade" id="notificaciones" role="tabpanel" aria-labelledby="notificaciones-tab">
                             <div class="row mt-4">
                                 <div class="col-lg-8">
@@ -1110,6 +1221,12 @@ document.addEventListener('DOMContentLoaded', function() {
         var notifTabBtn = document.getElementById('notificaciones-tab');
         if (notifTabBtn) {
             (new bootstrap.Tab(notifTabBtn)).show();
+        }
+    }
+    if (window.location.hash === '#dekra' && window.bootstrap && window.bootstrap.Tab) {
+        var dekraTabBtn = document.getElementById('dekra-tab');
+        if (dekraTabBtn) {
+            (new bootstrap.Tab(dekraTabBtn)).show();
         }
     }
     if (window.location.hash === '#orden-renta-pdf' && window.bootstrap && window.bootstrap.Tab) {

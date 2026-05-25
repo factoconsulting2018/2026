@@ -40,6 +40,18 @@ class MaintenanceOrderController extends Controller
         $search = trim((string) Yii::$app->request->get('search', ''));
         $status = trim((string) Yii::$app->request->get('status', ''));
 
+        try {
+            $createdDekra = MaintenanceOrder::ensureDekraReminders();
+            if ($createdDekra > 0) {
+                Yii::$app->session->setFlash(
+                    'info',
+                    'Se generaron ' . $createdDekra . ' recordatorios automáticos de Dekra (Revisión Vehicular) según el último dígito de la placa.'
+                );
+            }
+        } catch (\Throwable $e) {
+            Yii::error('Error generando recordatorios Dekra: ' . $e->getMessage(), __METHOD__);
+        }
+
         $query = MaintenanceOrder::find()
             ->alias('m')
             ->with(['car'])

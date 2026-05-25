@@ -1039,7 +1039,7 @@ class ReportsController extends Controller
         $sheet->setTitle('Ventas por Cliente');
 
         // Encabezados
-        $headers = ['Cliente', 'ID Alquiler', 'Fecha Creación', 'Fecha Inicio', 'Fecha Final', 'Días', 'Tipo de Carro', 'Monto (₡)', 'Estado Pago', 'Método Pago'];
+        $headers = ['Cliente', 'ID Alquiler', 'Nº Factura', 'Fecha Factura', 'Fecha Creación', 'Fecha Inicio', 'Fecha Final', 'Días', 'Tipo de Carro', 'Monto (₡)', 'Estado Pago', 'Método Pago'];
         $col = 'A';
         foreach ($headers as $header) {
             $sheet->setCellValue($col . '1', $header);
@@ -1055,19 +1055,22 @@ class ReportsController extends Controller
             $orders = $clientData['orders'];
             
             foreach ($orders as $order) {
+                $rentalId = $order->rental_id ?: ('R' . str_pad($order->id, 6, '0', STR_PAD_LEFT));
                 $sheet->setCellValue('A' . $row, $client ? strtoupper($client->full_name) : 'CLIENTE #' . $clientId);
-                $sheet->setCellValue('B' . $row, $order->rental_id);
-                $sheet->setCellValue('C' . $row, date('d/m/Y', strtotime($order->created_at)));
-                $sheet->setCellValue('D' . $row, $order->fecha_inicio ? date('d/m/Y', strtotime($order->fecha_inicio)) : 'N/A');
-                $sheet->setCellValue('E' . $row, $order->fecha_final ? date('d/m/Y', strtotime($order->fecha_final)) : 'N/A');
-                $sheet->setCellValue('F' . $row, $order->cantidad_dias);
-                $sheet->setCellValue('G' . $row, $order->car ? $order->car->nombre : 'N/A');
-                $sheet->setCellValue('H' . $row, $order->total_precio);
-                $sheet->setCellValue('I' . $row, strtoupper($order->estado_pago));
-                $sheet->setCellValue('J' . $row, $order->comprobante_pago ?: 'N/A');
+                $sheet->setCellValue('B' . $row, $rentalId);
+                $sheet->setCellValue('C' . $row, $order->numero_factura ?: '—');
+                $sheet->setCellValue('D' . $row, $order->fecha_factura ? date('d/m/Y', strtotime($order->fecha_factura)) : '—');
+                $sheet->setCellValue('E' . $row, date('d/m/Y', strtotime($order->created_at)));
+                $sheet->setCellValue('F' . $row, $order->fecha_inicio ? date('d/m/Y', strtotime($order->fecha_inicio)) : 'N/A');
+                $sheet->setCellValue('G' . $row, $order->fecha_final ? date('d/m/Y', strtotime($order->fecha_final)) : 'N/A');
+                $sheet->setCellValue('H' . $row, $order->cantidad_dias);
+                $sheet->setCellValue('I' . $row, $order->car ? $order->car->nombre : 'N/A');
+                $sheet->setCellValue('J' . $row, $order->total_precio);
+                $sheet->setCellValue('K' . $row, strtoupper($order->estado_pago));
+                $sheet->setCellValue('L' . $row, $order->comprobante_pago ?: 'N/A');
                 
                 // Aplicar color al estado de pago
-                $statusCell = 'I' . $row;
+                $statusCell = 'K' . $row;
                 $statusStyle = $sheet->getStyle($statusCell);
                 
                 switch (strtolower($order->estado_pago)) {
@@ -1091,14 +1094,14 @@ class ReportsController extends Controller
         }
 
         // Total general
-        $sheet->setCellValue('G' . $row, 'TOTAL GENERAL:');
-        $sheet->setCellValue('H' . $row, $grandTotal);
+        $sheet->setCellValue('I' . $row, 'TOTAL GENERAL:');
+        $sheet->setCellValue('J' . $row, $grandTotal);
 
         // Formatear
-        $sheet->getStyle('A1:J1')->getFont()->setBold(true);
-        $sheet->getStyle('H2:H' . ($row-1))->getNumberFormat()->setFormatCode('#,##0.00');
-        $sheet->getStyle('H' . $row)->getNumberFormat()->setFormatCode('#,##0.00');
-        $sheet->getStyle('G' . $row . ':H' . $row)->getFont()->setBold(true);
+        $sheet->getStyle('A1:L1')->getFont()->setBold(true);
+        $sheet->getStyle('J2:J' . ($row - 1))->getNumberFormat()->setFormatCode('#,##0.00');
+        $sheet->getStyle('J' . $row)->getNumberFormat()->setFormatCode('#,##0.00');
+        $sheet->getStyle('I' . $row . ':J' . $row)->getFont()->setBold(true);
 
         return $this->downloadExcel($spreadsheet, 'reporte_ventas_por_cliente_' . date('Y-m-d_H-i-s') . '.xlsx');
     }
@@ -1134,22 +1137,27 @@ class ReportsController extends Controller
             // Encabezados de la tabla
             $table->addRow();
             $table->addCell(600)->addText('#', ['bold' => true]);
-            $table->addCell(1000)->addText('ID Alquiler', ['bold' => true]);
-            $table->addCell(1000)->addText('Fecha Creación', ['bold' => true]);
-            $table->addCell(1000)->addText('Fecha Inicio', ['bold' => true]);
-            $table->addCell(1000)->addText('Fecha Final', ['bold' => true]);
-            $table->addCell(600)->addText('Días', ['bold' => true]);
-            $table->addCell(1200)->addText('Tipo de Carro', ['bold' => true]);
+            $table->addCell(900)->addText('ID Alquiler', ['bold' => true]);
+            $table->addCell(900)->addText('Nº Factura', ['bold' => true]);
+            $table->addCell(900)->addText('Fecha Factura', ['bold' => true]);
+            $table->addCell(900)->addText('Fecha Creación', ['bold' => true]);
+            $table->addCell(900)->addText('Fecha Inicio', ['bold' => true]);
+            $table->addCell(900)->addText('Fecha Final', ['bold' => true]);
+            $table->addCell(500)->addText('Días', ['bold' => true]);
+            $table->addCell(1100)->addText('Tipo de Carro', ['bold' => true]);
             $table->addCell(800)->addText('Monto (₡)', ['bold' => true]);
-            $table->addCell(800)->addText('Estado', ['bold' => true]);
-            $table->addCell(800)->addText('Método Pago', ['bold' => true]);
+            $table->addCell(700)->addText('Estado', ['bold' => true]);
+            $table->addCell(700)->addText('Método Pago', ['bold' => true]);
 
             // Datos de las órdenes
             foreach ($orders as $index => $order) {
+                $rentalId = $order->rental_id ?: ('R' . str_pad($order->id, 6, '0', STR_PAD_LEFT));
                 $table->addRow();
                 $table->addCell(600)->addText($index + 1);
-                $table->addCell(1000)->addText($order->rental_id);
-                $table->addCell(1000)->addText(date('d/m/Y', strtotime($order->created_at)));
+                $table->addCell(900)->addText($rentalId);
+                $table->addCell(900)->addText($order->numero_factura ?: '—');
+                $table->addCell(900)->addText($order->fecha_factura ? date('d/m/Y', strtotime($order->fecha_factura)) : '—');
+                $table->addCell(900)->addText(date('d/m/Y', strtotime($order->created_at)));
                 $table->addCell(1000)->addText($order->fecha_inicio ? date('d/m/Y', strtotime($order->fecha_inicio)) : 'N/A');
                 $table->addCell(1000)->addText($order->fecha_final ? date('d/m/Y', strtotime($order->fecha_final)) : 'N/A');
                 $table->addCell(600)->addText($order->cantidad_dias);

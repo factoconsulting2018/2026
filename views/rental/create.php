@@ -377,6 +377,12 @@ foreach ($cars as $car) {
                         'class' => 'form-select'
                     ]) ?>
 
+                    <?= $form->field($model, 'numero_factura')->textInput([
+                        'placeholder' => 'Ej: 001-001-00001234'
+                    ]) ?>
+
+                    <?= $form->field($model, 'fecha_factura')->input('date') ?>
+
                     <?= $form->field($model, 'ejecutivo')->dropDownList([
                         '' => 'Seleccionar ejecutivo',
                         'Gerardo' => 'Gerardo',
