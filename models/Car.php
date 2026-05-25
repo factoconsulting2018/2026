@@ -291,5 +291,53 @@ class Car extends ActiveRecord
             ->where(['estado_pago' => 'pendiente'])
             ->one();
     }
+
+    /**
+     * Sincroniza el campo `status` del vehículo con las rentas activas hoy.
+     * - Si tiene una renta síncrona vigente hoy (no cancelada, swap_date respetado): 'alquilado'.
+     * - Si no: 'disponible'.
+     * Respeta los estados manuales 'fuera_servicio' y 'mantenimiento' (no los cambia).
+     *
+     * @return bool true si hubo cambio de estado.
+     */
+    public static function syncStatusFromRentals(int $carId): bool
+    {
+        $car = self::findOne($carId);
+        if (!$car || in_array($car->status, ['fuera_servicio', 'mantenimiento'], true)) {
+            return false;
+        }
+
+        $today = date('Y-m-d');
+        $available = CarAvailability::isCarAvailable($carId, $today, $today);
+        $expected = $available ? 'disponible' : 'alquilado';
+
+        if ($car->status === $expected) {
+            return false;
+        }
+
+        $car->status = $expected;
+        return (bool) $car->save(false, ['status', 'updated_at']);
+    }
+
+    /**
+     * Sincroniza el estado de TODOS los vehículos (excepto fuera_servicio/mantenimiento).
+     *
+     * @return int cantidad de vehículos cuyo estado cambió.
+     */
+    public static function syncAllStatuses(): int
+    {
+        $changed = 0;
+        $query = self::find()
+            ->select(['id', 'status'])
+            ->where(['not in', 'status', ['fuera_servicio', 'mantenimiento']]);
+
+        foreach ($query->each(100) as $car) {
+            if (self::syncStatusFromRentals((int) $car->id)) {
+                $changed++;
+            }
+        }
+
+        return $changed;
+    }
 }
 

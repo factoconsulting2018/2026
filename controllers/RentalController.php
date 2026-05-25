@@ -182,10 +182,9 @@ class RentalController extends Controller
                 // Refrescar el modelo para obtener el total_precio calculado por la columna generada
                 $model->refresh();
                 
-                // Actualizar estado del carro
-                if (!$model->is_async && $model->car) {
-                    $model->car->status = 'alquilado';
-                    $model->car->save(false);
+                // Sincronizar estado del carro con las rentas activas (alquilado si cubre hoy)
+                if (!$model->is_async && $model->car_id) {
+                    Car::syncStatusFromRentals((int) $model->car_id);
                 }
                 
                 // Generar PDF automáticamente al crear la orden
@@ -215,6 +214,7 @@ class RentalController extends Controller
     public function actionUpdate($id)
     {
         $model = $this->findModel($id);
+        $previousCarId = (int) $model->car_id;
         
         // Debug: Verificar los valores de la fecha antes de cargar el formulario
         Yii::info("DEBUG - Fecha de inicio cargada: " . $model->fecha_inicio, 'rental');
@@ -237,6 +237,12 @@ class RentalController extends Controller
             if ($model->save()) {
                 // Refrescar el modelo para obtener el total_precio calculado por la columna generada
                 $model->refresh();
+                
+                // Sincronizar estado del carro actual y del anterior si cambió
+                Car::syncStatusFromRentals((int) $model->car_id);
+                if ($previousCarId && $previousCarId !== (int) $model->car_id) {
+                    Car::syncStatusFromRentals($previousCarId);
+                }
                 
                 Yii::$app->session->setFlash('success', '✅ Alquiler actualizado exitosamente');
                 return $this->redirect(['view', 'id' => $model->id]);
@@ -262,14 +268,7 @@ class RentalController extends Controller
         $transaction = Yii::$app->db->beginTransaction();
         try {
             $model = $this->findModel($id);
-            
-            // Liberar el carro antes de eliminar
-            if (!$model->is_async && $model->car) {
-                $model->car->status = 'disponible';
-                if (!$model->car->save(false)) {
-                    throw new \Exception('Error al liberar el vehículo');
-                }
-            }
+            $deletedCarId = !$model->is_async ? (int) $model->car_id : 0;
             
             // Eliminar el registro de la base de datos
             if (!$model->delete()) {
@@ -277,6 +276,12 @@ class RentalController extends Controller
             }
 
             $transaction->commit();
+
+            // Sincronizar estado del carro: vuelve a disponible solo si no hay otra renta activa hoy
+            if ($deletedCarId) {
+                Car::syncStatusFromRentals($deletedCarId);
+            }
+
             Yii::$app->session->setFlash('success', '🗑️ Alquiler eliminado exitosamente');
         } catch (\Exception $e) {
             $transaction->rollBack();
@@ -406,14 +411,9 @@ class RentalController extends Controller
                 
                 Yii::info($logMessage, 'rental_payment_status_change');
                 
-                // Actualizar estado del vehículo si es necesario
-                if ($model->car) {
-                    if ($newStatus === 'pagado' || $newStatus === 'reservado') {
-                        $model->car->status = 'alquilado';
-                    } elseif ($newStatus === 'cancelado') {
-                        $model->car->status = 'disponible';
-                    }
-                    $model->car->save(false);
+                // Sincronizar estado del vehículo con sus rentas activas hoy
+                if ($model->car_id) {
+                    Car::syncStatusFromRentals((int) $model->car_id);
                 }
                 
                 return [
@@ -966,31 +966,12 @@ class RentalController extends Controller
     }
 
     /**
-     * Actualiza estado disponible/alquilado según rentas activas hoy
+     * Actualiza estado disponible/alquilado según rentas activas hoy (X y Y).
      */
     private function syncCarStatusAfterSwap(int $oldCarId, int $newCarId): void
     {
-        $this->syncCarAvailabilityStatus($oldCarId);
-        $this->syncCarAvailabilityStatus($newCarId);
-    }
-
-    private function syncCarAvailabilityStatus(int $carId): void
-    {
-        $car = Car::findOne($carId);
-        if (!$car || in_array($car->status, ['fuera_servicio', 'mantenimiento'], true)) {
-            return;
-        }
-
-        $today = date('Y-m-d');
-        $available = CarAvailability::isCarAvailable($carId, $today, $today);
-
-        if ($available && $car->status === 'alquilado') {
-            $car->status = 'disponible';
-            $car->save(false);
-        } elseif (!$available && $car->status === 'disponible') {
-            $car->status = 'alquilado';
-            $car->save(false);
-        }
+        Car::syncStatusFromRentals($oldCarId);
+        Car::syncStatusFromRentals($newCarId);
     }
 
     protected function findModel($id)

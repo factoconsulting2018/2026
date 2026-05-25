@@ -554,10 +554,9 @@ class ApiController extends Controller
             if ($model->load($data, '') && $model->save()) {
                 $model->refresh();
                 
-                // Actualizar estado del vehículo
-                if ($model->car) {
-                    $model->car->status = 'alquilado';
-                    $model->car->save(false);
+                // Sincronizar estado del vehículo con rentas activas hoy
+                if ($model->car_id) {
+                    Car::syncStatusFromRentals((int) $model->car_id);
                 }
                 
                 Yii::$app->response->statusCode = 201;

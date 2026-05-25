@@ -61,6 +61,14 @@ class CarController extends Controller
 
     public function actionIndex()
     {
+        // Sincronizar Disponible/Alquilado con las rentas activas antes de listar.
+        // Respeta estados manuales 'fuera_servicio' y 'mantenimiento'.
+        try {
+            Car::syncAllStatuses();
+        } catch (\Throwable $e) {
+            Yii::error('Error sincronizando estados de vehículos: ' . $e->getMessage(), 'car');
+        }
+
         $query = Car::find()->with(['marca']);
 
         $search = trim((string) Yii::$app->request->get('search', ''));
