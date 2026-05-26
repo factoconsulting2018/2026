@@ -305,22 +305,44 @@ class WhatsAppNotifier
      * Es defensivo: nunca debe romper el flujo principal de creacion. Cualquier excepcion
      * se loguea y se devuelve un reporte estructurado.
      *
-     * @return array{enabled:bool, attempted:int, sent:int, errors:array<string>}
+     * @return array{enabled:bool, attempted:int, sent:int, errors:array<string>, skipped_reason:?string}
      */
     public static function notifyRentalCreated(Rental $rental): array
     {
-        $report = ['enabled' => false, 'attempted' => 0, 'sent' => 0, 'errors' => []];
+        $report = [
+            'enabled' => false,
+            'attempted' => 0,
+            'sent' => 0,
+            'errors' => [],
+            'skipped_reason' => null,
+        ];
 
         try {
             $cfg = CompanyConfig::getWhatsAppConfig();
-            if (!$cfg['enabled'] || !$cfg['notify_on_create']) {
+            Yii::info(
+                'notifyRentalCreated start; rental_id=' . ($rental->id ?? '?')
+                . ' enabled=' . (int) $cfg['enabled']
+                . ' notify_on_create=' . (int) $cfg['notify_on_create']
+                . ' phones=' . count(array_filter($cfg['admin_phones'])),
+                'whatsapp'
+            );
+
+            if (!$cfg['enabled']) {
+                $report['skipped_reason'] = 'Integración WhatsApp desactivada en configuración.';
+                return $report;
+            }
+            if (!$cfg['notify_on_create']) {
+                $report['skipped_reason'] = 'Aviso automático al crear orden desactivado.';
                 return $report;
             }
             $report['enabled'] = true;
 
             $numbers = self::getAdminNumbers($cfg);
             if (empty($numbers)) {
-                $report['errors'][] = 'No hay telefonos administradores configurados.';
+                $msg = 'No hay teléfonos administradores configurados.';
+                Yii::warning($msg, 'whatsapp');
+                $report['errors'][] = $msg;
+                $report['skipped_reason'] = $msg;
                 return $report;
             }
 
@@ -328,24 +350,33 @@ class WhatsAppNotifier
             $status = self::getStatus($cfg['api_url'], $cfg['session_id']);
             if (!self::isConnected($status)) {
                 $bodyStatus = is_array($status['body'] ?? null) ? ($status['body']['status'] ?? 'unknown') : 'unknown';
-                $msg = $status['error'] ?? ('Sesion WhatsApp no conectada (estado: ' . $bodyStatus . ')');
-                Yii::warning('WhatsApp omitido (sesion no conectada): ' . $msg, 'whatsapp');
+                $msg = $status['error'] ?? ('Sesión WhatsApp no conectada (estado: ' . $bodyStatus . ')');
+                Yii::warning('WhatsApp omitido (sesión no conectada): ' . $msg, 'whatsapp');
                 $report['errors'][] = $msg;
+                $report['skipped_reason'] = $msg;
                 return $report;
             }
 
             $message = self::buildRentalMessage($rental);
+            Yii::info('WhatsApp message preparado (' . strlen($message) . ' chars) para ' . count($numbers) . ' destinatario(s)', 'whatsapp');
 
             // Publicar PDF de la orden si existe.
             $pdfFilename = PdfController::rentalOrderPdfFilename($rental);
             $publicPdf = self::publishPdfFromRuntime($pdfFilename, $cfg['public_base_url'] ?: null);
+            if ($publicPdf === null) {
+                Yii::warning('PDF no encontrado o no se pudo publicar para enviar por WhatsApp: ' . $pdfFilename, 'whatsapp');
+            } else {
+                Yii::info('PDF publicado en outbox: ' . $publicPdf['public_url'], 'whatsapp');
+            }
 
             foreach ($numbers as $number) {
                 $report['attempted']++;
                 try {
                     $textRes = self::sendText($cfg['api_url'], $cfg['session_id'], $number, $message);
                     if (!$textRes['ok']) {
-                        $report['errors'][] = $number . ': texto ' . ($textRes['error'] ?? 'fallo');
+                        $err = $number . ': texto ' . ($textRes['error'] ?? 'fallo');
+                        Yii::warning('WhatsApp envío fallido — ' . $err, 'whatsapp');
+                        $report['errors'][] = $err;
                         continue;
                     }
 
@@ -359,13 +390,17 @@ class WhatsAppNotifier
                             'application/pdf'
                         );
                         if (!$docRes['ok']) {
-                            $report['errors'][] = $number . ': pdf ' . ($docRes['error'] ?? 'fallo');
+                            $err = $number . ': pdf ' . ($docRes['error'] ?? 'fallo');
+                            Yii::warning('WhatsApp PDF fallido — ' . $err, 'whatsapp');
+                            $report['errors'][] = $err;
                             continue;
                         }
                     }
                     $report['sent']++;
+                    Yii::info('WhatsApp enviado correctamente a ' . $number, 'whatsapp');
                 } catch (\Throwable $e) {
                     $report['errors'][] = $number . ': ' . $e->getMessage();
+                    Yii::error('WhatsApp envío excepción a ' . $number . ': ' . $e->getMessage(), 'whatsapp');
                 }
             }
         } catch (\Throwable $e) {
@@ -378,57 +413,131 @@ class WhatsAppNotifier
 
     /**
      * Construye el texto del mensaje a enviar para una orden de alquiler.
+     * Incluye: cliente, tipo de vehículo, matrícula, periodo de alquiler y estado de pago.
      */
     public static function buildRentalMessage(Rental $rental): string
     {
         $company = CompanyConfig::getCompanyInfo();
-        $companyName = $company['name'] ?? 'Renta de Vehiculos';
+        $companyName = $company['name'] ?? 'Renta de Vehículos';
 
         $orderId = $rental->rental_id ?: ('R' . $rental->id);
-        $client = $rental->client ?? null;
-        $clientName = $client ? trim((string) $client->full_name) : '—';
-        $clientPhone = $client ? trim((string) ($client->whatsapp ?? '')) : '';
 
+        // ----- Cliente -----
+        $client = $rental->client ?? null;
+        $clientName = '—';
+        $clientPhone = '';
+        if ($client) {
+            $clientName = trim((string) $client->full_name);
+            if ($clientName === '') {
+                $clientName = trim(((string) ($client->nombre ?? '')) . ' ' . ((string) ($client->apellido ?? '')));
+            }
+            if ($clientName === '') {
+                $clientName = '—';
+            }
+            $clientPhone = trim((string) ($client->whatsapp ?? ''));
+        }
+
+        // ----- Vehículo (tipo + matrícula) -----
         $car = $rental->car ?? null;
-        $carLabel = '—';
+        $carType = '—';
+        $plate = '—';
         if ($car) {
-            $brand = trim((string) ($car->marca ?? ''));
-            $model = trim((string) ($car->modelo ?? ''));
-            $plate = trim((string) ($car->placa ?? ''));
-            $carLabel = trim($brand . ' ' . $model . ($plate !== '' ? ' (' . $plate . ')' : ''));
-            if ($carLabel === '') {
-                $carLabel = '—';
+            $plateRaw = trim((string) ($car->placa ?? ''));
+            $plate = $plateRaw !== '' ? $plateRaw : '—';
+
+            // Tipo = Marca + Nombre/Modelo del vehículo
+            $brandName = '';
+            try {
+                if (!empty($car->marca_id) && $car->marca) {
+                    $brandName = trim((string) ($car->marca->name ?? ''));
+                }
+            } catch (\Throwable $e) {
+                $brandName = '';
+            }
+            $modelLabel = trim((string) ($car->nombre ?? ''));
+            // Evitar duplicar la marca si ya está al inicio del nombre
+            if ($brandName !== '' && $modelLabel !== '' && stripos($modelLabel, $brandName) === 0) {
+                $carType = $modelLabel;
+            } else {
+                $carType = trim($brandName . ' ' . $modelLabel);
+            }
+            if ($carType === '') {
+                $carType = '—';
             }
         }
 
-        $startTs = !empty($rental->fecha_inicio) ? strtotime((string) $rental->fecha_inicio) : false;
-        $endTs = !empty($rental->fecha_final) ? strtotime((string) $rental->fecha_final) : false;
-        $start = $startTs ? date('d/m/Y h:i A', $startTs) : '—';
-        $end = $endTs ? date('d/m/Y h:i A', $endTs) : '—';
+        // ----- Periodo de alquiler -----
+        $startDate = !empty($rental->fecha_inicio) ? date('d/m/Y', strtotime((string) $rental->fecha_inicio)) : '—';
+        $endDate = !empty($rental->fecha_final) ? date('d/m/Y', strtotime((string) $rental->fecha_final)) : '—';
+        $startTime = self::formatTime12h($rental->hora_inicio ?? null);
+        $endTime = self::formatTime12h($rental->hora_final ?? null);
+
+        $startLabel = $startDate . ($startTime !== '' ? ' ' . $startTime : '');
+        $endLabel = $endDate . ($endTime !== '' ? ' ' . $endTime : '');
 
         $days = (int) ($rental->cantidad_dias ?? 0);
+
+        // ----- Estado de pago -----
+        $payStatusKey = (string) ($rental->estado_pago ?? '');
+        $payStatusLabels = [
+            'pendiente' => '🟡 Pendiente',
+            'pagado' => '✅ Pagado',
+            'reservado' => '📌 Reservado',
+            'cancelado' => '❌ Cancelado',
+            'finalizado' => '🏁 Finalizado',
+        ];
+        $payStatus = $payStatusLabels[$payStatusKey] ?? ($payStatusKey !== '' ? ucfirst($payStatusKey) : '—');
+
+        // ----- Total -----
         $total = number_format((float) ($rental->total_precio ?? 0), 0, '.', ',');
-        $currency = trim((string) ($rental->moneda ?? '₡')) ?: '₡';
+        $currency = '₡';
 
         $lines = [];
-        $lines[] = '*Nueva orden de alquiler*';
+        $lines[] = '*🚗 Nueva orden de alquiler*';
         $lines[] = $companyName;
         $lines[] = '';
         $lines[] = 'Orden: *' . $orderId . '*';
-        $lines[] = 'Cliente: ' . $clientName;
+        $lines[] = '';
+        $lines[] = '👤 *Cliente:* ' . $clientName;
         if ($clientPhone !== '') {
-            $lines[] = 'WhatsApp: ' . $clientPhone;
+            $lines[] = '📱 ' . $clientPhone;
         }
-        $lines[] = 'Vehiculo: ' . $carLabel;
-        $lines[] = 'Inicio: ' . $start;
-        $lines[] = 'Final: ' . $end;
+        $lines[] = '';
+        $lines[] = '🚙 *Vehículo:* ' . $carType;
+        $lines[] = '🔖 *Matrícula:* ' . $plate;
+        $lines[] = '';
+        $lines[] = '📅 *Periodo del alquiler*';
+        $lines[] = 'Desde: ' . $startLabel;
+        $lines[] = 'Hasta: ' . $endLabel;
         if ($days > 0) {
-            $lines[] = 'Dias: ' . $days;
+            $lines[] = 'Duración: ' . $days . ' día' . ($days === 1 ? '' : 's');
         }
-        $lines[] = 'Total: ' . $currency . ' ' . $total;
+        $lines[] = '';
+        $lines[] = '💵 *Estado de pago:* ' . $payStatus;
+        $lines[] = '💰 *Total:* ' . $currency . ' ' . $total;
         $lines[] = '';
         $lines[] = 'Se adjunta la orden en PDF.';
 
         return implode("\n", $lines);
+    }
+
+    /**
+     * Convierte HH:MM(:SS) (24h) a "h:MM AM/PM" (12h). Devuelve '' si no se puede.
+     */
+    private static function formatTime12h($raw): string
+    {
+        if ($raw === null || $raw === '') return '';
+        $s = trim((string) $raw);
+        // Soportar "HH:MM" o "HH:MM:SS"
+        if (!preg_match('/^(\d{1,2}):(\d{2})(?::\d{2})?$/', $s, $m)) {
+            return '';
+        }
+        $h = (int) $m[1];
+        $min = (int) $m[2];
+        if ($h < 0 || $h > 23 || $min < 0 || $min > 59) return '';
+        $period = $h >= 12 ? 'PM' : 'AM';
+        $h12 = $h % 12;
+        if ($h12 === 0) $h12 = 12;
+        return $h12 . ':' . str_pad((string) $min, 2, '0', STR_PAD_LEFT) . ' ' . $period;
     }
 }

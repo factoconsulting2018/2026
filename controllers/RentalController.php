@@ -222,13 +222,25 @@ class RentalController extends Controller
                     $waReport = WhatsAppNotifier::notifyRentalCreated($model);
                     if ($waReport['enabled']) {
                         if ($waReport['sent'] > 0) {
+                            $msg = '📲 Aviso por WhatsApp enviado a ' . $waReport['sent']
+                                . ' de ' . $waReport['attempted'] . ' teléfono(s) administrativo(s).';
+                            if (!empty($waReport['errors'])) {
+                                $msg .= ' Algunos fallaron: ' . implode(' | ', $waReport['errors']);
+                                Yii::$app->session->setFlash('warning', $msg);
+                            } else {
+                                Yii::$app->session->setFlash('info', $msg);
+                            }
+                        } else {
+                            $errs = !empty($waReport['errors']) ? implode(' | ', $waReport['errors']) : 'sin detalle';
                             Yii::$app->session->setFlash(
-                                'info',
-                                '📲 Aviso enviado por WhatsApp a ' . $waReport['sent'] . ' teléfono(s) administrativo(s).'
+                                'warning',
+                                '⚠️ No se pudo enviar el aviso por WhatsApp: ' . $errs
+                                . ' — Revise Configuración → WhatsApp (sesión conectada, teléfonos, URL pública del sitio).'
                             );
-                        } elseif (!empty($waReport['errors'])) {
-                            Yii::warning('WhatsApp notify errors: ' . implode(' | ', $waReport['errors']), 'whatsapp');
+                            Yii::warning('WhatsApp notify errors: ' . $errs, 'whatsapp');
                         }
+                    } elseif (!empty($waReport['skipped_reason'])) {
+                        Yii::info('WhatsApp omitido: ' . $waReport['skipped_reason'], 'whatsapp');
                     }
                 } catch (\Throwable $e) {
                     Yii::error('WhatsApp notify exception: ' . $e->getMessage(), 'whatsapp');
