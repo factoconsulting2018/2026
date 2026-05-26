@@ -1575,6 +1575,9 @@ document.addEventListener('DOMContentLoaded', function() {
             del: <?= json_encode(Url::to(['config/whatsapp-delete'])) ?>,
             test: <?= json_encode(Url::to(['config/whatsapp-test'])) ?>,
         };
+        // Valores GUARDADOS (no del formulario) para que coincidan con lo que usa el backend.
+        const WA_API_URL = <?= json_encode($whatsappConfig['api_url']) ?>;
+        const WA_SESSION_ID = <?= json_encode($whatsappConfig['session_id']) ?>;
         const CSRF = <?= json_encode(Yii::$app->request->csrfToken) ?>;
 
         const tabBtn = document.getElementById('whatsapp-tab');
@@ -1625,7 +1628,29 @@ document.addEventListener('DOMContentLoaded', function() {
 
         function renderQrImage(dataUrl) {
             if (!qrBox) return;
-            qrBox.innerHTML = '<img src="' + dataUrl + '" alt="QR WhatsApp" style="max-width: 260px; width: 100%; height: auto;">';
+            const img = new Image();
+            img.alt = 'QR WhatsApp';
+            img.style.maxWidth = '260px';
+            img.style.width = '100%';
+            img.style.height = 'auto';
+            img.onload = function () {
+                qrBox.innerHTML = '';
+                qrBox.appendChild(img);
+            };
+            img.onerror = function () {
+                console.warn('[whatsapp] QR image failed to load:', dataUrl);
+                renderQrPlaceholder(
+                    '<div class="text-muted">' +
+                    '<div class="spinner-border spinner-border-sm mb-2" role="status"></div>' +
+                    '<p class="mb-0">Generando QR…</p></div>'
+                );
+            };
+            img.src = dataUrl;
+        }
+
+        function buildQrImageUrl() {
+            if (!WA_API_URL || !WA_SESSION_ID) return '';
+            return WA_API_URL.replace(/\/+$/, '') + '/session/' + encodeURIComponent(WA_SESSION_ID) + '/qr-image?t=' + Date.now();
         }
 
         async function apiGet(url) {
@@ -1726,6 +1751,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     return { hadQr: false, connected: true, sessionExists: true };
                 }
 
+                const msg = (data && data.message) ? String(data.message) : '';
+                const sessionMissing = apiStatus === 'not_found'
+                    || data.sessionExists === false
+                    || /no encontrada|not found|no existe/i.test(msg);
+
+                // Estrategia 1: QR base64 desde el JSON.
                 const qrSrc = findQrInResponse(data) || (r && findQrInResponse(r));
                 if (qrSrc) {
                     const dataUrl = qrSrc.indexOf('data:image') === 0 ? qrSrc : ('data:image/png;base64,' + qrSrc.replace(/^data:[^,]*,/, ''));
@@ -1735,22 +1766,31 @@ document.addEventListener('DOMContentLoaded', function() {
                     return { hadQr: true, connected: false, sessionExists: true };
                 }
 
-                const msg = (data && data.message) ? String(data.message) : '';
-                const sessionMissing = apiStatus === 'not_found'
-                    || data.sessionExists === false
-                    || /no encontrada|not found|no existe/i.test(msg);
-
-                // Si la sesión existe y dice que está conectando con qr disponible (qr:true),
-                // hacemos fallback al endpoint PNG directo del servidor (/session/{id}/qr-image).
-                if (!sessionMissing && (apiStatus === 'connecting' || data.qr === true)) {
-                    const apiUrl = (document.getElementById('whatsapp_api_url') || {}).value || '';
-                    const sessionId = (document.getElementById('whatsapp_session_id') || {}).value || '';
-                    if (apiUrl && sessionId) {
-                        const imgUrl = apiUrl.replace(/\/+$/, '') + '/session/' + encodeURIComponent(sessionId) + '/qr-image?t=' + Date.now();
-                        renderQrImage(imgUrl);
-                        setBadge('pending');
-                        showInfo('Escanee el QR desde su WhatsApp (Dispositivos vinculados).', 'info');
-                        return { hadQr: true, connected: false, sessionExists: true };
+                // Estrategia 2: usar el endpoint PNG directo /session/{id}/qr-image,
+                // pero solo si la sesión existe.
+                if (!sessionMissing) {
+                    const imgUrl = buildQrImageUrl();
+                    if (imgUrl) {
+                        // Pre-fetch para verificar que devuelve una imagen valida
+                        // (asi sabemos si el QR ya esta listo o no).
+                        try {
+                            const head = await fetch(imgUrl, { method: 'GET', mode: 'cors', cache: 'no-store' });
+                            console.log('[whatsapp] qr-image HTTP', head.status, head.headers.get('content-type'));
+                            const ct = (head.headers.get('content-type') || '').toLowerCase();
+                            if (head.ok && ct.indexOf('image') !== -1) {
+                                renderQrImage(imgUrl);
+                                setBadge('pending');
+                                showInfo('Escanee el QR desde su WhatsApp (Dispositivos vinculados).', 'info');
+                                return { hadQr: true, connected: false, sessionExists: true };
+                            }
+                        } catch (fetchErr) {
+                            // CORS o red: intentar igual con <img> directamente.
+                            console.warn('[whatsapp] no se pudo pre-validar qr-image:', fetchErr.message);
+                            renderQrImage(imgUrl);
+                            setBadge('pending');
+                            showInfo('Escanee el QR desde su WhatsApp (Dispositivos vinculados).', 'info');
+                            return { hadQr: true, connected: false, sessionExists: true };
+                        }
                     }
                 }
 
@@ -1842,8 +1882,20 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
+        function hasUnsavedChanges() {
+            const formUrl = ((document.getElementById('whatsapp_api_url') || {}).value || '').trim().replace(/\/+$/, '');
+            const formSid = ((document.getElementById('whatsapp_session_id') || {}).value || '').trim();
+            const savedUrl = (WA_API_URL || '').trim().replace(/\/+$/, '');
+            const savedSid = (WA_SESSION_ID || '').trim();
+            return formUrl !== savedUrl || formSid !== savedSid;
+        }
+
         if (btnStart) {
             btnStart.addEventListener('click', async () => {
+                if (hasUnsavedChanges()) {
+                    showInfo('Hay cambios sin guardar en la URL o Session ID. Pulsa "Guardar configuración" primero para que el servidor use los nuevos valores.', 'warning');
+                    return;
+                }
                 btnStart.disabled = true;
                 renderQrPlaceholder(
                     '<div class="text-muted">' +
