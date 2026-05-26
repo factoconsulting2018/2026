@@ -435,6 +435,7 @@ button.rc-reservas-btn.badge:hover { filter: brightness(1.05); }
 <?php
 $jsMonth = json_encode(substr($fecha, 0, 7));
 $jsToday = json_encode(date('Y-m-d'));
+$jsFiltro = json_encode($fecha);
 $jsMonthUrl = json_encode($calendarMonthUrl);
 $jsDayUrl = json_encode($calendarDayUrl);
 $jsDispBase = json_encode(Url::to(['car/disponibles']));
@@ -445,6 +446,9 @@ $jsDispBase = json_encode(Url::to(['car/disponibles']));
     var RC_DAY_URL = <?= $jsDayUrl ?>;
     var RC_DISP_URL = <?= $jsDispBase ?>;
     var RC_TODAY = <?= $jsToday ?>;
+    // Fecha actualmente consultada en el filtro "Consultar fecha".
+    // Se usa como "from" para no mostrar órdenes anteriores a esa fecha.
+    var RC_FROM = <?= $jsFiltro ?>;
 
     var calRoot = document.getElementById('rc-calendar');
     var labelEl = document.getElementById('rc-month-label');
@@ -556,7 +560,7 @@ $jsDispBase = json_encode(Url::to(['car/disponibles']));
         // Quitar el grid mientras carga para que el spinner ocupe todo
         calRoot.style.display = 'block';
 
-        fetch(RC_MONTH_URL + '?month=' + encodeURIComponent(monthStr), {
+        fetch(RC_MONTH_URL + '?month=' + encodeURIComponent(monthStr) + '&from=' + encodeURIComponent(RC_FROM), {
             credentials: 'same-origin',
             headers: { 'Accept': 'application/json' }
         })
@@ -765,6 +769,7 @@ $jsDispBase = json_encode(Url::to(['car/disponibles']));
 // ===== Modal de órdenes por vehículo (columna Reservas) =====
 (function () {
     var CAR_RENTALS_URL = <?= json_encode($carRentalsUrl) ?>;
+    var CAR_FROM = <?= $jsFiltro ?>;
     var modalEl = document.getElementById('rcCarModal');
     var bodyEl = document.getElementById('rc-car-body');
     var titleEl = document.getElementById('rc-car-title');
@@ -818,7 +823,7 @@ $jsDispBase = json_encode(Url::to(['car/disponibles']));
             + '</div>';
         openModal();
 
-        fetch(CAR_RENTALS_URL + '?car_id=' + encodeURIComponent(carId), {
+        fetch(CAR_RENTALS_URL + '?car_id=' + encodeURIComponent(carId) + '&from=' + encodeURIComponent(CAR_FROM), {
             credentials: 'same-origin',
             headers: { 'Accept': 'application/json' }
         })

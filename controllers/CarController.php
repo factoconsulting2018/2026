@@ -53,7 +53,8 @@ class CarController extends Controller
 
         $cars = CarAvailability::getCarsAvailableOnDate($fecha);
 
-        // Conteo de órdenes (no canceladas) por carro para los carros listados.
+        // Conteo de órdenes (no canceladas) por carro, solo aquellas vigentes
+        // o futuras a partir de la fecha consultada (no mostrar órdenes pasadas).
         $rentalsByCar = [];
         if (!empty($cars)) {
             $carIds = array_map(static function ($c) { return (int) $c->id; }, $cars);
@@ -62,6 +63,10 @@ class CarController extends Controller
                 ->select(['car_id', 'cnt' => 'COUNT(*)'])
                 ->where(['car_id' => $carIds])
                 ->andWhere(['<>', 'estado_pago', 'cancelado'])
+                ->andWhere(['or',
+                    ['>=', 'fecha_final', $fecha],
+                    ['fecha_final' => null],
+                ])
                 ->groupBy(['car_id'])
                 ->all();
             foreach ($rows as $r) {
@@ -97,13 +102,24 @@ class CarController extends Controller
             return ['success' => false, 'message' => 'car_id inválido', 'items' => []];
         }
 
+        // "from" (opcional): excluir órdenes cuya fecha_final sea anterior. Por
+        // defecto se usa la fecha actual para no mostrar alquileres ya pasados.
+        $from = (string) Yii::$app->request->get('from', date('Y-m-d'));
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $from)) {
+            $from = date('Y-m-d');
+        }
+
         $car = Car::findOne($carId);
 
         $rentals = Rental::find()
             ->with(['client'])
             ->where(['car_id' => $carId])
             ->andWhere(['<>', 'estado_pago', 'cancelado'])
-            ->orderBy(['fecha_inicio' => SORT_DESC, 'hora_inicio' => SORT_DESC])
+            ->andWhere(['or',
+                ['>=', 'fecha_final', $from],
+                ['fecha_final' => null],
+            ])
+            ->orderBy(['fecha_inicio' => SORT_ASC, 'hora_inicio' => SORT_ASC])
             ->all();
 
         $items = [];
@@ -167,6 +183,14 @@ class CarController extends Controller
             $month = date('Y-m');
         }
 
+        // "from" indica desde qué fecha empezar a contar. Por defecto: primer día
+        // del mes consultado; si se especifica (ej. la fecha del filtro), se usa
+        // como límite inferior para excluir alquileres ya finalizados antes.
+        $from = (string) Yii::$app->request->get('from', '');
+        if ($from !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $from)) {
+            $from = '';
+        }
+
         try {
             $start = \DateTimeImmutable::createFromFormat('Y-m-d', $month . '-01');
             if ($start === false) {
@@ -181,13 +205,15 @@ class CarController extends Controller
         $startStr = $start->format('Y-m-d');
         $endStr = $end->format('Y-m-d');
 
-        // Solo necesitamos fechas y estado para construir el resumen mes.
+        // Si "from" cae dentro de este mes, restringe el rango visible.
+        $rangeStart = ($from !== '' && $from > $startStr && $from <= $endStr) ? $from : $startStr;
+
         $rows = Rental::find()
             ->select(['id', 'fecha_inicio', 'fecha_final', 'estado_pago'])
             ->where(['<>', 'estado_pago', 'cancelado'])
             ->andWhere(['<=', 'fecha_inicio', $endStr])
             ->andWhere(['or',
-                ['>=', 'fecha_final', $startStr],
+                ['>=', 'fecha_final', $rangeStart],
                 ['fecha_final' => null],
             ])
             ->asArray()
@@ -199,7 +225,7 @@ class CarController extends Controller
             $fin = (string) ($r['fecha_final'] ?? $ini);
             if ($ini === '') continue;
 
-            $cursor = max($ini, $startStr);
+            $cursor = max($ini, $rangeStart);
             $stop = min(($fin !== '' ? $fin : $ini), $endStr);
             if (strtotime($cursor) === false || strtotime($stop) === false) continue;
 
@@ -219,6 +245,7 @@ class CarController extends Controller
         return [
             'success' => true,
             'month' => $start->format('Y-m'),
+            'from' => $rangeStart,
             'days' => $days,
         ];
     }
