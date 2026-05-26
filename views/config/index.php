@@ -1316,8 +1316,11 @@ sudo docker-compose exec app php yii migrate</code></pre>
                                             <div id="whatsapp-info-msg" class="alert alert-info mt-3 mb-0 small d-none"></div>
 
                                             <div class="d-grid gap-2 mt-3">
-                                                <button type="button" class="btn btn-success" id="btn-whatsapp-start">
-                                                    <i class="fas fa-power-off"></i> Iniciar sesión / Generar QR
+                                                <button type="button" class="btn btn-primary" id="btn-whatsapp-create">
+                                                    <i class="fas fa-plus-circle"></i> 1. Crear sesión
+                                                </button>
+                                                <button type="button" class="btn btn-success" id="btn-whatsapp-start" disabled>
+                                                    <i class="fas fa-qrcode"></i> 2. Iniciar sesión / Generar QR
                                                 </button>
                                                 <button type="button" class="btn btn-outline-secondary" id="btn-whatsapp-refresh">
                                                     <i class="fas fa-sync"></i> Actualizar estado
@@ -1584,10 +1587,43 @@ document.addEventListener('DOMContentLoaded', function() {
         const badge = document.getElementById('whatsapp-status-badge');
         const qrBox = document.getElementById('whatsapp-qr-container');
         const infoMsg = document.getElementById('whatsapp-info-msg');
+        const btnCreate = document.getElementById('btn-whatsapp-create');
         const btnStart = document.getElementById('btn-whatsapp-start');
         const btnRefresh = document.getElementById('btn-whatsapp-refresh');
         const btnDisconnect = document.getElementById('btn-whatsapp-disconnect');
         const btnTest = document.getElementById('btn-whatsapp-test');
+
+        let sessionConfirmed = false;
+
+        function setStartEnabled(enabled, labelOverride) {
+            if (!btnStart) return;
+            btnStart.disabled = !enabled;
+            if (labelOverride) {
+                btnStart.innerHTML = labelOverride;
+            }
+        }
+
+        function setCreateEnabled(enabled, labelOverride) {
+            if (!btnCreate) return;
+            btnCreate.disabled = !enabled;
+            if (labelOverride) {
+                btnCreate.innerHTML = labelOverride;
+            }
+        }
+
+        function markSessionConfirmed(confirmed) {
+            sessionConfirmed = !!confirmed;
+            setStartEnabled(sessionConfirmed,
+                sessionConfirmed
+                    ? '<i class="fas fa-qrcode"></i> 2. Iniciar sesión / Generar QR'
+                    : '<i class="fas fa-qrcode"></i> 2. Iniciar sesión / Generar QR'
+            );
+            setCreateEnabled(true,
+                sessionConfirmed
+                    ? '<i class="fas fa-check-circle"></i> Sesión creada — recrear si es necesario'
+                    : '<i class="fas fa-plus-circle"></i> 1. Crear sesión'
+            );
+        }
 
         if (!tabBtn) return;
 
@@ -1911,37 +1947,154 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
+        async function confirmSessionExists(maxAttempts) {
+            const attempts = maxAttempts || 10;
+            for (let i = 1; i <= attempts; i++) {
+                const r = await apiGet(WA_URLS.status);
+                console.log('[whatsapp] confirm attempt ' + i + ':', r);
+                const data = (r && r.data) ? r.data : {};
+                const apiStatus = (data.status || '').toString().toLowerCase();
+
+                if (data.isConnected || apiStatus === 'connected') {
+                    return { exists: true, connected: true };
+                }
+                if (data.sessionExists === true
+                    || apiStatus === 'connecting'
+                    || apiStatus === 'starting'
+                    || apiStatus === 'ok'
+                    || data.qr) {
+                    return { exists: true, connected: false };
+                }
+                await new Promise((resolve) => setTimeout(resolve, 800));
+            }
+            return { exists: false, connected: false };
+        }
+
+        async function createAndConfirmSession() {
+            const eff = currentFormSession();
+            if (!eff.api_url) {
+                showInfo('Configura primero la URL base de la API.', 'warning');
+                return false;
+            }
+            if (!eff.session_id) {
+                showInfo('Configura primero un Session ID.', 'warning');
+                return false;
+            }
+
+            markSessionConfirmed(false);
+            setCreateEnabled(false, '<i class="fas fa-spinner fa-spin"></i> Creando sesión…');
+            setStartEnabled(false);
+            stopPolling();
+            setBadge('loading');
+            showInfo('Creando sesión "' + eff.session_id + '" en el servidor…', 'info');
+            renderQrPlaceholder(
+                '<div class="text-muted">' +
+                '<div class="spinner-border text-primary mb-2" role="status"></div>' +
+                '<p class="mb-0">Creando sesión "' + eff.session_id + '"…</p></div>'
+            );
+
+            try {
+                const r = await apiPost(WA_URLS.start);
+                console.log('[whatsapp] create response:', r);
+                syncSavedFromResponse(r);
+
+                const data = (r && r.data) ? r.data : {};
+                const apiStatus = (data.status || '').toString().toLowerCase();
+                const createOk = r.success
+                    || ['ok', 'exists', 'starting', 'connecting', 'connected', 'created'].indexOf(apiStatus) !== -1;
+
+                if (!createOk) {
+                    const errMsg = (data && data.message) || r.error || 'desconocido';
+                    showInfo('No se pudo crear la sesión: ' + errMsg, 'danger');
+                    setBadge('error');
+                    markSessionConfirmed(false);
+                    setCreateEnabled(true);
+                    return false;
+                }
+
+                showInfo('Sesión enviada al servidor. Confirmando creación…', 'info');
+                renderQrPlaceholder(
+                    '<div class="text-muted">' +
+                    '<div class="spinner-border text-primary mb-2" role="status"></div>' +
+                    '<p class="mb-0">Confirmando sesión con la API…</p></div>'
+                );
+
+                const confirm = await confirmSessionExists(12);
+                window.WA_API_URL = eff.api_url;
+                window.WA_SESSION_ID = eff.session_id;
+
+                if (!confirm.exists) {
+                    showInfo('La API no confirmó la creación de la sesión. Inténtelo de nuevo.', 'danger');
+                    setBadge('error');
+                    markSessionConfirmed(false);
+                    setCreateEnabled(true);
+                    return false;
+                }
+
+                if (confirm.connected) {
+                    setBadge('connected');
+                    showInfo('La sesión ya está conectada. No es necesario escanear el QR.', 'success');
+                    renderQrPlaceholder(
+                        '<div class="text-success">' +
+                        '<i class="fas fa-check-circle fa-3x mb-2"></i>' +
+                        '<p class="mb-0">Conexión activa</p></div>'
+                    );
+                    markSessionConfirmed(true);
+                    setStartEnabled(false, '<i class="fas fa-check"></i> Ya conectado');
+                    return true;
+                }
+
+                setBadge('pending');
+                showInfo('Sesión creada y confirmada. Pulse "2. Iniciar sesión / Generar QR" para mostrar el código.', 'success');
+                renderQrPlaceholder(
+                    '<div class="text-muted">' +
+                    '<i class="fas fa-mobile-alt fa-3x mb-2"></i>' +
+                    '<p class="mb-0">Pulse "2. Iniciar sesión / Generar QR" para mostrar el código.</p></div>'
+                );
+                markSessionConfirmed(true);
+                return true;
+            } catch (e) {
+                console.error('[whatsapp] create error', e);
+                showInfo('Error de red al crear la sesión: ' + e.message, 'danger');
+                setBadge('error');
+                markSessionConfirmed(false);
+                setCreateEnabled(true);
+                return false;
+            }
+        }
+
+        if (btnCreate) {
+            btnCreate.addEventListener('click', async () => {
+                await createAndConfirmSession();
+            });
+        }
+
         if (btnStart) {
             btnStart.addEventListener('click', async () => {
+                if (!sessionConfirmed) {
+                    showInfo('Primero pulse "1. Crear sesión" y espere la confirmación.', 'warning');
+                    return;
+                }
                 const eff = currentFormSession();
-                if (!eff.api_url) {
-                    showInfo('Configura primero la URL base de la API.', 'warning');
-                    return;
-                }
-                if (!eff.session_id) {
-                    showInfo('Configura primero un Session ID para crear la sesión.', 'warning');
-                    return;
-                }
-                btnStart.disabled = true;
+                setStartEnabled(false, '<i class="fas fa-spinner fa-spin"></i> Solicitando QR…');
                 renderQrPlaceholder(
                     '<div class="text-muted">' +
                     '<div class="spinner-border text-success mb-2" role="status"></div>' +
-                    '<p class="mb-0">Creando sesión "' + eff.session_id + '" y solicitando QR…</p></div>'
+                    '<p class="mb-0">Solicitando QR de la sesión "' + (eff.session_id || '?') + '"…</p></div>'
                 );
                 try {
                     stopPolling();
-                    const ok = await startSession();
-                    if (ok) {
-                        // Tras un start exitoso, el backend ya persistió URL/SessionID.
-                        // Actualizamos las constantes en memoria para próximas llamadas.
-                        window.WA_API_URL = eff.api_url;
-                        window.WA_SESSION_ID = eff.session_id;
-                        showInfo('Sesión "' + eff.session_id + '" creada. Escanea el QR con tu WhatsApp.', 'info');
-                        await fetchQr();
-                        startPolling();
+                    const qr = await fetchQr();
+                    startPolling();
+                    if (qr.connected) {
+                        setStartEnabled(false, '<i class="fas fa-check"></i> Ya conectado');
+                    } else {
+                        setStartEnabled(true, '<i class="fas fa-redo"></i> Refrescar QR');
                     }
-                } finally {
-                    btnStart.disabled = false;
+                } catch (e) {
+                    console.error('[whatsapp] start (QR) error', e);
+                    showInfo('Error al solicitar el QR: ' + e.message, 'danger');
+                    setStartEnabled(true);
                 }
             });
         }
@@ -1950,7 +2103,15 @@ document.addEventListener('DOMContentLoaded', function() {
             btnRefresh.addEventListener('click', async () => {
                 setBadge('loading');
                 const status = await refreshStatus();
-                if (!status.connected) await fetchQr();
+                if (status.connected) {
+                    markSessionConfirmed(true);
+                    setStartEnabled(false, '<i class="fas fa-check"></i> Ya conectado');
+                } else if (status.sessionExists) {
+                    markSessionConfirmed(true);
+                    setStartEnabled(true);
+                } else {
+                    markSessionConfirmed(false);
+                }
             });
         }
 
@@ -1969,12 +2130,12 @@ document.addEventListener('DOMContentLoaded', function() {
                         renderQrPlaceholder(
                             '<div class="text-muted">' +
                             '<i class="fas fa-mobile-alt fa-3x mb-2"></i>' +
-                            '<p class="mb-0">Inicie la sesión para generar el código QR.</p></div>'
+                            '<p class="mb-0">Pulse "1. Crear sesión" para volver a iniciar.</p></div>'
                         );
                         stopPolling();
+                        markSessionConfirmed(false);
                     } else {
                         showInfo('No se pudo confirmar el cierre en la API: ' + ((r && r.error) || 'sin respuesta'), 'danger');
-                        // Forzamos refrescar el estado para reflejar la realidad del servidor.
                         await refreshStatus();
                     }
                 } catch (err) {
@@ -2008,13 +2169,27 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
-        tabBtn.addEventListener('shown.bs.tab', async () => {
+        async function syncButtonsFromServer() {
             const status = await refreshStatus();
-            if (!status.connected) await fetchQr();
+            if (status.connected) {
+                markSessionConfirmed(true);
+                setStartEnabled(false, '<i class="fas fa-check"></i> Ya conectado');
+            } else if (status.sessionExists) {
+                markSessionConfirmed(true);
+                setBadge('pending');
+                showInfo('Sesión ya existente en la API. Pulse "2. Iniciar sesión / Generar QR" para mostrar el código.', 'info');
+            } else {
+                markSessionConfirmed(false);
+            }
+            return status;
+        }
+
+        tabBtn.addEventListener('shown.bs.tab', async () => {
+            await syncButtonsFromServer();
         });
 
         if (tabBtn.classList.contains('active') || window.location.hash === '#whatsapp') {
-            refreshStatus().then(status => { if (!status.connected) fetchQr(); });
+            syncButtonsFromServer();
         }
 
         window.addEventListener('beforeunload', stopPolling);
