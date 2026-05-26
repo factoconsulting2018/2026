@@ -70,10 +70,17 @@ class WhatsAppNotifier
         $raw = curl_exec($ch);
         $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $err = curl_error($ch);
+        $errno = curl_errno($ch);
         curl_close($ch);
 
         if ($raw === false || $raw === '') {
-            return ['ok' => false, 'status' => $status, 'body' => null, 'error' => $err ?: 'Sin respuesta del servidor.'];
+            $errMsg = $err ?: ('cURL error #' . $errno);
+            try {
+                Yii::warning('WhatsApp API ' . $method . ' ' . $url . ' fallo: ' . $errMsg, 'whatsapp');
+            } catch (\Throwable $e) {
+                // ignore
+            }
+            return ['ok' => false, 'status' => $status, 'body' => null, 'error' => $errMsg ?: 'Sin respuesta del servidor.'];
         }
 
         $decoded = json_decode((string) $raw, true);
@@ -82,6 +89,13 @@ class WhatsAppNotifier
         }
 
         $ok = $status >= 200 && $status < 300;
+        if (!$ok) {
+            try {
+                Yii::warning('WhatsApp API ' . $method . ' ' . $url . ' HTTP ' . $status . ': ' . substr((string) $raw, 0, 300), 'whatsapp');
+            } catch (\Throwable $e) {
+                // ignore
+            }
+        }
         return ['ok' => $ok, 'status' => $status, 'body' => $decoded, 'error' => $ok ? null : ($decoded['message'] ?? ('HTTP ' . $status))];
     }
 

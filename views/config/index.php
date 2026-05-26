@@ -507,9 +507,31 @@ $conditionsModel = new \app\models\CompanyConfig();
 #files-tab { background-color: #e7f5ff; color: #0b7285; }
 #clients-tab { background-color: #fff3bf; color: #7f5f01; }
 #preview-tab { background-color: #ffe3e3; color: #c92a2a; }
+#api-tab { background-color: #f3e8ff; color: #5f3dc4; }
+#notificaciones-tab { background-color: #fff4e6; color: #d9480f; }
+#dekra-tab { background-color: #e6fcf5; color: #087f5b; }
+#whatsapp-tab { background-color: #d3f9d8; color: #2b8a3e; }
 
-.nav-tabs .nav-link { margin-right: 6px; border-radius: 6px 6px 0 0; }
-.nav-tabs .nav-link.active { font-weight: 600; border-color: #dee2e6 #dee2e6 #fff; }
+/* Permite que los tabs hagan wrap a varias filas si no caben en una sola */
+#configTabs.nav-tabs {
+    flex-wrap: wrap;
+    row-gap: 4px;
+}
+
+.nav-tabs .nav-link {
+    margin-right: 6px;
+    border-radius: 6px 6px 0 0;
+    border: 1px solid transparent;
+}
+.nav-tabs .nav-link.active {
+    font-weight: 600;
+    border-color: #dee2e6 #dee2e6 #fff;
+    filter: brightness(1.03);
+    box-shadow: inset 0 -2px 0 rgba(0,0,0,0.05);
+}
+.nav-tabs .nav-link:hover {
+    filter: brightness(0.96);
+}
 </style>
                                             </div>
                                             </div>
@@ -1568,6 +1590,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         let pollHandle = null;
         let polling = false;
+        let pollCount = 0;
+        let pollStartedAt = 0;
 
         function setBadge(state) {
             if (!badge) return;
@@ -1626,6 +1650,7 @@ document.addEventListener('DOMContentLoaded', function() {
         async function refreshStatus() {
             try {
                 const r = await apiGet(WA_URLS.status);
+                console.log('[whatsapp] status response:', r);
                 const data = r && r.data ? r.data : {};
                 if (r && r.success && data.isConnected) {
                     setBadge('connected');
@@ -1636,25 +1661,46 @@ document.addEventListener('DOMContentLoaded', function() {
                         '<p class="mb-0">Conexión activa</p></div>'
                     );
                     stopPolling();
-                    return true;
+                    return { connected: true, sessionExists: true };
                 }
                 if (r && r.success && data.isConnected === false) {
                     setBadge('pending');
-                    return false;
+                    return { connected: false, sessionExists: true };
+                }
+                if (r && !r.success) {
+                    const errMsg = (data && data.message) || r.error || 'desconocido';
+                    setBadge('disconnected');
+                    return { connected: false, sessionExists: false, error: errMsg };
                 }
                 setBadge('disconnected');
-                return false;
+                return { connected: false, sessionExists: false };
             } catch (e) {
                 setBadge('error');
                 showInfo('No se pudo contactar la API: ' + e.message, 'danger');
-                return false;
+                return { connected: false, sessionExists: false, error: e.message };
             }
+        }
+
+        function findQrInResponse(obj) {
+            if (!obj || typeof obj !== 'object') return null;
+            if (typeof obj.qr === 'string' && obj.qr.length > 30) return obj.qr;
+            for (const k of Object.keys(obj)) {
+                const v = obj[k];
+                if (typeof v === 'string' && v.indexOf('data:image') === 0) return v;
+                if (v && typeof v === 'object') {
+                    const found = findQrInResponse(v);
+                    if (found) return found;
+                }
+            }
+            return null;
         }
 
         async function fetchQr() {
             try {
                 const r = await apiGet(WA_URLS.qr);
+                console.log('[whatsapp] qr response:', r);
                 const data = r && r.data ? r.data : {};
+
                 if (data && data.status === 'connected') {
                     setBadge('connected');
                     showInfo('Sesión conectada.', 'success');
@@ -1664,38 +1710,106 @@ document.addEventListener('DOMContentLoaded', function() {
                         '<p class="mb-0">Conexión activa</p></div>'
                     );
                     stopPolling();
-                    return;
+                    return { hadQr: false, connected: true, sessionExists: true };
                 }
-                if (data && data.qr) {
-                    renderQrImage(data.qr);
+
+                const qrSrc = findQrInResponse(data) || (r && findQrInResponse(r));
+                if (qrSrc) {
+                    const dataUrl = qrSrc.indexOf('data:image') === 0 ? qrSrc : ('data:image/png;base64,' + qrSrc.replace(/^data:[^,]*,/, ''));
+                    renderQrImage(dataUrl);
                     setBadge('pending');
                     showInfo('Escanee el QR desde su WhatsApp (Dispositivos vinculados).', 'info');
-                    return;
+                    return { hadQr: true, connected: false, sessionExists: true };
                 }
+
+                // Sin QR pero la API respondió: puede ser "Sesion no encontrada" o sesion en proceso.
+                const msg = (data && data.message) ? String(data.message) : '';
+                const statusStr = data && data.status ? String(data.status) : '';
+                const sessionMissing = /no encontrada|not found/i.test(msg) || statusStr === 'error';
+
                 renderQrPlaceholder(
                     '<div class="text-muted">' +
-                    '<i class="fas fa-hourglass-half fa-3x mb-2"></i>' +
-                    '<p class="mb-0">Esperando código QR…</p></div>'
+                    '<div class="spinner-border spinner-border-sm mb-2" role="status"></div>' +
+                    '<p class="mb-0">' + (sessionMissing ? 'Sesión no encontrada — reiniciando…' : 'Esperando código QR…') + '</p></div>'
                 );
+                if (msg) {
+                    showInfo('API: ' + msg, sessionMissing ? 'warning' : 'info');
+                }
+                return { hadQr: false, connected: false, sessionExists: !sessionMissing };
             } catch (e) {
                 showInfo('Error obteniendo QR: ' + e.message, 'danger');
+                return { hadQr: false, connected: false, sessionExists: true, error: e.message };
             }
+        }
+
+        async function startSession() {
+            setBadge('loading');
+            showInfo('Iniciando sesión en el servidor…', 'info');
+            const r = await apiPost(WA_URLS.start);
+            console.log('[whatsapp] start response:', r);
+            const data = r && r.data ? r.data : {};
+            const ok = r.success || (data && (data.status === 'exists' || data.status === 'starting' || data.status === 'ok'));
+            if (!ok) {
+                const errMsg = (data && data.message) || r.error || 'desconocido';
+                showInfo('No se pudo iniciar la sesión: ' + errMsg, 'danger');
+                setBadge('error');
+                return false;
+            }
+            return true;
         }
 
         function startPolling() {
             if (polling) return;
             polling = true;
-            pollHandle = setInterval(async () => {
-                const connected = await refreshStatus();
-                if (!connected) {
-                    await fetchQr();
+            pollCount = 0;
+            pollStartedAt = Date.now();
+
+            const tick = async () => {
+                if (!polling) return;
+                pollCount++;
+
+                const elapsed = (Date.now() - pollStartedAt) / 1000;
+                // Polling agresivo (1.5s) los primeros 30s; luego cada 4s.
+                const nextDelay = elapsed < 30 ? 1500 : 4000;
+
+                const status = await refreshStatus();
+                if (status.connected) return;
+
+                if (!status.sessionExists) {
+                    // La sesion fue eliminada o nunca se creo: reintenta start una vez.
+                    console.warn('[whatsapp] sesión inexistente, reintentando start...');
+                    await startSession();
                 }
-            }, 3500);
+
+                const qr = await fetchQr();
+                if (qr.connected) return;
+
+                if (!qr.sessionExists && status.sessionExists) {
+                    // QR endpoint reporta sesión no encontrada pero status decía que existía: reiniciar.
+                    await startSession();
+                }
+
+                // Timeout duro a 3 minutos sin conexión.
+                if (elapsed > 180 && !qr.hadQr) {
+                    showInfo('No se pudo generar el QR en 3 minutos. Pulse "Cerrar sesión" y luego "Iniciar sesión / Generar QR" de nuevo.', 'warning');
+                    stopPolling();
+                    setBadge('error');
+                    return;
+                }
+
+                if (polling) {
+                    pollHandle = setTimeout(tick, nextDelay);
+                }
+            };
+
+            // Primer tick inmediato.
+            tick();
         }
 
         function stopPolling() {
             polling = false;
             if (pollHandle) {
+                clearTimeout(pollHandle);
                 clearInterval(pollHandle);
                 pollHandle = null;
             }
@@ -1704,14 +1818,15 @@ document.addEventListener('DOMContentLoaded', function() {
         if (btnStart) {
             btnStart.addEventListener('click', async () => {
                 btnStart.disabled = true;
-                setBadge('loading');
-                showInfo('Iniciando sesión en el servidor…', 'info');
+                renderQrPlaceholder(
+                    '<div class="text-muted">' +
+                    '<div class="spinner-border text-success mb-2" role="status"></div>' +
+                    '<p class="mb-0">Solicitando QR al servidor…</p></div>'
+                );
                 try {
-                    const r = await apiPost(WA_URLS.start);
-                    if (!r.success && !(r.data && r.data.status === 'exists')) {
-                        showInfo('No se pudo iniciar: ' + (r.error || 'desconocido'), 'danger');
-                        setBadge('error');
-                    } else {
+                    stopPolling();
+                    const ok = await startSession();
+                    if (ok) {
                         await fetchQr();
                         startPolling();
                     }
@@ -1724,8 +1839,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (btnRefresh) {
             btnRefresh.addEventListener('click', async () => {
                 setBadge('loading');
-                const connected = await refreshStatus();
-                if (!connected) await fetchQr();
+                const status = await refreshStatus();
+                if (!status.connected) await fetchQr();
             });
         }
 
@@ -1776,12 +1891,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         tabBtn.addEventListener('shown.bs.tab', async () => {
-            const connected = await refreshStatus();
-            if (!connected) await fetchQr();
+            const status = await refreshStatus();
+            if (!status.connected) await fetchQr();
         });
 
         if (tabBtn.classList.contains('active') || window.location.hash === '#whatsapp') {
-            refreshStatus().then(connected => { if (!connected) fetchQr(); });
+            refreshStatus().then(status => { if (!status.connected) fetchQr(); });
         }
 
         window.addEventListener('beforeunload', stopPolling);
