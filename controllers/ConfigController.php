@@ -950,9 +950,15 @@ class ConfigController extends Controller
         if (!is_array($body)) {
             $body = [];
         }
-        $status = isset($body['status']) ? (string) $body['status'] : '';
-        $body['isConnected'] = $status === 'connected';
-        $body['sessionExists'] = $status !== '' && $status !== 'not_found';
+        $status = isset($body['status']) ? strtolower((string) $body['status']) : '';
+        $message = isset($body['message']) ? (string) $body['message'] : '';
+
+        $notFound = $status === 'not_found'
+            || ($status === 'error' && preg_match('/no encontrada|not found|no existe/i', $message));
+
+        $body['isConnected'] = $status === 'connected'
+            || (isset($body['isConnected']) && (bool) $body['isConnected'] === true);
+        $body['sessionExists'] = !$notFound && ($status !== '' || isset($body['sessionId']) || isset($body['qr']));
         return $body;
     }
 

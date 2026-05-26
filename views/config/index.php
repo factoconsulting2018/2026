@@ -1649,8 +1649,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         function buildQrImageUrl() {
-            if (!WA_API_URL || !WA_SESSION_ID) return '';
-            return WA_API_URL.replace(/\/+$/, '') + '/session/' + encodeURIComponent(WA_SESSION_ID) + '/qr-image?t=' + Date.now();
+            const eff = currentFormSession();
+            if (!eff.api_url || !eff.session_id) return '';
+            return eff.api_url.replace(/\/+$/, '') + '/session/' + encodeURIComponent(eff.session_id) + '/qr-image?t=' + Date.now();
         }
 
         function currentFormSession() {

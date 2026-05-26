@@ -117,22 +117,58 @@ class WhatsAppNotifier
 
     public static function getStatus(string $apiUrl, string $sessionId): array
     {
-        return self::request('GET', rtrim($apiUrl, '/') . '/session/' . rawurlencode($sessionId) . '/status');
+        $base = rtrim($apiUrl, '/');
+        $sid = rawurlencode($sessionId);
+
+        $res = self::request('GET', $base . '/session/' . $sid . '/status');
+        if ($res['ok']) {
+            return $res;
+        }
+
+        // Compatibilidad con API v5 documentada: GET /session/status/:sessionId
+        return self::request('GET', $base . '/session/status/' . $sid);
     }
 
     public static function getQr(string $apiUrl, string $sessionId): array
     {
-        return self::request('GET', rtrim($apiUrl, '/') . '/session/' . rawurlencode($sessionId) . '/qr');
+        $base = rtrim($apiUrl, '/');
+        $sid = rawurlencode($sessionId);
+
+        $res = self::request('GET', $base . '/session/' . $sid . '/qr');
+        if ($res['ok']) {
+            return $res;
+        }
+
+        // Compatibilidad con API v5 documentada: GET /session/qr/:sessionId
+        return self::request('GET', $base . '/session/qr/' . $sid);
     }
 
     public static function startSession(string $apiUrl, string $sessionId): array
     {
-        return self::request('POST', rtrim($apiUrl, '/') . '/session/crear/' . rawurlencode($sessionId));
+        $base = rtrim($apiUrl, '/');
+        $sid = rawurlencode($sessionId);
+
+        $res = self::request('POST', $base . '/session/crear/' . $sid);
+        if ($res['ok']) {
+            return $res;
+        }
+
+        // Compatibilidad con API v5 documentada: POST /session/start
+        return self::request('POST', $base . '/session/start', ['sessionId' => $sessionId]);
     }
 
     public static function deleteSession(string $apiUrl, string $sessionId): array
     {
-        return self::request('DELETE', rtrim($apiUrl, '/') . '/session/' . rawurlencode($sessionId));
+        $base = rtrim($apiUrl, '/');
+        $sid = rawurlencode($sessionId);
+
+        $res = self::request('DELETE', $base . '/session/' . $sid);
+        if ($res['ok']) {
+            return $res;
+        }
+
+        // Compatibilidad con API v5 documentada: DELETE /session/delete/:sessionId
+        return self::request('DELETE', $base . '/session/delete/' . $sid);
     }
 
     public static function sendText(string $apiUrl, string $sessionId, string $number, string $message): array
@@ -233,7 +269,13 @@ class WhatsAppNotifier
             return false;
         }
         $body = $statusResponse['body'] ?? [];
-        return is_array($body) && isset($body['status']) && $body['status'] === 'connected';
+        if (!is_array($body)) {
+            return false;
+        }
+
+        $status = isset($body['status']) ? strtolower((string) $body['status']) : '';
+        return $status === 'connected'
+            || (isset($body['isConnected']) && (bool) $body['isConnected'] === true);
     }
 
     /**
