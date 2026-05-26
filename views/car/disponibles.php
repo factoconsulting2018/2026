@@ -60,22 +60,33 @@ $esHoy = ($fecha === $hoy);
                             </tr>
                         </thead>
                         <tbody>
+                            <?php
+                            $labels = [
+                                'disponible' => ['class' => 'success', 't' => 'Disponible'],
+                                'alquilado' => ['class' => 'warning', 't' => 'Alquilado'],
+                            ];
+                            ?>
                             <?php foreach ($cars as $model): ?>
+                                <?php $st = $labels[$model->status] ?? ['class' => 'secondary', 't' => $model->status]; ?>
                                 <tr>
                                     <td>
-                                        <span class="material-symbols-outlined align-middle me-1" style="font-size: 20px; color: #3fa9f5;">directions_car</span>
-                                        <strong><?= Html::encode($model->nombre) ?></strong>
+                                        <div>
+                                            <span class="material-symbols-outlined align-middle me-1" style="font-size: 20px; color: #3fa9f5;">directions_car</span>
+                                            <strong><?= Html::encode($model->nombre) ?></strong>
+                                        </div>
+                                        <div class="d-md-none mt-1">
+                                            <span class="badge bg-<?= $st['class'] ?>"><?= Html::encode($st['t']) ?></span>
+                                            <?php if (!empty($model->cantidad_pasajeros)): ?>
+                                                <span class="badge bg-light text-dark border ms-1">
+                                                    <span class="material-symbols-outlined align-middle" style="font-size: 14px;">group</span>
+                                                    <?= Html::encode((string) $model->cantidad_pasajeros) ?>
+                                                </span>
+                                            <?php endif; ?>
+                                        </div>
                                     </td>
                                     <td><span class="badge bg-secondary"><?= Html::encode($model->placa) ?></span></td>
                                     <td class="d-none d-md-table-cell"><?= Html::encode((string) ($model->cantidad_pasajeros ?? '—')) ?></td>
                                     <td class="d-none d-md-table-cell">
-                                        <?php
-                                        $labels = [
-                                            'disponible' => ['class' => 'success', 't' => 'Disponible'],
-                                            'alquilado' => ['class' => 'warning', 't' => 'Alquilado'],
-                                        ];
-                                        $st = $labels[$model->status] ?? ['class' => 'secondary', 't' => $model->status];
-                                        ?>
                                         <span class="badge bg-<?= $st['class'] ?>"><?= Html::encode($st['t']) ?></span>
                                     </td>
                                     <td class="d-none d-lg-table-cell"><?= Html::encode($model->empresa ?? '—') ?></td>
