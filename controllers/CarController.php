@@ -59,6 +59,162 @@ class CarController extends Controller
         ]);
     }
 
+    /**
+     * Devuelve un resumen agregado por día de alquileres activos para un mes.
+     * Se considera "activo" en una fecha cuando fecha_inicio <= dia <= fecha_final.
+     * Excluye estados 'cancelado'.
+     *
+     * Respuesta JSON:
+     * {
+     *   "month": "YYYY-MM",
+     *   "days": {
+     *     "YYYY-MM-DD": { "total": int, "by_status": { "pagado": n, "pendiente": n, ... } }
+     *   }
+     * }
+     */
+    public function actionCalendarRentals()
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+
+        $month = (string) Yii::$app->request->get('month', date('Y-m'));
+        if (!preg_match('/^\d{4}-\d{2}$/', $month)) {
+            $month = date('Y-m');
+        }
+
+        try {
+            $start = \DateTimeImmutable::createFromFormat('Y-m-d', $month . '-01');
+            if ($start === false) {
+                $start = new \DateTimeImmutable('first day of this month');
+            }
+            $end = $start->modify('last day of this month');
+        } catch (\Throwable $e) {
+            $start = new \DateTimeImmutable('first day of this month');
+            $end = new \DateTimeImmutable('last day of this month');
+        }
+
+        $startStr = $start->format('Y-m-d');
+        $endStr = $end->format('Y-m-d');
+
+        // Solo necesitamos fechas y estado para construir el resumen mes.
+        $rows = Rental::find()
+            ->select(['id', 'fecha_inicio', 'fecha_final', 'estado_pago'])
+            ->where(['<>', 'estado_pago', 'cancelado'])
+            ->andWhere(['<=', 'fecha_inicio', $endStr])
+            ->andWhere(['or',
+                ['>=', 'fecha_final', $startStr],
+                ['fecha_final' => null],
+            ])
+            ->asArray()
+            ->all();
+
+        $days = [];
+        foreach ($rows as $r) {
+            $ini = (string) ($r['fecha_inicio'] ?? '');
+            $fin = (string) ($r['fecha_final'] ?? $ini);
+            if ($ini === '') continue;
+
+            $cursor = max($ini, $startStr);
+            $stop = min(($fin !== '' ? $fin : $ini), $endStr);
+            if (strtotime($cursor) === false || strtotime($stop) === false) continue;
+
+            $cTs = strtotime($cursor);
+            $sTs = strtotime($stop);
+            for ($t = $cTs; $t <= $sTs; $t = strtotime('+1 day', $t)) {
+                $key = date('Y-m-d', $t);
+                if (!isset($days[$key])) {
+                    $days[$key] = ['total' => 0, 'by_status' => []];
+                }
+                $days[$key]['total']++;
+                $st = (string) ($r['estado_pago'] ?? 'pendiente');
+                $days[$key]['by_status'][$st] = ($days[$key]['by_status'][$st] ?? 0) + 1;
+            }
+        }
+
+        return [
+            'success' => true,
+            'month' => $start->format('Y-m'),
+            'days' => $days,
+        ];
+    }
+
+    /**
+     * Devuelve el detalle de los alquileres activos en una fecha específica.
+     * "Activo" = fecha_inicio <= fecha <= fecha_final, excluyendo cancelados.
+     *
+     * Respuesta JSON:
+     * {
+     *   "success": true,
+     *   "date": "YYYY-MM-DD",
+     *   "items": [ { id, rental_id, client_name, car_name, car_placa, fecha_inicio, fecha_final,
+     *                hora_inicio, hora_final, estado_pago, total_precio, view_url, update_url } ]
+     * }
+     */
+    public function actionCalendarDay()
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+
+        $fecha = (string) Yii::$app->request->get('fecha', date('Y-m-d'));
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha)) {
+            $fecha = date('Y-m-d');
+        }
+
+        $rentals = Rental::find()
+            ->with(['client', 'car'])
+            ->where(['<>', 'estado_pago', 'cancelado'])
+            ->andWhere(['<=', 'fecha_inicio', $fecha])
+            ->andWhere(['or',
+                ['>=', 'fecha_final', $fecha],
+                ['fecha_final' => null],
+            ])
+            ->orderBy(['fecha_inicio' => SORT_ASC, 'hora_inicio' => SORT_ASC])
+            ->all();
+
+        $items = [];
+        foreach ($rentals as $r) {
+            $client = $r->client ?? null;
+            $car = $r->car ?? null;
+
+            $clientName = '—';
+            if ($client) {
+                $clientName = trim((string) ($client->full_name ?? ''));
+                if ($clientName === '') {
+                    $clientName = trim(((string) ($client->nombre ?? '')) . ' ' . ((string) ($client->apellido ?? '')));
+                }
+                if ($clientName === '') {
+                    $clientName = '—';
+                }
+            }
+
+            $carName = $car ? trim((string) ($car->nombre ?? '')) : '';
+            if ($carName === '') {
+                $carName = '—';
+            }
+            $carPlaca = $car ? (string) ($car->placa ?? '') : '';
+
+            $items[] = [
+                'id' => (int) $r->id,
+                'rental_id' => (string) ($r->rental_id ?: ('R' . $r->id)),
+                'client_name' => $clientName,
+                'car_name' => $carName,
+                'car_placa' => $carPlaca,
+                'fecha_inicio' => (string) $r->fecha_inicio,
+                'fecha_final' => (string) $r->fecha_final,
+                'hora_inicio' => (string) $r->hora_inicio,
+                'hora_final' => (string) $r->hora_final,
+                'estado_pago' => (string) $r->estado_pago,
+                'total_precio' => (float) $r->total_precio,
+                'view_url' => \yii\helpers\Url::to(['/rental/view', 'id' => $r->id]),
+                'update_url' => \yii\helpers\Url::to(['/rental/update', 'id' => $r->id]),
+            ];
+        }
+
+        return [
+            'success' => true,
+            'date' => $fecha,
+            'items' => $items,
+        ];
+    }
+
     public function actionIndex()
     {
         try {
