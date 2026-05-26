@@ -149,54 +149,36 @@ class PdfController extends Controller
      */
     public function actionDownloadRental($id)
     {
-        // Limpiar TODOS los buffers de salida ANTES de cualquier cosa
+        // Limpiar TODOS los buffers de salida ANTES de cualquier cosa.
         while (ob_get_level() > 0) {
             ob_end_clean();
         }
-        
-        // Desactivar completamente el output buffering
-        @ini_set('output_buffering', 0);
-        @ini_set('zlib.output_compression', 0);
-        @ini_set('zlib.output_compression_level', 0);
-        
-        // Desactivar compresión de Apache si está disponible
-        if (function_exists('apache_setenv')) {
-            @apache_setenv('no-gzip', 1);
-            @apache_setenv('no-gzip', '1');
-        }
-        
+
         $rental = $this->findRental($id);
         $filename = self::rentalOrderPdfFilename($rental);
-        $filepath = Yii::getAlias('@app') . '/runtime/' . $filename;
-        
+        $filepath = Yii::getAlias('@app') . DIRECTORY_SEPARATOR . 'runtime' . DIRECTORY_SEPARATOR . $filename;
+
         if (!file_exists($filepath)) {
-            throw new NotFoundHttpException('El archivo PDF no existe. Por favor, genere el PDF primero.');
+            // Si el PDF aún no existe, generarlo en sitio antes de descargar
+            // para evitar el "El archivo PDF no existe" en clic directo.
+            try {
+                $this->renderRentalOrderPdfToFile($rental, $filepath);
+            } catch (\Throwable $e) {
+                Yii::error('actionDownloadRental: no se pudo regenerar PDF #' . $id . ': ' . $e->getMessage(), 'pdf');
+                throw new NotFoundHttpException('El archivo PDF no existe y no se pudo regenerar.');
+            }
+
+            if (!file_exists($filepath)) {
+                throw new NotFoundHttpException('El archivo PDF no existe. Por favor, genere el PDF primero.');
+            }
         }
-        
-        // Usar headers nativos de PHP para evitar interferencia de Cloudflare
-        header('Content-Type: application/pdf');
-        header('Content-Disposition: attachment; filename="' . $filename . '"');
-        header('Content-Length: ' . filesize($filepath));
-        header('Cache-Control: no-cache, no-store, must-revalidate');
-        header('Pragma: no-cache');
-        header('Expires: 0');
-        header('X-Content-Type-Options: nosniff');
-        header('X-Frame-Options: DENY');
-        
-        // Leer y enviar archivo
-        $handle = fopen($filepath, 'rb');
-        if ($handle === false) {
-            throw new \Exception('No se puede abrir el archivo PDF.');
-        }
-        
-        // Enviar archivo en chunks para archivos grandes
-        while (!feof($handle)) {
-            echo fread($handle, 8192);
-            flush();
-        }
-        
-        fclose($handle);
-        exit;
+
+        // sendFile() de Yii fija Content-Type/Length/Disposition correctos y
+        // streamea el archivo binario sin riesgo de contaminación de output.
+        return Yii::$app->response->sendFile($filepath, $filename, [
+            'mimeType' => 'application/pdf',
+            'inline' => false,
+        ]);
     }
 
     /**
@@ -425,21 +407,51 @@ class PdfController extends Controller
     public function actionRentalOrder($id)
     {
         $rental = $this->findRental($id);
-        $companyInfo = CompanyConfig::getCompanyInfo();
-        
-        // Limpiar TODOS los buffers de salida
+
+        // Limpiar buffers de salida antes de generar el archivo (warnings/notices
+        // de bibliotecas no deben contaminar la respuesta binaria).
         while (ob_get_level()) {
             ob_end_clean();
         }
-        
-        // Desactivar compresión de salida
-        if (function_exists('apache_setenv')) {
-            @apache_setenv('no-gzip', 1);
+
+        $filename = self::rentalOrderPdfFilename($rental);
+        $runtime = Yii::getAlias('@app') . DIRECTORY_SEPARATOR . 'runtime';
+        if (!is_dir($runtime)) {
+            @mkdir($runtime, 0775, true);
         }
-        @ini_set('zlib.output_compression', 0);
-        @ini_set('output_buffering', 0);
-        @ini_set('zlib.output_compression_level', 0);
-        
+        $filepath = $runtime . DIRECTORY_SEPARATOR . $filename;
+
+        try {
+            // Generamos el PDF a disco siempre (para que el aviso por WhatsApp,
+            // los reintentos en móvil, etc. compartan el mismo archivo limpio).
+            $this->renderRentalOrderPdfToFile($rental, $filepath);
+        } catch (\Throwable $e) {
+            Yii::error('actionRentalOrder: error generando PDF #' . $id . ': ' . $e->getMessage(), 'pdf');
+            throw new \yii\web\ServerErrorHttpException('No se pudo generar el PDF: ' . $e->getMessage());
+        }
+
+        if (!is_file($filepath)) {
+            throw new \yii\web\ServerErrorHttpException('El archivo PDF no se generó correctamente.');
+        }
+
+        // Limpiar de nuevo cualquier output residual antes de mandar el binario.
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+
+        return Yii::$app->response->sendFile($filepath, $filename, [
+            'mimeType' => 'application/pdf',
+            'inline' => false,
+        ]);
+    }
+
+    /**
+     * Genera el PDF de la orden de alquiler y lo escribe en $filepath.
+     * Centraliza el flujo mPDF/TCPDF para que las distintas acciones lo reutilicen.
+     */
+    private function renderRentalOrderPdfToFile(Rental $rental, string $filepath): void
+    {
+        $companyInfo = CompanyConfig::getCompanyInfo();
         $isModernPdf = CompanyConfig::getRentalOrderPdfFormat() === 'moderna';
 
         if ($isModernPdf) {
@@ -448,28 +460,14 @@ class PdfController extends Controller
             $mpdf->SetTitle('Orden de Alquiler ' . ($rental->rental_id ?? ''));
             $mpdf->SetAuthor('Facto Rent a Car');
             $mpdf->WriteHTML($html);
-
-            $filename = self::rentalOrderPdfFilename($rental);
-
-            Yii::$app->response->format = \yii\web\Response::FORMAT_RAW;
-            Yii::$app->response->headers->set('Content-Type', 'application/pdf');
-            Yii::$app->response->headers->set('Content-Disposition', 'attachment; filename="' . $filename . '"');
-            Yii::$app->response->headers->set('Content-Transfer-Encoding', 'binary');
-            Yii::$app->response->headers->set('Cache-Control', 'private, max-age=0, must-revalidate');
-            Yii::$app->response->headers->set('Pragma', 'no-cache');
-
-            Yii::$app->response->data = $mpdf->Output('', 'S');
-            Yii::$app->response->send();
-            Yii::$app->end();
+            $mpdf->Output($filepath, 'F');
+            return;
         }
 
         $pdf = new TCPDF('P', 'mm', 'Letter', true, 'UTF-8', false);
-
-        // Configuración del documento
         $pdf->SetCreator('Facto Rent a Car');
         $pdf->SetAuthor('Facto Rent a Car');
         $pdf->SetTitle('Orden de Alquiler - ' . $rental->rental_id);
-
         $pdf->SetMargins(14, 12, 14);
         $pdf->SetHeaderMargin(6);
         $pdf->SetFooterMargin(8);
@@ -481,57 +479,36 @@ class PdfController extends Controller
         $fontFamily = 'helvetica';
         $fontSize = 10;
         $pdf->SetFont($fontFamily, '', $fontSize);
-
-        // Agregar página
         $pdf->AddPage();
 
-        // Generar contenido
         $html = $this->generateRentalOrderHtml($rental, $companyInfo, false);
         $pdf->writeHTML($html, true, false, true, false, '');
 
-        // Agregar código QR con información de la orden en la esquina inferior derecha
         $qrUrl = \yii\helpers\Url::to(['/rental/public-view', 'id' => $rental->id], true);
-        $qrStyle = array(
+        $qrStyle = [
             'border' => false,
             'padding' => 2,
-            'fgcolor' => array(0,0,0),
+            'fgcolor' => [0, 0, 0],
             'bgcolor' => false,
             'module_width' => 1,
-            'module_height' => 1
-        );
+            'module_height' => 1,
+        ];
         $dims = $pdf->getPageDimensions();
         $qrSize = 25;
         $xPosition = $dims['wk'] - $dims['rm'] - $qrSize;
         $yPosition = $dims['hk'] - $dims['bm'] - $qrSize;
         $pdf->write2DBarcode($qrUrl, 'QRCODE,M', $xPosition, $yPosition, 25, 25, $qrStyle, 'N');
-        
-        // Agregar segunda página con condiciones (SIEMPRE se agrega, prioridad: personalizado > global > fallback por defecto)
+
         $pdf->AddPage();
         $pdf->SetFont($fontFamily, '', $fontSize);
         $customConditions = $rental->condiciones_especiales ?? '';
         $globalConditions = CompanyConfig::getConfig('rental_conditions_html', '');
-        $conditionsHtml = CompanyConfig::wrapRentalConditionsHtml($this->generateConditionsHtml($companyInfo, $customConditions ?: $globalConditions));
+        $conditionsHtml = CompanyConfig::wrapRentalConditionsHtml(
+            $this->generateConditionsHtml($companyInfo, $customConditions ?: $globalConditions)
+        );
         $pdf->writeHTML($conditionsHtml, true, false, true, false, '');
-        
-        // Generar nombre del archivo
-        $filename = self::rentalOrderPdfFilename($rental);
-        
-        // Configurar la respuesta de Yii para descargar el PDF
-        Yii::$app->response->format = \yii\web\Response::FORMAT_RAW;
-        Yii::$app->response->headers->set('Content-Type', 'application/pdf');
-        Yii::$app->response->headers->set('Content-Disposition', 'attachment; filename="' . $filename . '"');
-        Yii::$app->response->headers->set('Content-Transfer-Encoding', 'binary');
-        Yii::$app->response->headers->set('Cache-Control', 'private, max-age=0, must-revalidate');
-        Yii::$app->response->headers->set('Pragma', 'no-cache');
-        
-        // Generar PDF como string
-        $pdfContent = $pdf->Output('', 'S');
-        
-        // Enviar contenido
-        Yii::$app->response->data = $pdfContent;
-        Yii::$app->response->send();
-        
-        Yii::$app->end();
+
+        $pdf->Output($filepath, 'F');
     }
 
     /**
