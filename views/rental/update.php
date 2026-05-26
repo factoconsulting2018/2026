@@ -59,9 +59,9 @@ $this->params['breadcrumbs'][] = 'Actualizar';
     <div class="row">
         <div class="col-md-6">
             <div class="card">
-                <div class="card-header" style="background: linear-gradient(135deg, #22487a 0%, #0d001e 100%); color: white;">
-                    <h5 class="card-title mb-0">
-                        <span class="material-symbols-outlined" style="font-size: 20px; vertical-align: middle; margin-right: 8px;">
+                <div class="card-header" style="background: linear-gradient(135deg, #22487a 0%, #0d001e 100%); color: #ffffff;">
+                    <h5 class="card-title mb-0" style="color: #ffffff !important;">
+                        <span class="material-symbols-outlined" style="font-size: 20px; vertical-align: middle; margin-right: 8px; color: #ffffff;">
                             person
                         </span>
                         Información del Cliente
@@ -131,9 +131,9 @@ $this->params['breadcrumbs'][] = 'Actualizar';
 
         <div class="col-md-6">
             <div class="card">
-                <div class="card-header" style="background: linear-gradient(135deg, #22487a 0%, #0d001e 100%); color: white;">
-                    <h5 class="card-title mb-0">
-                        <span class="material-symbols-outlined" style="font-size: 20px; vertical-align: middle; margin-right: 8px;">
+                <div class="card-header" style="background: linear-gradient(135deg, #22487a 0%, #0d001e 100%); color: #ffffff;">
+                    <h5 class="card-title mb-0" style="color: #ffffff !important;">
+                        <span class="material-symbols-outlined" style="font-size: 20px; vertical-align: middle; margin-right: 8px; color: #ffffff;">
                             directions_car
                         </span>
                         Información del Vehículo
@@ -196,9 +196,9 @@ $this->params['breadcrumbs'][] = 'Actualizar';
     <div class="row mt-4">
         <div class="col-md-6">
             <div class="card">
-                <div class="card-header" style="background: linear-gradient(135deg, #22487a 0%, #0d001e 100%); color: white;">
-                    <h5 class="card-title mb-0">
-                        <span class="material-symbols-outlined" style="font-size: 20px; vertical-align: middle; margin-right: 8px;">
+                <div class="card-header" style="background: linear-gradient(135deg, #22487a 0%, #0d001e 100%); color: #ffffff;">
+                    <h5 class="card-title mb-0" style="color: #ffffff !important;">
+                        <span class="material-symbols-outlined" style="font-size: 20px; vertical-align: middle; margin-right: 8px; color: #ffffff;">
                             calendar_today
                         </span>
                         Fechas del Alquiler
@@ -284,9 +284,9 @@ $this->params['breadcrumbs'][] = 'Actualizar';
 
         <div class="col-md-6">
             <div class="card">
-                <div class="card-header" style="background: linear-gradient(135deg, #22487a 0%, #0d001e 100%); color: white;">
-                    <h5 class="card-title mb-0">
-                        <span class="material-symbols-outlined" style="font-size: 20px; vertical-align: middle; margin-right: 8px;">
+                <div class="card-header" style="background: linear-gradient(135deg, #22487a 0%, #0d001e 100%); color: #ffffff;">
+                    <h5 class="card-title mb-0" style="color: #ffffff !important;">
+                        <span class="material-symbols-outlined" style="font-size: 20px; vertical-align: middle; margin-right: 8px; color: #ffffff;">
                             location_on
                         </span>
                         Ubicaciones y Estado
@@ -355,9 +355,9 @@ $this->params['breadcrumbs'][] = 'Actualizar';
     <div class="row mt-4">
         <div class="col-12">
             <div class="card">
-                <div class="card-header" style="background: linear-gradient(135deg, #22487a 0%, #0d001e 100%); color: white;">
-                    <h5 class="card-title mb-0">
-                        <span class="material-symbols-outlined" style="font-size: 20px; vertical-align: middle; margin-right: 8px;">
+                <div class="card-header" style="background: linear-gradient(135deg, #22487a 0%, #0d001e 100%); color: #ffffff;">
+                    <h5 class="card-title mb-0" style="color: #ffffff !important;">
+                        <span class="material-symbols-outlined" style="font-size: 20px; vertical-align: middle; margin-right: 8px; color: #ffffff;">
                             notes
                         </span>
                         Información Adicional
