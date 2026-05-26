@@ -534,13 +534,11 @@ class WhatsAppNotifier
             $message = self::buildRentalMessage($rental);
             Yii::info('WhatsApp message preparado (' . strlen($message) . ' chars) para ' . count($numbers) . ' destinatario(s)', 'whatsapp');
 
-            // Publicar foto del vehículo (se enviará como primer envío con el mensaje como caption).
-            $publicImage = self::publishCarImage($rental->car ?? null, $cfg['public_base_url'] ?: null);
-            if ($publicImage !== null) {
-                Yii::info('Foto del vehículo publicada: ' . $publicImage['public_url'], 'whatsapp');
-            }
-
             // Publicar PDF de la orden si existe.
+            // NOTA: la foto del vehículo se quitó del aviso porque generaba fallos cuando
+            // la URL pública de la imagen no era accesible para la API de WhatsApp y eso
+            // hacía que toda la notificación de la orden no llegara. Ahora se envía solo
+            // texto + PDF (mismo camino que el mensaje de prueba, que sí funciona).
             $pdfFilename = PdfController::rentalOrderPdfFilename($rental);
             $publicPdf = self::publishPdfFromRuntime($pdfFilename, $cfg['public_base_url'] ?: null);
             if ($publicPdf === null) {
@@ -554,29 +552,8 @@ class WhatsAppNotifier
                 try {
                     $messageSent = false;
 
-                    // 1) Foto del vehículo + texto como caption (si hay imagen),
-                    //    o solo texto si no hay imagen.
-                    if ($publicImage !== null) {
-                        $imgRes = self::sendImage($cfg['api_url'], $cfg['session_id'], $number, $publicImage['public_url'], $message);
-                        if (!$imgRes['ok']) {
-                            // Si la imagen falla, intentar al menos enviar el texto para no perder el aviso.
-                            Yii::warning(
-                                'WhatsApp imagen fallida — ' . $number . ': ' . ($imgRes['error'] ?? 'fallo')
-                                . ' — fallback a sendText',
-                                'whatsapp'
-                            );
-                            $textRes = self::sendText($cfg['api_url'], $cfg['session_id'], $number, $message);
-                            if (!$textRes['ok']) {
-                                $err = $number . ': texto ' . ($textRes['error'] ?? 'fallo');
-                                Yii::warning('WhatsApp envío fallido — ' . $err, 'whatsapp');
-                                $report['errors'][] = $err;
-                                continue;
-                            }
-                            $messageSent = true;
-                        } else {
-                            $messageSent = true;
-                        }
-                    } else {
+                    // 1) Texto principal (sin foto del vehículo).
+                    {
                         $textRes = self::sendText($cfg['api_url'], $cfg['session_id'], $number, $message);
                         if (!$textRes['ok']) {
                             $err = $number . ': texto ' . ($textRes['error'] ?? 'fallo');
