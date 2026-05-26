@@ -49,6 +49,19 @@ class CompanyConfig extends ActiveRecord
     const DEKRA_TALLER_NAME = 'dekra_taller_name';
     const DEKRA_DAY_OF_MONTH = 'dekra_day_of_month';
 
+    // WhatsApp API (descargapro.com - Multi-session Baileys)
+    const WHATSAPP_ENABLED = 'whatsapp_enabled';
+    const WHATSAPP_API_URL = 'whatsapp_api_url';
+    const WHATSAPP_SESSION_ID = 'whatsapp_session_id';
+    const WHATSAPP_COUNTRY_CODE = 'whatsapp_country_code';
+    const WHATSAPP_NOTIFY_ON_CREATE = 'whatsapp_notify_on_create';
+    const WHATSAPP_ADMIN_PHONE_1 = 'whatsapp_admin_phone_1';
+    const WHATSAPP_ADMIN_PHONE_2 = 'whatsapp_admin_phone_2';
+    const WHATSAPP_ADMIN_PHONE_3 = 'whatsapp_admin_phone_3';
+    const WHATSAPP_ADMIN_PHONE_4 = 'whatsapp_admin_phone_4';
+    const WHATSAPP_ADMIN_PHONE_5 = 'whatsapp_admin_phone_5';
+    const WHATSAPP_PUBLIC_BASE_URL = 'whatsapp_public_base_url';
+
     // Directorios para archivos
     const UPLOAD_DIR = 'uploads/company/';
     const LOGO_DIR = 'uploads/company/logo/';
@@ -690,6 +703,64 @@ class CompanyConfig extends ActiveRecord
         }
 
         return max(8, min(120, $value));
+    }
+
+    /**
+     * Configuracion de la integracion WhatsApp para notificaciones.
+     *
+     * @return array{
+     *     enabled: bool,
+     *     api_url: string,
+     *     session_id: string,
+     *     country_code: string,
+     *     notify_on_create: bool,
+     *     admin_phones: array<int,string>,
+     *     public_base_url: string
+     * }
+     */
+    public static function getWhatsAppConfig(): array
+    {
+        $phones = [];
+        for ($i = 1; $i <= 5; $i++) {
+            $key = constant('self::WHATSAPP_ADMIN_PHONE_' . $i);
+            $phones[$i] = trim((string) self::getConfig($key, ''));
+        }
+
+        return [
+            'enabled' => self::getConfig(self::WHATSAPP_ENABLED, '0') === '1',
+            'api_url' => rtrim((string) self::getConfig(self::WHATSAPP_API_URL, 'https://descargapro.com'), '/'),
+            'session_id' => trim((string) self::getConfig(self::WHATSAPP_SESSION_ID, 'facto_rent')),
+            'country_code' => trim((string) self::getConfig(self::WHATSAPP_COUNTRY_CODE, '506')),
+            'notify_on_create' => self::getConfig(self::WHATSAPP_NOTIFY_ON_CREATE, '1') === '1',
+            'admin_phones' => $phones,
+            'public_base_url' => rtrim((string) self::getConfig(self::WHATSAPP_PUBLIC_BASE_URL, ''), '/'),
+        ];
+    }
+
+    /**
+     * Guarda configuracion de WhatsApp (excluye telefonos individuales).
+     */
+    public static function saveWhatsAppConfig(
+        bool $enabled,
+        string $apiUrl,
+        string $sessionId,
+        string $countryCode,
+        bool $notifyOnCreate,
+        array $adminPhones,
+        string $publicBaseUrl = ''
+    ): void {
+        self::setConfig(self::WHATSAPP_PUBLIC_BASE_URL, rtrim(trim($publicBaseUrl), '/'), 'URL base publica (https) accesible desde la API WhatsApp');
+        self::setConfig(self::WHATSAPP_ENABLED, $enabled ? '1' : '0', 'Activar integracion WhatsApp');
+        self::setConfig(self::WHATSAPP_API_URL, rtrim(trim($apiUrl), '/'), 'URL base de la API WhatsApp');
+        self::setConfig(self::WHATSAPP_SESSION_ID, trim($sessionId) !== '' ? trim($sessionId) : 'facto_rent', 'sessionId de WhatsApp');
+        self::setConfig(self::WHATSAPP_COUNTRY_CODE, preg_replace('/\D/', '', $countryCode) !== '' ? preg_replace('/\D/', '', $countryCode) : '506', 'Codigo de pais por defecto');
+        self::setConfig(self::WHATSAPP_NOTIFY_ON_CREATE, $notifyOnCreate ? '1' : '0', 'Notificar al crear orden de alquiler');
+
+        for ($i = 1; $i <= 5; $i++) {
+            $key = constant('self::WHATSAPP_ADMIN_PHONE_' . $i);
+            $raw = isset($adminPhones[$i]) ? (string) $adminPhones[$i] : '';
+            self::setConfig($key, trim($raw), 'Telefono administrador ' . $i . ' para notificaciones WhatsApp');
+        }
     }
 
     public static function wrapRentalConditionsHtml(string $html): string

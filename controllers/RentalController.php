@@ -15,6 +15,7 @@ use yii\web\Response;
 use app\models\CarAvailability;
 use app\models\CompanyConfig;
 use app\controllers\PdfController;
+use app\components\WhatsAppNotifier;
 use Mpdf\Mpdf;
 
 class RentalController extends Controller
@@ -215,6 +216,23 @@ class RentalController extends Controller
                 
                 // Generar ZIP automáticamente en background (sin bloquear)
                 $this->generateOrderZip($model->id);
+
+                // Enviar aviso por WhatsApp a teléfonos administradores (no debe romper el flujo)
+                try {
+                    $waReport = WhatsAppNotifier::notifyRentalCreated($model);
+                    if ($waReport['enabled']) {
+                        if ($waReport['sent'] > 0) {
+                            Yii::$app->session->setFlash(
+                                'info',
+                                '📲 Aviso enviado por WhatsApp a ' . $waReport['sent'] . ' teléfono(s) administrativo(s).'
+                            );
+                        } elseif (!empty($waReport['errors'])) {
+                            Yii::warning('WhatsApp notify errors: ' . implode(' | ', $waReport['errors']), 'whatsapp');
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    Yii::error('WhatsApp notify exception: ' . $e->getMessage(), 'whatsapp');
+                }
                 
                 Yii::$app->session->setFlash('success', '✅ Alquiler creado exitosamente. El archivo ZIP se está generando en segundo plano.');
                 

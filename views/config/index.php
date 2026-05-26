@@ -81,6 +81,11 @@ $conditionsModel = new \app\models\CompanyConfig();
                                 <i class="fas fa-car-side"></i> Mantenimiento Dekra
                             </button>
                         </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="whatsapp-tab" data-bs-toggle="tab" data-bs-target="#whatsapp" type="button" role="tab" aria-controls="whatsapp" aria-selected="false">
+                                <i class="fab fa-whatsapp text-success"></i> WhatsApp
+                            </button>
+                        </li>
                     </ul>
 
                     <div class="tab-content" id="configTabsContent">
@@ -1169,6 +1174,148 @@ sudo docker-compose exec app php yii migrate</code></pre>
                             </div>
                         </div>
 
+                        <div class="tab-pane fade" id="whatsapp" role="tabpanel" aria-labelledby="whatsapp-tab">
+                            <div class="row mt-4">
+                                <div class="col-lg-7">
+                                    <h5 class="mb-2"><i class="fab fa-whatsapp text-success"></i> Integración WhatsApp</h5>
+                                    <p class="text-muted">
+                                        Conecte su cuenta de WhatsApp escaneando el código QR. Al crear una nueva orden de
+                                        alquiler se enviará un aviso con el PDF adjunto a los teléfonos administrativos.
+                                    </p>
+                                    <form action="<?= Url::to(['config/update-whatsapp']) ?>" method="post">
+                                        <input type="hidden" name="_csrf" value="<?= Yii::$app->request->csrfToken ?>">
+
+                                        <div class="form-check form-switch mb-3">
+                                            <input class="form-check-input" type="checkbox" role="switch"
+                                                   name="whatsapp_enabled" value="1" id="whatsapp_enabled"
+                                                   <?= !empty($whatsappConfig['enabled']) ? 'checked' : '' ?>>
+                                            <label class="form-check-label" for="whatsapp_enabled">
+                                                Activar integración con WhatsApp
+                                            </label>
+                                        </div>
+
+                                        <div class="form-check form-switch mb-3">
+                                            <input class="form-check-input" type="checkbox" role="switch"
+                                                   name="whatsapp_notify_on_create" value="1" id="whatsapp_notify_on_create"
+                                                   <?= !empty($whatsappConfig['notify_on_create']) ? 'checked' : '' ?>>
+                                            <label class="form-check-label" for="whatsapp_notify_on_create">
+                                                Enviar aviso automático al crear una orden de alquiler
+                                            </label>
+                                        </div>
+
+                                        <div class="row g-3">
+                                            <div class="col-md-7">
+                                                <label class="form-label" for="whatsapp_api_url">URL base de la API</label>
+                                                <input type="url" class="form-control" name="whatsapp_api_url"
+                                                       id="whatsapp_api_url"
+                                                       value="<?= Html::encode($whatsappConfig['api_url']) ?>"
+                                                       placeholder="https://descargapro.com" required>
+                                            </div>
+                                            <div class="col-md-5">
+                                                <label class="form-label" for="whatsapp_session_id">Session ID</label>
+                                                <input type="text" class="form-control" name="whatsapp_session_id"
+                                                       id="whatsapp_session_id"
+                                                       value="<?= Html::encode($whatsappConfig['session_id']) ?>"
+                                                       placeholder="facto_rent" required>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label" for="whatsapp_country_code">Código de país</label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text">+</span>
+                                                    <input type="text" class="form-control" name="whatsapp_country_code"
+                                                           id="whatsapp_country_code"
+                                                           value="<?= Html::encode($whatsappConfig['country_code']) ?>"
+                                                           placeholder="506" required>
+                                                </div>
+                                                <div class="form-text">Se antepone si el número no lo incluye.</div>
+                                            </div>
+                                            <div class="col-md-8">
+                                                <label class="form-label" for="whatsapp_public_base_url">
+                                                    URL pública del sitio (para descargar el PDF) — opcional
+                                                </label>
+                                                <input type="url" class="form-control" name="whatsapp_public_base_url"
+                                                       id="whatsapp_public_base_url"
+                                                       value="<?= Html::encode($whatsappConfig['public_base_url']) ?>"
+                                                       placeholder="https://misitio.com">
+                                                <div class="form-text">
+                                                    Debe ser accesible desde Internet (https). Si se deja vacío se intentará detectar automáticamente.
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <hr class="my-4">
+
+                                        <h6 class="mb-3"><i class="fas fa-user-shield"></i> Teléfonos administrativos</h6>
+                                        <p class="text-muted small">
+                                            Hasta 5 números de WhatsApp que recibirán el aviso y el PDF de la nueva orden.
+                                            Si el número no incluye código de país, se usará el configurado arriba.
+                                        </p>
+                                        <div class="row g-2">
+                                            <?php for ($i = 1; $i <= 5; $i++): ?>
+                                                <div class="col-md-6">
+                                                    <div class="input-group">
+                                                        <span class="input-group-text"><i class="fab fa-whatsapp text-success"></i> <?= $i ?></span>
+                                                        <input type="text" class="form-control"
+                                                               name="whatsapp_admin_phone_<?= $i ?>"
+                                                               value="<?= Html::encode($whatsappConfig['admin_phones'][$i] ?? '') ?>"
+                                                               placeholder="Ej: 506 8888 8888">
+                                                    </div>
+                                                </div>
+                                            <?php endfor; ?>
+                                        </div>
+
+                                        <div class="mt-4 d-flex flex-wrap gap-2">
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="fas fa-save"></i> Guardar configuración
+                                            </button>
+                                            <button type="button" class="btn btn-outline-success" id="btn-whatsapp-test">
+                                                <i class="fas fa-paper-plane"></i> Enviar mensaje de prueba
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+
+                                <div class="col-lg-5">
+                                    <div class="card border-success">
+                                        <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                                            <span><i class="fas fa-qrcode"></i> Conexión de WhatsApp</span>
+                                            <span class="badge bg-light text-dark" id="whatsapp-status-badge">
+                                                <i class="fas fa-circle-notch fa-spin"></i> Cargando…
+                                            </span>
+                                        </div>
+                                        <div class="card-body text-center">
+                                            <div id="whatsapp-qr-container" class="d-flex align-items-center justify-content-center"
+                                                 style="min-height: 260px;">
+                                                <div class="text-muted">
+                                                    <i class="fas fa-mobile-alt fa-3x mb-2"></i>
+                                                    <p class="mb-0">Inicie la sesión para generar el código QR.</p>
+                                                </div>
+                                            </div>
+                                            <div id="whatsapp-info-msg" class="alert alert-info mt-3 mb-0 small d-none"></div>
+
+                                            <div class="d-grid gap-2 mt-3">
+                                                <button type="button" class="btn btn-success" id="btn-whatsapp-start">
+                                                    <i class="fas fa-power-off"></i> Iniciar sesión / Generar QR
+                                                </button>
+                                                <button type="button" class="btn btn-outline-secondary" id="btn-whatsapp-refresh">
+                                                    <i class="fas fa-sync"></i> Actualizar estado
+                                                </button>
+                                                <button type="button" class="btn btn-outline-danger" id="btn-whatsapp-disconnect">
+                                                    <i class="fas fa-sign-out-alt"></i> Cerrar sesión
+                                                </button>
+                                            </div>
+
+                                            <p class="text-muted small mt-3 mb-0">
+                                                Abra WhatsApp en su teléfono → <strong>Ajustes</strong> →
+                                                <strong>Dispositivos vinculados</strong> → <strong>Vincular un dispositivo</strong>
+                                                y escanee el QR.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="tab-pane fade" id="notificaciones" role="tabpanel" aria-labelledby="notificaciones-tab">
                             <div class="row mt-4">
                                 <div class="col-lg-8">
@@ -1227,6 +1374,12 @@ document.addEventListener('DOMContentLoaded', function() {
         var dekraTabBtn = document.getElementById('dekra-tab');
         if (dekraTabBtn) {
             (new bootstrap.Tab(dekraTabBtn)).show();
+        }
+    }
+    if (window.location.hash === '#whatsapp' && window.bootstrap && window.bootstrap.Tab) {
+        var waTabBtn = document.getElementById('whatsapp-tab');
+        if (waTabBtn) {
+            (new bootstrap.Tab(waTabBtn)).show();
         }
     }
     if (window.location.hash === '#orden-renta-pdf' && window.bootstrap && window.bootstrap.Tab) {
@@ -1390,6 +1543,249 @@ document.addEventListener('DOMContentLoaded', function() {
     };
     
     console.log('Funciones adicionales disponibles: testLogoUpload()');
+
+    // ==================== WhatsApp ====================
+    (function () {
+        const WA_URLS = {
+            status: <?= json_encode(Url::to(['config/whatsapp-status'])) ?>,
+            qr: <?= json_encode(Url::to(['config/whatsapp-qr'])) ?>,
+            start: <?= json_encode(Url::to(['config/whatsapp-start'])) ?>,
+            del: <?= json_encode(Url::to(['config/whatsapp-delete'])) ?>,
+            test: <?= json_encode(Url::to(['config/whatsapp-test'])) ?>,
+        };
+        const CSRF = <?= json_encode(Yii::$app->request->csrfToken) ?>;
+
+        const tabBtn = document.getElementById('whatsapp-tab');
+        const badge = document.getElementById('whatsapp-status-badge');
+        const qrBox = document.getElementById('whatsapp-qr-container');
+        const infoMsg = document.getElementById('whatsapp-info-msg');
+        const btnStart = document.getElementById('btn-whatsapp-start');
+        const btnRefresh = document.getElementById('btn-whatsapp-refresh');
+        const btnDisconnect = document.getElementById('btn-whatsapp-disconnect');
+        const btnTest = document.getElementById('btn-whatsapp-test');
+
+        if (!tabBtn) return;
+
+        let pollHandle = null;
+        let polling = false;
+
+        function setBadge(state) {
+            if (!badge) return;
+            const states = {
+                connected: { cls: 'bg-success text-white', html: '<i class="fas fa-check-circle"></i> Conectado' },
+                pending: { cls: 'bg-warning text-dark', html: '<i class="fas fa-qrcode"></i> Esperando QR' },
+                disconnected: { cls: 'bg-secondary text-white', html: '<i class="fas fa-times-circle"></i> Desconectado' },
+                error: { cls: 'bg-danger text-white', html: '<i class="fas fa-exclamation-triangle"></i> Error' },
+                loading: { cls: 'bg-light text-dark', html: '<i class="fas fa-circle-notch fa-spin"></i> Cargando…' },
+            };
+            const s = states[state] || states.loading;
+            badge.className = 'badge ' + s.cls;
+            badge.innerHTML = s.html;
+        }
+
+        function showInfo(msg, type) {
+            if (!infoMsg) return;
+            if (!msg) {
+                infoMsg.classList.add('d-none');
+                infoMsg.textContent = '';
+                return;
+            }
+            infoMsg.classList.remove('d-none', 'alert-info', 'alert-danger', 'alert-success', 'alert-warning');
+            infoMsg.classList.add('alert-' + (type || 'info'));
+            infoMsg.textContent = msg;
+        }
+
+        function renderQrPlaceholder(html) {
+            if (qrBox) qrBox.innerHTML = html;
+        }
+
+        function renderQrImage(dataUrl) {
+            if (!qrBox) return;
+            qrBox.innerHTML = '<img src="' + dataUrl + '" alt="QR WhatsApp" style="max-width: 260px; width: 100%; height: auto;">';
+        }
+
+        async function apiGet(url) {
+            const res = await fetch(url, { credentials: 'same-origin', headers: { 'Accept': 'application/json' } });
+            return res.json();
+        }
+
+        async function apiPost(url) {
+            const res = await fetch(url, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': CSRF,
+                },
+                body: '{}',
+            });
+            return res.json();
+        }
+
+        async function refreshStatus() {
+            try {
+                const r = await apiGet(WA_URLS.status);
+                const data = r && r.data ? r.data : {};
+                if (r && r.success && data.isConnected) {
+                    setBadge('connected');
+                    showInfo('Sesión conectada. El sistema puede enviar mensajes.', 'success');
+                    renderQrPlaceholder(
+                        '<div class="text-success">' +
+                        '<i class="fas fa-check-circle fa-3x mb-2"></i>' +
+                        '<p class="mb-0">Conexión activa</p></div>'
+                    );
+                    stopPolling();
+                    return true;
+                }
+                if (r && r.success && data.isConnected === false) {
+                    setBadge('pending');
+                    return false;
+                }
+                setBadge('disconnected');
+                return false;
+            } catch (e) {
+                setBadge('error');
+                showInfo('No se pudo contactar la API: ' + e.message, 'danger');
+                return false;
+            }
+        }
+
+        async function fetchQr() {
+            try {
+                const r = await apiGet(WA_URLS.qr);
+                const data = r && r.data ? r.data : {};
+                if (data && data.status === 'connected') {
+                    setBadge('connected');
+                    showInfo('Sesión conectada.', 'success');
+                    renderQrPlaceholder(
+                        '<div class="text-success">' +
+                        '<i class="fas fa-check-circle fa-3x mb-2"></i>' +
+                        '<p class="mb-0">Conexión activa</p></div>'
+                    );
+                    stopPolling();
+                    return;
+                }
+                if (data && data.qr) {
+                    renderQrImage(data.qr);
+                    setBadge('pending');
+                    showInfo('Escanee el QR desde su WhatsApp (Dispositivos vinculados).', 'info');
+                    return;
+                }
+                renderQrPlaceholder(
+                    '<div class="text-muted">' +
+                    '<i class="fas fa-hourglass-half fa-3x mb-2"></i>' +
+                    '<p class="mb-0">Esperando código QR…</p></div>'
+                );
+            } catch (e) {
+                showInfo('Error obteniendo QR: ' + e.message, 'danger');
+            }
+        }
+
+        function startPolling() {
+            if (polling) return;
+            polling = true;
+            pollHandle = setInterval(async () => {
+                const connected = await refreshStatus();
+                if (!connected) {
+                    await fetchQr();
+                }
+            }, 3500);
+        }
+
+        function stopPolling() {
+            polling = false;
+            if (pollHandle) {
+                clearInterval(pollHandle);
+                pollHandle = null;
+            }
+        }
+
+        if (btnStart) {
+            btnStart.addEventListener('click', async () => {
+                btnStart.disabled = true;
+                setBadge('loading');
+                showInfo('Iniciando sesión en el servidor…', 'info');
+                try {
+                    const r = await apiPost(WA_URLS.start);
+                    if (!r.success && !(r.data && r.data.status === 'exists')) {
+                        showInfo('No se pudo iniciar: ' + (r.error || 'desconocido'), 'danger');
+                        setBadge('error');
+                    } else {
+                        await fetchQr();
+                        startPolling();
+                    }
+                } finally {
+                    btnStart.disabled = false;
+                }
+            });
+        }
+
+        if (btnRefresh) {
+            btnRefresh.addEventListener('click', async () => {
+                setBadge('loading');
+                const connected = await refreshStatus();
+                if (!connected) await fetchQr();
+            });
+        }
+
+        if (btnDisconnect) {
+            btnDisconnect.addEventListener('click', async () => {
+                if (!confirm('¿Cerrar la sesión de WhatsApp? Tendrá que volver a escanear el QR.')) return;
+                btnDisconnect.disabled = true;
+                try {
+                    const r = await apiPost(WA_URLS.del);
+                    if (r.success) {
+                        showInfo('Sesión cerrada.', 'warning');
+                    } else {
+                        showInfo('Error al cerrar sesión: ' + (r.error || 'desconocido'), 'danger');
+                    }
+                    setBadge('disconnected');
+                    renderQrPlaceholder(
+                        '<div class="text-muted">' +
+                        '<i class="fas fa-mobile-alt fa-3x mb-2"></i>' +
+                        '<p class="mb-0">Inicie la sesión para generar el código QR.</p></div>'
+                    );
+                    stopPolling();
+                } finally {
+                    btnDisconnect.disabled = false;
+                }
+            });
+        }
+
+        if (btnTest) {
+            btnTest.addEventListener('click', async () => {
+                const orig = btnTest.innerHTML;
+                btnTest.disabled = true;
+                btnTest.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando…';
+                try {
+                    const r = await apiPost(WA_URLS.test);
+                    if (r.success) {
+                        showInfo('✅ ' + (r.message || 'Mensaje enviado.'), 'success');
+                    } else {
+                        const detail = (r.errors && r.errors.length) ? '\n' + r.errors.join('\n') : '';
+                        showInfo('❌ ' + (r.message || 'No se pudo enviar.') + detail, 'danger');
+                    }
+                } catch (e) {
+                    showInfo('Error: ' + e.message, 'danger');
+                } finally {
+                    btnTest.disabled = false;
+                    btnTest.innerHTML = orig;
+                }
+            });
+        }
+
+        tabBtn.addEventListener('shown.bs.tab', async () => {
+            const connected = await refreshStatus();
+            if (!connected) await fetchQr();
+        });
+
+        if (tabBtn.classList.contains('active') || window.location.hash === '#whatsapp') {
+            refreshStatus().then(connected => { if (!connected) fetchQr(); });
+        }
+
+        window.addEventListener('beforeunload', stopPolling);
+    })();
     
     // Función para copiar API Key
     window.copyApiKey = function(e) {

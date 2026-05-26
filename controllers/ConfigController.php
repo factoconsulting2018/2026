@@ -6,6 +6,7 @@ use Yii;
 use app\models\CompanyConfig;
 use app\models\Client;
 use app\models\ApiKey;
+use app\components\WhatsAppNotifier;
 use yii\helpers\Url;
 use yii\web\Controller;
 use yii\web\UploadedFile;
@@ -84,6 +85,7 @@ class ConfigController extends Controller
             'rentalOrderPdfTextScale' => CompanyConfig::getRentalOrderPdfTextScalePercent(),
             'rentalOrderPdfTextSizes' => CompanyConfig::getRentalOrderPdfTextSizes(),
             'rentalOrderPdfTextBaseSizes' => CompanyConfig::getRentalOrderPdfTextBaseSizes(),
+            'whatsappConfig' => CompanyConfig::getWhatsAppConfig(),
             'rentalOrderPdfTextFormValues' => (function () {
                 $base = CompanyConfig::getRentalOrderPdfTextBaseSizes();
                 return [
@@ -772,5 +774,148 @@ class ConfigController extends Controller
         Yii::$app->session->setFlash('success', $message);
 
         return $this->redirect(Url::to(['config/index']) . '#dekra');
+    }
+
+    // ==================== WhatsApp API ====================
+
+    /**
+     * Guarda la configuración de la integración con WhatsApp.
+     */
+    public function actionUpdateWhatsapp()
+    {
+        if (!Yii::$app->request->isPost) {
+            return $this->redirect(Url::to(['config/index']) . '#whatsapp');
+        }
+
+        $post = Yii::$app->request->post();
+        $phones = [];
+        for ($i = 1; $i <= 5; $i++) {
+            $phones[$i] = (string) ($post['whatsapp_admin_phone_' . $i] ?? '');
+        }
+
+        CompanyConfig::saveWhatsAppConfig(
+            isset($post['whatsapp_enabled']) && $post['whatsapp_enabled'] === '1',
+            (string) ($post['whatsapp_api_url'] ?? 'https://descargapro.com'),
+            (string) ($post['whatsapp_session_id'] ?? 'facto_rent'),
+            (string) ($post['whatsapp_country_code'] ?? '506'),
+            isset($post['whatsapp_notify_on_create']) && $post['whatsapp_notify_on_create'] === '1',
+            $phones,
+            (string) ($post['whatsapp_public_base_url'] ?? '')
+        );
+
+        Yii::$app->session->setFlash('success', 'Configuración de WhatsApp guardada.');
+        return $this->redirect(Url::to(['config/index']) . '#whatsapp');
+    }
+
+    /**
+     * Inicia (o reinicia) la sesión de WhatsApp en el servidor remoto.
+     */
+    public function actionWhatsappStart()
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        $cfg = CompanyConfig::getWhatsAppConfig();
+        $res = WhatsAppNotifier::startSession($cfg['api_url'], $cfg['session_id']);
+        return [
+            'success' => $res['ok'] || (isset($res['body']['status']) && $res['body']['status'] === 'exists'),
+            'status' => $res['status'],
+            'data' => $res['body'],
+            'error' => $res['error'],
+        ];
+    }
+
+    /**
+     * Devuelve el QR base64 de la sesión actual (si está pendiente de escanear).
+     */
+    public function actionWhatsappQr()
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        $cfg = CompanyConfig::getWhatsAppConfig();
+        $res = WhatsAppNotifier::getQr($cfg['api_url'], $cfg['session_id']);
+        return [
+            'success' => $res['ok'],
+            'status' => $res['status'],
+            'data' => $res['body'],
+            'error' => $res['error'],
+        ];
+    }
+
+    /**
+     * Devuelve el estado actual de la sesión (conectada / pendiente / no existe).
+     */
+    public function actionWhatsappStatus()
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        $cfg = CompanyConfig::getWhatsAppConfig();
+        $res = WhatsAppNotifier::getStatus($cfg['api_url'], $cfg['session_id']);
+        return [
+            'success' => $res['ok'],
+            'status' => $res['status'],
+            'data' => $res['body'],
+            'error' => $res['error'],
+        ];
+    }
+
+    /**
+     * Cierra la sesión actual de WhatsApp en el servidor remoto.
+     */
+    public function actionWhatsappDelete()
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        $cfg = CompanyConfig::getWhatsAppConfig();
+        $res = WhatsAppNotifier::deleteSession($cfg['api_url'], $cfg['session_id']);
+        return [
+            'success' => $res['ok'],
+            'status' => $res['status'],
+            'data' => $res['body'],
+            'error' => $res['error'],
+        ];
+    }
+
+    /**
+     * Envía un mensaje de prueba a los teléfonos administrativos configurados.
+     */
+    public function actionWhatsappTest()
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        $cfg = CompanyConfig::getWhatsAppConfig();
+
+        $numbers = WhatsAppNotifier::getAdminNumbers($cfg);
+        if (empty($numbers)) {
+            return ['success' => false, 'message' => 'No hay teléfonos administradores configurados.'];
+        }
+
+        $status = WhatsAppNotifier::getStatus($cfg['api_url'], $cfg['session_id']);
+        if (!$status['ok'] || empty($status['body']['isConnected'])) {
+            return [
+                'success' => false,
+                'message' => 'La sesión de WhatsApp no está conectada. Escanee el QR primero.',
+            ];
+        }
+
+        $company = CompanyConfig::getCompanyInfo();
+        $msg = '✅ Prueba de integración WhatsApp — ' . ($company['name'] ?? 'Renta de Vehículos')
+            . "\nFecha: " . date('d/m/Y h:i A')
+            . "\nSi recibe este mensaje, la conexión está funcionando correctamente.";
+
+        $sent = 0;
+        $errors = [];
+        foreach ($numbers as $number) {
+            $res = WhatsAppNotifier::sendText($cfg['api_url'], $cfg['session_id'], $number, $msg);
+            if ($res['ok']) {
+                $sent++;
+            } else {
+                $errors[] = $number . ': ' . ($res['error'] ?? 'fallo');
+            }
+        }
+
+        return [
+            'success' => $sent > 0,
+            'sent' => $sent,
+            'total' => count($numbers),
+            'errors' => $errors,
+            'message' => $sent === count($numbers)
+                ? ('Mensaje enviado a ' . $sent . ' teléfono(s).')
+                : ('Enviado a ' . $sent . ' de ' . count($numbers) . ' teléfono(s).'),
+        ];
     }
 }
