@@ -50,18 +50,26 @@ $currentTab = $tab ?? 'pending';
     <?php endif; ?>
 
     <!-- Tabs -->
-    <ul class="nav nav-tabs mb-4" role="tablist">
+    <ul class="nav nav-tabs mb-4 client-pending-tabs" role="tablist">
         <li class="nav-item" role="presentation">
-            <?= Html::a('Pendientes', ['pending', 'tab' => 'pending'], [
-                'class' => 'nav-link ' . ($currentTab === 'pending' ? 'active' : ''),
-                'aria-selected' => $currentTab === 'pending' ? 'true' : 'false'
-            ]) ?>
+            <?= Html::a(
+                '<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 6px;">hourglass_empty</span>Pendientes',
+                ['pending', 'tab' => 'pending'],
+                [
+                    'class' => 'nav-link tab-pending ' . ($currentTab === 'pending' ? 'active' : ''),
+                    'aria-selected' => $currentTab === 'pending' ? 'true' : 'false'
+                ]
+            ) ?>
         </li>
         <li class="nav-item" role="presentation">
-            <?= Html::a('Rechazados', ['pending', 'tab' => 'rejected'], [
-                'class' => 'nav-link ' . ($currentTab === 'rejected' ? 'active' : ''),
-                'aria-selected' => $currentTab === 'rejected' ? 'true' : 'false'
-            ]) ?>
+            <?= Html::a(
+                '<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 6px;">block</span>Rechazados',
+                ['pending', 'tab' => 'rejected'],
+                [
+                    'class' => 'nav-link tab-rejected ' . ($currentTab === 'rejected' ? 'active' : ''),
+                    'aria-selected' => $currentTab === 'rejected' ? 'true' : 'false'
+                ]
+            ) ?>
         </li>
     </ul>
 
@@ -180,9 +188,48 @@ $currentTab = $tab ?? 'pending';
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     transition: all 0.3s ease;
 }
-.nav-tabs .nav-link.active {
-    background-color: #fff;
-    border-color: #dee2e6 #dee2e6 #fff;
+
+/* ===== Tabs coloreados con texto blanco ===== */
+.client-pending-tabs {
+    border-bottom: 2px solid #dee2e6;
+    gap: 4px;
+}
+.client-pending-tabs .nav-link {
+    color: #ffffff !important;
+    border: 1px solid transparent;
+    border-bottom: none;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    padding: 10px 18px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+}
+.client-pending-tabs .nav-link.tab-pending {
+    background-color: #ff9800;
+}
+.client-pending-tabs .nav-link.tab-pending:hover {
+    background-color: #fb8c00;
+}
+.client-pending-tabs .nav-link.tab-pending.active {
+    background-color: #e65100;
+    border-color: #e65100;
+    box-shadow: 0 -3px 0 #ff9800 inset;
+}
+.client-pending-tabs .nav-link.tab-rejected {
+    background-color: #dc3545;
+}
+.client-pending-tabs .nav-link.tab-rejected:hover {
+    background-color: #c82333;
+}
+.client-pending-tabs .nav-link.tab-rejected.active {
+    background-color: #a71d2a;
+    border-color: #a71d2a;
+    box-shadow: 0 -3px 0 #dc3545 inset;
+}
+.client-pending-tabs .nav-link .material-symbols-outlined {
+    color: #ffffff;
 }
 </style>
 
