@@ -296,7 +296,44 @@ class RentalController extends Controller
                 if ($previousCarId && $previousCarId !== (int) $model->car_id) {
                     Car::syncStatusFromRentals($previousCarId);
                 }
-                
+
+                // Regenerar el PDF con los datos actualizados para que el aviso por
+                // WhatsApp adjunte siempre la versión más reciente.
+                try {
+                    $this->generateOrderPdf($model->id);
+                } catch (\Throwable $e) {
+                    Yii::warning('No se pudo regenerar PDF al actualizar orden #' . $model->id . ': ' . $e->getMessage(), 'rental');
+                }
+
+                // Enviar aviso de actualización por WhatsApp (no debe romper el flujo).
+                try {
+                    $waReport = WhatsAppNotifier::notifyRentalUpdated($model);
+                    if ($waReport['enabled']) {
+                        if ($waReport['sent'] > 0) {
+                            $msg = '📲 Aviso de actualización enviado por WhatsApp a ' . $waReport['sent']
+                                . ' de ' . $waReport['attempted'] . ' teléfono(s) administrativo(s).';
+                            if (!empty($waReport['errors'])) {
+                                $msg .= ' Algunos fallaron: ' . implode(' | ', $waReport['errors']);
+                                Yii::$app->session->setFlash('warning', $msg);
+                            } else {
+                                Yii::$app->session->setFlash('info', $msg);
+                            }
+                        } else {
+                            $errs = !empty($waReport['errors']) ? implode(' | ', $waReport['errors']) : 'sin detalle';
+                            Yii::$app->session->setFlash(
+                                'warning',
+                                '⚠️ No se pudo enviar el aviso de actualización por WhatsApp: ' . $errs
+                                . ' — Revise Configuración → WhatsApp.'
+                            );
+                            Yii::warning('WhatsApp notify (update) errors: ' . $errs, 'whatsapp');
+                        }
+                    } elseif (!empty($waReport['skipped_reason'])) {
+                        Yii::info('WhatsApp omitido (update): ' . $waReport['skipped_reason'], 'whatsapp');
+                    }
+                } catch (\Throwable $e) {
+                    Yii::error('WhatsApp notify (update) exception: ' . $e->getMessage(), 'whatsapp');
+                }
+
                 Yii::$app->session->setFlash('success', '✅ Alquiler actualizado exitosamente');
                 return $this->redirect(['view', 'id' => $model->id]);
             } else {

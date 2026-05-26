@@ -483,6 +483,27 @@ class WhatsAppNotifier
      */
     public static function notifyRentalCreated(Rental $rental): array
     {
+        return self::notifyRentalEvent($rental, 'created');
+    }
+
+    /**
+     * Envia notificacion de orden de alquiler actualizada a todos los telefonos administradores.
+     *
+     * @return array{enabled:bool, attempted:int, sent:int, errors:array<string>, skipped_reason:?string}
+     */
+    public static function notifyRentalUpdated(Rental $rental): array
+    {
+        return self::notifyRentalEvent($rental, 'updated');
+    }
+
+    /**
+     * Implementacion comun para enviar notificaciones de orden (creada/actualizada).
+     *
+     * @param string $eventType "created" | "updated"
+     * @return array{enabled:bool, attempted:int, sent:int, errors:array<string>, skipped_reason:?string}
+     */
+    private static function notifyRentalEvent(Rental $rental, string $eventType): array
+    {
         $report = [
             'enabled' => false,
             'attempted' => 0,
@@ -494,7 +515,7 @@ class WhatsAppNotifier
         try {
             $cfg = CompanyConfig::getWhatsAppConfig();
             Yii::info(
-                'notifyRentalCreated start; rental_id=' . ($rental->id ?? '?')
+                'notifyRentalEvent(' . $eventType . ') start; rental_id=' . ($rental->id ?? '?')
                 . ' enabled=' . (int) $cfg['enabled']
                 . ' notify_on_create=' . (int) $cfg['notify_on_create']
                 . ' phones=' . count(array_filter($cfg['admin_phones'])),
@@ -505,8 +526,10 @@ class WhatsAppNotifier
                 $report['skipped_reason'] = 'Integración WhatsApp desactivada en configuración.';
                 return $report;
             }
+            // Se reutiliza la misma opción "notify_on_create" para no introducir un nuevo flag.
+            // Si el aviso automático al crear orden está desactivado, también se omite la actualización.
             if (!$cfg['notify_on_create']) {
-                $report['skipped_reason'] = 'Aviso automático al crear orden desactivado.';
+                $report['skipped_reason'] = 'Aviso automático de órdenes desactivado en configuración.';
                 return $report;
             }
             $report['enabled'] = true;
@@ -531,8 +554,8 @@ class WhatsAppNotifier
                 return $report;
             }
 
-            $message = self::buildRentalMessage($rental);
-            Yii::info('WhatsApp message preparado (' . strlen($message) . ' chars) para ' . count($numbers) . ' destinatario(s)', 'whatsapp');
+            $message = self::buildRentalMessage($rental, $eventType);
+            Yii::info('WhatsApp message preparado (' . $eventType . ', ' . strlen($message) . ' chars) para ' . count($numbers) . ' destinatario(s)', 'whatsapp');
 
             // Publicar PDF de la orden si existe.
             // NOTA: la foto del vehículo se quitó del aviso porque generaba fallos cuando
@@ -601,8 +624,10 @@ class WhatsAppNotifier
     /**
      * Construye el texto del mensaje a enviar para una orden de alquiler.
      * Incluye: cliente, tipo de vehículo, matrícula, periodo de alquiler y estado de pago.
+     *
+     * @param string $eventType "created" (default) o "updated" — solo cambia el encabezado.
      */
-    public static function buildRentalMessage(Rental $rental): string
+    public static function buildRentalMessage(Rental $rental, string $eventType = 'created'): string
     {
         $company = CompanyConfig::getCompanyInfo();
         $companyName = $company['name'] ?? 'Renta de Vehículos';
@@ -704,11 +729,18 @@ class WhatsAppNotifier
         $total = number_format((float) ($rental->total_precio ?? 0), 0, '.', ',');
         $currency = '₡';
 
+        $isUpdate = ($eventType === 'updated');
+
         $lines = [];
-        $lines[] = '*🚗 Nueva orden de alquiler*';
+        $lines[] = $isUpdate
+            ? '*✏️ Orden de alquiler actualizada*'
+            : '*🚗 Nueva orden de alquiler*';
         $lines[] = $companyName;
         $lines[] = '';
         $lines[] = 'Orden: *' . $orderId . '*';
+        if ($isUpdate) {
+            $lines[] = '_Actualizada: ' . date('d/m/Y h:i A') . '_';
+        }
         $lines[] = '';
         $lines[] = '👤 *Cliente:* ' . $clientName;
         if ($clientPhone !== '') {
@@ -737,7 +769,9 @@ class WhatsAppNotifier
         $lines[] = '💵 *Estado de pago:* ' . $payStatus;
         $lines[] = '💰 *Total:* ' . $currency . ' ' . $total;
         $lines[] = '';
-        $lines[] = 'Se adjunta la orden en PDF.';
+        $lines[] = $isUpdate
+            ? 'Se adjunta la orden actualizada en PDF.'
+            : 'Se adjunta la orden en PDF.';
 
         return implode("\n", $lines);
     }
