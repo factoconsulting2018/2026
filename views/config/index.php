@@ -1652,7 +1652,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 const r = await apiGet(WA_URLS.status);
                 console.log('[whatsapp] status response:', r);
                 const data = r && r.data ? r.data : {};
-                if (r && r.success && data.isConnected) {
+                const apiStatus = (data.status || '').toString();
+                // Nuevo contrato: { status: "connected"|"connecting"|"not_found", qr: bool }
+                const sessionExists = data.sessionExists === true || (apiStatus !== '' && apiStatus !== 'not_found');
+
+                if (data.isConnected || apiStatus === 'connected') {
                     setBadge('connected');
                     showInfo('Sesión conectada. El sistema puede enviar mensajes.', 'success');
                     renderQrPlaceholder(
@@ -1663,17 +1667,25 @@ document.addEventListener('DOMContentLoaded', function() {
                     stopPolling();
                     return { connected: true, sessionExists: true };
                 }
-                if (r && r.success && data.isConnected === false) {
+
+                if (apiStatus === 'connecting') {
                     setBadge('pending');
                     return { connected: false, sessionExists: true };
                 }
+
+                if (apiStatus === 'not_found' || !sessionExists) {
+                    setBadge('disconnected');
+                    return { connected: false, sessionExists: false };
+                }
+
                 if (r && !r.success) {
                     const errMsg = (data && data.message) || r.error || 'desconocido';
                     setBadge('disconnected');
                     return { connected: false, sessionExists: false, error: errMsg };
                 }
+
                 setBadge('disconnected');
-                return { connected: false, sessionExists: false };
+                return { connected: false, sessionExists: sessionExists };
             } catch (e) {
                 setBadge('error');
                 showInfo('No se pudo contactar la API: ' + e.message, 'danger');
@@ -1700,8 +1712,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 const r = await apiGet(WA_URLS.qr);
                 console.log('[whatsapp] qr response:', r);
                 const data = r && r.data ? r.data : {};
+                const apiStatus = (data.status || '').toString();
 
-                if (data && data.status === 'connected') {
+                if (apiStatus === 'connected' || data.isConnected) {
                     setBadge('connected');
                     showInfo('Sesión conectada.', 'success');
                     renderQrPlaceholder(
@@ -1722,10 +1735,24 @@ document.addEventListener('DOMContentLoaded', function() {
                     return { hadQr: true, connected: false, sessionExists: true };
                 }
 
-                // Sin QR pero la API respondió: puede ser "Sesion no encontrada" o sesion en proceso.
                 const msg = (data && data.message) ? String(data.message) : '';
-                const statusStr = data && data.status ? String(data.status) : '';
-                const sessionMissing = /no encontrada|not found/i.test(msg) || statusStr === 'error';
+                const sessionMissing = apiStatus === 'not_found'
+                    || data.sessionExists === false
+                    || /no encontrada|not found|no existe/i.test(msg);
+
+                // Si la sesión existe y dice que está conectando con qr disponible (qr:true),
+                // hacemos fallback al endpoint PNG directo del servidor (/session/{id}/qr-image).
+                if (!sessionMissing && (apiStatus === 'connecting' || data.qr === true)) {
+                    const apiUrl = (document.getElementById('whatsapp_api_url') || {}).value || '';
+                    const sessionId = (document.getElementById('whatsapp_session_id') || {}).value || '';
+                    if (apiUrl && sessionId) {
+                        const imgUrl = apiUrl.replace(/\/+$/, '') + '/session/' + encodeURIComponent(sessionId) + '/qr-image?t=' + Date.now();
+                        renderQrImage(imgUrl);
+                        setBadge('pending');
+                        showInfo('Escanee el QR desde su WhatsApp (Dispositivos vinculados).', 'info');
+                        return { hadQr: true, connected: false, sessionExists: true };
+                    }
+                }
 
                 renderQrPlaceholder(
                     '<div class="text-muted">' +

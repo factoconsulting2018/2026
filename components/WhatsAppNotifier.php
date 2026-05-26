@@ -10,15 +10,18 @@ use app\controllers\PdfController;
 /**
  * Cliente para la API WhatsApp Multi-Session (descargapro.com / Baileys).
  *
- * Documentacion de referencia: API_WhatsApp_Documentacion.html v5.0.0
+ * Documentacion de referencia: descargapro_API_Rutas.pdf v5.0.0 (rutas actualizadas).
  *
  * Endpoints utilizados:
- *  - POST   /session/start
- *  - GET    /session/qr/:sessionId
- *  - GET    /session/status/:sessionId
- *  - DELETE /session/delete/:sessionId
- *  - POST   /send/text
- *  - POST   /send/document
+ *  - POST   /session/crear/{id}
+ *  - GET    /session/{id}/status        => { status: "connected"|"connecting"|"not_found", qr: bool }
+ *  - GET    /session/{id}/qr            => { qr: "data:image/png;base64,..." }
+ *  - GET    /session/{id}/qr-image      => PNG directo (no usado aqui; usamos JSON)
+ *  - DELETE /session/{id}
+ *  - GET    /sessions
+ *  - POST   /session/{id}/send          { number, message }
+ *  - POST   /session/{id}/send-image    { number, url, caption? }
+ *  - POST   /session/{id}/send-document { number, url, filename? }
  */
 class WhatsAppNotifier
 {
@@ -101,30 +104,30 @@ class WhatsAppNotifier
 
     public static function getStatus(string $apiUrl, string $sessionId): array
     {
-        return self::request('GET', rtrim($apiUrl, '/') . '/session/status/' . rawurlencode($sessionId));
+        return self::request('GET', rtrim($apiUrl, '/') . '/session/' . rawurlencode($sessionId) . '/status');
     }
 
     public static function getQr(string $apiUrl, string $sessionId): array
     {
-        return self::request('GET', rtrim($apiUrl, '/') . '/session/qr/' . rawurlencode($sessionId));
+        return self::request('GET', rtrim($apiUrl, '/') . '/session/' . rawurlencode($sessionId) . '/qr');
     }
 
     public static function startSession(string $apiUrl, string $sessionId): array
     {
-        return self::request('POST', rtrim($apiUrl, '/') . '/session/start', ['sessionId' => $sessionId]);
+        return self::request('POST', rtrim($apiUrl, '/') . '/session/crear/' . rawurlencode($sessionId));
     }
 
     public static function deleteSession(string $apiUrl, string $sessionId): array
     {
-        return self::request('DELETE', rtrim($apiUrl, '/') . '/session/delete/' . rawurlencode($sessionId));
+        return self::request('DELETE', rtrim($apiUrl, '/') . '/session/' . rawurlencode($sessionId));
     }
 
     public static function sendText(string $apiUrl, string $sessionId, string $number, string $message): array
     {
         return self::request(
             'POST',
-            rtrim($apiUrl, '/') . '/send/text',
-            ['sessionId' => $sessionId, 'number' => $number, 'message' => $message],
+            rtrim($apiUrl, '/') . '/session/' . rawurlencode($sessionId) . '/send',
+            ['number' => $number, 'message' => $message],
             self::TIMEOUT_SEND
         );
     }
@@ -137,18 +140,32 @@ class WhatsAppNotifier
         string $filename,
         string $mimetype = 'application/pdf'
     ): array {
+        // mimetype se mantiene en la firma por compatibilidad, pero la API nueva no lo requiere.
+        unset($mimetype);
         return self::request(
             'POST',
-            rtrim($apiUrl, '/') . '/send/document',
+            rtrim($apiUrl, '/') . '/session/' . rawurlencode($sessionId) . '/send-document',
             [
-                'sessionId' => $sessionId,
                 'number' => $number,
                 'url' => $publicUrl,
                 'filename' => $filename,
-                'mimetype' => $mimetype,
             ],
             self::TIMEOUT_SEND
         );
+    }
+
+    /**
+     * Indica si una respuesta de /status corresponde a "conectado".
+     *
+     * @param array{ok:bool, body:array<string,mixed>|null, status:int, error:string|null} $statusResponse
+     */
+    public static function isConnected(array $statusResponse): bool
+    {
+        if (empty($statusResponse['ok'])) {
+            return false;
+        }
+        $body = $statusResponse['body'] ?? [];
+        return is_array($body) && isset($body['status']) && $body['status'] === 'connected';
     }
 
     /**
@@ -309,8 +326,9 @@ class WhatsAppNotifier
 
             // Verificar que la sesion este conectada antes de gastar timeouts en envios.
             $status = self::getStatus($cfg['api_url'], $cfg['session_id']);
-            if (!$status['ok'] || empty($status['body']['isConnected'])) {
-                $msg = $status['error'] ?? 'Sesion WhatsApp no conectada.';
+            if (!self::isConnected($status)) {
+                $bodyStatus = is_array($status['body'] ?? null) ? ($status['body']['status'] ?? 'unknown') : 'unknown';
+                $msg = $status['error'] ?? ('Sesion WhatsApp no conectada (estado: ' . $bodyStatus . ')');
                 Yii::warning('WhatsApp omitido (sesion no conectada): ' . $msg, 'whatsapp');
                 $report['errors'][] = $msg;
                 return $report;

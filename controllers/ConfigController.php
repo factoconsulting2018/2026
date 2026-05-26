@@ -815,10 +815,11 @@ class ConfigController extends Controller
         Yii::$app->response->format = Response::FORMAT_JSON;
         $cfg = CompanyConfig::getWhatsAppConfig();
         $res = WhatsAppNotifier::startSession($cfg['api_url'], $cfg['session_id']);
+        $bodyStatus = is_array($res['body'] ?? null) ? ($res['body']['status'] ?? null) : null;
         return [
-            'success' => $res['ok'] || (isset($res['body']['status']) && $res['body']['status'] === 'exists'),
+            'success' => $res['ok'] || in_array($bodyStatus, ['ok', 'exists', 'starting', 'connecting', 'connected', 'created'], true),
             'status' => $res['status'],
-            'data' => $res['body'],
+            'data' => $this->decorateWhatsappBody($res['body']),
             'error' => $res['error'],
         ];
     }
@@ -834,7 +835,7 @@ class ConfigController extends Controller
         return [
             'success' => $res['ok'],
             'status' => $res['status'],
-            'data' => $res['body'],
+            'data' => $this->decorateWhatsappBody($res['body']),
             'error' => $res['error'],
         ];
     }
@@ -850,7 +851,7 @@ class ConfigController extends Controller
         return [
             'success' => $res['ok'],
             'status' => $res['status'],
-            'data' => $res['body'],
+            'data' => $this->decorateWhatsappBody($res['body']),
             'error' => $res['error'],
         ];
     }
@@ -866,9 +867,28 @@ class ConfigController extends Controller
         return [
             'success' => $res['ok'],
             'status' => $res['status'],
-            'data' => $res['body'],
+            'data' => $this->decorateWhatsappBody($res['body']),
             'error' => $res['error'],
         ];
+    }
+
+    /**
+     * Normaliza el cuerpo de respuesta agregando isConnected/sessionExists
+     * para que el frontend pueda interpretar el nuevo formato de la API
+     * ({ status: "connected"|"connecting"|"not_found" }).
+     *
+     * @param array<string,mixed>|null $body
+     * @return array<string,mixed>
+     */
+    private function decorateWhatsappBody($body): array
+    {
+        if (!is_array($body)) {
+            $body = [];
+        }
+        $status = isset($body['status']) ? (string) $body['status'] : '';
+        $body['isConnected'] = $status === 'connected';
+        $body['sessionExists'] = $status !== '' && $status !== 'not_found';
+        return $body;
     }
 
     /**
@@ -885,7 +905,7 @@ class ConfigController extends Controller
         }
 
         $status = WhatsAppNotifier::getStatus($cfg['api_url'], $cfg['session_id']);
-        if (!$status['ok'] || empty($status['body']['isConnected'])) {
+        if (!WhatsAppNotifier::isConnected($status)) {
             return [
                 'success' => false,
                 'message' => 'La sesión de WhatsApp no está conectada. Escanee el QR primero.',
