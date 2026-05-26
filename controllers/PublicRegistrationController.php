@@ -4,6 +4,7 @@ namespace app\controllers;
 
 use Yii;
 use app\models\Client;
+use app\components\WhatsAppNotifier;
 use yii\web\Controller;
 use yii\web\Response;
 use yii\widgets\ActiveForm;
@@ -40,6 +41,19 @@ class PublicRegistrationController extends Controller
             $model->approval_status = 'pending'; // Forzar pending para registros públicos
             
             if ($model->save()) {
+                // Notificar a los teléfonos administrativos por WhatsApp.
+                // Es defensivo: si falla no debe romper el registro del cliente.
+                try {
+                    $waReport = WhatsAppNotifier::notifyClientRegistered($model);
+                    if (!empty($waReport['skipped_reason'])) {
+                        Yii::info('WhatsApp client-reg omitido: ' . $waReport['skipped_reason'], 'whatsapp');
+                    } elseif ($waReport['enabled'] && $waReport['sent'] === 0 && !empty($waReport['errors'])) {
+                        Yii::warning('WhatsApp client-reg sin envíos: ' . implode(' | ', $waReport['errors']), 'whatsapp');
+                    }
+                } catch (\Throwable $e) {
+                    Yii::error('WhatsApp client-reg exception: ' . $e->getMessage(), 'whatsapp');
+                }
+
                 Yii::$app->session->setFlash('success', '¡Gracias por registrarte! Tu solicitud está pendiente de aprobación. Te notificaremos cuando sea aprobada.');
                 return $this->refresh();
             }

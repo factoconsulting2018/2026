@@ -4,6 +4,7 @@ namespace app\components;
 
 use Yii;
 use app\models\CompanyConfig;
+use app\models\Client;
 use app\models\Rental;
 use app\controllers\PdfController;
 
@@ -494,6 +495,204 @@ class WhatsAppNotifier
     public static function notifyRentalUpdated(Rental $rental): array
     {
         return self::notifyRentalEvent($rental, 'updated');
+    }
+
+    /**
+     * Envia notificacion a los telefonos administradores cuando un cliente nuevo
+     * se registra desde el formulario publico (/public-registration/index).
+     *
+     * Es defensivo: nunca debe romper el flujo de registro. Devuelve un reporte.
+     *
+     * @return array{enabled:bool, attempted:int, sent:int, errors:array<string>, skipped_reason:?string}
+     */
+    public static function notifyClientRegistered(Client $client): array
+    {
+        $report = [
+            'enabled' => false,
+            'attempted' => 0,
+            'sent' => 0,
+            'errors' => [],
+            'skipped_reason' => null,
+        ];
+
+        try {
+            $cfg = CompanyConfig::getWhatsAppConfig();
+            Yii::info(
+                'notifyClientRegistered start; client_id=' . ($client->id ?? '?')
+                . ' enabled=' . (int) $cfg['enabled']
+                . ' phones=' . count(array_filter($cfg['admin_phones'])),
+                'whatsapp'
+            );
+
+            if (!$cfg['enabled']) {
+                $report['skipped_reason'] = 'Integración WhatsApp desactivada en configuración.';
+                return $report;
+            }
+            // Reutilizamos el mismo flag de "aviso al crear" para no introducir uno nuevo.
+            if (!$cfg['notify_on_create']) {
+                $report['skipped_reason'] = 'Aviso automático desactivado en configuración.';
+                return $report;
+            }
+            $report['enabled'] = true;
+
+            $numbers = self::getAdminNumbers($cfg);
+            if (empty($numbers)) {
+                $msg = 'No hay teléfonos administradores configurados.';
+                Yii::warning($msg, 'whatsapp');
+                $report['errors'][] = $msg;
+                $report['skipped_reason'] = $msg;
+                return $report;
+            }
+
+            $status = self::getStatus($cfg['api_url'], $cfg['session_id']);
+            if (!self::isConnected($status)) {
+                $bodyStatus = is_array($status['body'] ?? null) ? ($status['body']['status'] ?? 'unknown') : 'unknown';
+                $msg = $status['error'] ?? ('Sesión WhatsApp no conectada (estado: ' . $bodyStatus . ')');
+                Yii::warning('WhatsApp omitido (sesión no conectada): ' . $msg, 'whatsapp');
+                $report['errors'][] = $msg;
+                $report['skipped_reason'] = $msg;
+                return $report;
+            }
+
+            $message = self::buildClientRegistrationMessage($client);
+            Yii::info('WhatsApp client-reg message preparado (' . strlen($message) . ' chars) para ' . count($numbers) . ' destinatario(s)', 'whatsapp');
+
+            foreach ($numbers as $number) {
+                $report['attempted']++;
+                try {
+                    $textRes = self::sendText($cfg['api_url'], $cfg['session_id'], $number, $message);
+                    if (!$textRes['ok']) {
+                        $err = $number . ': texto ' . ($textRes['error'] ?? 'fallo');
+                        Yii::warning('WhatsApp envío (client-reg) fallido — ' . $err, 'whatsapp');
+                        $report['errors'][] = $err;
+                        continue;
+                    }
+                    $report['sent']++;
+                    Yii::info('WhatsApp (client-reg) enviado correctamente a ' . $number, 'whatsapp');
+                } catch (\Throwable $e) {
+                    $report['errors'][] = $number . ': ' . $e->getMessage();
+                    Yii::error('WhatsApp envío (client-reg) excepción a ' . $number . ': ' . $e->getMessage(), 'whatsapp');
+                }
+            }
+        } catch (\Throwable $e) {
+            Yii::error('notifyClientRegistered: ' . $e->getMessage(), 'whatsapp');
+            $report['errors'][] = $e->getMessage();
+        }
+
+        return $report;
+    }
+
+    /**
+     * Construye el texto de la notificación de un nuevo registro público de cliente.
+     */
+    public static function buildClientRegistrationMessage(Client $client): string
+    {
+        $company = CompanyConfig::getCompanyInfo();
+        $companyName = $company['name'] ?? 'Renta de Vehículos';
+
+        $nameRaw = trim((string) ($client->full_name ?? ''));
+        if ($nameRaw === '') {
+            $nameRaw = trim(((string) ($client->nombre ?? '')) . ' ' . ((string) ($client->apellido ?? '')));
+        }
+        $clientName = $nameRaw !== '' ? $nameRaw : '—';
+
+        $cedula = trim((string) ($client->cedula_fisica ?? ''));
+        $email = trim((string) ($client->email ?? ''));
+
+        // Telefono preferente: WhatsApp -> celular -> telefono
+        $clientPhone = '';
+        foreach (['whatsapp', 'celular', 'telefono'] as $f) {
+            $val = trim((string) ($client->{$f} ?? ''));
+            if ($val !== '') {
+                $clientPhone = $val;
+                break;
+            }
+        }
+        $clientPhoneDigits = $clientPhone !== '' ? preg_replace('/\D+/', '', $clientPhone) : '';
+
+        // Direccion
+        $direccion = trim((string) ($client->direccion ?? ''));
+        if ($direccion === '') {
+            $direccion = trim((string) ($client->address ?? ''));
+        }
+
+        // Licencias
+        $licencias = trim((string) ($client->licencias_choferes ?? ''));
+
+        // Vencimientos
+        $vencLic = self::formatDate($client->fecha_vencimiento_licencia ?? null);
+        $vencCed = self::formatDate($client->fecha_vencimiento_cedula ?? null);
+
+        // Situacion financiera
+        $situacion = trim((string) ($client->situacion_financiera ?? ''));
+        $situacionDet = trim((string) ($client->situacion_financiera_detalle ?? ''));
+        $situacionLabels = [
+            'independiente' => 'Independiente',
+            'asalariado' => 'Asalariado',
+            'empresa' => 'Tiene empresa',
+        ];
+        $situacionKey = strtolower($situacion);
+        $situacionLabel = $situacionLabels[$situacionKey] ?? ($situacion !== '' ? ucfirst($situacion) : '');
+
+        $lines = [];
+        $lines[] = '*🆕 Nuevo registro de cliente*';
+        $lines[] = $companyName;
+        $lines[] = '';
+        $lines[] = 'Registro recibido: _' . date('d/m/Y h:i A') . '_';
+        $lines[] = 'Estado: 🟡 Pendiente de aprobación';
+        $lines[] = '';
+        $lines[] = '👤 *Cliente:* ' . $clientName;
+        if ($cedula !== '') {
+            $lines[] = '🪪 *Cédula:* ' . $cedula;
+        }
+        if ($clientPhone !== '') {
+            $lines[] = '📱 *WhatsApp:* ' . $clientPhone;
+            if ($clientPhoneDigits !== '' && strlen($clientPhoneDigits) >= 7) {
+                $lines[] = 'https://wa.me/' . $clientPhoneDigits;
+            }
+        }
+        if ($email !== '') {
+            $lines[] = '✉️ *Email:* ' . $email;
+        }
+        if ($direccion !== '') {
+            $lines[] = '🏠 *Dirección:* ' . $direccion;
+        }
+        $lines[] = '';
+        if ($licencias !== '') {
+            $lines[] = '🚗 *Licencias:* ' . $licencias;
+        }
+        if ($vencLic !== '') {
+            $lines[] = '📅 *Vence licencia:* ' . $vencLic;
+        }
+        if ($vencCed !== '') {
+            $lines[] = '📅 *Vence cédula:* ' . $vencCed;
+        }
+        if ($situacionLabel !== '' || $situacionDet !== '') {
+            $lines[] = '';
+            if ($situacionLabel !== '') {
+                $lines[] = '💼 *Situación:* ' . $situacionLabel;
+            }
+            if ($situacionDet !== '') {
+                $lines[] = '📝 ' . $situacionDet;
+            }
+        }
+        $lines[] = '';
+        $lines[] = 'Revíselo en el panel: Clientes → Pendientes.';
+
+        return implode("\n", $lines);
+    }
+
+    /**
+     * Convierte una fecha (Y-m-d o Y-m-d H:i:s) a "d/m/Y". Devuelve '' si no se puede.
+     */
+    private static function formatDate($raw): string
+    {
+        if ($raw === null || $raw === '') return '';
+        $s = trim((string) $raw);
+        if ($s === '0000-00-00' || $s === '0000-00-00 00:00:00') return '';
+        $ts = strtotime($s);
+        if ($ts === false) return '';
+        return date('d/m/Y', $ts);
     }
 
     /**
