@@ -132,6 +132,25 @@ class WhatsAppNotifier
         );
     }
 
+    public static function sendImage(
+        string $apiUrl,
+        string $sessionId,
+        string $number,
+        string $publicUrl,
+        string $caption = ''
+    ): array {
+        $payload = ['number' => $number, 'url' => $publicUrl];
+        if ($caption !== '') {
+            $payload['caption'] = $caption;
+        }
+        return self::request(
+            'POST',
+            rtrim($apiUrl, '/') . '/session/' . rawurlencode($sessionId) . '/send-image',
+            $payload,
+            self::TIMEOUT_SEND
+        );
+    }
+
     public static function sendDocument(
         string $apiUrl,
         string $sessionId,
@@ -267,6 +286,70 @@ class WhatsAppNotifier
         return ['public_url' => $url, 'filename' => $publicName];
     }
 
+    /**
+     * Devuelve una URL pública (accesible desde Internet) para la imagen del vehículo.
+     * - Si el campo Car::imagen es una URL externa (http/https), la devuelve tal cual.
+     * - Si es una ruta local (uploads/cars/...), la copia al outbox público con un token
+     *   y devuelve la URL absoluta (igual que el PDF de la orden).
+     *
+     * @return array{public_url:string, filename:string}|null
+     */
+    public static function publishCarImage(?\app\models\Car $car, ?string $publicBaseUrl = null): ?array
+    {
+        if ($car === null) {
+            return null;
+        }
+        $raw = trim((string) ($car->imagen ?? ''));
+        if ($raw === '') {
+            return null;
+        }
+
+        // Si ya es una URL pública (legacy), devolvérsela directamente.
+        if (preg_match('#^https?://#i', $raw)) {
+            return [
+                'public_url' => $raw,
+                'filename' => basename(parse_url($raw, PHP_URL_PATH) ?: 'foto.jpg'),
+            ];
+        }
+
+        // Ruta local: copiar al outbox público con token (igual estrategia que el PDF).
+        $rel = ltrim(str_replace('\\', '/', $raw), '/');
+        $src = Yii::getAlias('@webroot/' . $rel);
+        if (!is_file($src)) {
+            return null;
+        }
+
+        $outboxRel = self::OUTBOX_DIR;
+        $outboxAbs = Yii::getAlias('@webroot/' . $outboxRel);
+        if (!is_dir($outboxAbs)) {
+            @mkdir($outboxAbs, 0775, true);
+        }
+
+        $base = pathinfo($rel, PATHINFO_FILENAME);
+        $ext = strtolower(pathinfo($rel, PATHINFO_EXTENSION) ?: 'jpg');
+        if (!in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'gif'], true)) {
+            $ext = 'jpg';
+        }
+        $token = bin2hex(random_bytes(8));
+        $publicName = 'car_' . preg_replace('/[^A-Za-z0-9_\-]+/', '_', $base) . '_' . $token . '.' . $ext;
+        $publicPath = $outboxAbs . $publicName;
+
+        if (!@copy($src, $publicPath)) {
+            return null;
+        }
+
+        $publicBaseUrl = $publicBaseUrl !== null ? trim($publicBaseUrl) : '';
+        if ($publicBaseUrl === '') {
+            $publicBaseUrl = self::detectPublicBaseUrl();
+        }
+        $publicBaseUrl = rtrim($publicBaseUrl, '/');
+
+        $relUrl = '/' . ltrim($outboxRel, '/') . $publicName;
+        $url = $publicBaseUrl !== '' ? $publicBaseUrl . $relUrl : $relUrl;
+
+        return ['public_url' => $url, 'filename' => $publicName];
+    }
+
     private static function detectPublicBaseUrl(): string
     {
         try {
@@ -360,6 +443,12 @@ class WhatsAppNotifier
             $message = self::buildRentalMessage($rental);
             Yii::info('WhatsApp message preparado (' . strlen($message) . ' chars) para ' . count($numbers) . ' destinatario(s)', 'whatsapp');
 
+            // Publicar foto del vehículo (se enviará como primer envío con el mensaje como caption).
+            $publicImage = self::publishCarImage($rental->car ?? null, $cfg['public_base_url'] ?: null);
+            if ($publicImage !== null) {
+                Yii::info('Foto del vehículo publicada: ' . $publicImage['public_url'], 'whatsapp');
+            }
+
             // Publicar PDF de la orden si existe.
             $pdfFilename = PdfController::rentalOrderPdfFilename($rental);
             $publicPdf = self::publishPdfFromRuntime($pdfFilename, $cfg['public_base_url'] ?: null);
@@ -372,14 +461,36 @@ class WhatsAppNotifier
             foreach ($numbers as $number) {
                 $report['attempted']++;
                 try {
-                    $textRes = self::sendText($cfg['api_url'], $cfg['session_id'], $number, $message);
-                    if (!$textRes['ok']) {
-                        $err = $number . ': texto ' . ($textRes['error'] ?? 'fallo');
-                        Yii::warning('WhatsApp envío fallido — ' . $err, 'whatsapp');
-                        $report['errors'][] = $err;
-                        continue;
+                    // 1) Foto del vehículo + texto como caption (si hay imagen),
+                    //    o solo texto si no hay imagen.
+                    if ($publicImage !== null) {
+                        $imgRes = self::sendImage($cfg['api_url'], $cfg['session_id'], $number, $publicImage['public_url'], $message);
+                        if (!$imgRes['ok']) {
+                            // Si la imagen falla, intentar al menos enviar el texto para no perder el aviso.
+                            Yii::warning(
+                                'WhatsApp imagen fallida — ' . $number . ': ' . ($imgRes['error'] ?? 'fallo')
+                                . ' — fallback a sendText',
+                                'whatsapp'
+                            );
+                            $textRes = self::sendText($cfg['api_url'], $cfg['session_id'], $number, $message);
+                            if (!$textRes['ok']) {
+                                $err = $number . ': texto ' . ($textRes['error'] ?? 'fallo');
+                                Yii::warning('WhatsApp envío fallido — ' . $err, 'whatsapp');
+                                $report['errors'][] = $err;
+                                continue;
+                            }
+                        }
+                    } else {
+                        $textRes = self::sendText($cfg['api_url'], $cfg['session_id'], $number, $message);
+                        if (!$textRes['ok']) {
+                            $err = $number . ': texto ' . ($textRes['error'] ?? 'fallo');
+                            Yii::warning('WhatsApp envío fallido — ' . $err, 'whatsapp');
+                            $report['errors'][] = $err;
+                            continue;
+                        }
                     }
 
+                    // 2) PDF de la orden.
                     if ($publicPdf !== null) {
                         $docRes = self::sendDocument(
                             $cfg['api_url'],
@@ -434,8 +545,16 @@ class WhatsAppNotifier
             if ($clientName === '') {
                 $clientName = '—';
             }
-            $clientPhone = trim((string) ($client->whatsapp ?? ''));
+            // Tomar el primer teléfono disponible: WhatsApp -> celular -> teléfono.
+            foreach (['whatsapp', 'celular', 'telefono'] as $f) {
+                $val = trim((string) ($client->{$f} ?? ''));
+                if ($val !== '') {
+                    $clientPhone = $val;
+                    break;
+                }
+            }
         }
+        $clientPhoneDigits = $clientPhone !== '' ? preg_replace('/\D+/', '', $clientPhone) : '';
 
         // ----- Vehículo (tipo + matrícula) -----
         $car = $rental->car ?? null;
@@ -477,6 +596,23 @@ class WhatsAppNotifier
 
         $days = (int) ($rental->cantidad_dias ?? 0);
 
+        // ----- Corre apartir (si está habilitado) -----
+        $correaLine = null;
+        $correaEnabled = !empty($rental->correapartir_enabled);
+        $correaRaw = trim((string) ($rental->fecha_correapartir ?? ''));
+        if ($correaEnabled && $correaRaw !== '' && $correaRaw !== '0000-00-00 00:00:00') {
+            $ts = strtotime($correaRaw);
+            if ($ts !== false) {
+                // Si trae hora distinta de 00:00, mostrar fecha + hora 12h
+                $hasTime = (bool) preg_match('/\s\d{2}:\d{2}/', $correaRaw);
+                $correaLine = $hasTime
+                    ? date('d/m/Y h:i A', $ts)
+                    : date('d/m/Y', $ts);
+            } else {
+                $correaLine = $correaRaw;
+            }
+        }
+
         // ----- Estado de pago -----
         $payStatusKey = (string) ($rental->estado_pago ?? '');
         $payStatusLabels = [
@@ -500,7 +636,13 @@ class WhatsAppNotifier
         $lines[] = '';
         $lines[] = '👤 *Cliente:* ' . $clientName;
         if ($clientPhone !== '') {
-            $lines[] = '📱 ' . $clientPhone;
+            // Mostrar número y un enlace wa.me para abrir el chat directamente desde WhatsApp.
+            $lines[] = '📱 *WhatsApp:* ' . $clientPhone;
+            if ($clientPhoneDigits !== '' && strlen($clientPhoneDigits) >= 7) {
+                $lines[] = 'https://wa.me/' . $clientPhoneDigits;
+            }
+        } else {
+            $lines[] = '📱 *WhatsApp:* —';
         }
         $lines[] = '';
         $lines[] = '🚙 *Vehículo:* ' . $carType;
@@ -511,6 +653,9 @@ class WhatsAppNotifier
         $lines[] = 'Hasta: ' . $endLabel;
         if ($days > 0) {
             $lines[] = 'Duración: ' . $days . ' día' . ($days === 1 ? '' : 's');
+        }
+        if ($correaLine !== null) {
+            $lines[] = '⏰ *Corre apartir:* ' . $correaLine;
         }
         $lines[] = '';
         $lines[] = '💵 *Estado de pago:* ' . $payStatus;
