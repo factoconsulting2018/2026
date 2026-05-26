@@ -163,10 +163,10 @@ $calendarDayUrl = Url::to(['car/calendar-day']);
 <div class="modal fade" id="rcDayModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content">
-            <div class="modal-header" style="background: linear-gradient(135deg, #22487a 0%, #0d001e 100%); color: #fff;">
-                <h5 class="modal-title">
-                    <span class="material-symbols-outlined align-middle" style="font-size: 22px; margin-right: 6px;">event_note</span>
-                    <span id="rc-modal-title">Alquileres del día</span>
+            <div class="modal-header rc-modal-header" style="background: linear-gradient(135deg, #22487a 0%, #0d001e 100%);">
+                <h5 class="modal-title" style="color: #ffffff !important;">
+                    <span class="material-symbols-outlined align-middle" style="font-size: 22px; margin-right: 6px; color: #ffffff;">event_note</span>
+                    <span id="rc-modal-title" style="color: #ffffff;">Alquileres del día</span>
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
@@ -280,6 +280,75 @@ $calendarDayUrl = Url::to(['car/calendar-day']);
     .rc-calendar .rc-day .rc-num { font-size: 12px; }
     .rc-calendar .rc-day .rc-count { font-size: 12px; }
     .rentals-calendar-card .rc-legend > span { font-size: 11px; }
+}
+
+/* Encabezado del modal en blanco (anti-overrides de tema) */
+.rc-modal-header .modal-title,
+.rc-modal-header .modal-title * {
+    color: #ffffff !important;
+}
+
+/* ===== Acordeón del modal en móvil ===== */
+.rc-day-accordion .accordion-item {
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 8px;
+    border: 1px solid #e9ecef;
+}
+.rc-day-accordion .accordion-button {
+    padding: 10px 12px;
+    background: #f8f9fa;
+    box-shadow: none;
+}
+.rc-day-accordion .accordion-button:not(.collapsed) {
+    background: #e8f0fe;
+    color: #12355b;
+}
+.rc-day-accordion .accordion-button:focus { box-shadow: none; }
+.rc-day-accordion .rc-row-head {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    width: 100%;
+    padding-right: 8px;
+}
+.rc-day-accordion .rc-row-head .rc-row-top {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    width: 100%;
+}
+.rc-day-accordion .rc-row-head .rc-row-id {
+    font-weight: 700;
+    color: #12355b;
+}
+.rc-day-accordion .rc-row-head .rc-row-client {
+    font-weight: 600;
+}
+.rc-day-accordion .rc-row-head .rc-row-state {
+    margin-left: auto;
+}
+.rc-day-accordion .accordion-body {
+    padding: 12px;
+    font-size: 13px;
+}
+.rc-day-accordion .accordion-body dl {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 4px 10px;
+    margin-bottom: 10px;
+}
+.rc-day-accordion .accordion-body dt {
+    color: #6c757d;
+    font-weight: 600;
+}
+.rc-day-accordion .accordion-body dd { margin: 0; }
+.rc-day-accordion .rc-row-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
 }
 </style>
 
@@ -484,13 +553,14 @@ $jsDispBase = json_encode(Url::to(['car/disponibles']));
             // Resumen por estado
             var counts = {};
             data.items.forEach(function (it) { counts[it.estado_pago] = (counts[it.estado_pago] || 0) + 1; });
-            var summary = '<div class="d-flex flex-wrap gap-2 mb-3">';
+            var summary = '<div class="d-flex flex-wrap gap-2 mb-3 align-items-center">';
             Object.keys(counts).forEach(function (k) {
                 summary += estadoBadge(k) + ' <span class="text-muted small">×' + counts[k] + '</span>';
             });
             summary += '<span class="ms-auto text-muted small">' + data.items.length + ' alquiler(es)</span>';
             summary += '</div>';
 
+            // ----- Vista escritorio: tabla -----
             var rows = '';
             data.items.forEach(function (it) {
                 var horaIni = formatTime12h(it.hora_inicio);
@@ -516,16 +586,77 @@ $jsDispBase = json_encode(Url::to(['car/disponibles']));
                     + '</tr>';
             });
 
-            modalBody.innerHTML = summary
-                + '<div class="table-responsive">'
+            var deskTable = '<div class="table-responsive d-none d-md-block">'
                 + '<table class="table table-sm table-hover align-middle mb-2">'
                 + '<thead class="table-light"><tr>'
                 + '<th>Orden</th><th>Cliente</th><th>Vehículo</th><th>Periodo</th><th>Estado</th><th class="text-end">Total</th><th></th>'
                 + '</tr></thead>'
                 + '<tbody>' + rows + '</tbody>'
                 + '</table>'
+                + '</div>';
+
+            // ----- Vista móvil: acordeón -----
+            var accId = 'rcDayAcc_' + Math.random().toString(36).slice(2, 8);
+            var accItems = '';
+            data.items.forEach(function (it, idx) {
+                var horaIni = formatTime12h(it.hora_inicio);
+                var horaFin = formatTime12h(it.hora_final);
+                var dRange = formatDateDMY(it.fecha_inicio) + (horaIni ? ' ' + horaIni : '')
+                    + ' → ' + formatDateDMY(it.fecha_final) + (horaFin ? ' ' + horaFin : '');
+                var total = Number(it.total_precio || 0).toLocaleString('es-CR');
+                var headerId = accId + '_h_' + idx;
+                var bodyId = accId + '_b_' + idx;
+
+                accItems += '<div class="accordion-item">'
+                    + '<h2 class="accordion-header" id="' + headerId + '">'
+                    + '<button class="accordion-button collapsed" type="button"'
+                    + ' data-bs-toggle="collapse" data-bs-target="#' + bodyId + '"'
+                    + ' aria-expanded="false" aria-controls="' + bodyId + '">'
+                    + '<div class="rc-row-head">'
+                    + '<div class="rc-row-top">'
+                    + '<span class="rc-row-id">' + it.rental_id + '</span>'
+                    + '<span class="rc-row-state">' + estadoBadge(it.estado_pago) + '</span>'
+                    + '</div>'
+                    + '<div class="rc-row-client small text-muted">'
+                    + '<span class="material-symbols-outlined align-middle" style="font-size:14px;">person</span> '
+                    + (it.client_name || '—')
+                    + '</div>'
+                    + '</div>'
+                    + '</button>'
+                    + '</h2>'
+                    + '<div id="' + bodyId + '" class="accordion-collapse collapse"'
+                    + ' aria-labelledby="' + headerId + '" data-bs-parent="#' + accId + '">'
+                    + '<div class="accordion-body">'
+                    + '<dl>'
+                    + '<dt><span class="material-symbols-outlined align-middle" style="font-size:14px;color:#3fa9f5;">directions_car</span> Vehículo</dt>'
+                    + '<dd>' + (it.car_name || '—')
+                    + (it.car_placa ? ' <span class="badge bg-secondary ms-1">' + it.car_placa + '</span>' : '') + '</dd>'
+                    + '<dt><span class="material-symbols-outlined align-middle" style="font-size:14px;">date_range</span> Periodo</dt>'
+                    + '<dd class="small">' + dRange + '</dd>'
+                    + '<dt><span class="material-symbols-outlined align-middle" style="font-size:14px;">payments</span> Total</dt>'
+                    + '<dd>₡ ' + total + '</dd>'
+                    + '</dl>'
+                    + '<div class="rc-row-actions">'
+                    + '<a href="' + it.view_url + '" class="btn btn-sm btn-outline-primary">'
+                    + '<span class="material-symbols-outlined align-middle" style="font-size:16px;">visibility</span> Ver</a>'
+                    + '<a href="' + it.update_url + '" class="btn btn-sm btn-outline-secondary">'
+                    + '<span class="material-symbols-outlined align-middle" style="font-size:16px;">edit</span> Editar</a>'
+                    + '</div>'
+                    + '</div>'
+                    + '</div>'
+                    + '</div>';
+            });
+
+            var mobileAcc = '<div class="d-md-none">'
+                + '<div class="accordion rc-day-accordion" id="' + accId + '">'
+                + accItems
                 + '</div>'
-                + '<div class="text-end">'
+                + '</div>';
+
+            modalBody.innerHTML = summary
+                + deskTable
+                + mobileAcc
+                + '<div class="text-end mt-3">'
                 + '<a href="' + RC_DISP_URL + '?fecha=' + encodeURIComponent(dateStr) + '" class="btn btn-sm btn-outline-primary">'
                 + '<span class="material-symbols-outlined align-middle" style="font-size:16px;">filter_alt</span> Ver disponibles ese día</a>'
                 + '</div>';
