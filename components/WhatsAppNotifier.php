@@ -91,7 +91,15 @@ class WhatsAppNotifier
             $decoded = ['raw' => substr((string) $raw, 0, 500)];
         }
 
-        $ok = $status >= 200 && $status < 300;
+        $apiFailed = false;
+        if (is_array($decoded)) {
+            $bodyStatus = isset($decoded['status']) ? strtolower((string) $decoded['status']) : '';
+            $apiFailed = in_array($bodyStatus, ['error', 'failed', 'fail'], true)
+                || (array_key_exists('success', $decoded) && $decoded['success'] === false)
+                || (array_key_exists('ok', $decoded) && $decoded['ok'] === false);
+        }
+
+        $ok = $status >= 200 && $status < 300 && !$apiFailed;
         if (!$ok) {
             try {
                 Yii::warning('WhatsApp API ' . $method . ' ' . $url . ' HTTP ' . $status . ': ' . substr((string) $raw, 0, 300), 'whatsapp');
@@ -99,7 +107,12 @@ class WhatsAppNotifier
                 // ignore
             }
         }
-        return ['ok' => $ok, 'status' => $status, 'body' => $decoded, 'error' => $ok ? null : ($decoded['message'] ?? ('HTTP ' . $status))];
+        return [
+            'ok' => $ok,
+            'status' => $status,
+            'body' => $decoded,
+            'error' => $ok ? null : ($decoded['error'] ?? $decoded['message'] ?? ('HTTP ' . $status)),
+        ];
     }
 
     public static function getStatus(string $apiUrl, string $sessionId): array
@@ -124,10 +137,21 @@ class WhatsAppNotifier
 
     public static function sendText(string $apiUrl, string $sessionId, string $number, string $message): array
     {
-        return self::request(
+        $res = self::request(
             'POST',
             rtrim($apiUrl, '/') . '/session/' . rawurlencode($sessionId) . '/send',
             ['number' => $number, 'message' => $message],
+            self::TIMEOUT_SEND
+        );
+        if ($res['ok']) {
+            return $res;
+        }
+
+        // Compatibilidad con la documentacion v5: POST /send/text + sessionId en body.
+        return self::request(
+            'POST',
+            rtrim($apiUrl, '/') . '/send/text',
+            ['sessionId' => $sessionId, 'number' => $number, 'message' => $message],
             self::TIMEOUT_SEND
         );
     }
@@ -143,9 +167,21 @@ class WhatsAppNotifier
         if ($caption !== '') {
             $payload['caption'] = $caption;
         }
-        return self::request(
+        $res = self::request(
             'POST',
             rtrim($apiUrl, '/') . '/session/' . rawurlencode($sessionId) . '/send-image',
+            $payload,
+            self::TIMEOUT_SEND
+        );
+        if ($res['ok']) {
+            return $res;
+        }
+
+        // Compatibilidad con la documentacion v5: POST /send/image + sessionId en body.
+        $payload['sessionId'] = $sessionId;
+        return self::request(
+            'POST',
+            rtrim($apiUrl, '/') . '/send/image',
             $payload,
             self::TIMEOUT_SEND
         );
@@ -159,16 +195,29 @@ class WhatsAppNotifier
         string $filename,
         string $mimetype = 'application/pdf'
     ): array {
-        // mimetype se mantiene en la firma por compatibilidad, pero la API nueva no lo requiere.
-        unset($mimetype);
-        return self::request(
+        $payload = [
+            'number' => $number,
+            'url' => $publicUrl,
+            'filename' => $filename,
+        ];
+
+        $res = self::request(
             'POST',
             rtrim($apiUrl, '/') . '/session/' . rawurlencode($sessionId) . '/send-document',
-            [
-                'number' => $number,
-                'url' => $publicUrl,
-                'filename' => $filename,
-            ],
+            $payload,
+            self::TIMEOUT_SEND
+        );
+        if ($res['ok']) {
+            return $res;
+        }
+
+        // Compatibilidad con la documentacion v5: POST /send/document + sessionId en body.
+        $payload['sessionId'] = $sessionId;
+        $payload['mimetype'] = $mimetype;
+        return self::request(
+            'POST',
+            rtrim($apiUrl, '/') . '/send/document',
+            $payload,
             self::TIMEOUT_SEND
         );
     }
@@ -461,6 +510,8 @@ class WhatsAppNotifier
             foreach ($numbers as $number) {
                 $report['attempted']++;
                 try {
+                    $messageSent = false;
+
                     // 1) Foto del vehículo + texto como caption (si hay imagen),
                     //    o solo texto si no hay imagen.
                     if ($publicImage !== null) {
@@ -479,6 +530,9 @@ class WhatsAppNotifier
                                 $report['errors'][] = $err;
                                 continue;
                             }
+                            $messageSent = true;
+                        } else {
+                            $messageSent = true;
                         }
                     } else {
                         $textRes = self::sendText($cfg['api_url'], $cfg['session_id'], $number, $message);
@@ -488,6 +542,11 @@ class WhatsAppNotifier
                             $report['errors'][] = $err;
                             continue;
                         }
+                        $messageSent = true;
+                    }
+
+                    if ($messageSent) {
+                        $report['sent']++;
                     }
 
                     // 2) PDF de la orden.
@@ -504,10 +563,8 @@ class WhatsAppNotifier
                             $err = $number . ': pdf ' . ($docRes['error'] ?? 'fallo');
                             Yii::warning('WhatsApp PDF fallido — ' . $err, 'whatsapp');
                             $report['errors'][] = $err;
-                            continue;
                         }
                     }
-                    $report['sent']++;
                     Yii::info('WhatsApp enviado correctamente a ' . $number, 'whatsapp');
                 } catch (\Throwable $e) {
                     $report['errors'][] = $number . ': ' . $e->getMessage();

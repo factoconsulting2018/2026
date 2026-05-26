@@ -808,67 +808,132 @@ class ConfigController extends Controller
     }
 
     /**
+     * Si el cliente envió por POST un api_url o session_id distinto del guardado,
+     * lo persiste en la configuración antes de ejecutar la acción.
+     *
+     * @return array{api_url:string, session_id:string} La configuración efectiva ya aplicada.
+     */
+    private function applyWhatsappSessionOverrides(): array
+    {
+        $cfg = CompanyConfig::getWhatsAppConfig();
+
+        $apiUrlIn = (string) (Yii::$app->request->post('api_url')
+            ?? Yii::$app->request->getBodyParam('api_url')
+            ?? '');
+        $sidIn = (string) (Yii::$app->request->post('session_id')
+            ?? Yii::$app->request->getBodyParam('session_id')
+            ?? '');
+
+        $apiUrl = $apiUrlIn !== '' ? rtrim(trim($apiUrlIn), '/') : $cfg['api_url'];
+        $sid = $sidIn !== '' ? trim($sidIn) : $cfg['session_id'];
+
+        $needsSave = false;
+        if ($apiUrlIn !== '' && rtrim(trim($apiUrlIn), '/') !== rtrim((string) $cfg['api_url'], '/')) {
+            $needsSave = true;
+        }
+        if ($sidIn !== '' && trim($sidIn) !== (string) $cfg['session_id']) {
+            $needsSave = true;
+        }
+
+        if ($needsSave) {
+            // Persistir solo URL/Session ID (mantener el resto de la configuración intacta)
+            CompanyConfig::setConfig(CompanyConfig::WHATSAPP_API_URL, $apiUrl, 'URL base de la API WhatsApp');
+            CompanyConfig::setConfig(CompanyConfig::WHATSAPP_SESSION_ID, $sid !== '' ? $sid : 'facto_rent', 'sessionId de WhatsApp');
+            Yii::info("WhatsApp config actualizada desde acción: api_url={$apiUrl} session_id={$sid}", 'whatsapp');
+        }
+
+        return ['api_url' => $apiUrl, 'session_id' => $sid];
+    }
+
+    /**
      * Inicia (o reinicia) la sesión de WhatsApp en el servidor remoto.
+     * Si el formulario envió api_url/session_id, los guarda primero en configuración
+     * para que la sesión creada se llame exactamente como el usuario indicó.
      */
     public function actionWhatsappStart()
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
-        $cfg = CompanyConfig::getWhatsAppConfig();
-        $res = WhatsAppNotifier::startSession($cfg['api_url'], $cfg['session_id']);
+        $eff = $this->applyWhatsappSessionOverrides();
+        $res = WhatsAppNotifier::startSession($eff['api_url'], $eff['session_id']);
         $bodyStatus = is_array($res['body'] ?? null) ? ($res['body']['status'] ?? null) : null;
         return [
             'success' => $res['ok'] || in_array($bodyStatus, ['ok', 'exists', 'starting', 'connecting', 'connected', 'created'], true),
             'status' => $res['status'],
             'data' => $this->decorateWhatsappBody($res['body']),
             'error' => $res['error'],
+            'session_id' => $eff['session_id'],
         ];
     }
 
     /**
      * Devuelve el QR base64 de la sesión actual (si está pendiente de escanear).
+     * Permite override transitorio de api_url/session_id vía query (?session_id=...).
      */
     public function actionWhatsappQr()
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
         $cfg = CompanyConfig::getWhatsAppConfig();
-        $res = WhatsAppNotifier::getQr($cfg['api_url'], $cfg['session_id']);
+        $sid = trim((string) Yii::$app->request->get('session_id', $cfg['session_id']));
+        $apiUrl = rtrim(trim((string) Yii::$app->request->get('api_url', $cfg['api_url'])), '/');
+        $res = WhatsAppNotifier::getQr($apiUrl, $sid);
         return [
             'success' => $res['ok'],
             'status' => $res['status'],
             'data' => $this->decorateWhatsappBody($res['body']),
             'error' => $res['error'],
+            'session_id' => $sid,
         ];
     }
 
     /**
      * Devuelve el estado actual de la sesión (conectada / pendiente / no existe).
+     * Permite override transitorio de api_url/session_id vía query.
      */
     public function actionWhatsappStatus()
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
         $cfg = CompanyConfig::getWhatsAppConfig();
-        $res = WhatsAppNotifier::getStatus($cfg['api_url'], $cfg['session_id']);
+        $sid = trim((string) Yii::$app->request->get('session_id', $cfg['session_id']));
+        $apiUrl = rtrim(trim((string) Yii::$app->request->get('api_url', $cfg['api_url'])), '/');
+        $res = WhatsAppNotifier::getStatus($apiUrl, $sid);
         return [
             'success' => $res['ok'],
             'status' => $res['status'],
             'data' => $this->decorateWhatsappBody($res['body']),
             'error' => $res['error'],
+            'session_id' => $sid,
         ];
     }
 
     /**
      * Cierra la sesión actual de WhatsApp en el servidor remoto.
+     * Acepta override transitorio (POST) para cerrar una sesión específica si el formulario
+     * tiene un session_id distinto al guardado. La sesión que efectivamente se cerró se
+     * persiste en config (para mantener la consistencia con la UI).
      */
     public function actionWhatsappDelete()
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
-        $cfg = CompanyConfig::getWhatsAppConfig();
-        $res = WhatsAppNotifier::deleteSession($cfg['api_url'], $cfg['session_id']);
+        $eff = $this->applyWhatsappSessionOverrides();
+        $res = WhatsAppNotifier::deleteSession($eff['api_url'], $eff['session_id']);
+        $bodyStatus = is_array($res['body'] ?? null) ? ($res['body']['status'] ?? null) : null;
+        // Considerar éxito si la API confirmó el cierre o si la sesión ya no existía.
+        $success = $res['ok'] || $bodyStatus === 'not_found' || (is_array($res['body'] ?? null) && !empty($res['body']['ok']));
+
+        Yii::info(
+            'WhatsApp DELETE session=' . $eff['session_id']
+            . ' http=' . $res['status']
+            . ' body_status=' . ($bodyStatus ?? 'null')
+            . ' ok=' . ($success ? '1' : '0'),
+            'whatsapp'
+        );
+
         return [
-            'success' => $res['ok'],
+            'success' => $success,
             'status' => $res['status'],
             'data' => $this->decorateWhatsappBody($res['body']),
             'error' => $res['error'],
+            'session_id' => $eff['session_id'],
         ];
     }
 

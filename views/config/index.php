@@ -1653,12 +1653,33 @@ document.addEventListener('DOMContentLoaded', function() {
             return WA_API_URL.replace(/\/+$/, '') + '/session/' + encodeURIComponent(WA_SESSION_ID) + '/qr-image?t=' + Date.now();
         }
 
+        function currentFormSession() {
+            const url = ((document.getElementById('whatsapp_api_url') || {}).value || '').trim().replace(/\/+$/, '');
+            const sid = ((document.getElementById('whatsapp_session_id') || {}).value || '').trim();
+            return {
+                api_url: url || WA_API_URL || '',
+                session_id: sid || WA_SESSION_ID || '',
+            };
+        }
+
+        function buildUrlWithSession(url) {
+            const eff = currentFormSession();
+            const params = new URLSearchParams();
+            if (eff.session_id) params.set('session_id', eff.session_id);
+            if (eff.api_url) params.set('api_url', eff.api_url);
+            const qs = params.toString();
+            if (!qs) return url;
+            return url + (url.indexOf('?') === -1 ? '?' : '&') + qs;
+        }
+
         async function apiGet(url) {
-            const res = await fetch(url, { credentials: 'same-origin', headers: { 'Accept': 'application/json' } });
+            const fullUrl = buildUrlWithSession(url);
+            const res = await fetch(fullUrl, { credentials: 'same-origin', headers: { 'Accept': 'application/json' } });
             return res.json();
         }
 
-        async function apiPost(url) {
+        async function apiPost(url, extraBody) {
+            const body = Object.assign({}, currentFormSession(), extraBody || {});
             const res = await fetch(url, {
                 method: 'POST',
                 credentials: 'same-origin',
@@ -1667,7 +1688,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     'Content-Type': 'application/json',
                     'X-CSRF-Token': CSRF,
                 },
-                body: '{}',
+                body: JSON.stringify(body),
             });
             return res.json();
         }
@@ -1882,30 +1903,39 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        function hasUnsavedChanges() {
-            const formUrl = ((document.getElementById('whatsapp_api_url') || {}).value || '').trim().replace(/\/+$/, '');
-            const formSid = ((document.getElementById('whatsapp_session_id') || {}).value || '').trim();
-            const savedUrl = (WA_API_URL || '').trim().replace(/\/+$/, '');
-            const savedSid = (WA_SESSION_ID || '').trim();
-            return formUrl !== savedUrl || formSid !== savedSid;
+        function syncSavedFromResponse(r) {
+            if (!r || typeof r !== 'object') return;
+            if (typeof r.session_id === 'string' && r.session_id) {
+                window.WA_SESSION_ID = r.session_id;
+            }
         }
 
         if (btnStart) {
             btnStart.addEventListener('click', async () => {
-                if (hasUnsavedChanges()) {
-                    showInfo('Hay cambios sin guardar en la URL o Session ID. Pulsa "Guardar configuración" primero para que el servidor use los nuevos valores.', 'warning');
+                const eff = currentFormSession();
+                if (!eff.api_url) {
+                    showInfo('Configura primero la URL base de la API.', 'warning');
+                    return;
+                }
+                if (!eff.session_id) {
+                    showInfo('Configura primero un Session ID para crear la sesión.', 'warning');
                     return;
                 }
                 btnStart.disabled = true;
                 renderQrPlaceholder(
                     '<div class="text-muted">' +
                     '<div class="spinner-border text-success mb-2" role="status"></div>' +
-                    '<p class="mb-0">Solicitando QR al servidor…</p></div>'
+                    '<p class="mb-0">Creando sesión "' + eff.session_id + '" y solicitando QR…</p></div>'
                 );
                 try {
                     stopPolling();
                     const ok = await startSession();
                     if (ok) {
+                        // Tras un start exitoso, el backend ya persistió URL/SessionID.
+                        // Actualizamos las constantes en memoria para próximas llamadas.
+                        window.WA_API_URL = eff.api_url;
+                        window.WA_SESSION_ID = eff.session_id;
+                        showInfo('Sesión "' + eff.session_id + '" creada. Escanea el QR con tu WhatsApp.', 'info');
                         await fetchQr();
                         startPolling();
                     }
@@ -1925,22 +1955,30 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (btnDisconnect) {
             btnDisconnect.addEventListener('click', async () => {
-                if (!confirm('¿Cerrar la sesión de WhatsApp? Tendrá que volver a escanear el QR.')) return;
+                const eff = currentFormSession();
+                if (!confirm('¿Cerrar la sesión "' + (eff.session_id || '?') + '" de WhatsApp? Esto también la elimina en la API y tendrás que volver a escanear el QR.')) return;
                 btnDisconnect.disabled = true;
                 try {
                     const r = await apiPost(WA_URLS.del);
-                    if (r.success) {
-                        showInfo('Sesión cerrada.', 'warning');
+                    console.log('[whatsapp] delete response', r);
+                    syncSavedFromResponse(r);
+                    if (r && r.success) {
+                        showInfo('Sesión "' + (r.session_id || eff.session_id) + '" cerrada en la API.', 'warning');
+                        setBadge('disconnected');
+                        renderQrPlaceholder(
+                            '<div class="text-muted">' +
+                            '<i class="fas fa-mobile-alt fa-3x mb-2"></i>' +
+                            '<p class="mb-0">Inicie la sesión para generar el código QR.</p></div>'
+                        );
+                        stopPolling();
                     } else {
-                        showInfo('Error al cerrar sesión: ' + (r.error || 'desconocido'), 'danger');
+                        showInfo('No se pudo confirmar el cierre en la API: ' + ((r && r.error) || 'sin respuesta'), 'danger');
+                        // Forzamos refrescar el estado para reflejar la realidad del servidor.
+                        await refreshStatus();
                     }
-                    setBadge('disconnected');
-                    renderQrPlaceholder(
-                        '<div class="text-muted">' +
-                        '<i class="fas fa-mobile-alt fa-3x mb-2"></i>' +
-                        '<p class="mb-0">Inicie la sesión para generar el código QR.</p></div>'
-                    );
-                    stopPolling();
+                } catch (err) {
+                    console.error('[whatsapp] delete error', err);
+                    showInfo('Error de red al cerrar sesión.', 'danger');
                 } finally {
                     btnDisconnect.disabled = false;
                 }
