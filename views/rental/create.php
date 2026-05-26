@@ -314,18 +314,31 @@ foreach ($cars as $car) {
                     </h5>
                 </div>
                 <div class="card-body">
-                    <?= $form->field($model, 'client_id')->dropDownList(
-                        ArrayHelper::map($clients, 'id', function($client) {
-                            return $client->full_name . ' (' . $client->cedula_fisica . ')';
-                        }),
-                        [
-                            'prompt' => 'Seleccionar cliente...',
-                            'class' => 'form-select',
-                            'required' => true,
-                            'oninvalid' => "this.setCustomValidity('Debes seleccionar un cliente.')",
-                            'oninput' => "this.setCustomValidity('')"
-                        ]
-                    ) ?>
+                    <div class="form-group mb-3 field-rental-client_id required">
+                        <label class="form-label fw-bold" for="rental-client_id">Cliente</label>
+                        <div class="input-group">
+                            <?= Html::activeDropDownList($model, 'client_id',
+                                ArrayHelper::map($clients, 'id', function ($client) {
+                                    return $client->full_name . ' (' . $client->cedula_fisica . ')';
+                                }),
+                                [
+                                    'prompt' => 'Seleccionar cliente...',
+                                    'class' => 'form-select',
+                                    'required' => true,
+                                    'oninvalid' => "this.setCustomValidity('Debes seleccionar un cliente.')",
+                                    'oninput' => "this.setCustomValidity('')",
+                                ]
+                            ) ?>
+                            <button type="button" class="btn btn-outline-primary" id="btn-open-client-search"
+                                    data-bs-toggle="modal" data-bs-target="#clientSearchModal"
+                                    title="Buscar cliente">
+                                <span class="material-symbols-outlined" style="font-size: 20px; vertical-align: middle;">search</span>
+                            </button>
+                        </div>
+                        <?php if ($model->hasErrors('client_id')): ?>
+                            <div class="invalid-feedback d-block"><?= Html::encode($model->getFirstError('client_id')) ?></div>
+                        <?php endif; ?>
+                    </div>
 
                     <?= $form->field($model, 'choferes_autorizados')->textarea([
                         'rows' => 3,
@@ -471,7 +484,210 @@ foreach ($cars as $car) {
 
     <?php ActiveForm::end(); ?>
 
+    <!-- Modal: Búsqueda de cliente -->
+    <div class="modal fade" id="clientSearchModal" tabindex="-1" aria-labelledby="clientSearchModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header" style="background: linear-gradient(135deg, #22487a 0%, #0d001e 100%); color: white;">
+                    <h5 class="modal-title" id="clientSearchModalLabel">
+                        <span class="material-symbols-outlined" style="font-size: 22px; vertical-align: middle; margin-right: 6px;">person_search</span>
+                        Buscar cliente
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <div class="input-group">
+                            <span class="input-group-text"><span class="material-symbols-outlined" style="font-size: 20px;">search</span></span>
+                            <input type="text" class="form-control form-control-lg" id="client-search-input"
+                                   placeholder="Buscar por nombre, apellido o cédula… (Enter para seleccionar la primera)"
+                                   autocomplete="off">
+                        </div>
+                        <small class="form-text text-muted">Filtra mientras escribes. Pulsa <strong>Enter</strong> para seleccionar la primera coincidencia.</small>
+                    </div>
+
+                    <div id="client-search-status" class="mb-2 small text-muted">
+                        Empieza a escribir para filtrar (o pulsa Enter sin texto para tomar el primer cliente).
+                    </div>
+
+                    <div class="table-responsive" style="max-height: 50vh;">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light" style="position: sticky; top: 0; z-index: 1;">
+                                <tr>
+                                    <th style="width: 36%;">Nombre completo</th>
+                                    <th style="width: 24%;">Cédula</th>
+                                    <th style="width: 24%;">WhatsApp / Email</th>
+                                    <th style="width: 16%; text-align: right;">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="client-search-results">
+                                <tr><td colspan="4" class="text-center text-muted py-4">Cargando clientes…</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
+
+<script>
+(function () {
+    document.addEventListener('DOMContentLoaded', function () {
+        const SEARCH_URL = <?= json_encode(\yii\helpers\Url::to(['/client/search'])) ?>;
+        const modalEl = document.getElementById('clientSearchModal');
+        const inputEl = document.getElementById('client-search-input');
+        const tbodyEl = document.getElementById('client-search-results');
+        const statusEl = document.getElementById('client-search-status');
+        const clientSelect = document.getElementById('rental-client_id');
+
+        if (!modalEl || !inputEl || !tbodyEl || !clientSelect) {
+            return;
+        }
+
+        let searchTimer = null;
+        let lastResults = [];
+        let lastQuery = null;
+
+        function escapeHtml(s) {
+            return String(s == null ? '' : s)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+        }
+
+        function highlight(text, q) {
+            const safe = escapeHtml(text);
+            if (!q) return safe;
+            try {
+                const re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'ig');
+                return safe.replace(re, '<mark style="padding:0 2px;">$1</mark>');
+            } catch (e) {
+                return safe;
+            }
+        }
+
+        function renderRows(items, q) {
+            if (!items || items.length === 0) {
+                tbodyEl.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4">No se encontraron clientes.</td></tr>';
+                statusEl.textContent = '0 resultados';
+                return;
+            }
+            const rows = items.map(function (c, idx) {
+                const contact = c.whatsapp ? c.whatsapp : (c.email || '—');
+                return '<tr class="client-row" data-client-id="' + c.id + '" data-index="' + idx + '" style="cursor:pointer;">' +
+                    '<td>' + highlight(c.full_name || ((c.nombre || '') + ' ' + (c.apellido || '')).trim(), q) + '</td>' +
+                    '<td>' + highlight(c.cedula_fisica, q) + '</td>' +
+                    '<td>' + escapeHtml(contact) + '</td>' +
+                    '<td class="text-end">' +
+                        '<button type="button" class="btn btn-sm btn-success btn-pick-client" data-client-id="' + c.id + '">' +
+                            '<span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;">check</span> Seleccionar' +
+                        '</button>' +
+                    '</td>' +
+                '</tr>';
+            }).join('');
+            tbodyEl.innerHTML = rows;
+            statusEl.textContent = items.length + ' resultado(s). Pulsa Enter para seleccionar el primero.';
+            // Marca visualmente la primera fila como activa
+            const first = tbodyEl.querySelector('.client-row');
+            if (first) first.classList.add('table-active');
+        }
+
+        function fetchResults(q) {
+            const query = (q || '').trim();
+            if (query === lastQuery) return Promise.resolve(lastResults);
+            statusEl.textContent = 'Buscando…';
+            lastQuery = query;
+            const url = SEARCH_URL + (SEARCH_URL.indexOf('?') === -1 ? '?' : '&') + 'q=' + encodeURIComponent(query) + '&limit=60';
+            return fetch(url, { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    const items = (data && data.items) ? data.items : [];
+                    lastResults = items;
+                    renderRows(items, query);
+                    return items;
+                })
+                .catch(function (err) {
+                    console.error('client search error:', err);
+                    tbodyEl.innerHTML = '<tr><td colspan="4" class="text-center text-danger py-4">Error al cargar clientes.</td></tr>';
+                    statusEl.textContent = 'Error al buscar.';
+                    return [];
+                });
+        }
+
+        function pickClient(clientId) {
+            if (!clientId) return;
+            const idStr = String(clientId);
+            let option = clientSelect.querySelector('option[value="' + idStr + '"]');
+            if (!option) {
+                // El cliente no estaba en el dropdown inicial: lo añadimos.
+                const found = lastResults.find(function (c) { return String(c.id) === idStr; });
+                const label = found
+                    ? (found.full_name + ' (' + found.cedula_fisica + ')')
+                    : ('Cliente #' + idStr);
+                option = document.createElement('option');
+                option.value = idStr;
+                option.textContent = label;
+                clientSelect.appendChild(option);
+            }
+            clientSelect.value = idStr;
+            clientSelect.dispatchEvent(new Event('change', { bubbles: true }));
+
+            const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+            modal.hide();
+        }
+
+        // Carga inicial al abrir
+        modalEl.addEventListener('shown.bs.modal', function () {
+            inputEl.value = '';
+            lastQuery = null;
+            fetchResults('').then(function () {
+                inputEl.focus();
+            });
+        });
+
+        // Debounce mientras escribe
+        inputEl.addEventListener('input', function () {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(function () {
+                fetchResults(inputEl.value);
+            }, 200);
+        });
+
+        // Enter: seleccionar la primera coincidencia
+        inputEl.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                clearTimeout(searchTimer);
+                fetchResults(inputEl.value).then(function (items) {
+                    if (items && items.length > 0) {
+                        pickClient(items[0].id);
+                    }
+                });
+            } else if (e.key === 'Escape') {
+                const modal = bootstrap.Modal.getInstance(modalEl);
+                if (modal) modal.hide();
+            }
+        });
+
+        // Click en fila o botón "Seleccionar"
+        tbodyEl.addEventListener('click', function (e) {
+            const btn = e.target.closest('.btn-pick-client');
+            if (btn) {
+                pickClient(btn.dataset.clientId);
+                return;
+            }
+            const row = e.target.closest('.client-row');
+            if (row) {
+                pickClient(row.dataset.clientId);
+            }
+        });
+    });
+})();
+</script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {

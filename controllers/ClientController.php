@@ -805,6 +805,61 @@ class ClientController extends Controller
     }
 
     /**
+     * Búsqueda AJAX de clientes para los selectores rápidos del sistema
+     * (por ejemplo /rental/create). Filtra por nombre, apellido y cédula.
+     *
+     * GET /client/search?q=texto&limit=50
+     *
+     * @return array<string,mixed>
+     */
+    public function actionSearch()
+    {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+
+        $q = trim((string) Yii::$app->request->get('q', ''));
+        $limit = (int) Yii::$app->request->get('limit', 50);
+        $limit = max(1, min(200, $limit));
+
+        $query = Client::find()
+            ->andWhere(['status' => 'active'])
+            ->andWhere(['or', ['approval_status' => null], ['!=', 'approval_status', 'pending']]);
+
+        if ($q !== '') {
+            $query->andWhere([
+                'or',
+                ['like', 'full_name', $q],
+                ['like', 'nombre', $q],
+                ['like', 'apellido', $q],
+                ['like', 'cedula_fisica', $q],
+            ]);
+        }
+
+        $clients = $query
+            ->orderBy(['full_name' => SORT_ASC])
+            ->limit($limit)
+            ->all();
+
+        $items = [];
+        foreach ($clients as $c) {
+            $items[] = [
+                'id' => (int) $c->id,
+                'full_name' => (string) ($c->full_name ?? ''),
+                'nombre' => (string) ($c->nombre ?? ''),
+                'apellido' => (string) ($c->apellido ?? ''),
+                'cedula_fisica' => (string) ($c->cedula_fisica ?? ''),
+                'whatsapp' => (string) ($c->whatsapp ?? ''),
+                'email' => (string) ($c->email ?? ''),
+            ];
+        }
+
+        return [
+            'success' => true,
+            'count' => count($items),
+            'items' => $items,
+        ];
+    }
+
+    /**
      * Encuentra el modelo de Cliente basado en su valor de clave primaria.
      * Si el modelo no es encontrado, una excepción HTTP 404 será lanzada.
      * @param int $id ID
