@@ -53,10 +53,96 @@ class CarController extends Controller
 
         $cars = CarAvailability::getCarsAvailableOnDate($fecha);
 
+        // Conteo de órdenes (no canceladas) por carro para los carros listados.
+        $rentalsByCar = [];
+        if (!empty($cars)) {
+            $carIds = array_map(static function ($c) { return (int) $c->id; }, $cars);
+            $rows = (new \yii\db\Query())
+                ->from(Rental::tableName())
+                ->select(['car_id', 'cnt' => 'COUNT(*)'])
+                ->where(['car_id' => $carIds])
+                ->andWhere(['<>', 'estado_pago', 'cancelado'])
+                ->groupBy(['car_id'])
+                ->all();
+            foreach ($rows as $r) {
+                $rentalsByCar[(int) $r['car_id']] = (int) $r['cnt'];
+            }
+        }
+
         return $this->render('disponibles', [
             'cars' => $cars,
             'fecha' => $fecha,
+            'rentalsByCar' => $rentalsByCar,
         ]);
+    }
+
+    /**
+     * Devuelve las órdenes de alquiler de un vehículo específico (no canceladas),
+     * con las más recientes primero. Para el modal del listado de "Disponibles".
+     *
+     * Respuesta JSON:
+     * {
+     *   "success": true,
+     *   "car": { "id", "nombre", "placa" },
+     *   "items": [ { id, rental_id, client_name, fecha_inicio, fecha_final,
+     *                hora_inicio, hora_final, estado_pago, total_precio, view_url, update_url } ]
+     * }
+     */
+    public function actionCarRentals()
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+
+        $carId = (int) Yii::$app->request->get('car_id', 0);
+        if ($carId <= 0) {
+            return ['success' => false, 'message' => 'car_id inválido', 'items' => []];
+        }
+
+        $car = Car::findOne($carId);
+
+        $rentals = Rental::find()
+            ->with(['client'])
+            ->where(['car_id' => $carId])
+            ->andWhere(['<>', 'estado_pago', 'cancelado'])
+            ->orderBy(['fecha_inicio' => SORT_DESC, 'hora_inicio' => SORT_DESC])
+            ->all();
+
+        $items = [];
+        foreach ($rentals as $r) {
+            $client = $r->client ?? null;
+            $clientName = '—';
+            if ($client) {
+                $clientName = trim((string) ($client->full_name ?? ''));
+                if ($clientName === '') {
+                    $clientName = trim(((string) ($client->nombre ?? '')) . ' ' . ((string) ($client->apellido ?? '')));
+                }
+                if ($clientName === '') {
+                    $clientName = '—';
+                }
+            }
+            $items[] = [
+                'id' => (int) $r->id,
+                'rental_id' => (string) ($r->rental_id ?: ('R' . $r->id)),
+                'client_name' => $clientName,
+                'fecha_inicio' => (string) $r->fecha_inicio,
+                'fecha_final' => (string) $r->fecha_final,
+                'hora_inicio' => (string) $r->hora_inicio,
+                'hora_final' => (string) $r->hora_final,
+                'estado_pago' => (string) $r->estado_pago,
+                'total_precio' => (float) $r->total_precio,
+                'view_url' => \yii\helpers\Url::to(['/rental/view', 'id' => $r->id]),
+                'update_url' => \yii\helpers\Url::to(['/rental/update', 'id' => $r->id]),
+            ];
+        }
+
+        return [
+            'success' => true,
+            'car' => $car ? [
+                'id' => (int) $car->id,
+                'nombre' => (string) ($car->nombre ?? ''),
+                'placa' => (string) ($car->placa ?? ''),
+            ] : null,
+            'items' => $items,
+        ];
     }
 
     /**

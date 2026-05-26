@@ -2,6 +2,7 @@
 /** @var yii\web\View $this */
 /** @var app\models\Car[] $cars */
 /** @var string $fecha */
+/** @var array<int,int> $rentalsByCar */
 
 use yii\helpers\Html;
 use yii\helpers\Url;
@@ -13,8 +14,11 @@ $fechaLabel = Yii::$app->formatter->asDate($fecha, 'long');
 $hoy = date('Y-m-d');
 $esHoy = ($fecha === $hoy);
 
+$rentalsByCar = $rentalsByCar ?? [];
+
 $calendarMonthUrl = Url::to(['car/calendar-rentals']);
 $calendarDayUrl = Url::to(['car/calendar-day']);
+$carRentalsUrl = Url::to(['car/car-rentals']);
 ?>
 
 <div class="car-disponibles">
@@ -99,6 +103,7 @@ $calendarDayUrl = Url::to(['car/calendar-day']);
                                 <th>Placa</th>
                                 <th class="d-none d-md-table-cell">Pasajeros</th>
                                 <th class="d-none d-md-table-cell">Estado en sistema</th>
+                                <th class="text-center d-none d-md-table-cell" title="¿Tiene órdenes asociadas?">Reservas</th>
                                 <th class="d-none d-lg-table-cell">Empresa</th>
                                 <th class="text-end">Acciones</th>
                             </tr>
@@ -111,19 +116,39 @@ $calendarDayUrl = Url::to(['car/calendar-day']);
                             ];
                             ?>
                             <?php foreach ($cars as $model): ?>
-                                <?php $st = $labels[$model->status] ?? ['class' => 'secondary', 't' => $model->status]; ?>
+                                <?php
+                                $st = $labels[$model->status] ?? ['class' => 'secondary', 't' => $model->status];
+                                $carRentalCount = (int) ($rentalsByCar[(int) $model->id] ?? 0);
+                                $hasRentals = $carRentalCount > 0;
+                                ?>
                                 <tr>
                                     <td>
                                         <div>
                                             <span class="material-symbols-outlined align-middle me-1" style="font-size: 20px; color: #3fa9f5;">directions_car</span>
                                             <strong><?= Html::encode($model->nombre) ?></strong>
                                         </div>
-                                        <div class="d-md-none mt-1">
+                                        <div class="d-md-none mt-1 d-flex flex-wrap gap-1 align-items-center">
                                             <span class="badge bg-<?= $st['class'] ?>"><?= Html::encode($st['t']) ?></span>
                                             <?php if (!empty($model->cantidad_pasajeros)): ?>
-                                                <span class="badge bg-light text-dark border ms-1">
+                                                <span class="badge bg-light text-dark border">
                                                     <span class="material-symbols-outlined align-middle" style="font-size: 14px;">group</span>
                                                     <?= Html::encode((string) $model->cantidad_pasajeros) ?>
+                                                </span>
+                                            <?php endif; ?>
+                                            <?php if ($hasRentals): ?>
+                                                <button type="button"
+                                                        class="badge bg-success border-0 rc-reservas-btn"
+                                                        data-car-id="<?= (int) $model->id ?>"
+                                                        data-car-name="<?= Html::encode($model->nombre) ?>"
+                                                        data-car-placa="<?= Html::encode($model->placa) ?>"
+                                                        title="Ver órdenes de este vehículo">
+                                                    <span class="material-symbols-outlined align-middle" style="font-size: 14px;">check_circle</span>
+                                                    Reservas (<?= $carRentalCount ?>)
+                                                </button>
+                                            <?php else: ?>
+                                                <span class="badge bg-light text-muted border" title="Sin órdenes asociadas">
+                                                    <span class="material-symbols-outlined align-middle" style="font-size: 14px;">check_circle</span>
+                                                    Sin reservas
                                                 </span>
                                             <?php endif; ?>
                                         </div>
@@ -132,6 +157,23 @@ $calendarDayUrl = Url::to(['car/calendar-day']);
                                     <td class="d-none d-md-table-cell"><?= Html::encode((string) ($model->cantidad_pasajeros ?? '—')) ?></td>
                                     <td class="d-none d-md-table-cell">
                                         <span class="badge bg-<?= $st['class'] ?>"><?= Html::encode($st['t']) ?></span>
+                                    </td>
+                                    <td class="d-none d-md-table-cell text-center">
+                                        <?php if ($hasRentals): ?>
+                                            <button type="button"
+                                                    class="btn btn-sm btn-link p-0 rc-reservas-btn"
+                                                    data-car-id="<?= (int) $model->id ?>"
+                                                    data-car-name="<?= Html::encode($model->nombre) ?>"
+                                                    data-car-placa="<?= Html::encode($model->placa) ?>"
+                                                    title="Ver <?= $carRentalCount ?> orden(es) de este vehículo">
+                                                <span class="material-symbols-outlined align-middle" style="font-size: 22px; color: #198754;">check_circle</span>
+                                                <span class="badge bg-success-subtle text-success border border-success-subtle ms-1"><?= $carRentalCount ?></span>
+                                            </button>
+                                        <?php else: ?>
+                                            <span title="Sin órdenes asociadas">
+                                                <span class="material-symbols-outlined align-middle" style="font-size: 22px; color: #adb5bd;">check_circle</span>
+                                            </span>
+                                        <?php endif; ?>
                                     </td>
                                     <td class="d-none d-lg-table-cell"><?= Html::encode($model->empresa ?? '—') ?></td>
                                     <td class="text-end text-nowrap">
@@ -171,6 +213,30 @@ $calendarDayUrl = Url::to(['car/calendar-day']);
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
             <div class="modal-body" id="rc-modal-body">
+                <div class="text-center text-muted py-4">
+                    <div class="spinner-border spinner-border-sm" role="status"></div>
+                    <div class="small mt-2">Cargando…</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== Modal: órdenes asociadas a un vehículo ===== -->
+<div class="modal fade" id="rcCarModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header rc-modal-header" style="background: linear-gradient(135deg, #1e7e34 0%, #0d3a1c 100%);">
+                <h5 class="modal-title" style="color: #ffffff !important;">
+                    <span class="material-symbols-outlined align-middle" style="font-size: 22px; margin-right: 6px; color: #ffffff;">directions_car</span>
+                    <span id="rc-car-title" style="color: #ffffff;">Órdenes del vehículo</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body" id="rc-car-body">
                 <div class="text-center text-muted py-4">
                     <div class="spinner-border spinner-border-sm" role="status"></div>
                     <div class="small mt-2">Cargando…</div>
@@ -350,6 +416,20 @@ $calendarDayUrl = Url::to(['car/calendar-day']);
     gap: 6px;
     flex-wrap: wrap;
 }
+
+/* ===== Boton de "Reservas" (check) en la tabla ===== */
+button.rc-reservas-btn {
+    background: transparent;
+    border: 0;
+    line-height: 1;
+    cursor: pointer;
+}
+button.rc-reservas-btn:focus { outline: none; box-shadow: none; }
+button.rc-reservas-btn:hover .material-symbols-outlined { transform: scale(1.08); }
+button.rc-reservas-btn .material-symbols-outlined { transition: transform .15s ease; }
+/* Botón pequeño tipo badge usado en la vista móvil */
+button.rc-reservas-btn.badge { cursor: pointer; }
+button.rc-reservas-btn.badge:hover { filter: brightness(1.05); }
 </style>
 
 <?php
@@ -680,5 +760,194 @@ $jsDispBase = json_encode(Url::to(['car/disponibles']));
     if (btnToday) btnToday.addEventListener('click', function () { loadMonth(RC_TODAY.substring(0, 7)); });
 
     loadMonth(currentMonth);
+})();
+
+// ===== Modal de órdenes por vehículo (columna Reservas) =====
+(function () {
+    var CAR_RENTALS_URL = <?= json_encode($carRentalsUrl) ?>;
+    var modalEl = document.getElementById('rcCarModal');
+    var bodyEl = document.getElementById('rc-car-body');
+    var titleEl = document.getElementById('rc-car-title');
+    if (!modalEl) return;
+
+    function estadoBadge(estado) {
+        var map = {
+            'pagado':     ['success', '✅ Pagado'],
+            'pendiente':  ['warning', '🟡 Pendiente'],
+            'reservado':  ['primary', '📌 Reservado'],
+            'finalizado': ['secondary', '🏁 Finalizado'],
+            'cancelado':  ['danger', '❌ Cancelado']
+        };
+        var m = map[estado] || ['secondary', estado];
+        return '<span class="badge bg-' + m[0] + '">' + m[1] + '</span>';
+    }
+
+    function pad(n) { return n < 10 ? ('0' + n) : ('' + n); }
+
+    function formatTime12h(t) {
+        if (!t) return '';
+        var m = String(t).match(/^(\d{1,2}):(\d{2})/);
+        if (!m) return '';
+        var h = parseInt(m[1], 10);
+        var min = m[2];
+        var p = h >= 12 ? 'PM' : 'AM';
+        h = h % 12; if (h === 0) h = 12;
+        return h + ':' + min + ' ' + p;
+    }
+
+    function formatDateDMY(s) {
+        if (!s) return '';
+        var m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (!m) return s;
+        return m[3] + '/' + m[2] + '/' + m[1];
+    }
+
+    function openModal() {
+        if (window.bootstrap && window.bootstrap.Modal) {
+            window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
+        } else {
+            modalEl.style.display = 'block';
+        }
+    }
+
+    function showCar(carId, carName, carPlaca) {
+        titleEl.textContent = (carName || 'Vehículo') + (carPlaca ? ' — ' + carPlaca : '');
+        bodyEl.innerHTML = '<div class="text-center text-muted py-4">'
+            + '<div class="spinner-border spinner-border-sm" role="status"></div>'
+            + '<div class="small mt-2">Cargando órdenes…</div>'
+            + '</div>';
+        openModal();
+
+        fetch(CAR_RENTALS_URL + '?car_id=' + encodeURIComponent(carId), {
+            credentials: 'same-origin',
+            headers: { 'Accept': 'application/json' }
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            if (!data || !data.success || !data.items || data.items.length === 0) {
+                bodyEl.innerHTML = '<div class="text-center text-muted py-4">'
+                    + '<span class="material-symbols-outlined" style="font-size: 48px; opacity: .5;">event_busy</span>'
+                    + '<div class="mt-2">Este vehículo no tiene órdenes asociadas.</div>'
+                    + '</div>';
+                return;
+            }
+
+            // Resumen por estado
+            var counts = {};
+            data.items.forEach(function (it) { counts[it.estado_pago] = (counts[it.estado_pago] || 0) + 1; });
+            var summary = '<div class="d-flex flex-wrap gap-2 mb-3 align-items-center">';
+            Object.keys(counts).forEach(function (k) {
+                summary += estadoBadge(k) + ' <span class="text-muted small">×' + counts[k] + '</span>';
+            });
+            summary += '<span class="ms-auto text-muted small">' + data.items.length + ' orden(es)</span>';
+            summary += '</div>';
+
+            // Vista escritorio (tabla)
+            var rows = '';
+            data.items.forEach(function (it) {
+                var horaIni = formatTime12h(it.hora_inicio);
+                var horaFin = formatTime12h(it.hora_final);
+                var dRange = formatDateDMY(it.fecha_inicio) + (horaIni ? ' ' + horaIni : '')
+                    + ' → ' + formatDateDMY(it.fecha_final) + (horaFin ? ' ' + horaFin : '');
+                var total = Number(it.total_precio || 0).toLocaleString('es-CR');
+
+                rows += '<tr>'
+                    + '<td><strong>' + it.rental_id + '</strong></td>'
+                    + '<td>' + (it.client_name || '—') + '</td>'
+                    + '<td class="small text-muted">' + dRange + '</td>'
+                    + '<td>' + estadoBadge(it.estado_pago) + '</td>'
+                    + '<td class="text-end">₡ ' + total + '</td>'
+                    + '<td class="text-end text-nowrap">'
+                        + '<a href="' + it.view_url + '" class="btn btn-sm btn-outline-primary" title="Ver">'
+                        + '<span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;">visibility</span></a> '
+                        + '<a href="' + it.update_url + '" class="btn btn-sm btn-outline-secondary" title="Editar">'
+                        + '<span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;">edit</span></a>'
+                    + '</td>'
+                    + '</tr>';
+            });
+
+            var deskTable = '<div class="table-responsive d-none d-md-block">'
+                + '<table class="table table-sm table-hover align-middle mb-2">'
+                + '<thead class="table-light"><tr>'
+                + '<th>Orden</th><th>Cliente</th><th>Periodo</th><th>Estado</th><th class="text-end">Total</th><th></th>'
+                + '</tr></thead>'
+                + '<tbody>' + rows + '</tbody>'
+                + '</table>'
+                + '</div>';
+
+            // Vista móvil (acordeón)
+            var accId = 'rcCarAcc_' + Math.random().toString(36).slice(2, 8);
+            var accItems = '';
+            data.items.forEach(function (it, idx) {
+                var horaIni = formatTime12h(it.hora_inicio);
+                var horaFin = formatTime12h(it.hora_final);
+                var dRange = formatDateDMY(it.fecha_inicio) + (horaIni ? ' ' + horaIni : '')
+                    + ' → ' + formatDateDMY(it.fecha_final) + (horaFin ? ' ' + horaFin : '');
+                var total = Number(it.total_precio || 0).toLocaleString('es-CR');
+                var headerId = accId + '_h_' + idx;
+                var bodyId = accId + '_b_' + idx;
+
+                accItems += '<div class="accordion-item">'
+                    + '<h2 class="accordion-header" id="' + headerId + '">'
+                    + '<button class="accordion-button collapsed" type="button"'
+                    + ' data-bs-toggle="collapse" data-bs-target="#' + bodyId + '"'
+                    + ' aria-expanded="false" aria-controls="' + bodyId + '">'
+                    + '<div class="rc-row-head">'
+                    + '<div class="rc-row-top">'
+                    + '<span class="rc-row-id">' + it.rental_id + '</span>'
+                    + '<span class="rc-row-state">' + estadoBadge(it.estado_pago) + '</span>'
+                    + '</div>'
+                    + '<div class="rc-row-client small text-muted">'
+                    + '<span class="material-symbols-outlined align-middle" style="font-size:14px;">person</span> '
+                    + (it.client_name || '—')
+                    + '</div>'
+                    + '</div>'
+                    + '</button>'
+                    + '</h2>'
+                    + '<div id="' + bodyId + '" class="accordion-collapse collapse"'
+                    + ' aria-labelledby="' + headerId + '" data-bs-parent="#' + accId + '">'
+                    + '<div class="accordion-body">'
+                    + '<dl>'
+                    + '<dt><span class="material-symbols-outlined align-middle" style="font-size:14px;">date_range</span> Periodo</dt>'
+                    + '<dd class="small">' + dRange + '</dd>'
+                    + '<dt><span class="material-symbols-outlined align-middle" style="font-size:14px;">payments</span> Total</dt>'
+                    + '<dd>₡ ' + total + '</dd>'
+                    + '</dl>'
+                    + '<div class="rc-row-actions">'
+                    + '<a href="' + it.view_url + '" class="btn btn-sm btn-outline-primary">'
+                    + '<span class="material-symbols-outlined align-middle" style="font-size:16px;">visibility</span> Ver</a>'
+                    + '<a href="' + it.update_url + '" class="btn btn-sm btn-outline-secondary">'
+                    + '<span class="material-symbols-outlined align-middle" style="font-size:16px;">edit</span> Editar</a>'
+                    + '</div>'
+                    + '</div>'
+                    + '</div>'
+                    + '</div>';
+            });
+
+            var mobileAcc = '<div class="d-md-none">'
+                + '<div class="accordion rc-day-accordion" id="' + accId + '">'
+                + accItems
+                + '</div>'
+                + '</div>';
+
+            bodyEl.innerHTML = summary + deskTable + mobileAcc;
+        })
+        .catch(function (err) {
+            bodyEl.innerHTML = '<div class="text-danger small text-center py-3">'
+                + 'Error cargando órdenes: ' + (err && err.message ? err.message : 'desconocido')
+                + '</div>';
+        });
+    }
+
+    // Delegación: cualquier botón con .rc-reservas-btn abre el modal
+    document.addEventListener('click', function (ev) {
+        var btn = ev.target.closest('.rc-reservas-btn');
+        if (!btn) return;
+        ev.preventDefault();
+        var carId = btn.getAttribute('data-car-id');
+        var carName = btn.getAttribute('data-car-name') || '';
+        var carPlaca = btn.getAttribute('data-car-placa') || '';
+        if (carId) showCar(carId, carName, carPlaca);
+    });
 })();
 </script>
