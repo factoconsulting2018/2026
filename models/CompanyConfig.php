@@ -56,6 +56,9 @@ class CompanyConfig extends ActiveRecord
     const WHATSAPP_COUNTRY_CODE = 'whatsapp_country_code';
     const WHATSAPP_NOTIFY_ON_CREATE = 'whatsapp_notify_on_create';
     const WHATSAPP_NOTIFY_CLIENT = 'whatsapp_notify_client';
+    const WHATSAPP_DAILY_ENABLED = 'whatsapp_daily_enabled';
+    const WHATSAPP_DAILY_TIME = 'whatsapp_daily_time';
+    const WHATSAPP_DAILY_LAST_SENT = 'whatsapp_daily_last_sent';
     const WHATSAPP_ADMIN_PHONE_1 = 'whatsapp_admin_phone_1';
     const WHATSAPP_ADMIN_PHONE_2 = 'whatsapp_admin_phone_2';
     const WHATSAPP_ADMIN_PHONE_3 = 'whatsapp_admin_phone_3';
@@ -716,6 +719,9 @@ class CompanyConfig extends ActiveRecord
      *     country_code: string,
      *     notify_on_create: bool,
      *     notify_client: bool,
+     *     daily_enabled: bool,
+     *     daily_time: string,
+     *     daily_last_sent: string,
      *     admin_phones: array<int,string>,
      *     public_base_url: string
      * }
@@ -735,6 +741,9 @@ class CompanyConfig extends ActiveRecord
             'country_code' => trim((string) self::getConfig(self::WHATSAPP_COUNTRY_CODE, '506')),
             'notify_on_create' => self::getConfig(self::WHATSAPP_NOTIFY_ON_CREATE, '1') === '1',
             'notify_client' => self::getConfig(self::WHATSAPP_NOTIFY_CLIENT, '0') === '1',
+            'daily_enabled' => self::getConfig(self::WHATSAPP_DAILY_ENABLED, '0') === '1',
+            'daily_time' => trim((string) self::getConfig(self::WHATSAPP_DAILY_TIME, '08:00')),
+            'daily_last_sent' => trim((string) self::getConfig(self::WHATSAPP_DAILY_LAST_SENT, '')),
             'admin_phones' => $phones,
             'public_base_url' => rtrim((string) self::getConfig(self::WHATSAPP_PUBLIC_BASE_URL, ''), '/'),
         ];
@@ -751,7 +760,9 @@ class CompanyConfig extends ActiveRecord
         bool $notifyOnCreate,
         array $adminPhones,
         string $publicBaseUrl = '',
-        bool $notifyClient = false
+        bool $notifyClient = false,
+        bool $dailyEnabled = false,
+        string $dailyTime = '08:00'
     ): void {
         self::setConfig(self::WHATSAPP_PUBLIC_BASE_URL, rtrim(trim($publicBaseUrl), '/'), 'URL base publica (https) accesible desde la API WhatsApp');
         self::setConfig(self::WHATSAPP_ENABLED, $enabled ? '1' : '0', 'Activar integracion WhatsApp');
@@ -760,6 +771,12 @@ class CompanyConfig extends ActiveRecord
         self::setConfig(self::WHATSAPP_COUNTRY_CODE, preg_replace('/\D/', '', $countryCode) !== '' ? preg_replace('/\D/', '', $countryCode) : '506', 'Codigo de pais por defecto');
         self::setConfig(self::WHATSAPP_NOTIFY_ON_CREATE, $notifyOnCreate ? '1' : '0', 'Notificar al crear orden de alquiler');
         self::setConfig(self::WHATSAPP_NOTIFY_CLIENT, $notifyClient ? '1' : '0', 'Notificar tambien al cliente (telefono del cliente)');
+        self::setConfig(self::WHATSAPP_DAILY_ENABLED, $dailyEnabled ? '1' : '0', 'Enviar resumen diario (entregas, devoluciones, disponibles) por WhatsApp');
+        $dailyTime = trim($dailyTime);
+        if (!preg_match('/^\d{2}:\d{2}$/', $dailyTime)) {
+            $dailyTime = '08:00';
+        }
+        self::setConfig(self::WHATSAPP_DAILY_TIME, $dailyTime, 'Hora programada (HH:MM) para el resumen diario por WhatsApp');
 
         for ($i = 1; $i <= 5; $i++) {
             $key = constant('self::WHATSAPP_ADMIN_PHONE_' . $i);

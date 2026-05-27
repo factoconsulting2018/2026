@@ -801,7 +801,9 @@ class ConfigController extends Controller
             isset($post['whatsapp_notify_on_create']) && $post['whatsapp_notify_on_create'] === '1',
             $phones,
             (string) ($post['whatsapp_public_base_url'] ?? ''),
-            isset($post['whatsapp_notify_client']) && $post['whatsapp_notify_client'] === '1'
+            isset($post['whatsapp_notify_client']) && $post['whatsapp_notify_client'] === '1',
+            isset($post['whatsapp_daily_enabled']) && $post['whatsapp_daily_enabled'] === '1',
+            (string) ($post['whatsapp_daily_time'] ?? '08:00')
         );
 
         Yii::$app->session->setFlash('success', 'Configuración de WhatsApp guardada.');
@@ -1009,5 +1011,26 @@ class ConfigController extends Controller
                 ? ('Mensaje enviado a ' . $sent . ' teléfono(s).')
                 : ('Enviado a ' . $sent . ' de ' . count($numbers) . ' teléfono(s).'),
         ];
+    }
+
+    /**
+     * Envía el resumen diario de prueba (ignora hora/anti-duplicado).
+     */
+    public function actionWhatsappDailyTest()
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        try {
+            $report = WhatsAppNotifier::sendDailyDeliveries(true);
+            return [
+                'success' => !empty($report['sent']) && (int) $report['sent'] > 0,
+                'report' => $report,
+                'message' => !empty($report['skipped_reason'])
+                    ? (string) $report['skipped_reason']
+                    : ('Enviado a ' . ((int) ($report['sent'] ?? 0)) . ' destinatario(s).'),
+            ];
+        } catch (\Throwable $e) {
+            Yii::error('actionWhatsappDailyTest: ' . $e->getMessage(), 'whatsapp');
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
     }
 }
