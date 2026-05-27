@@ -55,6 +55,7 @@ class CompanyConfig extends ActiveRecord
     const WHATSAPP_SESSION_ID = 'whatsapp_session_id';
     const WHATSAPP_COUNTRY_CODE = 'whatsapp_country_code';
     const WHATSAPP_NOTIFY_ON_CREATE = 'whatsapp_notify_on_create';
+    const WHATSAPP_NOTIFY_CLIENT = 'whatsapp_notify_client';
     const WHATSAPP_ADMIN_PHONE_1 = 'whatsapp_admin_phone_1';
     const WHATSAPP_ADMIN_PHONE_2 = 'whatsapp_admin_phone_2';
     const WHATSAPP_ADMIN_PHONE_3 = 'whatsapp_admin_phone_3';
@@ -714,6 +715,7 @@ class CompanyConfig extends ActiveRecord
      *     session_id: string,
      *     country_code: string,
      *     notify_on_create: bool,
+     *     notify_client: bool,
      *     admin_phones: array<int,string>,
      *     public_base_url: string
      * }
@@ -732,6 +734,7 @@ class CompanyConfig extends ActiveRecord
             'session_id' => trim((string) self::getConfig(self::WHATSAPP_SESSION_ID, 'facto_rent')),
             'country_code' => trim((string) self::getConfig(self::WHATSAPP_COUNTRY_CODE, '506')),
             'notify_on_create' => self::getConfig(self::WHATSAPP_NOTIFY_ON_CREATE, '1') === '1',
+            'notify_client' => self::getConfig(self::WHATSAPP_NOTIFY_CLIENT, '0') === '1',
             'admin_phones' => $phones,
             'public_base_url' => rtrim((string) self::getConfig(self::WHATSAPP_PUBLIC_BASE_URL, ''), '/'),
         ];
@@ -747,7 +750,8 @@ class CompanyConfig extends ActiveRecord
         string $countryCode,
         bool $notifyOnCreate,
         array $adminPhones,
-        string $publicBaseUrl = ''
+        string $publicBaseUrl = '',
+        bool $notifyClient = false
     ): void {
         self::setConfig(self::WHATSAPP_PUBLIC_BASE_URL, rtrim(trim($publicBaseUrl), '/'), 'URL base publica (https) accesible desde la API WhatsApp');
         self::setConfig(self::WHATSAPP_ENABLED, $enabled ? '1' : '0', 'Activar integracion WhatsApp');
@@ -755,6 +759,7 @@ class CompanyConfig extends ActiveRecord
         self::setConfig(self::WHATSAPP_SESSION_ID, trim($sessionId) !== '' ? trim($sessionId) : 'facto_rent', 'sessionId de WhatsApp');
         self::setConfig(self::WHATSAPP_COUNTRY_CODE, preg_replace('/\D/', '', $countryCode) !== '' ? preg_replace('/\D/', '', $countryCode) : '506', 'Codigo de pais por defecto');
         self::setConfig(self::WHATSAPP_NOTIFY_ON_CREATE, $notifyOnCreate ? '1' : '0', 'Notificar al crear orden de alquiler');
+        self::setConfig(self::WHATSAPP_NOTIFY_CLIENT, $notifyClient ? '1' : '0', 'Notificar tambien al cliente (telefono del cliente)');
 
         for ($i = 1; $i <= 5; $i++) {
             $key = constant('self::WHATSAPP_ADMIN_PHONE_' . $i);

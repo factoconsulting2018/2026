@@ -498,6 +498,20 @@ class WhatsAppNotifier
     }
 
     /**
+     * Envia notificacion de orden de alquiler cancelada/anulada.
+     *
+     * Se envia SIEMPRE a los telefonos administradores (independiente del flag
+     * "notify_on_create"). Si la opcion "notificar al cliente" esta activa,
+     * tambien se envia al telefono del cliente.
+     *
+     * @return array{enabled:bool, attempted:int, sent:int, errors:array<string>, skipped_reason:?string}
+     */
+    public static function notifyRentalCancelled(Rental $rental): array
+    {
+        return self::notifyRentalEvent($rental, 'cancelled');
+    }
+
+    /**
      * Envia notificacion a los telefonos administradores cuando un cliente nuevo
      * se registra desde el formulario publico (/public-registration/index).
      *
@@ -713,10 +727,12 @@ class WhatsAppNotifier
 
         try {
             $cfg = CompanyConfig::getWhatsAppConfig();
+            $isCancelled = ($eventType === 'cancelled');
             Yii::info(
                 'notifyRentalEvent(' . $eventType . ') start; rental_id=' . ($rental->id ?? '?')
                 . ' enabled=' . (int) $cfg['enabled']
                 . ' notify_on_create=' . (int) $cfg['notify_on_create']
+                . ' notify_client=' . (int) ($cfg['notify_client'] ?? false)
                 . ' phones=' . count(array_filter($cfg['admin_phones'])),
                 'whatsapp'
             );
@@ -725,9 +741,9 @@ class WhatsAppNotifier
                 $report['skipped_reason'] = 'Integración WhatsApp desactivada en configuración.';
                 return $report;
             }
-            // Se reutiliza la misma opción "notify_on_create" para no introducir un nuevo flag.
-            // Si el aviso automático al crear orden está desactivado, también se omite la actualización.
-            if (!$cfg['notify_on_create']) {
+            // Para eventos "created" y "updated" se respeta el flag "notify_on_create".
+            // Las cancelaciones se envían SIEMPRE a administradores, sin depender de ese flag.
+            if (!$isCancelled && !$cfg['notify_on_create']) {
                 $report['skipped_reason'] = 'Aviso automático de órdenes desactivado en configuración.';
                 return $report;
             }
@@ -739,6 +755,22 @@ class WhatsAppNotifier
                 Yii::warning($msg, 'whatsapp');
                 $report['errors'][] = $msg;
                 $report['skipped_reason'] = $msg;
+                // Aún así intentaremos enviar al cliente si está habilitado y existe número.
+            }
+
+            // Añadir al cliente si "notificar al cliente" está activo.
+            if (!empty($cfg['notify_client'])) {
+                $clientNumber = self::getClientNumber($rental, $cfg);
+                if ($clientNumber !== null && !in_array($clientNumber, $numbers, true)) {
+                    $numbers[] = $clientNumber;
+                    Yii::info('notifyRentalEvent(' . $eventType . '): cliente añadido como destinatario (' . $clientNumber . ')', 'whatsapp');
+                } elseif ($clientNumber === null) {
+                    Yii::info('notifyRentalEvent(' . $eventType . '): no se pudo obtener el teléfono del cliente; no se envía al cliente.', 'whatsapp');
+                }
+            }
+
+            if (empty($numbers)) {
+                $report['skipped_reason'] = $report['skipped_reason'] ?? 'No hay destinatarios disponibles.';
                 return $report;
             }
 
@@ -824,7 +856,7 @@ class WhatsAppNotifier
      * Construye el texto del mensaje a enviar para una orden de alquiler.
      * Incluye: cliente, tipo de vehículo, matrícula, periodo de alquiler y estado de pago.
      *
-     * @param string $eventType "created" (default) o "updated" — solo cambia el encabezado.
+     * @param string $eventType "created" (default), "updated" o "cancelled" — solo cambia el encabezado/cierre.
      */
     public static function buildRentalMessage(Rental $rental, string $eventType = 'created'): string
     {
@@ -929,15 +961,22 @@ class WhatsAppNotifier
         $currency = '₡';
 
         $isUpdate = ($eventType === 'updated');
+        $isCancelled = ($eventType === 'cancelled');
 
         $lines = [];
-        $lines[] = $isUpdate
-            ? '*✏️ Orden de alquiler actualizada*'
-            : '*🚗 Nueva orden de alquiler*';
+        if ($isCancelled) {
+            $lines[] = '*🛑 Orden de alquiler ANULADA*';
+        } elseif ($isUpdate) {
+            $lines[] = '*✏️ Orden de alquiler actualizada*';
+        } else {
+            $lines[] = '*🚗 Nueva orden de alquiler*';
+        }
         $lines[] = $companyName;
         $lines[] = '';
         $lines[] = 'Orden: *' . $orderId . '*';
-        if ($isUpdate) {
+        if ($isCancelled) {
+            $lines[] = '_Anulada: ' . date('d/m/Y h:i A') . '_';
+        } elseif ($isUpdate) {
             $lines[] = '_Actualizada: ' . date('d/m/Y h:i A') . '_';
         }
         $lines[] = '';
@@ -968,11 +1007,52 @@ class WhatsAppNotifier
         $lines[] = '💵 *Estado de pago:* ' . $payStatus;
         $lines[] = '💰 *Total:* ' . $currency . ' ' . $total;
         $lines[] = '';
-        $lines[] = $isUpdate
-            ? 'Se adjunta la orden actualizada en PDF.'
-            : 'Se adjunta la orden en PDF.';
+        if ($isCancelled) {
+            $lines[] = 'Esta orden de alquiler ha sido *anulada*.';
+            $lines[] = 'Si tienes dudas, contáctanos para más información.';
+        } elseif ($isUpdate) {
+            $lines[] = 'Se adjunta la orden actualizada en PDF.';
+        } else {
+            $lines[] = 'Se adjunta la orden en PDF.';
+        }
 
         return implode("\n", $lines);
+    }
+
+    /**
+     * Devuelve el número del cliente normalizado (E.164 sin signos),
+     * o null si no se puede determinar.
+     *
+     * @param array $cfg Configuración de WhatsApp (para el código de país por defecto).
+     */
+    private static function getClientNumber(Rental $rental, array $cfg): ?string
+    {
+        try {
+            $client = $rental->client ?? null;
+            if (!$client) {
+                return null;
+            }
+            $raw = '';
+            foreach (['whatsapp', 'celular', 'telefono'] as $f) {
+                $val = trim((string) ($client->{$f} ?? ''));
+                if ($val !== '') {
+                    $raw = $val;
+                    break;
+                }
+            }
+            if ($raw === '') {
+                return null;
+            }
+            $cc = (string) ($cfg['country_code'] ?? '506');
+            $normalized = self::normalizeNumber($raw, $cc);
+            if ($normalized === null || $normalized === '' || strlen($normalized) < 8) {
+                return null;
+            }
+            return $normalized;
+        } catch (\Throwable $e) {
+            Yii::warning('getClientNumber: ' . $e->getMessage(), 'whatsapp');
+            return null;
+        }
     }
 
     /**

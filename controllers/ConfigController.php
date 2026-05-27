@@ -800,7 +800,8 @@ class ConfigController extends Controller
             (string) ($post['whatsapp_country_code'] ?? '506'),
             isset($post['whatsapp_notify_on_create']) && $post['whatsapp_notify_on_create'] === '1',
             $phones,
-            (string) ($post['whatsapp_public_base_url'] ?? '')
+            (string) ($post['whatsapp_public_base_url'] ?? ''),
+            isset($post['whatsapp_notify_client']) && $post['whatsapp_notify_client'] === '1'
         );
 
         Yii::$app->session->setFlash('success', 'Configuración de WhatsApp guardada.');

@@ -356,11 +356,25 @@ class RentalController extends Controller
     public function actionDelete($id)
     {
         $transaction = Yii::$app->db->beginTransaction();
+        $cancelledSnapshot = null;
         try {
             $model = $this->findModel($id);
             $deletedCarId = !$model->is_async ? (int) $model->car_id : 0;
-            
-            // Eliminar el registro de la base de datos
+
+            // Tomamos un snapshot del modelo (con sus relaciones cargadas) antes de eliminarlo
+            // para poder enviar la notificación de WhatsApp con los datos completos.
+            try {
+                // Forzamos la carga de relaciones que usa el mensaje.
+                $model->client; // @phpstan-ignore-line
+                $model->car;    // @phpstan-ignore-line
+                $cancelledSnapshot = clone $model;
+                // Estado de pago anulado para el mensaje (no se guarda).
+                $cancelledSnapshot->estado_pago = 'cancelado';
+            } catch (\Throwable $e) {
+                Yii::warning('No se pudo clonar el modelo para notificación de anulación: ' . $e->getMessage(), 'rental');
+                $cancelledSnapshot = null;
+            }
+
             if (!$model->delete()) {
                 throw new \Exception('No se pudo eliminar el alquiler');
             }
@@ -370,6 +384,22 @@ class RentalController extends Controller
             // Sincronizar estado del carro: vuelve a disponible solo si no hay otra renta activa hoy
             if ($deletedCarId) {
                 Car::syncStatusFromRentals($deletedCarId);
+            }
+
+            // Notificación de anulación por WhatsApp (siempre a admins; al cliente si flag activo).
+            if ($cancelledSnapshot !== null) {
+                try {
+                    $report = WhatsAppNotifier::notifyRentalCancelled($cancelledSnapshot);
+                    if (!empty($report['enabled']) && ($report['sent'] ?? 0) > 0) {
+                        Yii::$app->session->setFlash('info', '📲 Aviso de anulación enviado por WhatsApp a ' . $report['sent'] . ' destinatario(s).');
+                    } elseif (!empty($report['skipped_reason'])) {
+                        Yii::info('WhatsApp anulación omitido: ' . $report['skipped_reason'], 'whatsapp');
+                    } elseif (!empty($report['errors'])) {
+                        Yii::warning('WhatsApp anulación con errores: ' . implode(' | ', $report['errors']), 'whatsapp');
+                    }
+                } catch (\Throwable $e) {
+                    Yii::error('Error enviando WhatsApp de anulación: ' . $e->getMessage(), 'whatsapp');
+                }
             }
 
             Yii::$app->session->setFlash('success', '🗑️ El alquiler fue anulado correctamente');
@@ -505,7 +535,17 @@ class RentalController extends Controller
                 if ($model->car_id) {
                     Car::syncStatusFromRentals((int) $model->car_id);
                 }
-                
+
+                // Si el nuevo estado es "cancelado" (anulación vía cambio de estado),
+                // enviar notificación WhatsApp de anulación (siempre a admins; al cliente si flag activo).
+                if ($newStatus === 'cancelado' && $oldStatus !== 'cancelado') {
+                    try {
+                        WhatsAppNotifier::notifyRentalCancelled($model);
+                    } catch (\Throwable $e) {
+                        Yii::error('Error enviando WhatsApp de anulación (update-payment-status): ' . $e->getMessage(), 'whatsapp');
+                    }
+                }
+
                 return [
                     'success' => true,
                     'message' => 'Estado de pago actualizado correctamente'

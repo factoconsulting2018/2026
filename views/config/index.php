@@ -1221,8 +1221,22 @@ sudo docker-compose exec app php yii migrate</code></pre>
                                                    name="whatsapp_notify_on_create" value="1" id="whatsapp_notify_on_create"
                                                    <?= !empty($whatsappConfig['notify_on_create']) ? 'checked' : '' ?>>
                                             <label class="form-check-label" for="whatsapp_notify_on_create">
-                                                Enviar aviso automático al crear una orden de alquiler
+                                                Enviar aviso automático al crear/actualizar una orden de alquiler
                                             </label>
+                                        </div>
+
+                                        <div class="form-check form-switch mb-3">
+                                            <input class="form-check-input" type="checkbox" role="switch"
+                                                   name="whatsapp_notify_client" value="1" id="whatsapp_notify_client"
+                                                   <?= !empty($whatsappConfig['notify_client']) ? 'checked' : '' ?>>
+                                            <label class="form-check-label" for="whatsapp_notify_client">
+                                                <i class="fab fa-whatsapp text-success"></i>
+                                                Enviar también la notificación al <strong>cliente</strong> (al WhatsApp del cliente registrado en la orden)
+                                            </label>
+                                            <div class="form-text text-muted">
+                                                Si está activo, el cliente recibirá los mismos avisos que los administradores cuando se crea o actualiza una orden.
+                                                Las cancelaciones se envían siempre a los administradores, independientemente de este ajuste.
+                                            </div>
                                         </div>
 
                                         <div class="row g-3">
