@@ -107,39 +107,9 @@ $jsDispUrl = json_encode($calendarDispUrl);
         ],
     ];
     ?>
-    <div class="row g-2 g-md-3 mt-2 dashboard-counters">
-        <?php foreach ($counters as $c): ?>
-            <div class="col-6 col-sm-4 col-lg-3 col-xxl-2">
-                <div class="card text-white dashboard-counter" style="background: <?= $c['gradient'] ?>;">
-                    <div class="card-body">
-                        <div class="dashboard-counter-row">
-                            <div class="dashboard-counter-main">
-                                <div class="dashboard-counter-label">
-                                    <span class="material-symbols-outlined">
-                                        <?= Html::encode($c['icon']) ?>
-                                    </span>
-                                    <?= Html::encode($c['title']) ?>
-                                </div>
-                                <div class="dashboard-counter-value"><?= Html::encode($c['value']) ?></div>
-                                <div class="dashboard-counter-sub"><?= Html::encode($c['sub']) ?></div>
-                            </div>
-                            <div class="dashboard-counter-icon">
-                                <span class="material-symbols-outlined">
-                                    <?= Html::encode($c['icon']) ?>
-                                </span>
-                            </div>
-                        </div>
-                        <a href="<?= $c['url'] ?>" class="dashboard-counter-link">
-                            <?= Html::encode($c['link']) ?> →
-                        </a>
-                    </div>
-                </div>
-            </div>
-        <?php endforeach; ?>
-    </div>
 
     <!-- ===== Calendario interactivo de alquileres ===== -->
-    <div class="card mt-4 mb-4 rentals-calendar-card">
+    <div class="card mt-3 mb-4 rentals-calendar-card">
         <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
             <div class="d-flex align-items-center gap-2">
                 <span class="material-symbols-outlined" style="font-size: 22px; color: #3fa9f5;">calendar_month</span>
@@ -200,6 +170,38 @@ $jsDispUrl = json_encode($calendarDispUrl);
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- ===== Contadores (debajo del calendario) ===== -->
+    <div class="row g-2 g-md-3 mt-2 dashboard-counters">
+        <?php foreach ($counters as $c): ?>
+            <div class="col-6 col-sm-4 col-lg-3 col-xxl-2">
+                <div class="card text-white dashboard-counter" style="background: <?= $c['gradient'] ?>;">
+                    <div class="card-body">
+                        <div class="dashboard-counter-row">
+                            <div class="dashboard-counter-main">
+                                <div class="dashboard-counter-label">
+                                    <span class="material-symbols-outlined">
+                                        <?= Html::encode($c['icon']) ?>
+                                    </span>
+                                    <?= Html::encode($c['title']) ?>
+                                </div>
+                                <div class="dashboard-counter-value"><?= Html::encode($c['value']) ?></div>
+                                <div class="dashboard-counter-sub"><?= Html::encode($c['sub']) ?></div>
+                            </div>
+                            <div class="dashboard-counter-icon">
+                                <span class="material-symbols-outlined">
+                                    <?= Html::encode($c['icon']) ?>
+                                </span>
+                            </div>
+                        </div>
+                        <a href="<?= $c['url'] ?>" class="dashboard-counter-link">
+                            <?= Html::encode($c['link']) ?> →
+                        </a>
+                    </div>
+                </div>
+            </div>
+        <?php endforeach; ?>
     </div>
 
     <!-- Acciones Rápidas -->
@@ -563,6 +565,11 @@ body {
     border: none;
     box-shadow: 0 2px 6px rgba(0,0,0,0.08);
     height: 100%;
+    color: #ffffff !important;
+}
+.dashboard-counters .dashboard-counter,
+.dashboard-counters .dashboard-counter * {
+    color: #ffffff !important;
 }
 .dashboard-counters .dashboard-counter .card-body {
     padding: 0.75rem 0.9rem;
@@ -577,54 +584,61 @@ body {
 .dashboard-counter-label {
     font-size: 0.78rem;
     font-weight: 600;
-    opacity: 0.95;
+    color: #ffffff !important;
     display: flex;
     align-items: center;
     gap: 4px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    text-shadow: 0 1px 1px rgba(0,0,0,0.18);
 }
-.dashboard-counter-label .material-symbols-outlined { font-size: 16px; }
+.dashboard-counter-label .material-symbols-outlined { font-size: 16px; color: #ffffff !important; }
 .dashboard-counter-value {
-    font-size: 1.45rem;
-    font-weight: 700;
+    font-size: 1.5rem;
+    font-weight: 800;
     line-height: 1.1;
     margin-top: 2px;
+    color: #ffffff !important;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.22);
 }
 .dashboard-counter-sub {
-    font-size: 0.7rem;
-    opacity: 0.85;
+    font-size: 0.72rem;
+    color: #ffffff !important;
     line-height: 1.1;
+    text-shadow: 0 1px 1px rgba(0,0,0,0.18);
 }
 .dashboard-counter-icon .material-symbols-outlined {
     font-size: 34px;
-    opacity: 0.55;
+    color: #ffffff !important;
+    opacity: 0.85;
+    text-shadow: 0 2px 3px rgba(0,0,0,0.18);
 }
 .dashboard-counter-link {
     display: inline-block;
     margin-top: 6px;
-    font-size: 0.72rem;
-    font-weight: 600;
-    color: #fff;
-    background: rgba(255,255,255,0.18);
-    padding: 2px 8px;
-    border-radius: 10px;
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: #ffffff !important;
+    background: rgba(0,0,0,0.18);
+    padding: 3px 10px;
+    border-radius: 12px;
     text-decoration: none;
-    transition: background-color .15s ease;
+    transition: background-color .15s ease, transform .15s ease;
 }
 .dashboard-counter-link:hover {
-    background: rgba(255,255,255,0.3);
-    color: #fff;
+    background: rgba(0,0,0,0.32);
+    color: #ffffff !important;
+    transform: translateY(-1px);
 }
 @media (max-width: 575.98px) {
-    .dashboard-counter-value { font-size: 1.2rem; }
+    .dashboard-counter-value { font-size: 1.25rem; }
     .dashboard-counter-icon .material-symbols-outlined { font-size: 26px; }
     .dashboard-counter-label { font-size: 0.72rem; }
-    .dashboard-counter-sub { font-size: 0.65rem; }
+    .dashboard-counter-sub { font-size: 0.66rem; }
 }
 
 /* ===== Calendario interactivo ===== */
