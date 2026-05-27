@@ -651,6 +651,9 @@ class WhatsAppNotifier
         $lines = [];
         $lines[] = '*🆕 Nuevo registro de cliente*';
         $lines[] = $companyName;
+        foreach (self::brandingLines() as $bl) {
+            $lines[] = $bl;
+        }
         $lines[] = '';
         $lines[] = 'Registro recibido: _' . date('d/m/Y h:i A') . '_';
         $lines[] = 'Estado: 🟡 Pendiente de aprobación';
@@ -972,6 +975,9 @@ class WhatsAppNotifier
             $lines[] = '*🚗 Nueva orden de alquiler*';
         }
         $lines[] = $companyName;
+        foreach (self::brandingLines() as $bl) {
+            $lines[] = $bl;
+        }
         $lines[] = '';
         $lines[] = 'Orden: *' . $orderId . '*';
         if ($isCancelled) {
@@ -1017,6 +1023,20 @@ class WhatsAppNotifier
         }
 
         return implode("\n", $lines);
+    }
+
+    /**
+     * Líneas de contacto/branding que se añaden debajo del nombre de la empresa
+     * en todos los mensajes salientes.
+     *
+     * @return array<int,string>
+     */
+    private static function brandingLines(): array
+    {
+        return [
+            'Tel: 4070-0485 | Whatsapp: 8367-0937',
+            'www.factorentacar.com',
+        ];
     }
 
     /**
