@@ -6,6 +6,7 @@ use Yii;
 use app\models\CompanyConfig;
 use app\models\Client;
 use app\models\Rental;
+use app\models\CarAvailability;
 use app\controllers\PdfController;
 
 /**
@@ -1093,5 +1094,303 @@ class WhatsAppNotifier
         $h12 = $h % 12;
         if ($h12 === 0) $h12 = 12;
         return $h12 . ':' . str_pad((string) $min, 2, '0', STR_PAD_LEFT) . ' ' . $period;
+    }
+
+    /**
+     * Envia por WhatsApp el resumen diario:
+     *  - Entregas al cliente del dia (fecha_inicio = hoy)
+     *  - Devoluciones del dia (fecha_final = hoy)
+     *  - Vehiculos disponibles hoy
+     *
+     * Disenado para ejecutarse desde un cron cada minuto. La logica interna
+     * decide si efectivamente toca enviar (segun daily_time y anti-duplicado).
+     *
+     * @param bool $force Si true, ignora el flag daily_enabled, la hora y el anti-duplicado.
+     *                    No actualiza WHATSAPP_DAILY_LAST_SENT (sirve para "Enviar prueba").
+     *
+     * @return array{enabled:bool, attempted:int, sent:int, errors:array<string>, skipped_reason:?string}
+     */
+    public static function sendDailyDeliveries(bool $force = false): array
+    {
+        $report = [
+            'enabled' => false,
+            'attempted' => 0,
+            'sent' => 0,
+            'errors' => [],
+            'skipped_reason' => null,
+        ];
+
+        try {
+            $cfg = CompanyConfig::getWhatsAppConfig();
+            $hoy = date('Y-m-d');
+            $now = date('H:i');
+            $dailyTime = (string) ($cfg['daily_time'] ?? '08:00');
+            $lastSent = (string) ($cfg['daily_last_sent'] ?? '');
+
+            Yii::info(
+                'sendDailyDeliveries start; force=' . (int) $force
+                . ' enabled=' . (int) $cfg['enabled']
+                . ' daily_enabled=' . (int) ($cfg['daily_enabled'] ?? false)
+                . ' daily_time=' . $dailyTime
+                . ' now=' . $now
+                . ' last_sent=' . $lastSent,
+                'whatsapp'
+            );
+
+            if (!$cfg['enabled']) {
+                $report['skipped_reason'] = 'Integración WhatsApp desactivada en configuración.';
+                return $report;
+            }
+
+            if (!$force) {
+                if (empty($cfg['daily_enabled'])) {
+                    $report['skipped_reason'] = 'Resumen diario desactivado en configuración.';
+                    return $report;
+                }
+                if (!preg_match('/^\d{2}:\d{2}$/', $dailyTime)) {
+                    $dailyTime = '08:00';
+                }
+                if (strcmp($now, $dailyTime) < 0) {
+                    $report['skipped_reason'] = 'Aún no es la hora configurada (' . $dailyTime . ').';
+                    return $report;
+                }
+                if ($lastSent === $hoy) {
+                    $report['skipped_reason'] = 'Ya se envió hoy (' . $hoy . ').';
+                    return $report;
+                }
+            }
+            $report['enabled'] = true;
+
+            $numbers = self::getAdminNumbers($cfg);
+            if (empty($numbers)) {
+                $msg = 'No hay teléfonos administradores configurados.';
+                Yii::warning($msg, 'whatsapp');
+                $report['errors'][] = $msg;
+                $report['skipped_reason'] = $msg;
+                return $report;
+            }
+
+            $status = self::getStatus($cfg['api_url'], $cfg['session_id']);
+            if (!self::isConnected($status)) {
+                $bodyStatus = is_array($status['body'] ?? null) ? ($status['body']['status'] ?? 'unknown') : 'unknown';
+                $msg = $status['error'] ?? ('Sesión WhatsApp no conectada (estado: ' . $bodyStatus . ')');
+                Yii::warning('Resumen diario omitido (sesión no conectada): ' . $msg, 'whatsapp');
+                $report['errors'][] = $msg;
+                $report['skipped_reason'] = $msg;
+                return $report;
+            }
+
+            // Entregas al cliente del día (fecha_inicio = hoy) - no canceladas.
+            $deliveries = Rental::find()
+                ->with(['client', 'car'])
+                ->andWhere(['fecha_inicio' => $hoy])
+                ->andWhere(['<>', 'estado_pago', 'cancelado'])
+                ->orderBy(['hora_inicio' => SORT_ASC])
+                ->all();
+
+            // Devoluciones del día (fecha_final = hoy) - no canceladas.
+            $returns = Rental::find()
+                ->with(['client', 'car'])
+                ->andWhere(['fecha_final' => $hoy])
+                ->andWhere(['<>', 'estado_pago', 'cancelado'])
+                ->orderBy(['hora_final' => SORT_ASC])
+                ->all();
+
+            // Vehículos disponibles hoy (misma lógica que /car/disponibles).
+            $availableCars = [];
+            try {
+                $availableCars = CarAvailability::getCarsAvailableOnDate($hoy);
+            } catch (\Throwable $e) {
+                Yii::warning('No se pudo obtener disponibles del día: ' . $e->getMessage(), 'whatsapp');
+            }
+
+            $message = self::buildDailyDeliveriesMessage($deliveries, $returns, $availableCars, $hoy);
+            Yii::info(
+                'Resumen diario preparado (' . strlen($message) . ' chars): '
+                . count($deliveries) . ' entregas, '
+                . count($returns) . ' devoluciones, '
+                . count($availableCars) . ' disponibles',
+                'whatsapp'
+            );
+
+            foreach ($numbers as $number) {
+                $report['attempted']++;
+                try {
+                    $res = self::sendText($cfg['api_url'], $cfg['session_id'], $number, $message);
+                    if (!$res['ok']) {
+                        $err = $number . ': ' . ($res['error'] ?? 'fallo');
+                        Yii::warning('Resumen diario fallido — ' . $err, 'whatsapp');
+                        $report['errors'][] = $err;
+                        continue;
+                    }
+                    $report['sent']++;
+                    Yii::info('Resumen diario enviado a ' . $number, 'whatsapp');
+                } catch (\Throwable $e) {
+                    $report['errors'][] = $number . ': ' . $e->getMessage();
+                    Yii::error('Resumen diario excepción a ' . $number . ': ' . $e->getMessage(), 'whatsapp');
+                }
+            }
+
+            // Si fue un envío programado real (no force) y al menos uno llegó,
+            // marcamos la fecha de hoy para evitar duplicados.
+            if (!$force && $report['sent'] > 0) {
+                try {
+                    CompanyConfig::setConfig(
+                        CompanyConfig::WHATSAPP_DAILY_LAST_SENT,
+                        $hoy,
+                        'Última fecha (YYYY-MM-DD) en que se envió el resumen diario'
+                    );
+                } catch (\Throwable $e) {
+                    Yii::error('No se pudo persistir daily_last_sent: ' . $e->getMessage(), 'whatsapp');
+                }
+            }
+        } catch (\Throwable $e) {
+            Yii::error('sendDailyDeliveries: ' . $e->getMessage(), 'whatsapp');
+            $report['errors'][] = $e->getMessage();
+        }
+
+        return $report;
+    }
+
+    /**
+     * Construye el texto del resumen diario.
+     *
+     * @param Rental[] $deliveries Entregas al cliente del día (fecha_inicio = $date)
+     * @param Rental[] $returns    Devoluciones del día (fecha_final = $date)
+     * @param array    $availableCars Lista de objetos Car disponibles ese día
+     * @param string   $date 'YYYY-MM-DD'
+     */
+    public static function buildDailyDeliveriesMessage(array $deliveries, array $returns, array $availableCars, string $date): string
+    {
+        $company = CompanyConfig::getCompanyInfo();
+        $companyName = $company['name'] ?? 'FACTO RENT A CAR';
+
+        $ts = strtotime($date) ?: time();
+        $dateLabel = date('d/m/Y', $ts);
+        $dows = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+        $dow = $dows[(int) date('w', $ts)] ?? '';
+
+        $lines = [];
+        $lines[] = '*📅 Resumen diario — ' . $dateLabel . ' (' . $dow . ')*';
+        $lines[] = $companyName;
+        foreach (self::brandingLines() as $bl) {
+            $lines[] = $bl;
+        }
+        $lines[] = '';
+
+        // ===== Entregas al cliente =====
+        $lines[] = '🚗 *Entregas al cliente (' . count($deliveries) . ')*';
+        if (empty($deliveries)) {
+            $lines[] = '_Sin movimientos._';
+        } else {
+            foreach ($deliveries as $r) {
+                $lines[] = self::formatRentalLine($r, 'delivery');
+            }
+        }
+        $lines[] = '';
+
+        // ===== Devoluciones =====
+        $lines[] = '📥 *Devoluciones (' . count($returns) . ')*';
+        if (empty($returns)) {
+            $lines[] = '_Sin movimientos._';
+        } else {
+            foreach ($returns as $r) {
+                $lines[] = self::formatRentalLine($r, 'return');
+            }
+        }
+        $lines[] = '';
+
+        // ===== Disponibles hoy =====
+        $lines[] = '✅ *Disponibles hoy (' . count($availableCars) . ')*';
+        if (empty($availableCars)) {
+            $lines[] = '_Sin vehículos disponibles._';
+        } else {
+            foreach ($availableCars as $car) {
+                $brand = '';
+                try {
+                    if (!empty($car->marca_id) && $car->marca) {
+                        $brand = trim((string) ($car->marca->name ?? ''));
+                    }
+                } catch (\Throwable $e) {
+                    $brand = '';
+                }
+                $name = trim((string) ($car->nombre ?? ''));
+                if ($brand !== '' && $name !== '' && stripos($name, $brand) === 0) {
+                    $label = $name;
+                } else {
+                    $label = trim($brand . ' ' . $name);
+                }
+                if ($label === '') $label = '—';
+                $plate = trim((string) ($car->placa ?? ''));
+                $lines[] = '• ' . $label . ($plate !== '' ? ' (' . $plate . ')' : '');
+            }
+        }
+
+        return implode("\n", $lines);
+    }
+
+    /**
+     * Formatea una línea de Rental para el resumen diario.
+     * $type: 'delivery' -> usa hora_inicio + lugar_retiro
+     *        'return'   -> usa hora_final  + lugar_entrega
+     */
+    private static function formatRentalLine(Rental $r, string $type): string
+    {
+        $orderId = $r->rental_id ?: ('R' . $r->id);
+        if ($type === 'return') {
+            $hora = self::formatTime12h($r->hora_final ?? null);
+            $lugar = trim((string) ($r->lugar_entrega ?? ''));
+        } else {
+            $hora = self::formatTime12h($r->hora_inicio ?? null);
+            $lugar = trim((string) ($r->lugar_retiro ?? ''));
+        }
+
+        // Cliente
+        $clientName = '—';
+        try {
+            $cl = $r->client ?? null;
+            if ($cl) {
+                $clientName = trim((string) $cl->full_name);
+                if ($clientName === '') {
+                    $clientName = trim(((string) ($cl->nombre ?? '')) . ' ' . ((string) ($cl->apellido ?? '')));
+                }
+                if ($clientName === '') $clientName = '—';
+            }
+        } catch (\Throwable $e) {
+            $clientName = '—';
+        }
+
+        // Vehículo + placa
+        $carLabel = '—';
+        $plate = '';
+        try {
+            $car = $r->car ?? null;
+            if ($car) {
+                $brand = '';
+                if (!empty($car->marca_id) && $car->marca) {
+                    $brand = trim((string) ($car->marca->name ?? ''));
+                }
+                $name = trim((string) ($car->nombre ?? ''));
+                if ($brand !== '' && $name !== '' && stripos($name, $brand) === 0) {
+                    $carLabel = $name;
+                } else {
+                    $carLabel = trim($brand . ' ' . $name);
+                }
+                if ($carLabel === '') $carLabel = '—';
+                $plate = trim((string) ($car->placa ?? ''));
+            }
+        } catch (\Throwable $e) {
+            $carLabel = '—';
+        }
+
+        $parts = ['• *' . $orderId . '*'];
+        if ($hora !== '') $parts[] = $hora;
+        $parts[] = $carLabel . ($plate !== '' ? ' (' . $plate . ')' : '');
+        $parts[] = $clientName;
+        $line = implode(' — ', $parts);
+        if ($lugar !== '') {
+            $line .= "\n   📍 " . $lugar;
+        }
+        return $line;
     }
 }

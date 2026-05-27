@@ -1239,6 +1239,56 @@ sudo docker-compose exec app php yii migrate</code></pre>
                                             </div>
                                         </div>
 
+                                        <div class="card border-success mb-3">
+                                            <div class="card-header bg-success-subtle d-flex align-items-center gap-2">
+                                                <span class="material-symbols-outlined" style="font-size: 20px; color: #198754;">schedule_send</span>
+                                                <strong>Resumen diario programado</strong>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="form-check form-switch mb-3">
+                                                    <input class="form-check-input" type="checkbox" role="switch"
+                                                           name="whatsapp_daily_enabled" value="1" id="whatsapp_daily_enabled"
+                                                           <?= !empty($whatsappConfig['daily_enabled']) ? 'checked' : '' ?>>
+                                                    <label class="form-check-label" for="whatsapp_daily_enabled">
+                                                        Enviar <strong>resumen diario</strong> por WhatsApp (entregas + devoluciones + disponibles)
+                                                    </label>
+                                                </div>
+
+                                                <div class="row g-3 align-items-end">
+                                                    <div class="col-md-4">
+                                                        <label class="form-label" for="whatsapp_daily_time">Hora de envío</label>
+                                                        <input type="time" class="form-control" name="whatsapp_daily_time"
+                                                               id="whatsapp_daily_time"
+                                                               value="<?= Html::encode($whatsappConfig['daily_time'] ?? '08:00') ?>">
+                                                        <div class="form-text">Formato 24h. Ej: 08:00</div>
+                                                    </div>
+                                                    <div class="col-md-8">
+                                                        <label class="form-label d-block">Último envío exitoso</label>
+                                                        <span class="badge bg-secondary">
+                                                            <?= !empty($whatsappConfig['daily_last_sent'])
+                                                                ? Html::encode($whatsappConfig['daily_last_sent'])
+                                                                : 'nunca' ?>
+                                                        </span>
+                                                        <button type="button" class="btn btn-sm btn-outline-success ms-2" id="btn-whatsapp-daily-test">
+                                                            <span class="material-symbols-outlined align-middle" style="font-size: 16px;">send</span>
+                                                            Enviar resumen de prueba ahora
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                <div class="alert alert-info mt-3 mb-0 small">
+                                                    <div class="d-flex align-items-start gap-2">
+                                                        <span class="material-symbols-outlined" style="font-size: 18px;">info</span>
+                                                        <div>
+                                                            <strong>Cómo activarlo en el servidor</strong> — para que el envío sea automático debes configurar un cron en el servidor:
+                                                            <pre class="mb-1 mt-1" style="white-space: pre-wrap; font-size: 11px;">* * * * * cd /ruta/al/proyecto &amp;&amp; php yii whatsapp/daily-deliveries &gt;&gt; runtime/logs/whatsapp-daily.log 2&gt;&amp;1</pre>
+                                                            El cron se ejecuta cada minuto, pero el sistema solo envía una vez al día a la hora configurada (control anti-duplicado).
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
                                         <div class="row g-3">
                                             <div class="col-md-7">
                                                 <label class="form-label" for="whatsapp_api_url">URL base de la API</label>
@@ -1591,6 +1641,7 @@ document.addEventListener('DOMContentLoaded', function() {
             start: <?= json_encode(Url::to(['config/whatsapp-start'])) ?>,
             del: <?= json_encode(Url::to(['config/whatsapp-delete'])) ?>,
             test: <?= json_encode(Url::to(['config/whatsapp-test'])) ?>,
+            dailyTest: <?= json_encode(Url::to(['config/whatsapp-daily-test'])) ?>,
         };
         // Valores GUARDADOS (no del formulario) para que coincidan con lo que usa el backend.
         const WA_API_URL = <?= json_encode($whatsappConfig['api_url']) ?>;
@@ -2179,6 +2230,30 @@ document.addEventListener('DOMContentLoaded', function() {
                 } finally {
                     btnTest.disabled = false;
                     btnTest.innerHTML = orig;
+                }
+            });
+        }
+
+        const btnDailyTest = document.getElementById('btn-whatsapp-daily-test');
+        if (btnDailyTest) {
+            btnDailyTest.addEventListener('click', async () => {
+                const orig = btnDailyTest.innerHTML;
+                btnDailyTest.disabled = true;
+                btnDailyTest.innerHTML = '<span class="material-symbols-outlined align-middle" style="font-size:16px;">progress_activity</span> Enviando resumen…';
+                try {
+                    const r = await apiPost(WA_URLS.dailyTest);
+                    if (r.success) {
+                        showInfo('✅ ' + (r.message || 'Resumen diario enviado.'), 'success');
+                    } else {
+                        const errs = (r.report && r.report.errors && r.report.errors.length)
+                            ? '\n' + r.report.errors.join('\n') : '';
+                        showInfo('❌ ' + (r.message || 'No se pudo enviar el resumen.') + errs, 'danger');
+                    }
+                } catch (e) {
+                    showInfo('Error: ' + e.message, 'danger');
+                } finally {
+                    btnDailyTest.disabled = false;
+                    btnDailyTest.innerHTML = orig;
                 }
             });
         }
