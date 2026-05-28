@@ -64,6 +64,21 @@ class PublicRegistrationController extends Controller
                 Yii::$app->session->setFlash('success', '¡Gracias por registrarte! Tu solicitud está pendiente de aprobación. Te notificaremos cuando sea aprobada.');
                 return $this->refresh();
             }
+
+            Yii::error(
+                'PublicRegistration save() falló. Errors: ' . json_encode($model->getErrors())
+                . ' Attrs: ' . json_encode([
+                    'cedula' => $model->cedula_fisica,
+                    'full_name' => $model->full_name,
+                    'whatsapp' => $model->whatsapp,
+                    'email' => $model->email,
+                ]),
+                'public-registration'
+            );
+            Yii::$app->session->setFlash(
+                'error',
+                'No se pudo enviar tu solicitud. Revisa los datos marcados en rojo y vuelve a intentar.'
+            );
         }
 
         return $this->render('index', [

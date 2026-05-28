@@ -16,6 +16,24 @@ $showRequirementsFirst = trim(strip_tags($requirements)) !== '';
 $defaultRentalStartDate = date('Y-m-d');
 $defaultRentalEndDate = date('Y-m-d', strtotime('+3 days'));
 $defaultRentalTime = '08:00';
+
+$hasFormErrors = $model->hasErrors();
+$formErrors = [];
+if ($hasFormErrors) {
+    foreach ($model->getErrors() as $attr => $errs) {
+        foreach ((array) $errs as $err) {
+            $formErrors[] = $err;
+        }
+    }
+}
+
+$postedRentalFechaInicio  = (string) Yii::$app->request->post('rental_fecha_inicio', $defaultRentalStartDate);
+$postedRentalHoraInicio   = (string) Yii::$app->request->post('rental_hora_inicio', $defaultRentalTime);
+$postedRentalFechaFinal   = (string) Yii::$app->request->post('rental_fecha_final', $defaultRentalEndDate);
+$postedRentalHoraFinal    = (string) Yii::$app->request->post('rental_hora_final', $defaultRentalTime);
+$postedRentalTipoAuto     = (string) Yii::$app->request->post('rental_tipo_auto', '');
+$postedRentalTipoAutoOtro = (string) Yii::$app->request->post('rental_tipo_auto_otro', '');
+$postedRentalWhatsapp     = (string) Yii::$app->request->post('rental_whatsapp', '');
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -172,6 +190,24 @@ $defaultRentalTime = '08:00';
                 </div>
             <?php endif; ?>
 
+            <?php if (Yii::$app->session->hasFlash('error')): ?>
+                <div class="alert alert-danger">
+                    <strong><i class="fas fa-exclamation-triangle"></i></strong>
+                    <?= Yii::$app->session->getFlash('error') ?>
+                </div>
+            <?php endif; ?>
+
+            <?php if (!empty($formErrors)): ?>
+                <div class="alert alert-warning">
+                    <strong>Revisa los siguientes datos:</strong>
+                    <ul class="mb-0 mt-1">
+                        <?php foreach ($formErrors as $err): ?>
+                            <li><?= Html::encode($err) ?></li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+            <?php endif; ?>
+
             <ul class="reg-stepper" id="reg-stepper" aria-label="Pasos para completar la solicitud">
                 <?php if ($showRequirementsFirst): ?>
                     <li class="step active" data-step="1" role="button" tabindex="0" aria-current="step">
@@ -221,7 +257,7 @@ $defaultRentalTime = '08:00';
                             Fecha de inicio *
                         </label>
                         <input type="date" class="form-control" id="rental_fecha_inicio" name="rental_fecha_inicio"
-                               value="<?= Html::encode($defaultRentalStartDate) ?>" min="<?= Html::encode($defaultRentalStartDate) ?>" required>
+                               value="<?= Html::encode($postedRentalFechaInicio) ?>" min="<?= Html::encode($defaultRentalStartDate) ?>" required>
                     </div>
                     <div class="col-sm-5">
                         <label class="form-label" for="rental_hora_inicio">
@@ -229,7 +265,7 @@ $defaultRentalTime = '08:00';
                             Hora de inicio *
                         </label>
                         <input type="time" class="form-control" id="rental_hora_inicio" name="rental_hora_inicio"
-                               value="<?= Html::encode($defaultRentalTime) ?>" required>
+                               value="<?= Html::encode($postedRentalHoraInicio) ?>" required>
                     </div>
 
                     <div class="col-12 mt-4"><h6 class="mb-1 text-uppercase text-muted small">Fin del alquiler</h6></div>
@@ -239,7 +275,7 @@ $defaultRentalTime = '08:00';
                             Fecha final *
                         </label>
                         <input type="date" class="form-control" id="rental_fecha_final" name="rental_fecha_final"
-                               value="<?= Html::encode($defaultRentalEndDate) ?>" min="<?= Html::encode($defaultRentalStartDate) ?>" required>
+                               value="<?= Html::encode($postedRentalFechaFinal) ?>" min="<?= Html::encode($defaultRentalStartDate) ?>" required>
                     </div>
                     <div class="col-sm-5">
                         <label class="form-label" for="rental_hora_final">
@@ -247,7 +283,7 @@ $defaultRentalTime = '08:00';
                             Hora final *
                         </label>
                         <input type="time" class="form-control" id="rental_hora_final" name="rental_hora_final"
-                               value="<?= Html::encode($defaultRentalTime) ?>" required>
+                               value="<?= Html::encode($postedRentalHoraFinal) ?>" required>
                     </div>
 
                     <div class="col-12 mt-4"><h6 class="mb-1 text-uppercase text-muted small">Tipo de vehículo</h6></div>
@@ -256,14 +292,12 @@ $defaultRentalTime = '08:00';
                             <span class="material-symbols-outlined align-middle" style="font-size:18px;">directions_car</span>
                             Tipo de auto *
                         </label>
+                        <?php $tipoOpts = ['Sedán' => '🚗 Sedán', 'SUV' => '🚙 SUV', 'Pickup 4x4' => '🛻 Pickup 4x4', 'Camión' => '🚚 Camión', 'Buseta' => '🚐 Buseta', 'otro' => 'Otro…']; ?>
                         <select class="form-select" id="rental_tipo_auto" name="rental_tipo_auto" required>
                             <option value="">Seleccione una opción</option>
-                            <option value="Sedán">🚗 Sedán</option>
-                            <option value="SUV">🚙 SUV</option>
-                            <option value="Pickup 4x4">🛻 Pickup 4x4</option>
-                            <option value="Camión">🚚 Camión</option>
-                            <option value="Buseta">🚐 Buseta</option>
-                            <option value="otro">Otro…</option>
+                            <?php foreach ($tipoOpts as $value => $label): ?>
+                                <option value="<?= Html::encode($value) ?>"<?= $postedRentalTipoAuto === $value ? ' selected' : '' ?>><?= Html::encode($label) ?></option>
+                            <?php endforeach; ?>
                         </select>
                     </div>
                     <div class="col-md-6" id="rental-tipo-otro-wrap" style="display:none;">
@@ -271,7 +305,9 @@ $defaultRentalTime = '08:00';
                             <span class="material-symbols-outlined align-middle" style="font-size:18px;">edit</span>
                             Especifique
                         </label>
-                        <input type="text" class="form-control" id="rental_tipo_auto_otro" name="rental_tipo_auto_otro" placeholder="Ej: Furgón, motocicleta, etc.">
+                        <input type="text" class="form-control" id="rental_tipo_auto_otro" name="rental_tipo_auto_otro"
+                               value="<?= Html::encode($postedRentalTipoAutoOtro) ?>"
+                               placeholder="Ej: Furgón, motocicleta, etc.">
                     </div>
 
                     <div class="col-12 mt-4"><h6 class="mb-1 text-uppercase text-muted small">Contacto</h6></div>
@@ -281,6 +317,7 @@ $defaultRentalTime = '08:00';
                             WhatsApp *
                         </label>
                         <input type="tel" class="form-control" id="rental_whatsapp" name="rental_whatsapp"
+                               value="<?= Html::encode($postedRentalWhatsapp) ?>"
                                placeholder="Ej: 88888888" inputmode="tel" autocomplete="tel" required>
                         <div class="form-text">Lo usaremos para contactarte sobre la solicitud.</div>
                     </div>
@@ -742,6 +779,14 @@ $defaultRentalTime = '08:00';
                 });
             });
         }
+
+        // Si el servidor regresó la vista con errores de validación, repoblar los
+        // hidden inputs (para que un segundo envío conserve los datos del paso 2)
+        // y saltar al paso 3 para que el usuario vea los mensajes junto a los campos.
+        <?php if ($hasFormErrors): ?>
+            copyRentalToHidden();
+            setStep(3, { scroll: true });
+        <?php endif; ?>
 
         // ========== SITUACIÓN FINANCIERA ==========
         const situacionField = document.getElementById('situacion-financiera');
