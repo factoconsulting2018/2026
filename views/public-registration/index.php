@@ -12,6 +12,10 @@ $companyInfo = CompanyConfig::getCompanyInfo();
 $logoPath = $companyInfo['logo'] ?? null;
 $requirements = (string) ($companyInfo['requirements'] ?? '');
 $showRequirementsFirst = trim(strip_tags($requirements)) !== '';
+
+$defaultRentalStartDate = date('Y-m-d');
+$defaultRentalEndDate = date('Y-m-d', strtotime('+3 days'));
+$defaultRentalTime = '08:00';
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -216,14 +220,16 @@ $showRequirementsFirst = trim(strip_tags($requirements)) !== '';
                             <span class="material-symbols-outlined align-middle" style="font-size:18px;">event</span>
                             Fecha de inicio *
                         </label>
-                        <input type="date" class="form-control" id="rental_fecha_inicio" name="rental_fecha_inicio" required>
+                        <input type="date" class="form-control" id="rental_fecha_inicio" name="rental_fecha_inicio"
+                               value="<?= Html::encode($defaultRentalStartDate) ?>" min="<?= Html::encode($defaultRentalStartDate) ?>" required>
                     </div>
                     <div class="col-sm-5">
                         <label class="form-label" for="rental_hora_inicio">
                             <span class="material-symbols-outlined align-middle" style="font-size:18px;">schedule</span>
                             Hora de inicio *
                         </label>
-                        <input type="time" class="form-control" id="rental_hora_inicio" name="rental_hora_inicio" required>
+                        <input type="time" class="form-control" id="rental_hora_inicio" name="rental_hora_inicio"
+                               value="<?= Html::encode($defaultRentalTime) ?>" required>
                     </div>
 
                     <div class="col-12 mt-4"><h6 class="mb-1 text-uppercase text-muted small">Fin del alquiler</h6></div>
@@ -232,14 +238,16 @@ $showRequirementsFirst = trim(strip_tags($requirements)) !== '';
                             <span class="material-symbols-outlined align-middle" style="font-size:18px;">event_available</span>
                             Fecha final *
                         </label>
-                        <input type="date" class="form-control" id="rental_fecha_final" name="rental_fecha_final" required>
+                        <input type="date" class="form-control" id="rental_fecha_final" name="rental_fecha_final"
+                               value="<?= Html::encode($defaultRentalEndDate) ?>" min="<?= Html::encode($defaultRentalStartDate) ?>" required>
                     </div>
                     <div class="col-sm-5">
                         <label class="form-label" for="rental_hora_final">
                             <span class="material-symbols-outlined align-middle" style="font-size:18px;">schedule</span>
                             Hora final *
                         </label>
-                        <input type="time" class="form-control" id="rental_hora_final" name="rental_hora_final" required>
+                        <input type="time" class="form-control" id="rental_hora_final" name="rental_hora_final"
+                               value="<?= Html::encode($defaultRentalTime) ?>" required>
                     </div>
 
                     <div class="col-12 mt-4"><h6 class="mb-1 text-uppercase text-muted small">Tipo de vehículo</h6></div>
@@ -264,6 +272,17 @@ $showRequirementsFirst = trim(strip_tags($requirements)) !== '';
                             Especifique
                         </label>
                         <input type="text" class="form-control" id="rental_tipo_auto_otro" name="rental_tipo_auto_otro" placeholder="Ej: Furgón, motocicleta, etc.">
+                    </div>
+
+                    <div class="col-12 mt-4"><h6 class="mb-1 text-uppercase text-muted small">Contacto</h6></div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="rental_whatsapp">
+                            <span class="material-symbols-outlined align-middle" style="font-size:18px;">chat</span>
+                            WhatsApp *
+                        </label>
+                        <input type="tel" class="form-control" id="rental_whatsapp" name="rental_whatsapp"
+                               placeholder="Ej: 88888888" inputmode="tel" autocomplete="tel" required>
+                        <div class="form-text">Lo usaremos para contactarte sobre la solicitud.</div>
                     </div>
                 </div>
 
@@ -544,7 +563,9 @@ $showRequirementsFirst = trim(strip_tags($requirements)) !== '';
             horaFinal: document.getElementById('rental_hora_final'),
             tipoAuto: document.getElementById('rental_tipo_auto'),
             tipoAutoOtro: document.getElementById('rental_tipo_auto_otro'),
+            whatsapp: document.getElementById('rental_whatsapp'),
         };
+        const clientWhatsappInput = document.getElementById('client-whatsapp');
         const rentalHidden = {
             fechaInicio: document.getElementById('h_rental_fecha_inicio'),
             horaInicio: document.getElementById('h_rental_hora_inicio'),
@@ -591,6 +612,18 @@ $showRequirementsFirst = trim(strip_tags($requirements)) !== '';
                     target.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
             }
+        }
+
+        if (rentalInputs.fechaInicio && rentalInputs.fechaFinal) {
+            rentalInputs.fechaInicio.addEventListener('change', function () {
+                const v = rentalInputs.fechaInicio.value;
+                if (v) {
+                    rentalInputs.fechaFinal.min = v;
+                    if (rentalInputs.fechaFinal.value && rentalInputs.fechaFinal.value < v) {
+                        rentalInputs.fechaFinal.value = v;
+                    }
+                }
+            });
         }
 
         if (rentalInputs.tipoAuto && tipoOtroWrap) {
@@ -643,6 +676,16 @@ $showRequirementsFirst = trim(strip_tags($requirements)) !== '';
                 showRentalError('Indique en el campo "Especifique" qué tipo de vehículo busca.');
                 return false;
             }
+            const waRaw = rentalInputs.whatsapp ? rentalInputs.whatsapp.value.trim() : '';
+            const waDigits = waRaw.replace(/\D+/g, '');
+            if (!waRaw) {
+                showRentalError('Ingrese un número de WhatsApp para que podamos contactarle.');
+                return false;
+            }
+            if (waDigits.length < 8) {
+                showRentalError('El número de WhatsApp parece incompleto. Use al menos 8 dígitos.');
+                return false;
+            }
             return true;
         }
 
@@ -653,6 +696,10 @@ $showRequirementsFirst = trim(strip_tags($requirements)) !== '';
             if (rentalHidden.horaFinal) rentalHidden.horaFinal.value = rentalInputs.horaFinal.value;
             if (rentalHidden.tipoAuto) rentalHidden.tipoAuto.value = rentalInputs.tipoAuto.value;
             if (rentalHidden.tipoAutoOtro) rentalHidden.tipoAutoOtro.value = (rentalInputs.tipoAutoOtro ? rentalInputs.tipoAutoOtro.value : '');
+            // Sincronizar WhatsApp del paso 2 al campo del formulario de cliente (paso 3).
+            if (clientWhatsappInput && rentalInputs.whatsapp && rentalInputs.whatsapp.value) {
+                clientWhatsappInput.value = rentalInputs.whatsapp.value.trim();
+            }
         }
 
         if (btnCompletarSolicitud) {

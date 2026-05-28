@@ -551,6 +551,10 @@ class WhatsAppNotifier
             $report['enabled'] = true;
 
             $numbers = self::getAdminNumbers($cfg);
+            $clientNumber = self::getClientWhatsAppNumber($client, $cfg);
+            if ($clientNumber !== null && !in_array($clientNumber, $numbers, true)) {
+                $numbers[] = $clientNumber;
+            }
             if (empty($numbers)) {
                 $msg = 'No hay teléfonos administradores configurados.';
                 Yii::warning($msg, 'whatsapp');
@@ -650,7 +654,7 @@ class WhatsAppNotifier
         $situacionLabel = $situacionLabels[$situacionKey] ?? ($situacion !== '' ? ucfirst($situacion) : '');
 
         $lines = [];
-        $lines[] = '*🆕 Nuevo registro de cliente*';
+        $lines[] = '*🆕 Solicitud de Membresía — FACTO RENT A CAR*';
         $lines[] = $companyName;
         foreach (self::brandingLines() as $bl) {
             $lines[] = $bl;
@@ -1066,6 +1070,38 @@ class WhatsAppNotifier
      *
      * @param array $cfg Configuración de WhatsApp (para el código de país por defecto).
      */
+    /**
+     * Devuelve el WhatsApp del Cliente normalizado (E.164 sin signos),
+     * o null si no se puede determinar.
+     *
+     * @param array $cfg Configuración de WhatsApp (para el código de país por defecto).
+     */
+    private static function getClientWhatsAppNumber(Client $client, array $cfg): ?string
+    {
+        try {
+            $raw = '';
+            foreach (['whatsapp', 'celular', 'telefono'] as $f) {
+                $val = trim((string) ($client->{$f} ?? ''));
+                if ($val !== '') {
+                    $raw = $val;
+                    break;
+                }
+            }
+            if ($raw === '') {
+                return null;
+            }
+            $cc = (string) ($cfg['country_code'] ?? '506');
+            $normalized = self::normalizeNumber($raw, $cc);
+            if ($normalized === null || $normalized === '' || strlen($normalized) < 8) {
+                return null;
+            }
+            return $normalized;
+        } catch (\Throwable $e) {
+            Yii::warning('getClientWhatsAppNumber: ' . $e->getMessage(), 'whatsapp');
+            return null;
+        }
+    }
+
     private static function getClientNumber(Rental $rental, array $cfg): ?string
     {
         try {
