@@ -520,7 +520,7 @@ class WhatsAppNotifier
      *
      * @return array{enabled:bool, attempted:int, sent:int, errors:array<string>, skipped_reason:?string}
      */
-    public static function notifyClientRegistered(Client $client): array
+    public static function notifyClientRegistered(Client $client, array $rentalDetails = []): array
     {
         $report = [
             'enabled' => false,
@@ -569,7 +569,7 @@ class WhatsAppNotifier
                 return $report;
             }
 
-            $message = self::buildClientRegistrationMessage($client);
+            $message = self::buildClientRegistrationMessage($client, $rentalDetails);
             Yii::info('WhatsApp client-reg message preparado (' . strlen($message) . ' chars) para ' . count($numbers) . ' destinatario(s)', 'whatsapp');
 
             foreach ($numbers as $number) {
@@ -600,7 +600,7 @@ class WhatsAppNotifier
     /**
      * Construye el texto de la notificación de un nuevo registro público de cliente.
      */
-    public static function buildClientRegistrationMessage(Client $client): string
+    public static function buildClientRegistrationMessage(Client $client, array $rentalDetails = []): string
     {
         $company = CompanyConfig::getCompanyInfo();
         $companyName = $company['name'] ?? 'Renta de Vehículos';
@@ -694,6 +694,26 @@ class WhatsAppNotifier
                 $lines[] = '📝 ' . $situacionDet;
             }
         }
+
+        $fmtDateTime = function ($d, $h) {
+            $d = trim((string) $d);
+            $h = trim((string) $h);
+            if ($d === '') return '';
+            $ts = strtotime($d . ($h !== '' ? ' ' . $h : ''));
+            if ($ts === false) return trim($d . ' ' . $h);
+            return date('d/m/Y', $ts) . ($h !== '' ? ' ' . self::formatTime12h($h) : '');
+        };
+        $rentIni = $fmtDateTime($rentalDetails['fecha_inicio'] ?? '', $rentalDetails['hora_inicio'] ?? '');
+        $rentFin = $fmtDateTime($rentalDetails['fecha_final'] ?? '', $rentalDetails['hora_final'] ?? '');
+        $rentTipo = trim((string) ($rentalDetails['tipo_auto'] ?? ''));
+        if ($rentIni !== '' || $rentFin !== '' || $rentTipo !== '') {
+            $lines[] = '';
+            $lines[] = '🚗 *Solicitud de alquiler*';
+            if ($rentIni !== '') $lines[] = '📅 *Inicio:* ' . $rentIni;
+            if ($rentFin !== '') $lines[] = '📅 *Fin:* ' . $rentFin;
+            if ($rentTipo !== '') $lines[] = '🚙 *Tipo de auto:* ' . $rentTipo;
+        }
+
         $lines[] = '';
         $lines[] = 'Revíselo en el panel: Clientes → Pendientes.';
 

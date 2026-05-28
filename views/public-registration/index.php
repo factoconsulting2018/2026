@@ -168,19 +168,28 @@ $showRequirementsFirst = trim(strip_tags($requirements)) !== '';
                 </div>
             <?php endif; ?>
 
-            <?php if ($showRequirementsFirst): ?>
-                <ul class="reg-stepper" id="reg-stepper" aria-label="Pasos para completar la solicitud">
+            <ul class="reg-stepper" id="reg-stepper" aria-label="Pasos para completar la solicitud">
+                <?php if ($showRequirementsFirst): ?>
                     <li class="step active" data-step="1" role="button" tabindex="0" aria-current="step">
                         <span class="step-num"><span>1</span></span>
                         <span class="step-label">Requisitos</span>
                     </li>
                     <li class="step-divider" aria-hidden="true"></li>
-                    <li class="step" data-step="2" role="button" tabindex="0">
-                        <span class="step-num"><span>2</span></span>
-                        <span class="step-label">Solicitud</span>
-                    </li>
-                </ul>
-            <?php endif; ?>
+                <?php endif; ?>
+                <li class="step <?= $showRequirementsFirst ? '' : 'active' ?>"
+                    data-step="2"
+                    role="button"
+                    tabindex="0"
+                    <?= $showRequirementsFirst ? '' : 'aria-current="step"' ?>>
+                    <span class="step-num"><span>2</span></span>
+                    <span class="step-label">Detalles del alquiler</span>
+                </li>
+                <li class="step-divider" aria-hidden="true"></li>
+                <li class="step" data-step="3" role="button" tabindex="0">
+                    <span class="step-num"><span>3</span></span>
+                    <span class="step-label">Solicitud</span>
+                </li>
+            </ul>
 
             <?php if ($showRequirementsFirst): ?>
                 <div id="requisitos-section" class="mb-4">
@@ -190,13 +199,89 @@ $showRequirementsFirst = trim(strip_tags($requirements)) !== '';
                     </div>
                     <div class="text-center mt-4">
                         <button type="button" class="btn btn-primary btn-lg" id="btn-completar-solicitud">
-                            Completar Solicitud
+                            Continuar
                         </button>
                     </div>
                 </div>
             <?php endif; ?>
 
-            <div id="registration-form-wrapper"<?= $showRequirementsFirst ? ' style="display:none;"' : '' ?>>
+            <div id="rental-details-section" class="mb-4"<?= $showRequirementsFirst ? ' style="display:none;"' : '' ?>>
+                <h4 class="mb-3"><i class="fas fa-calendar-check"></i> Detalles del alquiler</h4>
+                <p class="text-muted small mb-3">Indique las fechas que necesita alquilar y el tipo de vehículo que busca.</p>
+
+                <div class="row g-3">
+                    <div class="col-12"><h6 class="mb-1 text-uppercase text-muted small">Inicio del alquiler</h6></div>
+                    <div class="col-sm-7">
+                        <label class="form-label" for="rental_fecha_inicio">
+                            <span class="material-symbols-outlined align-middle" style="font-size:18px;">event</span>
+                            Fecha de inicio *
+                        </label>
+                        <input type="date" class="form-control" id="rental_fecha_inicio" name="rental_fecha_inicio" required>
+                    </div>
+                    <div class="col-sm-5">
+                        <label class="form-label" for="rental_hora_inicio">
+                            <span class="material-symbols-outlined align-middle" style="font-size:18px;">schedule</span>
+                            Hora de inicio *
+                        </label>
+                        <input type="time" class="form-control" id="rental_hora_inicio" name="rental_hora_inicio" required>
+                    </div>
+
+                    <div class="col-12 mt-4"><h6 class="mb-1 text-uppercase text-muted small">Fin del alquiler</h6></div>
+                    <div class="col-sm-7">
+                        <label class="form-label" for="rental_fecha_final">
+                            <span class="material-symbols-outlined align-middle" style="font-size:18px;">event_available</span>
+                            Fecha final *
+                        </label>
+                        <input type="date" class="form-control" id="rental_fecha_final" name="rental_fecha_final" required>
+                    </div>
+                    <div class="col-sm-5">
+                        <label class="form-label" for="rental_hora_final">
+                            <span class="material-symbols-outlined align-middle" style="font-size:18px;">schedule</span>
+                            Hora final *
+                        </label>
+                        <input type="time" class="form-control" id="rental_hora_final" name="rental_hora_final" required>
+                    </div>
+
+                    <div class="col-12 mt-4"><h6 class="mb-1 text-uppercase text-muted small">Tipo de vehículo</h6></div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="rental_tipo_auto">
+                            <span class="material-symbols-outlined align-middle" style="font-size:18px;">directions_car</span>
+                            Tipo de auto *
+                        </label>
+                        <select class="form-select" id="rental_tipo_auto" name="rental_tipo_auto" required>
+                            <option value="">Seleccione una opción</option>
+                            <option value="Sedán">🚗 Sedán</option>
+                            <option value="SUV">🚙 SUV</option>
+                            <option value="Pickup 4x4">🛻 Pickup 4x4</option>
+                            <option value="Camión">🚚 Camión</option>
+                            <option value="Buseta">🚐 Buseta</option>
+                            <option value="otro">Otro…</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6" id="rental-tipo-otro-wrap" style="display:none;">
+                        <label class="form-label" for="rental_tipo_auto_otro">
+                            <span class="material-symbols-outlined align-middle" style="font-size:18px;">edit</span>
+                            Especifique
+                        </label>
+                        <input type="text" class="form-control" id="rental_tipo_auto_otro" name="rental_tipo_auto_otro" placeholder="Ej: Furgón, motocicleta, etc.">
+                    </div>
+                </div>
+
+                <div id="rental-details-error" class="alert alert-warning mt-3" style="display:none;"></div>
+
+                <div class="d-flex justify-content-between align-items-center mt-4 flex-wrap gap-2">
+                    <button type="button" class="btn btn-outline-secondary" id="btn-rental-back"<?= $showRequirementsFirst ? '' : ' style="visibility:hidden;"' ?>>
+                        <span class="material-symbols-outlined align-middle" style="font-size:18px;">arrow_back</span>
+                        Atrás
+                    </button>
+                    <button type="button" class="btn btn-primary btn-lg" id="btn-rental-next">
+                        Siguiente
+                        <span class="material-symbols-outlined align-middle" style="font-size:18px;">arrow_forward</span>
+                    </button>
+                </div>
+            </div>
+
+            <div id="registration-form-wrapper" style="display:none;">
             <?php $form = ActiveForm::begin([
                 'id' => 'registration-form',
                 'action' => Url::current(),
@@ -208,6 +293,12 @@ $showRequirementsFirst = trim(strip_tags($requirements)) !== '';
             ]); ?>
             
             <?= Html::hiddenInput('Client[approval_status]', 'pending') ?>
+            <?= Html::hiddenInput('rental_fecha_inicio', '', ['id' => 'h_rental_fecha_inicio']) ?>
+            <?= Html::hiddenInput('rental_hora_inicio', '', ['id' => 'h_rental_hora_inicio']) ?>
+            <?= Html::hiddenInput('rental_fecha_final', '', ['id' => 'h_rental_fecha_final']) ?>
+            <?= Html::hiddenInput('rental_hora_final', '', ['id' => 'h_rental_hora_final']) ?>
+            <?= Html::hiddenInput('rental_tipo_auto', '', ['id' => 'h_rental_tipo_auto']) ?>
+            <?= Html::hiddenInput('rental_tipo_auto_otro', '', ['id' => 'h_rental_tipo_auto_otro']) ?>
             
             <!-- Cédula Física -->
             <div class="row mb-3">
@@ -411,7 +502,11 @@ $showRequirementsFirst = trim(strip_tags($requirements)) !== '';
                 </div>
             </div>
 
-            <div class="text-center mt-4">
+            <div class="d-flex justify-content-between align-items-center mt-4 flex-wrap gap-2">
+                <button type="button" class="btn btn-outline-secondary" id="btn-form-back">
+                    <span class="material-symbols-outlined align-middle" style="font-size:18px;">arrow_back</span>
+                    Atrás
+                </button>
                 <?= Html::submitButton('<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">send</span>Enviar Solicitud', [
                     'class' => 'btn btn-primary btn-lg'
                 ]) ?>
@@ -436,55 +531,160 @@ $showRequirementsFirst = trim(strip_tags($requirements)) !== '';
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const requisitosSection = document.getElementById('requisitos-section');
+        const rentalSection = document.getElementById('rental-details-section');
         const formWrapper = document.getElementById('registration-form-wrapper');
         const btnCompletarSolicitud = document.getElementById('btn-completar-solicitud');
         const stepper = document.getElementById('reg-stepper');
+        const hasRequirements = !!requisitosSection;
+
+        const rentalInputs = {
+            fechaInicio: document.getElementById('rental_fecha_inicio'),
+            horaInicio: document.getElementById('rental_hora_inicio'),
+            fechaFinal: document.getElementById('rental_fecha_final'),
+            horaFinal: document.getElementById('rental_hora_final'),
+            tipoAuto: document.getElementById('rental_tipo_auto'),
+            tipoAutoOtro: document.getElementById('rental_tipo_auto_otro'),
+        };
+        const rentalHidden = {
+            fechaInicio: document.getElementById('h_rental_fecha_inicio'),
+            horaInicio: document.getElementById('h_rental_hora_inicio'),
+            fechaFinal: document.getElementById('h_rental_fecha_final'),
+            horaFinal: document.getElementById('h_rental_hora_final'),
+            tipoAuto: document.getElementById('h_rental_tipo_auto'),
+            tipoAutoOtro: document.getElementById('h_rental_tipo_auto_otro'),
+        };
+        const rentalError = document.getElementById('rental-details-error');
+        const tipoOtroWrap = document.getElementById('rental-tipo-otro-wrap');
+        const btnRentalNext = document.getElementById('btn-rental-next');
+        const btnRentalBack = document.getElementById('btn-rental-back');
+        const btnFormBack = document.getElementById('btn-form-back');
 
         function setStep(step, opts) {
             opts = opts || {};
-            if (!requisitosSection || !formWrapper) return;
-            if (step === 1) {
-                requisitosSection.style.display = '';
-                formWrapper.style.display = 'none';
-            } else {
-                requisitosSection.style.display = 'none';
-                formWrapper.style.display = '';
+            if (hasRequirements) {
+                requisitosSection.style.display = (step === 1) ? '' : 'none';
+            } else if (step === 1) {
+                step = 2;
             }
+            if (rentalSection) rentalSection.style.display = (step === 2) ? '' : 'none';
+            if (formWrapper) formWrapper.style.display = (step === 3) ? '' : 'none';
+
             if (stepper) {
-                const steps = stepper.querySelectorAll('.step');
-                steps.forEach(function (el) {
+                stepper.querySelectorAll('.step').forEach(function (el) {
                     const n = parseInt(el.getAttribute('data-step'), 10);
                     el.classList.remove('active', 'completed');
+                    el.removeAttribute('aria-current');
                     if (n === step) {
                         el.classList.add('active');
                         el.setAttribute('aria-current', 'step');
-                    } else {
-                        el.removeAttribute('aria-current');
-                        if (n < step) el.classList.add('completed');
+                    } else if (n < step) {
+                        el.classList.add('completed');
                     }
                 });
-                const divider = stepper.querySelector('.step-divider');
-                if (divider) divider.classList.toggle('done', step >= 2);
+                stepper.querySelectorAll('.step-divider').forEach(function (div, idx) {
+                    div.classList.toggle('done', step >= (idx + 2));
+                });
             }
             if (opts.scroll !== false) {
-                const target = step === 1 ? requisitosSection : formWrapper;
+                const target = step === 1 ? requisitosSection : (step === 2 ? rentalSection : formWrapper);
                 if (target && target.scrollIntoView) {
                     target.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
             }
         }
 
+        if (rentalInputs.tipoAuto && tipoOtroWrap) {
+            const syncOtro = function () {
+                const isOtro = rentalInputs.tipoAuto.value === 'otro';
+                tipoOtroWrap.style.display = isOtro ? '' : 'none';
+                if (rentalInputs.tipoAutoOtro) {
+                    rentalInputs.tipoAutoOtro.required = isOtro;
+                    if (!isOtro) rentalInputs.tipoAutoOtro.value = '';
+                }
+            };
+            rentalInputs.tipoAuto.addEventListener('change', syncOtro);
+            syncOtro();
+        }
+
+        function showRentalError(msg) {
+            if (!rentalError) return;
+            rentalError.textContent = msg;
+            rentalError.style.display = msg ? '' : 'none';
+        }
+
+        function validateRentalStep() {
+            showRentalError('');
+            const fIni = rentalInputs.fechaInicio && rentalInputs.fechaInicio.value;
+            const hIni = rentalInputs.horaInicio && rentalInputs.horaInicio.value;
+            const fFin = rentalInputs.fechaFinal && rentalInputs.fechaFinal.value;
+            const hFin = rentalInputs.horaFinal && rentalInputs.horaFinal.value;
+            const tipo = rentalInputs.tipoAuto && rentalInputs.tipoAuto.value;
+            const otro = rentalInputs.tipoAutoOtro && rentalInputs.tipoAutoOtro.value.trim();
+
+            if (!fIni || !hIni || !fFin || !hFin) {
+                showRentalError('Complete las fechas y horas de inicio y fin.');
+                return false;
+            }
+            const dIni = new Date(fIni + 'T' + hIni);
+            const dFin = new Date(fFin + 'T' + hFin);
+            if (isNaN(dIni.getTime()) || isNaN(dFin.getTime())) {
+                showRentalError('Las fechas/horas ingresadas no son válidas.');
+                return false;
+            }
+            if (dFin <= dIni) {
+                showRentalError('La fecha/hora final debe ser posterior a la de inicio.');
+                return false;
+            }
+            if (!tipo) {
+                showRentalError('Seleccione el tipo de vehículo.');
+                return false;
+            }
+            if (tipo === 'otro' && !otro) {
+                showRentalError('Indique en el campo "Especifique" qué tipo de vehículo busca.');
+                return false;
+            }
+            return true;
+        }
+
+        function copyRentalToHidden() {
+            if (rentalHidden.fechaInicio) rentalHidden.fechaInicio.value = rentalInputs.fechaInicio.value;
+            if (rentalHidden.horaInicio) rentalHidden.horaInicio.value = rentalInputs.horaInicio.value;
+            if (rentalHidden.fechaFinal) rentalHidden.fechaFinal.value = rentalInputs.fechaFinal.value;
+            if (rentalHidden.horaFinal) rentalHidden.horaFinal.value = rentalInputs.horaFinal.value;
+            if (rentalHidden.tipoAuto) rentalHidden.tipoAuto.value = rentalInputs.tipoAuto.value;
+            if (rentalHidden.tipoAutoOtro) rentalHidden.tipoAutoOtro.value = (rentalInputs.tipoAutoOtro ? rentalInputs.tipoAutoOtro.value : '');
+        }
+
         if (btnCompletarSolicitud) {
-            btnCompletarSolicitud.addEventListener('click', function () {
-                setStep(2);
+            btnCompletarSolicitud.addEventListener('click', function () { setStep(2); });
+        }
+        if (btnRentalBack) {
+            btnRentalBack.addEventListener('click', function () { setStep(1); });
+        }
+        if (btnRentalNext) {
+            btnRentalNext.addEventListener('click', function () {
+                if (!validateRentalStep()) return;
+                copyRentalToHidden();
+                setStep(3);
             });
+        }
+        if (btnFormBack) {
+            btnFormBack.addEventListener('click', function () { setStep(2); });
         }
 
         if (stepper) {
             stepper.querySelectorAll('.step').forEach(function (el) {
                 const goto = function () {
                     const n = parseInt(el.getAttribute('data-step'), 10);
-                    if (!isNaN(n)) setStep(n);
+                    if (isNaN(n)) return;
+                    if (n === 3) {
+                        if (!validateRentalStep()) {
+                            setStep(2);
+                            return;
+                        }
+                        copyRentalToHidden();
+                    }
+                    setStep(n);
                 };
                 el.addEventListener('click', goto);
                 el.addEventListener('keydown', function (e) {
