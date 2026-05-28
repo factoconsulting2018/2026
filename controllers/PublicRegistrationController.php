@@ -69,14 +69,15 @@ class PublicRegistrationController extends Controller
      */
     public function actionValidate()
     {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+
         $model = new Client();
         $model->approval_status = 'pending';
-        
+
         if (Yii::$app->request->isPost && $model->load(Yii::$app->request->post())) {
-            Yii::$app->response->format = Response::FORMAT_JSON;
             return ActiveForm::validate($model);
         }
-        
+
         return [];
     }
 }
