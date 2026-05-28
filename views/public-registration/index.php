@@ -10,6 +10,8 @@ use app\models\CompanyConfig;
 
 $companyInfo = CompanyConfig::getCompanyInfo();
 $logoPath = $companyInfo['logo'] ?? null;
+$requirements = (string) ($companyInfo['requirements'] ?? '');
+$showRequirementsFirst = trim(strip_tags($requirements)) !== '';
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -19,6 +21,7 @@ $logoPath = $companyInfo['logo'] ?? null;
     <title>Registro de Cliente - Facto Rent a Car</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="<?= Html::encode(Url::to('@web/css/material-symbols.css')) ?>" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css">
     <style>
         body {
             background: #2e6faa;
@@ -91,10 +94,25 @@ $logoPath = $companyInfo['logo'] ?? null;
                     <?= Yii::$app->session->getFlash('success') ?>
                 </div>
             <?php endif; ?>
-            
+
+            <?php if ($showRequirementsFirst): ?>
+                <div id="requisitos-section" class="mb-4">
+                    <h4 class="mb-3"><i class="fas fa-list-check"></i> Requisitos</h4>
+                    <div class="border rounded p-3 bg-light">
+                        <?= $requirements ?>
+                    </div>
+                    <div class="text-center mt-4">
+                        <button type="button" class="btn btn-primary btn-lg" id="btn-completar-solicitud">
+                            Completar Solicitud
+                        </button>
+                    </div>
+                </div>
+            <?php endif; ?>
+
+            <div id="registration-form-wrapper"<?= $showRequirementsFirst ? ' style="display:none;"' : '' ?>>
             <?php $form = ActiveForm::begin([
                 'id' => 'registration-form',
-                'action' => Url::to(['public-registration/index']),
+                'action' => Url::current(),
                 'options' => ['class' => 'form-horizontal'],
                 'fieldConfig' => [
                     'template' => "<div class='row mb-3'><div class='col-sm-4'>{label}</div><div class='col-sm-8'>{input}{error}</div></div>",
@@ -313,6 +331,7 @@ $logoPath = $companyInfo['logo'] ?? null;
             </div>
 
             <?php ActiveForm::end(); ?>
+            </div>
         </div>
     </div>
 
@@ -329,6 +348,17 @@ $logoPath = $companyInfo['logo'] ?? null;
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        const requisitosSection = document.getElementById('requisitos-section');
+        const formWrapper = document.getElementById('registration-form-wrapper');
+        const btnCompletarSolicitud = document.getElementById('btn-completar-solicitud');
+        if (requisitosSection && formWrapper && btnCompletarSolicitud) {
+            btnCompletarSolicitud.addEventListener('click', function () {
+                requisitosSection.style.display = 'none';
+                formWrapper.style.display = '';
+                formWrapper.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        }
+
         // ========== SITUACIÓN FINANCIERA ==========
         const situacionField = document.getElementById('situacion-financiera');
         const detalleContainer = document.getElementById('detalle-situacion-container');

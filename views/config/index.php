@@ -13,6 +13,8 @@ use yii\widgets\ActiveForm;
 
 $this->title = 'Configuración de la Empresa';
 $this->params['breadcrumbs'][] = $this->title;
+$this->registerCssFile('https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css');
+$this->registerJsFile('https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js', ['position' => \yii\web\View::POS_END]);
 
 $logoModel = new \app\models\CompanyConfig();
 $conditionsModel = new \app\models\CompanyConfig();
@@ -150,6 +152,18 @@ $conditionsModel = new \app\models\CompanyConfig();
                                                     'placeholder' => '83670937'
                                                 ]) ?>
                                             </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <?= Html::label('Requisitos para Solicitud de Membresía', 'company_requirements_editor', ['class' => 'form-label']) ?>
+                                        <div id="company_requirements_editor" class="bg-white"></div>
+                                        <?= Html::textarea('company_requirements', $companyInfo['requirements'] ?? '', [
+                                            'id' => 'company_requirements',
+                                            'class' => 'd-none',
+                                        ]) ?>
+                                        <div class="form-text">
+                                            Este contenido se mostrará en <code>/solicitud-membresia</code> antes del formulario.
                                         </div>
                                     </div>
 
@@ -1479,6 +1493,31 @@ document.addEventListener('DOMContentLoaded', function() {
             if (el) {
                 setTimeout(function () { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 200);
             }
+        }
+    }
+
+    var requirementsTextarea = document.getElementById('company_requirements');
+    var requirementsEditorEl = document.getElementById('company_requirements_editor');
+    var companyForm = document.querySelector('form[action*="update-company"]');
+    if (requirementsTextarea && requirementsEditorEl && typeof Quill !== 'undefined') {
+        var requirementsQuill = new Quill(requirementsEditorEl, {
+            theme: 'snow',
+            modules: {
+                toolbar: [
+                    ['bold', 'italic', 'underline'],
+                    [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                    [{ 'align': [] }],
+                    ['link'],
+                    ['clean']
+                ]
+            }
+        });
+        requirementsQuill.root.innerHTML = requirementsTextarea.value || '';
+
+        if (companyForm) {
+            companyForm.addEventListener('submit', function () {
+                requirementsTextarea.value = requirementsQuill.root.innerHTML;
+            });
         }
     }
 

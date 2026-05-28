@@ -217,6 +217,7 @@ class ConfigController extends Controller
             CompanyConfig::setConfig('company_phone', $post['company_phone'] ?? '');
             CompanyConfig::setConfig('company_email', $post['company_email'] ?? '');
             CompanyConfig::setConfig('simemovil_number', $post['simemovil_number'] ?? '');
+            CompanyConfig::setConfig('company_requirements', $post['company_requirements'] ?? '');
 
             // Actualizar cuentas bancarias
             if (isset($post['bank_accounts'])) {

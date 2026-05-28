@@ -29,6 +29,7 @@ class CompanyConfig extends ActiveRecord
     const COMPANY_EMAIL = 'company_email';
     const BANK_ACCOUNTS = 'bank_accounts';
     const SIMPEMOVIL_NUMBER = 'simemovil_number';
+    const COMPANY_REQUIREMENTS = 'company_requirements';
     const INCIDENT_NOTIF_ENABLED = 'incident_notifications_enabled';
     const INCIDENT_NOTIF_FREQUENCY_DAYS = 'incident_notifications_frequency_days';
     const RENTAL_ORDER_PDF_FORMAT = 'rental_order_pdf_format';
@@ -287,6 +288,7 @@ class CompanyConfig extends ActiveRecord
             'address' => self::getConfig(self::COMPANY_ADDRESS, '3-101-880789, San Ramón, Alajuela, Costa Rica'),
             'phone' => self::getConfig(self::COMPANY_PHONE, ''),
             'email' => self::getConfig(self::COMPANY_EMAIL, ''),
+            'requirements' => self::getConfig(self::COMPANY_REQUIREMENTS, ''),
             'logo' => self::getLogoPath(),
             'conditions' => self::getConditionsPath(),
             'bank_accounts' => self::getBankAccounts(),
