@@ -70,6 +70,79 @@ $showRequirementsFirst = trim(strip_tags($requirements)) !== '';
             align-items: center;
             gap: 5px;
         }
+        /* Stepper / migajas */
+        .reg-stepper {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 20px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .reg-stepper .step {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #f1f4f9;
+            color: #6c757d;
+            border-radius: 999px;
+            padding: 6px 14px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: background .15s ease, color .15s ease, border-color .15s ease, transform .15s ease;
+            user-select: none;
+        }
+        .reg-stepper .step:hover {
+            background: #e2e8f3;
+            color: #22487a;
+        }
+        .reg-stepper .step.active {
+            background: linear-gradient(135deg, #22487a 0%, #0d001e 100%);
+            color: #fff;
+            border-color: #22487a;
+        }
+        .reg-stepper .step.completed {
+            background: #e8f5e8;
+            color: #1e7e34;
+            border-color: #c3e6cb;
+        }
+        .reg-stepper .step.completed .step-num::before {
+            content: "\f00c";
+            font-family: "Font Awesome 6 Free", "Font Awesome 5 Free", FontAwesome;
+            font-weight: 900;
+        }
+        .reg-stepper .step.completed .step-num span { display: none; }
+        .reg-stepper .step-num {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.6);
+            color: inherit;
+            font-size: 13px;
+        }
+        .reg-stepper .step.active .step-num {
+            background: rgba(255,255,255,0.25);
+            color: #fff;
+        }
+        .reg-stepper .step-divider {
+            flex: 0 0 30px;
+            height: 2px;
+            background: #d6dce6;
+            border-radius: 1px;
+        }
+        .reg-stepper .step-divider.done { background: #1e7e34; }
+        @media (max-width: 480px) {
+            .reg-stepper .step { font-size: 12px; padding: 5px 10px; }
+            .reg-stepper .step-num { width: 22px; height: 22px; font-size: 12px; }
+            .reg-stepper .step-divider { flex-basis: 18px; }
+        }
     </style>
 </head>
 <body>
@@ -93,6 +166,20 @@ $showRequirementsFirst = trim(strip_tags($requirements)) !== '';
                 <div class="alert alert-success">
                     <?= Yii::$app->session->getFlash('success') ?>
                 </div>
+            <?php endif; ?>
+
+            <?php if ($showRequirementsFirst): ?>
+                <ul class="reg-stepper" id="reg-stepper" aria-label="Pasos para completar la solicitud">
+                    <li class="step active" data-step="1" role="button" tabindex="0" aria-current="step">
+                        <span class="step-num"><span>1</span></span>
+                        <span class="step-label">Requisitos</span>
+                    </li>
+                    <li class="step-divider" aria-hidden="true"></li>
+                    <li class="step" data-step="2" role="button" tabindex="0">
+                        <span class="step-num"><span>2</span></span>
+                        <span class="step-label">Solicitud</span>
+                    </li>
+                </ul>
             <?php endif; ?>
 
             <?php if ($showRequirementsFirst): ?>
@@ -351,11 +438,61 @@ $showRequirementsFirst = trim(strip_tags($requirements)) !== '';
         const requisitosSection = document.getElementById('requisitos-section');
         const formWrapper = document.getElementById('registration-form-wrapper');
         const btnCompletarSolicitud = document.getElementById('btn-completar-solicitud');
-        if (requisitosSection && formWrapper && btnCompletarSolicitud) {
-            btnCompletarSolicitud.addEventListener('click', function () {
+        const stepper = document.getElementById('reg-stepper');
+
+        function setStep(step, opts) {
+            opts = opts || {};
+            if (!requisitosSection || !formWrapper) return;
+            if (step === 1) {
+                requisitosSection.style.display = '';
+                formWrapper.style.display = 'none';
+            } else {
                 requisitosSection.style.display = 'none';
                 formWrapper.style.display = '';
-                formWrapper.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            if (stepper) {
+                const steps = stepper.querySelectorAll('.step');
+                steps.forEach(function (el) {
+                    const n = parseInt(el.getAttribute('data-step'), 10);
+                    el.classList.remove('active', 'completed');
+                    if (n === step) {
+                        el.classList.add('active');
+                        el.setAttribute('aria-current', 'step');
+                    } else {
+                        el.removeAttribute('aria-current');
+                        if (n < step) el.classList.add('completed');
+                    }
+                });
+                const divider = stepper.querySelector('.step-divider');
+                if (divider) divider.classList.toggle('done', step >= 2);
+            }
+            if (opts.scroll !== false) {
+                const target = step === 1 ? requisitosSection : formWrapper;
+                if (target && target.scrollIntoView) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }
+        }
+
+        if (btnCompletarSolicitud) {
+            btnCompletarSolicitud.addEventListener('click', function () {
+                setStep(2);
+            });
+        }
+
+        if (stepper) {
+            stepper.querySelectorAll('.step').forEach(function (el) {
+                const goto = function () {
+                    const n = parseInt(el.getAttribute('data-step'), 10);
+                    if (!isNaN(n)) setStep(n);
+                };
+                el.addEventListener('click', goto);
+                el.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        goto();
+                    }
+                });
             });
         }
 
