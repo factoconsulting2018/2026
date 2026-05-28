@@ -165,6 +165,40 @@ $postedRentalWhatsapp     = (string) Yii::$app->request->post('rental_whatsapp',
             .reg-stepper .step-num { width: 22px; height: 22px; font-size: 12px; }
             .reg-stepper .step-divider { flex-basis: 18px; }
         }
+        /* Indicadores visuales por campo (check / precaución / x) */
+        .field-status-wrap {
+            position: relative;
+            display: block;
+        }
+        .field-status-wrap > .form-control,
+        .field-status-wrap > .form-select {
+            padding-right: 38px;
+        }
+        .field-status {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 16px;
+            line-height: 1;
+            pointer-events: none;
+            display: none;
+        }
+        .field-status.is-ok    { color: #198754; display: inline-flex; }
+        .field-status.is-warn  { color: #d39e00; display: inline-flex; }
+        .field-status.is-error { color: #dc3545; display: inline-flex; }
+        .field-status-wrap > .form-control.is-status-error,
+        .field-status-wrap > .form-select.is-status-error {
+            border-color: #f1aeb5;
+        }
+        .field-status-wrap > .form-control.is-status-ok,
+        .field-status-wrap > .form-select.is-status-ok {
+            border-color: #a3cfbb;
+        }
+        .field-status-wrap > .form-control.is-status-warn,
+        .field-status-wrap > .form-select.is-status-warn {
+            border-color: #ffe69c;
+        }
     </style>
 </head>
 <body>
@@ -649,6 +683,9 @@ $postedRentalWhatsapp     = (string) Yii::$app->request->post('rental_whatsapp',
                     target.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
             }
+            if (typeof window.__publicRegRefreshFieldStatuses === 'function') {
+                setTimeout(window.__publicRegRefreshFieldStatuses, 0);
+            }
         }
 
         if (rentalInputs.fechaInicio && rentalInputs.fechaFinal) {
@@ -780,6 +817,131 @@ $postedRentalWhatsapp     = (string) Yii::$app->request->post('rental_whatsapp',
             });
         }
 
+        // === Indicadores visuales por campo (check verde / precaución / x roja) ===
+        const STATUS_ICONS = {
+            ok: 'fa-circle-check',
+            warn: 'fa-triangle-exclamation',
+            error: 'fa-circle-xmark'
+        };
+
+        function decorateField(field) {
+            if (!field || field.dataset.statusDecorated === '1') return;
+            const t = (field.type || '').toLowerCase();
+            if (t === 'hidden' || t === 'submit' || t === 'button' || t === 'reset') return;
+            const wrap = document.createElement('div');
+            wrap.className = 'field-status-wrap';
+            field.parentNode.insertBefore(wrap, field);
+            wrap.appendChild(field);
+            const status = document.createElement('span');
+            status.className = 'field-status';
+            status.setAttribute('aria-hidden', 'true');
+            wrap.appendChild(status);
+            field.dataset.statusDecorated = '1';
+        }
+
+        function evaluateField(field) {
+            const t = (field.type || '').toLowerCase();
+            const tag = (field.tagName || '').toLowerCase();
+            if (t === 'hidden' || t === 'submit' || t === 'button' || t === 'reset') return 'skip';
+            if (field.id === 'rental_tipo_auto_otro') {
+                const tipo = document.getElementById('rental_tipo_auto');
+                if (!tipo || tipo.value !== 'otro') return 'skip';
+            }
+            const value = (field.value || '').trim();
+            const isReq = field.required || field.hasAttribute('required');
+            if (!value) return isReq ? 'warn' : 'neutral';
+
+            if (t === 'email') {
+                return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ? 'ok' : 'error';
+            }
+            if (t === 'tel' || /(whatsapp|celular|telefono|tel)/i.test(field.name || field.id || '')) {
+                return value.replace(/\D+/g, '').length >= 8 ? 'ok' : 'error';
+            }
+            if (field.id === 'public-cedula-input') {
+                return /^\d{9,10}$/.test(value) ? 'ok' : 'error';
+            }
+            if (t === 'date') {
+                if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return 'error';
+                if (field.id === 'rental_fecha_final') {
+                    const ini = document.getElementById('rental_fecha_inicio');
+                    if (ini && ini.value && value < ini.value) return 'error';
+                }
+                return 'ok';
+            }
+            if (t === 'time') {
+                return /^\d{1,2}:\d{2}/.test(value) ? 'ok' : 'error';
+            }
+            if (tag === 'select') {
+                return value === '' ? 'warn' : 'ok';
+            }
+            return 'ok';
+        }
+
+        function setFieldStatus(field, state) {
+            if (state === 'skip' || !field || field.dataset.statusDecorated !== '1') return;
+            const wrap = field.closest('.field-status-wrap');
+            if (!wrap) return;
+            const status = wrap.querySelector('.field-status');
+            if (!status) return;
+            status.classList.remove('is-ok', 'is-warn', 'is-error');
+            field.classList.remove('is-status-ok', 'is-status-warn', 'is-status-error');
+            if (state === 'neutral') {
+                status.innerHTML = '';
+                return;
+            }
+            status.classList.add('is-' + state);
+            field.classList.add('is-status-' + state);
+            status.innerHTML = '<i class="fas ' + STATUS_ICONS[state] + '"></i>';
+        }
+
+        function refreshFieldStatus(field) {
+            setFieldStatus(field, evaluateField(field));
+        }
+
+        function getAllValidatedFields() {
+            const containers = [
+                document.getElementById('rental-details-section'),
+                document.getElementById('registration-form-wrapper'),
+            ].filter(Boolean);
+            const result = [];
+            containers.forEach(function (c) {
+                c.querySelectorAll('input, textarea, select').forEach(function (f) {
+                    const t = (f.type || '').toLowerCase();
+                    if (t === 'hidden' || t === 'submit' || t === 'button' || t === 'reset') return;
+                    result.push(f);
+                });
+            });
+            return result;
+        }
+
+        function setupFieldValidation() {
+            const fields = getAllValidatedFields();
+            fields.forEach(function (f) {
+                decorateField(f);
+                ['input', 'change', 'blur'].forEach(function (evt) {
+                    f.addEventListener(evt, function () {
+                        refreshFieldStatus(f);
+                        if (f.id === 'rental_fecha_inicio') {
+                            const fin = document.getElementById('rental_fecha_final');
+                            if (fin) refreshFieldStatus(fin);
+                        }
+                        if (f.id === 'rental_tipo_auto') {
+                            const otro = document.getElementById('rental_tipo_auto_otro');
+                            if (otro) refreshFieldStatus(otro);
+                        }
+                    });
+                });
+                refreshFieldStatus(f);
+            });
+        }
+
+        function refreshAllFieldStatuses() {
+            getAllValidatedFields().forEach(refreshFieldStatus);
+        }
+
+        setupFieldValidation();
+        window.__publicRegRefreshFieldStatuses = refreshAllFieldStatuses;
+
         // Si el servidor regresó la vista con errores de validación, repoblar los
         // hidden inputs (para que un segundo envío conserve los datos del paso 2)
         // y saltar al paso 3 para que el usuario vea los mensajes junto a los campos.
@@ -886,6 +1048,7 @@ $postedRentalWhatsapp     = (string) Yii::$app->request->post('rental_whatsapp',
                         setTimeout(() => {
                             nombreInput.style.backgroundColor = '';
                         }, 2000);
+                        nombreInput.dispatchEvent(new Event('input', { bubbles: true }));
                     }
                 } else {
                     // No se encontró información
