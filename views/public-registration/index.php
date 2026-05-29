@@ -215,6 +215,15 @@ $postedRentalTipoAutoOtro = (string) Yii::$app->request->post('rental_tipo_auto_
             <p class="mb-0 mt-2" style="font-size: 14px; opacity: 0.9;">
                 Completa el formulario y tu solicitud será revisada
             </p>
+            <p class="mb-0 mt-2" style="font-size: 14px; opacity: 0.95;">
+                <span class="material-symbols-outlined align-middle" style="font-size: 16px;">call</span>
+                <strong>Teléfono:</strong>
+                <a href="tel:+50640700485" style="color: #fff; text-decoration: none;">4070-0485</a>
+                <span class="mx-2" aria-hidden="true">|</span>
+                <span class="material-symbols-outlined align-middle" style="font-size: 16px;">chat</span>
+                <strong>WhatsApp:</strong>
+                <a href="https://wa.me/50683670937" target="_blank" rel="noopener" style="color: #fff; text-decoration: none;">8367-0937</a>
+            </p>
         </div>
         <div class="card-body p-4">
             <?php if (Yii::$app->session->hasFlash('success')): ?>
