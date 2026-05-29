@@ -33,7 +33,6 @@ $postedRentalFechaFinal   = (string) Yii::$app->request->post('rental_fecha_fina
 $postedRentalHoraFinal    = (string) Yii::$app->request->post('rental_hora_final', $defaultRentalTime);
 $postedRentalTipoAuto     = (string) Yii::$app->request->post('rental_tipo_auto', '');
 $postedRentalTipoAutoOtro = (string) Yii::$app->request->post('rental_tipo_auto_otro', '');
-$postedRentalWhatsapp     = (string) Yii::$app->request->post('rental_whatsapp', '');
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -343,18 +342,6 @@ $postedRentalWhatsapp     = (string) Yii::$app->request->post('rental_whatsapp',
                                value="<?= Html::encode($postedRentalTipoAutoOtro) ?>"
                                placeholder="Ej: Furgón, motocicleta, etc.">
                     </div>
-
-                    <div class="col-12 mt-4"><h6 class="mb-1 text-uppercase text-muted small">Contacto</h6></div>
-                    <div class="col-md-6">
-                        <label class="form-label" for="rental_whatsapp">
-                            <span class="material-symbols-outlined align-middle" style="font-size:18px;">chat</span>
-                            WhatsApp *
-                        </label>
-                        <input type="tel" class="form-control" id="rental_whatsapp" name="rental_whatsapp"
-                               value="<?= Html::encode($postedRentalWhatsapp) ?>"
-                               placeholder="Ej: 88888888" inputmode="tel" autocomplete="tel" required>
-                        <div class="form-text">Lo usaremos para contactarte sobre la solicitud.</div>
-                    </div>
                 </div>
 
                 <div id="rental-details-error" class="alert alert-warning mt-3" style="display:none;"></div>
@@ -634,9 +621,7 @@ $postedRentalWhatsapp     = (string) Yii::$app->request->post('rental_whatsapp',
             horaFinal: document.getElementById('rental_hora_final'),
             tipoAuto: document.getElementById('rental_tipo_auto'),
             tipoAutoOtro: document.getElementById('rental_tipo_auto_otro'),
-            whatsapp: document.getElementById('rental_whatsapp'),
         };
-        const clientWhatsappInput = document.getElementById('client-whatsapp');
         const rentalHidden = {
             fechaInicio: document.getElementById('h_rental_fecha_inicio'),
             horaInicio: document.getElementById('h_rental_hora_inicio'),
@@ -750,16 +735,6 @@ $postedRentalWhatsapp     = (string) Yii::$app->request->post('rental_whatsapp',
                 showRentalError('Indique en el campo "Especifique" qué tipo de vehículo busca.');
                 return false;
             }
-            const waRaw = rentalInputs.whatsapp ? rentalInputs.whatsapp.value.trim() : '';
-            const waDigits = waRaw.replace(/\D+/g, '');
-            if (!waRaw) {
-                showRentalError('Ingrese un número de WhatsApp para que podamos contactarle.');
-                return false;
-            }
-            if (waDigits.length < 8) {
-                showRentalError('El número de WhatsApp parece incompleto. Use al menos 8 dígitos.');
-                return false;
-            }
             return true;
         }
 
@@ -770,10 +745,6 @@ $postedRentalWhatsapp     = (string) Yii::$app->request->post('rental_whatsapp',
             if (rentalHidden.horaFinal) rentalHidden.horaFinal.value = rentalInputs.horaFinal.value;
             if (rentalHidden.tipoAuto) rentalHidden.tipoAuto.value = rentalInputs.tipoAuto.value;
             if (rentalHidden.tipoAutoOtro) rentalHidden.tipoAutoOtro.value = (rentalInputs.tipoAutoOtro ? rentalInputs.tipoAutoOtro.value : '');
-            // Sincronizar WhatsApp del paso 2 al campo del formulario de cliente (paso 3).
-            if (clientWhatsappInput && rentalInputs.whatsapp && rentalInputs.whatsapp.value) {
-                clientWhatsappInput.value = rentalInputs.whatsapp.value.trim();
-            }
         }
 
         if (btnCompletarSolicitud) {
