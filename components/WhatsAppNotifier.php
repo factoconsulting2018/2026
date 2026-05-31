@@ -660,7 +660,7 @@ class WhatsAppNotifier
             $lines[] = $bl;
         }
         $lines[] = '';
-        $lines[] = 'Registro recibido: _' . date('d/m/Y h:i A') . '_';
+        $lines[] = 'Registro recibido: _' . self::nowWithDay() . '_';
         $lines[] = 'Estado: 🟡 Pendiente de aprobación';
         $lines[] = '';
         $lines[] = '👤 *Cliente:* ' . $clientName;
@@ -699,16 +699,8 @@ class WhatsAppNotifier
             }
         }
 
-        $fmtDateTime = function ($d, $h) {
-            $d = trim((string) $d);
-            $h = trim((string) $h);
-            if ($d === '') return '';
-            $ts = strtotime($d . ($h !== '' ? ' ' . $h : ''));
-            if ($ts === false) return trim($d . ' ' . $h);
-            return date('d/m/Y', $ts) . ($h !== '' ? ' ' . self::formatTime12h($h) : '');
-        };
-        $rentIni = $fmtDateTime($rentalDetails['fecha_inicio'] ?? '', $rentalDetails['hora_inicio'] ?? '');
-        $rentFin = $fmtDateTime($rentalDetails['fecha_final'] ?? '', $rentalDetails['hora_final'] ?? '');
+        $rentIni = self::formatDateTimeWithDay($rentalDetails['fecha_inicio'] ?? '', $rentalDetails['hora_inicio'] ?? '');
+        $rentFin = self::formatDateTimeWithDay($rentalDetails['fecha_final'] ?? '', $rentalDetails['hora_final'] ?? '');
         $rentTipo = trim((string) ($rentalDetails['tipo_auto'] ?? ''));
         if ($rentIni !== '' || $rentFin !== '' || $rentTipo !== '') {
             $lines[] = '';
@@ -725,7 +717,8 @@ class WhatsAppNotifier
     }
 
     /**
-     * Convierte una fecha (Y-m-d o Y-m-d H:i:s) a "d/m/Y". Devuelve '' si no se puede.
+     * Convierte una fecha (Y-m-d o Y-m-d H:i:s) a "Lunes 01/06/2025".
+     * Devuelve '' si no se puede.
      */
     private static function formatDate($raw): string
     {
@@ -734,7 +727,50 @@ class WhatsAppNotifier
         if ($s === '0000-00-00' || $s === '0000-00-00 00:00:00') return '';
         $ts = strtotime($s);
         if ($ts === false) return '';
-        return date('d/m/Y', $ts);
+        return self::dayName($ts) . ' ' . date('d/m/Y', $ts);
+    }
+
+    /**
+     * Devuelve el nombre del día en español ("Lunes", "Martes"…) para un timestamp.
+     */
+    private static function dayName(int $ts): string
+    {
+        $names = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+        return $names[(int) date('w', $ts)] ?? '';
+    }
+
+    /**
+     * Combina fecha + hora (12h) en "Lunes 01/06/2025 8:00 AM".
+     * Si la hora viene vacía, devuelve solo "Lunes 01/06/2025".
+     * Si nada es válido, devuelve ''.
+     */
+    private static function formatDateTimeWithDay($date, $time = ''): string
+    {
+        $d = trim((string) $date);
+        $h = trim((string) $time);
+        if ($d === '' || $d === '0000-00-00' || $d === '0000-00-00 00:00:00') return '';
+        $ts = strtotime($d . ($h !== '' ? ' ' . $h : ''));
+        if ($ts === false) {
+            // No se pudo parsear; devolver lo que tengamos como mejor esfuerzo.
+            return trim($d . ($h !== '' ? ' ' . $h : ''));
+        }
+        $out = self::dayName($ts) . ' ' . date('d/m/Y', $ts);
+        if ($h !== '') {
+            $hh = self::formatTime12h($h);
+            if ($hh !== '') {
+                $out .= ' ' . $hh;
+            }
+        }
+        return $out;
+    }
+
+    /**
+     * "Domingo 31/05/2026 09:22 AM" para el momento actual (o el timestamp dado).
+     */
+    private static function nowWithDay(?int $ts = null): string
+    {
+        $ts = $ts ?? time();
+        return self::dayName($ts) . ' ' . date('d/m/Y h:i A', $ts);
     }
 
     /**
@@ -946,8 +982,8 @@ class WhatsAppNotifier
         }
 
         // ----- Periodo de alquiler -----
-        $startDate = !empty($rental->fecha_inicio) ? date('d/m/Y', strtotime((string) $rental->fecha_inicio)) : '—';
-        $endDate = !empty($rental->fecha_final) ? date('d/m/Y', strtotime((string) $rental->fecha_final)) : '—';
+        $startDate = !empty($rental->fecha_inicio) ? self::formatDate($rental->fecha_inicio) : '—';
+        $endDate = !empty($rental->fecha_final) ? self::formatDate($rental->fecha_final) : '—';
         $startTime = self::formatTime12h($rental->hora_inicio ?? null);
         $endTime = self::formatTime12h($rental->hora_final ?? null);
 
@@ -963,11 +999,11 @@ class WhatsAppNotifier
         if ($correaEnabled && $correaRaw !== '' && $correaRaw !== '0000-00-00 00:00:00') {
             $ts = strtotime($correaRaw);
             if ($ts !== false) {
-                // Si trae hora distinta de 00:00, mostrar fecha + hora 12h
+                // Si trae hora distinta de 00:00, mostrar día + fecha + hora 12h
                 $hasTime = (bool) preg_match('/\s\d{2}:\d{2}/', $correaRaw);
                 $correaLine = $hasTime
-                    ? date('d/m/Y h:i A', $ts)
-                    : date('d/m/Y', $ts);
+                    ? self::dayName($ts) . ' ' . date('d/m/Y h:i A', $ts)
+                    : self::dayName($ts) . ' ' . date('d/m/Y', $ts);
             } else {
                 $correaLine = $correaRaw;
             }
@@ -999,6 +1035,8 @@ class WhatsAppNotifier
         } else {
             $lines[] = '*🚗 Nueva orden de alquiler*';
         }
+        // Fecha del día (con nombre) justo debajo del título.
+        $lines[] = '🗓️ _' . self::formatDate(date('Y-m-d')) . '_';
         $lines[] = $companyName;
         foreach (self::brandingLines() as $bl) {
             $lines[] = $bl;
@@ -1006,9 +1044,9 @@ class WhatsAppNotifier
         $lines[] = '';
         $lines[] = 'Orden: *' . $orderId . '*';
         if ($isCancelled) {
-            $lines[] = '_Anulada: ' . date('d/m/Y h:i A') . '_';
+            $lines[] = '_Anulada: ' . self::nowWithDay() . '_';
         } elseif ($isUpdate) {
-            $lines[] = '_Actualizada: ' . date('d/m/Y h:i A') . '_';
+            $lines[] = '_Actualizada: ' . self::nowWithDay() . '_';
         }
         $lines[] = '';
         $lines[] = '👤 *Cliente:* ' . $clientName;
@@ -1322,12 +1360,10 @@ class WhatsAppNotifier
         $companyName = $company['name'] ?? 'FACTO RENT A CAR';
 
         $ts = strtotime($date) ?: time();
-        $dateLabel = date('d/m/Y', $ts);
-        $dows = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
-        $dow = $dows[(int) date('w', $ts)] ?? '';
+        $dateLabel = self::dayName($ts) . ' ' . date('d/m/Y', $ts);
 
         $lines = [];
-        $lines[] = '*📅 Resumen diario — ' . $dateLabel . ' (' . $dow . ')*';
+        $lines[] = '*📅 Resumen diario — ' . $dateLabel . '*';
         $lines[] = $companyName;
         foreach (self::brandingLines() as $bl) {
             $lines[] = $bl;
