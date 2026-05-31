@@ -7,6 +7,11 @@ use app\models\CompanyConfig;
 
 /** @var yii\web\View $this */
 /** @var app\models\Client $model */
+/** @var app\models\Car|null $promoCar */
+/** @var app\models\Car[] $promos */
+
+$promoCar = $promoCar ?? null;
+$promos = $promos ?? [];
 
 $companyInfo = CompanyConfig::getCompanyInfo();
 $logoPath = $companyInfo['logo'] ?? null;
@@ -33,6 +38,40 @@ $postedRentalFechaFinal   = (string) Yii::$app->request->post('rental_fecha_fina
 $postedRentalHoraFinal    = (string) Yii::$app->request->post('rental_hora_final', $defaultRentalTime);
 $postedRentalTipoAuto     = (string) Yii::$app->request->post('rental_tipo_auto', '');
 $postedRentalTipoAutoOtro = (string) Yii::$app->request->post('rental_tipo_auto_otro', '');
+
+$promoTipoLabel = '';
+if ($promoCar !== null) {
+    $brandName = '';
+    if ($promoCar->marca) {
+        $brandName = trim((string) $promoCar->marca->name);
+    }
+    $carName = trim((string) $promoCar->nombre);
+    if ($brandName !== '' && $carName !== '' && stripos($carName, $brandName) === 0) {
+        $promoTipoLabel = $carName;
+    } else {
+        $promoTipoLabel = trim($brandName . ' ' . $carName);
+    }
+    if (!Yii::$app->request->isPost && $postedRentalTipoAuto === '' && $promoTipoLabel !== '') {
+        $postedRentalTipoAuto = 'otro';
+        $postedRentalTipoAutoOtro = $promoTipoLabel;
+    }
+}
+
+$promoBannerUrl = null;
+$promoBannerIsFallback = false;
+if ($promoCar !== null) {
+    $promoBannerUrl = $promoCar->getFacebookBannerUrl();
+    if ($promoBannerUrl === null) {
+        $defaultBannerPath = Yii::getAlias('@webroot/img/promo-banner-default.jpg');
+        if (is_file($defaultBannerPath)) {
+            $promoBannerUrl = Url::to('@web/img/promo-banner-default.jpg');
+        } else {
+            $promoBannerIsFallback = true;
+        }
+    }
+}
+
+$promoNavUrlTemplate = Url::to(['public-registration/promo', 'slug' => '__SLUG__']);
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -198,10 +237,81 @@ $postedRentalTipoAutoOtro = (string) Yii::$app->request->post('rental_tipo_auto_
         .field-status-wrap > .form-select.is-status-warn {
             border-color: #ffe69c;
         }
+        /* Banner promo Facebook */
+        .promo-banner-wrap {
+            margin-bottom: 16px;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+        }
+        .promo-banner-img {
+            display: block;
+            width: 100%;
+            height: auto;
+            max-height: 420px;
+            object-fit: cover;
+        }
+        .promo-banner-fallback {
+            background: linear-gradient(135deg, #22487a 0%, #0d001e 100%);
+            color: #fff;
+            text-align: center;
+            padding: 48px 24px;
+            min-height: 220px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+        .promo-banner-fallback img {
+            max-height: 80px;
+            margin-bottom: 8px;
+        }
+        .promo-car-selector-wrap {
+            background: #fff;
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        }
     </style>
 </head>
 <body>
 <div class="registration-container">
+
+    <?php if ($promoCar !== null): ?>
+        <div class="promo-banner-wrap">
+            <?php if ($promoBannerIsFallback): ?>
+                <div class="promo-banner-fallback">
+                    <?php if ($logoPath): ?>
+                        <img src="<?= Html::encode($logoPath) ?>" alt="FACTO RENT A CAR">
+                    <?php endif; ?>
+                    <h3 class="mb-1">FACTO RENT A CAR</h3>
+                    <p class="mb-0 opacity-75">Renta de vehículos</p>
+                </div>
+            <?php else: ?>
+                <img src="<?= Html::encode($promoBannerUrl) ?>" alt="<?= Html::encode($promoCar->getPromoDisplayLabel()) ?>" class="promo-banner-img">
+            <?php endif; ?>
+        </div>
+
+        <?php if (!empty($promos)): ?>
+            <div class="promo-car-selector-wrap">
+                <label class="form-label mb-2" for="promo-car-selector">
+                    <span class="material-symbols-outlined align-middle" style="font-size:18px;">directions_car</span>
+                    Ver promoción de otro vehículo
+                </label>
+                <select class="form-select" id="promo-car-selector" aria-label="Seleccionar vehículo promocionado">
+                    <?php foreach ($promos as $p): ?>
+                        <option value="<?= Html::encode((string) $p->facebook_promo_slug) ?>"
+                            <?= ($promoCar && (string) $p->facebook_promo_slug === (string) $promoCar->facebook_promo_slug) ? 'selected' : '' ?>>
+                            <?= Html::encode($p->getPromoDisplayLabel()) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+        <?php endif; ?>
+    <?php endif; ?>
+
     <div class="card">
         <div class="card-header text-center">
             <?php if ($logoPath): ?>
@@ -616,6 +726,16 @@ $postedRentalTipoAutoOtro = (string) Yii::$app->request->post('rental_tipo_auto_
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        const promoSelector = document.getElementById('promo-car-selector');
+        if (promoSelector) {
+            const promoUrlTemplate = <?= json_encode($promoNavUrlTemplate) ?>;
+            promoSelector.addEventListener('change', function () {
+                const slug = (this.value || '').trim();
+                if (!slug) return;
+                window.location.href = promoUrlTemplate.replace('__SLUG__', encodeURIComponent(slug));
+            });
+        }
+
         const requisitosSection = document.getElementById('requisitos-section');
         const rentalSection = document.getElementById('rental-details-section');
         const formWrapper = document.getElementById('registration-form-wrapper');

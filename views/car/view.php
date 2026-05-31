@@ -111,6 +111,60 @@ $this->params['breadcrumbs'][] = $this->title;
                 </div>
             </div>
             <?php endif; ?>
+
+            <?php if ((int) $model->facebook_promo_enabled === 1): ?>
+            <?php
+                $bannerUrl = $model->getFacebookBannerUrl();
+                $promoUrl = $model->getFacebookPromoUrl();
+            ?>
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">📢 Promoción Facebook</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-2">
+                        <strong>Estado:</strong>
+                        <span class="badge bg-success">Activada</span>
+                    </p>
+                    <?php if ($bannerUrl): ?>
+                        <p class="text-muted small mb-1">Banner del anuncio:</p>
+                        <img src="<?= Html::encode($bannerUrl) ?>" class="img-fluid mb-3" alt="Banner Facebook" style="max-height: 200px; object-fit: contain;">
+                    <?php else: ?>
+                        <p class="text-muted small mb-3">Sin banner subido — en la landing se usará el banner genérico de FACTO RENT A CAR.</p>
+                    <?php endif; ?>
+
+                    <?php if ($promoUrl): ?>
+                        <label class="form-label small">Enlace para anuncios</label>
+                        <div class="input-group input-group-sm">
+                            <input type="text" class="form-control" id="car-view-promo-url" readonly value="<?= Html::encode($promoUrl) ?>">
+                            <button type="button" class="btn btn-outline-secondary" id="car-view-promo-copy">Copiar</button>
+                        </div>
+                    <?php else: ?>
+                        <p class="text-muted small mb-0">Guarda el vehículo con promoción activada para generar el enlace.</p>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <?php
+            $this->registerJs(<<<'JS'
+(function () {
+    var btn = document.getElementById('car-view-promo-copy');
+    var input = document.getElementById('car-view-promo-url');
+    if (!btn || !input) return;
+    btn.addEventListener('click', function () {
+        input.select();
+        var text = input.value;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(function () {
+                btn.textContent = 'Copiado';
+                setTimeout(function () { btn.textContent = 'Copiar'; }, 2000);
+            });
+        }
+    });
+})();
+JS
+            );
+            ?>
+            <?php endif; ?>
         </div>
     </div>
 </div>

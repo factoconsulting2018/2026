@@ -444,6 +444,7 @@ class CarController extends Controller
         }
 
         $model->imagenFile = UploadedFile::getInstance($model, 'imagenFile');
+        $model->facebookBannerFile = UploadedFile::getInstance($model, 'facebookBannerFile');
 
         if (!$model->validate()) {
             return false;
@@ -451,6 +452,8 @@ class CarController extends Controller
 
         $hasNewImage = $model->imagenFile instanceof UploadedFile
             && $model->imagenFile->error !== UPLOAD_ERR_NO_FILE;
+        $hasNewBanner = $model->facebookBannerFile instanceof UploadedFile
+            && $model->facebookBannerFile->error !== UPLOAD_ERR_NO_FILE;
 
         if (!$model->save(false)) {
             return false;
@@ -461,6 +464,13 @@ class CarController extends Controller
                 return false;
             }
             $model->save(false, ['imagen']);
+        }
+
+        if ($hasNewBanner) {
+            if (!$model->uploadFacebookBannerFile()) {
+                return false;
+            }
+            $model->save(false, ['facebook_banner']);
         }
 
         return true;

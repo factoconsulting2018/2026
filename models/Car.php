@@ -3,6 +3,7 @@ namespace app\models;
 
 use Yii;
 use yii\db\ActiveRecord;
+use yii\helpers\Url;
 use yii\web\UploadedFile;
 
 /**
@@ -13,6 +14,9 @@ use yii\web\UploadedFile;
  * @property string $car_id
  * @property string $nombre
  * @property string $imagen
+ * @property string|null $facebook_banner
+ * @property int $facebook_promo_enabled
+ * @property string|null $facebook_promo_slug
  * @property int|null $marca_id
  * @property-read Brand|null $marca Relación con la tabla brands
  * @property string $placa
@@ -31,8 +35,14 @@ class Car extends ActiveRecord
     /** Ruta relativa bajo @webroot donde se guardan fotos de vehículos */
     public const IMAGE_UPLOAD_DIR = 'uploads/cars';
 
+    /** Ruta relativa bajo @webroot donde se guardan banners de Facebook */
+    public const FACEBOOK_BANNER_UPLOAD_DIR = 'uploads/cars/banners';
+
     /** @var UploadedFile|null Archivo subido en el formulario (no se persiste en BD) */
     public $imagenFile;
+
+    /** @var UploadedFile|null Banner de anuncio Facebook (no se persiste en BD) */
+    public $facebookBannerFile;
 
     /**
      * {@inheritdoc}
@@ -49,9 +59,13 @@ class Car extends ActiveRecord
     {
         return [
             [['nombre', 'placa'], 'required'],
-            [['marca_id', 'cantidad_pasajeros'], 'integer'],
+            [['marca_id', 'cantidad_pasajeros', 'facebook_promo_enabled'], 'integer'],
+            [['facebook_promo_enabled'], 'default', 'value' => 0],
+            [['facebook_promo_enabled'], 'in', 'range' => [0, 1]],
             [['created_at', 'updated_at'], 'safe'],
-            [['car_id', 'nombre', 'imagen', 'placa', 'vin'], 'string', 'max' => 255],
+            [['car_id', 'nombre', 'imagen', 'facebook_banner', 'facebook_promo_slug', 'placa', 'vin'], 'string', 'max' => 255],
+            [['facebook_promo_slug'], 'string', 'max' => 120],
+            [['facebook_promo_slug'], 'unique'],
             [
                 ['imagenFile'],
                 'file',
@@ -59,6 +73,14 @@ class Car extends ActiveRecord
                 'extensions' => ['png', 'jpg', 'jpeg', 'webp', 'gif'],
                 'maxSize' => 5 * 1024 * 1024,
                 'tooBig' => 'La imagen no puede superar 5 MB.',
+            ],
+            [
+                ['facebookBannerFile'],
+                'file',
+                'skipOnEmpty' => true,
+                'extensions' => ['png', 'jpg', 'jpeg', 'webp', 'gif'],
+                'maxSize' => 5 * 1024 * 1024,
+                'tooBig' => 'El banner no puede superar 5 MB.',
             ],
             [['caracteristicas'], 'string'],
             [['empresa_seguro'], 'string', 'max' => 255],
@@ -80,6 +102,10 @@ class Car extends ActiveRecord
             'nombre' => 'Nombre',
             'imagen' => 'Imagen',
             'imagenFile' => 'Foto del vehículo',
+            'facebook_banner' => 'Banner de anuncio Facebook',
+            'facebookBannerFile' => 'Banner de anuncio Facebook',
+            'facebook_promo_enabled' => 'Facebook promoción',
+            'facebook_promo_slug' => 'Enlace promocional (slug)',
             'marca_id' => 'Marca ID',
             'placa' => 'Placa',
             'vin' => 'VIN',
@@ -103,6 +129,14 @@ class Car extends ActiveRecord
             // Generar car_id si es nuevo
             if ($insert && empty($this->car_id)) {
                 $this->car_id = $this->generateCarId();
+            }
+
+            $this->facebook_promo_enabled = (int) (bool) $this->facebook_promo_enabled;
+
+            if (!$this->facebook_promo_enabled) {
+                // Mantener slug y banner por si se reactiva; solo desactiva la promo.
+            } elseif (empty($this->facebook_promo_slug)) {
+                $this->ensureFacebookPromoSlug();
             }
             
             // Convertir todos los campos de texto a mayúsculas
@@ -206,6 +240,210 @@ class Car extends ActiveRecord
         }
 
         return $imagen;
+    }
+
+    /**
+     * URL pública del banner de Facebook (ruta local o URL externa legacy).
+     */
+    public function getFacebookBannerUrl(): ?string
+    {
+        $banner = trim((string) $this->facebook_banner);
+        if ($banner === '') {
+            return null;
+        }
+        if (preg_match('#^https?://#i', $banner)) {
+            return $banner;
+        }
+        $rel = ltrim(str_replace('\\', '/', $banner), '/');
+        $full = Yii::getAlias('@webroot/' . $rel);
+        if (is_file($full)) {
+            return Yii::getAlias('@web/' . $rel);
+        }
+
+        return $banner;
+    }
+
+    /**
+     * Ruta absoluta en disco del banner de Facebook.
+     */
+    public function getFacebookBannerFilesystemPath(): ?string
+    {
+        $banner = trim((string) $this->facebook_banner);
+        if ($banner === '' || preg_match('#^https?://#i', $banner)) {
+            return null;
+        }
+        $rel = ltrim(str_replace('\\', '/', $banner), '/');
+        $full = Yii::getAlias('@webroot/' . $rel);
+
+        return is_file($full) ? str_replace('\\', '/', $full) : null;
+    }
+
+    /**
+     * URL pública absoluta de la landing promo de este vehículo.
+     */
+    public function getFacebookPromoUrl(): ?string
+    {
+        if (!(int) $this->facebook_promo_enabled) {
+            return null;
+        }
+        $slug = trim((string) $this->facebook_promo_slug);
+        if ($slug === '') {
+            return null;
+        }
+
+        return Url::to(['/promo/' . $slug], true);
+    }
+
+    /**
+     * Etiqueta legible para selector promo (marca + nombre + placa).
+     */
+    public function getPromoDisplayLabel(): string
+    {
+        $brand = '';
+        try {
+            if (!empty($this->marca_id)) {
+                $marca = $this->marca ?? Brand::findOne($this->marca_id);
+                if ($marca) {
+                    $brand = trim((string) $marca->name);
+                }
+            }
+        } catch (\Throwable $e) {
+            $brand = '';
+        }
+        $name = trim((string) $this->nombre);
+        $label = trim($brand . ' ' . $name);
+        if ($label === '') {
+            $label = 'Vehículo';
+        }
+        $plate = trim((string) $this->placa);
+        if ($plate !== '') {
+            $label .= ' (' . $plate . ')';
+        }
+
+        return $label;
+    }
+
+    /**
+     * Vehículos con promoción Facebook activa y slug válido.
+     *
+     * @return self[]
+     */
+    public static function findActivePromos(): array
+    {
+        return self::find()
+            ->with(['marca'])
+            ->where(['facebook_promo_enabled' => 1])
+            ->andWhere(['not', ['facebook_promo_slug' => null]])
+            ->andWhere(['<>', 'facebook_promo_slug', ''])
+            ->orderBy(['nombre' => SORT_ASC])
+            ->all();
+    }
+
+    /**
+     * Guarda el banner subido en {@see facebookBannerFile} y actualiza {@see facebook_banner}.
+     */
+    public function uploadFacebookBannerFile(): bool
+    {
+        if (!$this->facebookBannerFile instanceof UploadedFile || $this->facebookBannerFile->error === UPLOAD_ERR_NO_FILE) {
+            return true;
+        }
+
+        if (!$this->validate(['facebookBannerFile'])) {
+            return false;
+        }
+
+        $dir = Yii::getAlias('@webroot/' . self::FACEBOOK_BANNER_UPLOAD_DIR);
+        if (!is_dir($dir) && !mkdir($dir, 0755, true) && !is_dir($dir)) {
+            $this->addError('facebookBannerFile', 'No se pudo crear la carpeta de banners.');
+            return false;
+        }
+
+        $this->deleteStoredFacebookBannerFile();
+
+        $base = preg_replace('/[^a-zA-Z0-9_-]+/', '_', (string) $this->placa);
+        if ($base === '' || $base === '_') {
+            $base = 'banner';
+        }
+        $fileName = 'fb_' . strtolower($base) . '_' . time() . '.' . strtolower($this->facebookBannerFile->extension);
+        $filePath = $dir . DIRECTORY_SEPARATOR . $fileName;
+
+        if (!$this->facebookBannerFile->saveAs($filePath)) {
+            $this->addError('facebookBannerFile', 'No se pudo guardar el banner en el servidor.');
+            return false;
+        }
+
+        $this->facebook_banner = '/' . self::FACEBOOK_BANNER_UPLOAD_DIR . '/' . $fileName;
+
+        return true;
+    }
+
+    /**
+     * Elimina el archivo local del banner (no borra URLs externas).
+     */
+    public function deleteStoredFacebookBannerFile(): void
+    {
+        $path = $this->getFacebookBannerFilesystemPath();
+        if ($path !== null && is_file($path)) {
+            @unlink($path);
+        }
+    }
+
+    /**
+     * Genera y asigna un slug único para la promo Facebook.
+     */
+    protected function ensureFacebookPromoSlug(): void
+    {
+        $brandName = '';
+        try {
+            if (!empty($this->marca_id)) {
+                $marca = $this->marca ?? Brand::findOne($this->marca_id);
+                if ($marca) {
+                    $brandName = (string) $marca->name;
+                }
+            }
+        } catch (\Throwable $e) {
+            $brandName = '';
+        }
+
+        $base = self::slugify($brandName . '-' . $this->nombre . '-' . $this->placa);
+        if ($base === '' || $base === '-') {
+            $base = 'vehiculo-' . ($this->id ?: time());
+        }
+
+        $slug = $base;
+        $i = 2;
+        while (self::find()
+            ->where(['facebook_promo_slug' => $slug])
+            ->andWhere(['<>', 'id', (int) $this->id])
+            ->exists()
+        ) {
+            $slug = $base . '-' . $i;
+            $i++;
+        }
+
+        $this->facebook_promo_slug = $slug;
+    }
+
+    /**
+     * Normaliza texto a slug URL-safe.
+     */
+    protected static function slugify(string $text): string
+    {
+        $text = trim($text);
+        if ($text === '') {
+            return '';
+        }
+        $text = mb_strtolower($text, 'UTF-8');
+        if (function_exists('iconv')) {
+            $converted = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $text);
+            if ($converted !== false) {
+                $text = $converted;
+            }
+        }
+        $text = preg_replace('/[^a-z0-9]+/', '-', $text) ?? '';
+        $text = trim($text, '-');
+
+        return $text;
     }
 
     /**

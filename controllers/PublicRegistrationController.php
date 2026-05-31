@@ -4,6 +4,7 @@ namespace app\controllers;
 
 use Yii;
 use app\models\Client;
+use app\models\Car;
 use app\components\WhatsAppNotifier;
 use yii\web\Controller;
 use yii\web\Response;
@@ -34,56 +35,110 @@ class PublicRegistrationController extends Controller
     public function actionIndex()
     {
         $model = new Client();
-        $model->approval_status = 'pending'; // Establecer como pendiente por defecto
+        $model->approval_status = 'pending';
 
-        if (Yii::$app->request->isPost) {
-            $model->load(Yii::$app->request->post());
-            $model->approval_status = 'pending'; // Forzar pending para registros públicos
-
-            $rentalDetails = $this->extractRentalDetails(Yii::$app->request->post());
-            $rentalDetailsText = $this->buildRentalDetailsText($rentalDetails);
-            if ($rentalDetailsText !== '') {
-                $existingNotes = trim((string) $model->notes);
-                $model->notes = $existingNotes !== ''
-                    ? $rentalDetailsText . "\n\n" . $existingNotes
-                    : $rentalDetailsText;
-            }
-
-            if ($model->save()) {
-                try {
-                    $waReport = WhatsAppNotifier::notifyClientRegistered($model, $rentalDetails);
-                    if (!empty($waReport['skipped_reason'])) {
-                        Yii::info('WhatsApp client-reg omitido: ' . $waReport['skipped_reason'], 'whatsapp');
-                    } elseif ($waReport['enabled'] && $waReport['sent'] === 0 && !empty($waReport['errors'])) {
-                        Yii::warning('WhatsApp client-reg sin envíos: ' . implode(' | ', $waReport['errors']), 'whatsapp');
-                    }
-                } catch (\Throwable $e) {
-                    Yii::error('WhatsApp client-reg exception: ' . $e->getMessage(), 'whatsapp');
-                }
-
-                Yii::$app->session->setFlash('success', '¡Gracias por registrarte! Tu solicitud está pendiente de aprobación. Te notificaremos cuando sea aprobada.');
-                return $this->refresh();
-            }
-
-            Yii::error(
-                'PublicRegistration save() falló. Errors: ' . json_encode($model->getErrors())
-                . ' Attrs: ' . json_encode([
-                    'cedula' => $model->cedula_fisica,
-                    'full_name' => $model->full_name,
-                    'whatsapp' => $model->whatsapp,
-                    'email' => $model->email,
-                ]),
-                'public-registration'
-            );
-            Yii::$app->session->setFlash(
-                'error',
-                'No se pudo enviar tu solicitud. Revisa los datos marcados en rojo y vuelve a intentar.'
-            );
+        if ($response = $this->handlePost($model)) {
+            return $response;
         }
 
         return $this->render('index', [
             'model' => $model,
+            'promoCar' => null,
+            'promos' => [],
         ]);
+    }
+
+    /**
+     * Landing promo por vehículo (/promo/{slug}).
+     */
+    public function actionPromo($slug = null)
+    {
+        $slug = trim((string) $slug);
+        if ($slug === '') {
+            Yii::$app->session->setFlash('info', 'Selecciona un vehículo para continuar con tu solicitud.');
+            return $this->redirect(['/solicitud-membresia']);
+        }
+
+        $promoCar = Car::find()
+            ->with(['marca'])
+            ->where([
+                'facebook_promo_slug' => $slug,
+                'facebook_promo_enabled' => 1,
+            ])
+            ->one();
+
+        if ($promoCar === null) {
+            Yii::$app->session->setFlash('warning', 'La promoción solicitada no está disponible.');
+            return $this->redirect(['/solicitud-membresia']);
+        }
+
+        $model = new Client();
+        $model->approval_status = 'pending';
+
+        if ($response = $this->handlePost($model)) {
+            return $response;
+        }
+
+        return $this->render('index', [
+            'model' => $model,
+            'promoCar' => $promoCar,
+            'promos' => Car::findActivePromos(),
+        ]);
+    }
+
+    /**
+     * Procesa el POST del formulario público. Devuelve Response si hubo éxito (refresh).
+     */
+    private function handlePost(Client $model): ?Response
+    {
+        if (!Yii::$app->request->isPost) {
+            return null;
+        }
+
+        $model->load(Yii::$app->request->post());
+        $model->approval_status = 'pending';
+
+        $rentalDetails = $this->extractRentalDetails(Yii::$app->request->post());
+        $rentalDetailsText = $this->buildRentalDetailsText($rentalDetails);
+        if ($rentalDetailsText !== '') {
+            $existingNotes = trim((string) $model->notes);
+            $model->notes = $existingNotes !== ''
+                ? $rentalDetailsText . "\n\n" . $existingNotes
+                : $rentalDetailsText;
+        }
+
+        if ($model->save()) {
+            try {
+                $waReport = WhatsAppNotifier::notifyClientRegistered($model, $rentalDetails);
+                if (!empty($waReport['skipped_reason'])) {
+                    Yii::info('WhatsApp client-reg omitido: ' . $waReport['skipped_reason'], 'whatsapp');
+                } elseif ($waReport['enabled'] && $waReport['sent'] === 0 && !empty($waReport['errors'])) {
+                    Yii::warning('WhatsApp client-reg sin envíos: ' . implode(' | ', $waReport['errors']), 'whatsapp');
+                }
+            } catch (\Throwable $e) {
+                Yii::error('WhatsApp client-reg exception: ' . $e->getMessage(), 'whatsapp');
+            }
+
+            Yii::$app->session->setFlash('success', '¡Gracias por registrarte! Tu solicitud está pendiente de aprobación. Te notificaremos cuando sea aprobada.');
+            return $this->refresh();
+        }
+
+        Yii::error(
+            'PublicRegistration save() falló. Errors: ' . json_encode($model->getErrors())
+            . ' Attrs: ' . json_encode([
+                'cedula' => $model->cedula_fisica,
+                'full_name' => $model->full_name,
+                'whatsapp' => $model->whatsapp,
+                'email' => $model->email,
+            ]),
+            'public-registration'
+        );
+        Yii::$app->session->setFlash(
+            'error',
+            'No se pudo enviar tu solicitud. Revisa los datos marcados en rojo y vuelve a intentar.'
+        );
+
+        return null;
     }
 
     /**
@@ -150,4 +205,3 @@ class PublicRegistrationController extends Controller
         return [];
     }
 }
-
