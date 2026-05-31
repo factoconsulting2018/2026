@@ -248,8 +248,9 @@ $promoNavUrlTemplate = Url::to(['public-registration/promo', 'slug' => '__SLUG__
             display: block;
             width: 100%;
             height: auto;
-            max-height: 420px;
-            object-fit: cover;
+            max-width: 100%;
+            object-fit: contain;
+            background: #0d001e;
         }
         .promo-banner-fallback {
             background: linear-gradient(135deg, #22487a 0%, #0d001e 100%);
