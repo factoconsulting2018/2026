@@ -1529,6 +1529,7 @@ $this->registerCss('
         
         <?php Pjax::end(); ?>
         </div>
+        </div>
         <!-- Fin Tab 1: Listado de Alquileres -->
 
         <!-- Tab 2: Solicitudes recurrentes -->
