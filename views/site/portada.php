@@ -120,6 +120,30 @@ $today = date('d/m/Y');
         .topbar a.btn-pill.primary:hover {
             box-shadow: 0 6px 20px rgba(0,0,0,0.35);
         }
+
+        /* Acciones principales: verde (alquiler) y celeste (membresía) */
+        a.btn-action-rent {
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%) !important;
+            color: #ffffff !important;
+            border: 1px solid rgba(255,255,255,0.30) !important;
+            box-shadow: 0 4px 14px rgba(34, 197, 94, 0.35);
+        }
+        a.btn-action-rent:hover {
+            background: linear-gradient(135deg, #16a34a 0%, #15803d 100%) !important;
+            box-shadow: 0 8px 22px rgba(34, 197, 94, 0.55);
+            transform: translateY(-2px);
+        }
+        a.btn-action-membership {
+            background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%) !important;
+            color: #ffffff !important;
+            border: 1px solid rgba(255,255,255,0.30) !important;
+            box-shadow: 0 4px 14px rgba(14, 165, 233, 0.35);
+        }
+        a.btn-action-membership:hover {
+            background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%) !important;
+            box-shadow: 0 8px 22px rgba(14, 165, 233, 0.55);
+            transform: translateY(-2px);
+        }
         .hero {
             flex: 1;
             display: flex;
@@ -265,7 +289,7 @@ $today = date('d/m/Y');
             .hero-card .feature { padding: 10px 6px; }
             .hero-card .feature .icon { font-size: 24px; }
             .hero-card .feature .label { font-size: 11px; }
-            .topbar { padding: 12px 14px; }
+            .topbar { display: none; }
         }
     </style>
 </head>
@@ -282,11 +306,11 @@ $today = date('d/m/Y');
                 <span><?= Html::encode($companyName) ?></span>
             </a>
             <div class="nav-actions">
-                <a href="<?= Url::to(['/solicitud-membresia']) ?>" class="btn-pill">
+                <a href="<?= Url::to(['/solicitud-membresia']) ?>" class="btn-pill btn-action-membership">
                     <span class="material-symbols-outlined" style="font-size:18px;">person_add</span>
                     Solicitar Membresía
                 </a>
-                <a href="<?= Url::to(['/realizar-alquiler']) ?>" class="btn-pill primary">
+                <a href="<?= Url::to(['/realizar-alquiler']) ?>" class="btn-pill btn-action-rent">
                     <span class="material-symbols-outlined" style="font-size:18px;">directions_car</span>
                     Realizar alquiler
                 </a>
@@ -328,11 +352,11 @@ $today = date('d/m/Y');
                 </div>
 
                 <div class="cta">
-                    <a href="<?= Url::to(['/realizar-alquiler']) ?>" class="btn-primary-cta">
+                    <a href="<?= Url::to(['/realizar-alquiler']) ?>" class="btn-primary-cta btn-action-rent">
                         <span class="material-symbols-outlined" style="font-size:20px;">directions_car</span>
                         Realizar alquiler
                     </a>
-                    <a href="<?= Url::to(['/solicitud-membresia']) ?>" class="btn-secondary-cta">
+                    <a href="<?= Url::to(['/solicitud-membresia']) ?>" class="btn-secondary-cta btn-action-membership">
                         <span class="material-symbols-outlined" style="font-size:20px;">person_add</span>
                         Solicitar Membresía
                     </a>
