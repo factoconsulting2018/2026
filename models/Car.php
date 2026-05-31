@@ -295,32 +295,22 @@ class Car extends ActiveRecord
     }
 
     /**
-     * Etiqueta legible para selector promo (marca + nombre + placa).
+     * Etiqueta legible para selector promo. Solo nombre + placa.
+     * Se omite la marca a propósito para no duplicarla cuando el nombre ya la contiene
+     * (ej.: "NISSAN FRONTIER AZUL").
      */
     public function getPromoDisplayLabel(): string
     {
-        $brand = '';
-        try {
-            if (!empty($this->marca_id)) {
-                $marca = $this->marca ?? Brand::findOne($this->marca_id);
-                if ($marca) {
-                    $brand = trim((string) $marca->name);
-                }
-            }
-        } catch (\Throwable $e) {
-            $brand = '';
-        }
         $name = trim((string) $this->nombre);
-        $label = trim($brand . ' ' . $name);
-        if ($label === '') {
-            $label = 'Vehículo';
+        if ($name === '') {
+            $name = 'Vehículo';
         }
         $plate = trim((string) $this->placa);
         if ($plate !== '') {
-            $label .= ' (' . $plate . ')';
+            $name .= ' (' . $plate . ')';
         }
 
-        return $label;
+        return $name;
     }
 
     /**

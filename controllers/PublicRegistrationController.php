@@ -5,6 +5,7 @@ namespace app\controllers;
 use Yii;
 use app\models\Client;
 use app\models\Car;
+use app\models\PromoVisit;
 use app\components\WhatsAppNotifier;
 use yii\web\Controller;
 use yii\web\Response;
@@ -70,6 +71,18 @@ class PublicRegistrationController extends Controller
         if ($promoCar === null) {
             Yii::$app->session->setFlash('warning', 'La promoción solicitada no está disponible.');
             return $this->redirect(['/solicitud-membresia']);
+        }
+
+        if (!Yii::$app->request->isPost) {
+            try {
+                PromoVisit::recordVisit((int) $promoCar->id, $slug, [
+                    'ip' => Yii::$app->request->userIP,
+                    'user_agent' => (string) Yii::$app->request->userAgent,
+                    'referer' => (string) Yii::$app->request->referrer,
+                ]);
+            } catch (\Throwable $e) {
+                Yii::warning('No se pudo registrar visita promo: ' . $e->getMessage(), 'promo');
+            }
         }
 
         $model = new Client();

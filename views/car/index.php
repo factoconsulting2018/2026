@@ -17,7 +17,14 @@ $this->params['breadcrumbs'][] = $this->title;
 <div class="car-index">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1><span class="material-symbols-outlined" style="font-size: 32px; vertical-align: middle; margin-right: 8px;">directions_car</span><?= Html::encode($this->title) ?></h1>
-        <?= Html::a('<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">add</span>Nuevo Vehículo', ['create'], ['class' => 'btn btn-success']) ?>
+        <div class="d-flex gap-2 flex-wrap">
+            <?= Html::a(
+                '<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">campaign</span>Análisis de campaña',
+                ['analytics'],
+                ['class' => 'btn btn-info']
+            ) ?>
+            <?= Html::a('<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">add</span>Nuevo Vehículo', ['create'], ['class' => 'btn btn-success']) ?>
+        </div>
     </div>
 
     <div class="card mb-4">

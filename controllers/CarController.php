@@ -5,6 +5,7 @@ use Yii;
 use app\models\Car;
 use app\models\Brand;
 use app\models\CarAvailability;
+use app\models\PromoVisit;
 use app\models\Rental;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
@@ -432,6 +433,118 @@ class CarController extends Controller
 
         Yii::$app->session->setFlash('success', '🗑️ Vehículo eliminado exitosamente');
         return $this->redirect(['index']);
+    }
+
+    /**
+     * Reporte de campaña Facebook: visitas a los enlaces /promo/{slug},
+     * alquileres completados por vehículo y top de visitas.
+     */
+    public function actionAnalytics()
+    {
+        $req = Yii::$app->request;
+
+        $today = new \DateTimeImmutable('today');
+        $defaultStart = $today->modify('first day of this month')->format('Y-m-d');
+        $defaultEnd = $today->modify('last day of this month')->format('Y-m-d');
+
+        $start = (string) $req->get('start', $defaultStart);
+        $end = (string) $req->get('end', $defaultEnd);
+
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $start)) {
+            $start = $defaultStart;
+        }
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $end)) {
+            $end = $defaultEnd;
+        }
+        if (strcmp($start, $end) > 0) {
+            $tmp = $start;
+            $start = $end;
+            $end = $tmp;
+        }
+
+        // Vehículos con promoción Facebook (todos los que tengan slug),
+        // independientemente de si están activos hoy, para no perder histórico.
+        $promoCars = Car::find()
+            ->with(['marca'])
+            ->where(['not', ['facebook_promo_slug' => null]])
+            ->andWhere(['<>', 'facebook_promo_slug', ''])
+            ->orderBy(['nombre' => SORT_ASC])
+            ->all();
+
+        $visitsByCar = PromoVisit::countByCarInRange($start, $end);
+        $visitsByDay = PromoVisit::countByDayInRange($start, $end);
+
+        // Alquileres "completados" en el periodo: cualquier rental NO cancelado
+        // cuya fecha_inicio caiga en el rango. (Métrica más útil para campañas
+        // que solo contar 'finalizado'.)
+        $rentalsByCar = [];
+        if (!empty($promoCars)) {
+            $carIds = array_map(static function ($c) { return (int) $c->id; }, $promoCars);
+            $rows = (new \yii\db\Query())
+                ->from(Rental::tableName())
+                ->select(['car_id', 'cnt' => 'COUNT(*)'])
+                ->where(['car_id' => $carIds])
+                ->andWhere(['<>', 'estado_pago', 'cancelado'])
+                ->andWhere(['between', 'fecha_inicio', $start, $end])
+                ->groupBy(['car_id'])
+                ->all();
+            foreach ($rows as $r) {
+                $rentalsByCar[(int) $r['car_id']] = (int) $r['cnt'];
+            }
+        }
+
+        // Totales
+        $totalVisits = array_sum($visitsByCar);
+        $totalRentals = array_sum($rentalsByCar);
+        $activePromos = 0;
+        foreach ($promoCars as $c) {
+            if ((int) $c->facebook_promo_enabled === 1) {
+                $activePromos++;
+            }
+        }
+
+        // Tabla y ranking
+        $rows = [];
+        foreach ($promoCars as $c) {
+            $id = (int) $c->id;
+            $visits = (int) ($visitsByCar[$id] ?? 0);
+            $rentals = (int) ($rentalsByCar[$id] ?? 0);
+            $rows[] = [
+                'car' => $c,
+                'visits' => $visits,
+                'rentals' => $rentals,
+                'conversion' => $visits > 0 ? round(($rentals / $visits) * 100, 1) : 0.0,
+            ];
+        }
+        usort($rows, static function ($a, $b) {
+            return $b['visits'] <=> $a['visits'];
+        });
+        $top = array_slice($rows, 0, 5);
+
+        // Serie diaria para gráfico de línea
+        $period = new \DatePeriod(
+            new \DateTimeImmutable($start),
+            new \DateInterval('P1D'),
+            (new \DateTimeImmutable($end))->modify('+1 day')
+        );
+        $daily = [];
+        foreach ($period as $d) {
+            /** @var \DateTimeInterface $d */
+            $k = $d->format('Y-m-d');
+            $daily[$k] = (int) ($visitsByDay[$k] ?? 0);
+        }
+
+        return $this->render('analytics', [
+            'start' => $start,
+            'end' => $end,
+            'rows' => $rows,
+            'top' => $top,
+            'daily' => $daily,
+            'totalVisits' => (int) $totalVisits,
+            'totalRentals' => (int) $totalRentals,
+            'activePromos' => $activePromos,
+            'totalPromos' => count($promoCars),
+        ]);
     }
 
     /**
