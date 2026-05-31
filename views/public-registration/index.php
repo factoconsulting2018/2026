@@ -12,6 +12,9 @@ use app\models\CompanyConfig;
 
 $promoCar = $promoCar ?? null;
 $promos = $promos ?? [];
+$isRecurringMode = $isRecurringMode ?? false;
+$pageTitle = $pageTitle ?? 'Registro de Nuevo Cliente';
+$submitLabel = $isRecurringMode ? 'Enviar solicitud de alquiler' : 'Enviar Solicitud';
 
 $companyInfo = CompanyConfig::getCompanyInfo();
 $logoPath = $companyInfo['logo'] ?? null;
@@ -321,11 +324,18 @@ $promoNavUrlTemplate = Url::to(['public-registration/promo', 'slug' => '__SLUG__
                 </div>
             <?php endif; ?>
             <h2 class="mb-0">
-                Registro de Nuevo Cliente
+                <?= Html::encode($pageTitle) ?>
             </h2>
             <p class="mb-0 mt-2" style="font-size: 14px; opacity: 0.9;">
-                Completa el formulario y tu solicitud será revisada
+                <?= $isRecurringMode
+                    ? 'Completa el formulario para solicitar tu alquiler'
+                    : 'Completa el formulario y tu solicitud será revisada' ?>
             </p>
+            <?php if ($isRecurringMode): ?>
+            <p class="mb-0 mt-2 px-3" style="font-size: 13px; opacity: 0.92; line-height: 1.45;">
+                Si ya estás registrado con nosotros, esta solicitud llega directo al equipo de FACTO sin repetir tu registro.
+            </p>
+            <?php endif; ?>
             <p class="mb-0 mt-2" style="font-size: 14px; opacity: 0.95;">
                 <span class="material-symbols-outlined align-middle" style="font-size: 16px;">call</span>
                 <strong>Teléfono:</strong>
@@ -704,7 +714,7 @@ $promoNavUrlTemplate = Url::to(['public-registration/promo', 'slug' => '__SLUG__
                     <span class="material-symbols-outlined align-middle" style="font-size:18px;">arrow_back</span>
                     Atrás
                 </button>
-                <?= Html::submitButton('<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">send</span>Enviar Solicitud', [
+                <?= Html::submitButton('<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">send</span>' . Html::encode($submitLabel), [
                     'class' => 'btn btn-primary btn-lg'
                 ]) ?>
             </div>

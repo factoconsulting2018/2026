@@ -76,9 +76,11 @@ class RentalController extends Controller
     {
         $this->autoFinalizeCompletedRentals();
 
-        // Crear query base
+        $recurringCount = (int) Rental::find()->where(['is_recurring_request' => 1])->count();
+
+        // Crear query base (órdenes normales; excluye solicitudes recurrentes)
         $query = Rental::find()
-            ->where(['is_async' => 0])
+            ->where(['is_async' => 0, 'is_recurring_request' => 0])
             ->orderBy(['id' => SORT_DESC]);
         
         // Aplicar filtro de estado si existe
@@ -136,8 +138,24 @@ class RentalController extends Controller
             ],
         ]);
 
+        $recurringQuery = Rental::find()
+            ->where(['is_recurring_request' => 1])
+            ->with(['client'])
+            ->orderBy(['created_at' => SORT_DESC]);
+
+        $recurringDataProvider = new ActiveDataProvider([
+            'query' => $recurringQuery,
+            'pagination' => [
+                'pageSize' => 10,
+                'pageParam' => 'rec-page',
+                'pageSizeParam' => 'rec-per-page',
+            ],
+        ]);
+
         return $this->render('index', [
             'dataProvider' => $dataProvider,
+            'recurringDataProvider' => $recurringDataProvider,
+            'recurringCount' => $recurringCount,
             'status' => $estado_pago,
         ]);
     }

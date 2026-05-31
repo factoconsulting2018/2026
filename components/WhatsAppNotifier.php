@@ -717,6 +717,149 @@ class WhatsAppNotifier
     }
 
     /**
+     * Notifica a administradores (y al cliente si está activo) una solicitud de alquiler
+     * de un cliente ya registrado (formulario /realizar-alquiler).
+     *
+     * @return array{enabled:bool, attempted:int, sent:int, errors:array<string>, skipped_reason:?string}
+     */
+    public static function notifyRecurringRentalRequest(Client $client, Rental $rental, array $rentalDetails = []): array
+    {
+        $report = [
+            'enabled' => false,
+            'attempted' => 0,
+            'sent' => 0,
+            'errors' => [],
+            'skipped_reason' => null,
+        ];
+
+        try {
+            $cfg = CompanyConfig::getWhatsAppConfig();
+            if (!$cfg['enabled']) {
+                $report['skipped_reason'] = 'Integración WhatsApp desactivada en configuración.';
+                return $report;
+            }
+            if (!$cfg['notify_on_create']) {
+                $report['skipped_reason'] = 'Aviso automático desactivado en configuración.';
+                return $report;
+            }
+            $report['enabled'] = true;
+
+            $numbers = self::getAdminNumbers($cfg);
+            $clientNumber = self::getClientWhatsAppNumber($client, $cfg);
+            if ($clientNumber !== null && !in_array($clientNumber, $numbers, true)) {
+                $numbers[] = $clientNumber;
+            }
+            if (empty($numbers)) {
+                $msg = 'No hay teléfonos administradores configurados.';
+                $report['errors'][] = $msg;
+                $report['skipped_reason'] = $msg;
+                return $report;
+            }
+
+            $status = self::getStatus($cfg['api_url'], $cfg['session_id']);
+            if (!self::isConnected($status)) {
+                $bodyStatus = is_array($status['body'] ?? null) ? ($status['body']['status'] ?? 'unknown') : 'unknown';
+                $msg = $status['error'] ?? ('Sesión WhatsApp no conectada (estado: ' . $bodyStatus . ')');
+                $report['errors'][] = $msg;
+                $report['skipped_reason'] = $msg;
+                return $report;
+            }
+
+            $message = self::buildRecurringRentalRequestMessage($client, $rental, $rentalDetails);
+
+            foreach ($numbers as $number) {
+                $report['attempted']++;
+                try {
+                    $textRes = self::sendText($cfg['api_url'], $cfg['session_id'], $number, $message);
+                    if (!$textRes['ok']) {
+                        $report['errors'][] = $number . ': ' . ($textRes['error'] ?? 'fallo');
+                        continue;
+                    }
+                    $report['sent']++;
+                } catch (\Throwable $e) {
+                    $report['errors'][] = $number . ': ' . $e->getMessage();
+                }
+            }
+        } catch (\Throwable $e) {
+            Yii::error('notifyRecurringRentalRequest: ' . $e->getMessage(), 'whatsapp');
+            $report['errors'][] = $e->getMessage();
+        }
+
+        return $report;
+    }
+
+    /**
+     * Construye el mensaje WhatsApp para solicitud de cliente recurrente.
+     */
+    public static function buildRecurringRentalRequestMessage(Client $client, Rental $rental, array $rentalDetails = []): string
+    {
+        $company = CompanyConfig::getCompanyInfo();
+        $companyName = $company['name'] ?? 'FACTO RENT A CAR';
+
+        $orderId = $rental->rental_id ?: ('R' . $rental->id);
+
+        $nameRaw = trim((string) ($client->full_name ?? ''));
+        if ($nameRaw === '') {
+            $nameRaw = trim(((string) ($client->nombre ?? '')) . ' ' . ((string) ($client->apellido ?? '')));
+        }
+        $clientName = $nameRaw !== '' ? $nameRaw : '—';
+        $cedula = trim((string) ($client->cedula_fisica ?? ''));
+
+        $clientPhone = '';
+        foreach (['whatsapp', 'celular', 'telefono'] as $f) {
+            $val = trim((string) ($client->{$f} ?? ''));
+            if ($val !== '') {
+                $clientPhone = $val;
+                break;
+            }
+        }
+        $clientPhoneDigits = $clientPhone !== '' ? preg_replace('/\D+/', '', $clientPhone) : '';
+
+        $lines = [];
+        $lines[] = '*🔁 Solicitud de cliente recurrente — FACTO RENT A CAR*';
+        $lines[] = $companyName;
+        foreach (self::brandingLines() as $bl) {
+            $lines[] = $bl;
+        }
+        $lines[] = '';
+        $lines[] = 'Orden: *' . $orderId . '*';
+        $lines[] = 'Recibida: _' . self::nowWithDay() . '_';
+        $lines[] = '';
+        $lines[] = '👤 *Cliente:* ' . $clientName;
+        if ($cedula !== '') {
+            $lines[] = '🪪 *Cédula:* ' . $cedula;
+        }
+        if ($clientPhone !== '') {
+            $lines[] = '📱 *WhatsApp:* ' . $clientPhone;
+            if ($clientPhoneDigits !== '' && strlen($clientPhoneDigits) >= 7) {
+                $lines[] = 'https://wa.me/' . $clientPhoneDigits;
+            }
+        }
+
+        $tipo = trim((string) ($rentalDetails['tipo_auto'] ?? $rental->tipo_auto_solicitado ?? ''));
+        $rentIni = self::formatDateTimeWithDay(
+            $rentalDetails['fecha_inicio'] ?? $rental->fecha_inicio ?? '',
+            $rentalDetails['hora_inicio'] ?? $rental->hora_inicio ?? ''
+        );
+        $rentFin = self::formatDateTimeWithDay(
+            $rentalDetails['fecha_final'] ?? $rental->fecha_final ?? '',
+            $rentalDetails['hora_final'] ?? $rental->hora_final ?? ''
+        );
+
+        $lines[] = '';
+        $lines[] = '🚗 *Detalles del alquiler solicitado*';
+        if ($rentIni !== '') $lines[] = '📅 *Inicio:* ' . $rentIni;
+        if ($rentFin !== '') $lines[] = '📅 *Fin:* ' . $rentFin;
+        if ($tipo !== '') $lines[] = '🚙 *Tipo de auto:* ' . $tipo;
+        $lines[] = '🚘 *Vehículo:* Por asignar';
+
+        $lines[] = '';
+        $lines[] = 'Revíselo en el panel: Alquileres → Solicitudes recurrentes.';
+
+        return implode("\n", $lines);
+    }
+
+    /**
      * Convierte una fecha (Y-m-d o Y-m-d H:i:s) a "Lunes 01/06/2025".
      * Devuelve '' si no se puede.
      */

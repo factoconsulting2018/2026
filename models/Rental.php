@@ -11,7 +11,9 @@ use yii\db\ActiveRecord;
  * @property int $id
  * @property string $rental_id
  * @property int $client_id
- * @property int $car_id
+ * @property int|null $car_id
+ * @property string|null $tipo_auto_solicitado
+ * @property int $is_recurring_request
  * @property int $correapartir_enabled
  * @property string $fecha_correapartir
  * @property string $fecha_inicio
@@ -121,12 +123,15 @@ class Rental extends ActiveRecord
     public function rules()
     {
         return [
-            [['client_id', 'car_id', 'fecha_inicio', 'cantidad_dias'], 'required'],
-            [['client_id', 'car_id', 'correapartir_enabled', 'medio_dia_enabled', 'cantidad_dias', 'is_async', 'parent_rental_id', 'swapped_to_rental_id'], 'integer'],
+            [['client_id', 'fecha_inicio', 'cantidad_dias'], 'required'],
+            [['client_id', 'car_id', 'correapartir_enabled', 'medio_dia_enabled', 'cantidad_dias', 'is_async', 'is_recurring_request', 'parent_rental_id', 'swapped_to_rental_id'], 'integer'],
+            [['is_recurring_request'], 'default', 'value' => 0],
+            [['is_recurring_request'], 'in', 'range' => [0, 1]],
             [['fecha_inicio', 'fecha_final', 'hora_inicio', 'hora_final', 'fecha_correapartir', 'fecha_factura', 'swap_date', 'created_at', 'updated_at'], 'safe'],
             [['swap_reason'], 'string'],
             [['precio_por_dia', 'medio_dia_valor', 'abono1_monto', 'abono2_monto', 'abono3_monto', 'abono4_monto', 'abono5_monto'], 'number'], // Removido total_precio porque es columna generada
             [['rental_id', 'lugar_entrega', 'lugar_retiro', 'estado_pago', 'numero_factura', 'ejecutivo', 'ejecutivo_otro', 'abono1_descripcion', 'abono2_descripcion', 'abono3_descripcion', 'abono4_descripcion', 'abono5_descripcion'], 'string', 'max' => 255],
+            [['tipo_auto_solicitado'], 'string', 'max' => 80],
             [['comprobante_pago'], 'string', 'max' => 500],
             [['condiciones_especiales', 'choferes_autorizados'], 'string'],
             [['custom_conditions_html'], 'string'],
@@ -147,6 +152,8 @@ class Rental extends ActiveRecord
             'rental_id' => 'ID del Alquiler',
             'client_id' => 'Cliente',
             'car_id' => 'Vehículo',
+            'tipo_auto_solicitado' => 'Tipo de auto solicitado',
+            'is_recurring_request' => 'Solicitud recurrente',
             'correapartir_enabled' => 'Correapartir Habilitado',
             'fecha_correapartir' => 'Fecha Correapartir',
             'fecha_inicio' => 'Fecha de Inicio',
@@ -718,6 +725,10 @@ class Rental extends ActiveRecord
             return;
         }
 
+        if ((int)($this->is_recurring_request ?? 0) === 1) {
+            return;
+        }
+
         if ($this->car_id && $this->fecha_inicio && $this->cantidad_dias) {
             // Asegurar que fecha_final esté calculada antes de la validación
             if (empty($this->fecha_final) && !empty($this->fecha_inicio) && !empty($this->cantidad_dias) && $this->cantidad_dias > 0) {
@@ -772,6 +783,20 @@ class Rental extends ActiveRecord
                     ['<=', 'fecha_final', $this->fecha_final]
                 ]
             ])
+            ->all();
+    }
+
+    /**
+     * Solicitudes de alquiler enviadas por clientes ya registrados (formulario público).
+     *
+     * @return self[]
+     */
+    public static function findRecurringRequests(): array
+    {
+        return self::find()
+            ->with(['client'])
+            ->where(['is_recurring_request' => 1])
+            ->orderBy(['created_at' => SORT_DESC])
             ->all();
     }
 }

@@ -1,6 +1,8 @@
 <?php
 /** @var yii\web\View $this */
 /** @var yii\data\ActiveDataProvider $dataProvider */
+/** @var yii\data\ActiveDataProvider $recurringDataProvider */
+/** @var int $recurringCount */
 /** @var string $status */
 
 use yii\helpers\Html;
@@ -813,6 +815,15 @@ $this->registerCss('
             </button>
         </li>
         <li class="nav-item" role="presentation">
+            <button class="nav-link" id="recurring-tab" data-bs-toggle="tab" data-bs-target="#recurring-pane" type="button" role="tab" aria-controls="recurring-pane" aria-selected="false">
+                <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">repeat</span>
+                Solicitudes recurrentes
+                <?php if ($recurringCount > 0): ?>
+                <span class="badge rounded-pill bg-warning text-dark ms-1"><?= (int) $recurringCount ?></span>
+                <?php endif; ?>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
             <button class="nav-link" id="calendar-tab" data-bs-toggle="tab" data-bs-target="#calendar-pane" type="button" role="tab" aria-controls="calendar-pane" aria-selected="false">
                 <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">calendar_month</span>
                 Calendario de Disponibilidad
@@ -1474,7 +1485,125 @@ $this->registerCss('
         </div>
         <!-- Fin Tab 1: Listado de Alquileres -->
 
-        <!-- Tab 2: Calendario de Disponibilidad -->
+        <!-- Tab 2: Solicitudes recurrentes -->
+        <div class="tab-pane fade" id="recurring-pane" role="tabpanel" aria-labelledby="recurring-tab">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <h5 class="mb-0">
+                        <span class="material-symbols-outlined" style="font-size: 20px; vertical-align: middle; margin-right: 8px;">repeat</span>
+                        Solicitudes de clientes recurrentes
+                    </h5>
+                    <span class="badge bg-warning text-dark"><?= (int) $recurringCount ?> pendiente<?= $recurringCount !== 1 ? 's' : '' ?></span>
+                </div>
+                <div class="card-body p-0">
+                    <?php if ($recurringCount === 0): ?>
+                        <div class="p-4 text-center text-muted">
+                            <span class="material-symbols-outlined d-block mb-2" style="font-size: 40px; opacity: 0.5;">inbox</span>
+                            No hay solicitudes recurrentes por revisar.
+                        </div>
+                    <?php else: ?>
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0 align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Orden</th>
+                                        <th>Cliente</th>
+                                        <th>Tipo solicitado</th>
+                                        <th>Período</th>
+                                        <th>Vehículo</th>
+                                        <th class="text-end">Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($recurringDataProvider->getModels() as $model): ?>
+                                        <?php
+                                        $rentalId = !empty($model->rental_id) ? $model->rental_id : ('R' . $model->id);
+                                        $client = $model->client;
+                                        $clientName = $client
+                                            ? Html::encode(trim($client->full_name ?? (($client->nombre ?? '') . ' ' . ($client->apellido ?? ''))))
+                                            : 'Cliente no encontrado';
+                                        $telefono = '';
+                                        if ($client) {
+                                            foreach (['whatsapp', 'celular', 'telefono'] as $phoneField) {
+                                                $val = trim((string) ($client->{$phoneField} ?? ''));
+                                                if ($val !== '') {
+                                                    $telefono = $val;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                        $phoneDigits = $telefono !== '' ? preg_replace('/\D+/', '', $telefono) : '';
+                                        $tipo = trim((string) ($model->tipo_auto_solicitado ?? ''));
+                                        ?>
+                                        <tr>
+                                            <td>
+                                                <span class="badge bg-primary-subtle text-primary-emphasis"><?= Html::encode($rentalId) ?></span>
+                                                <div class="small text-muted mt-1">Recurrente</div>
+                                            </td>
+                                            <td>
+                                                <div class="fw-semibold"><?= $clientName ?></div>
+                                                <?php if ($telefono !== ''): ?>
+                                                    <?php if ($phoneDigits !== '' && strlen($phoneDigits) >= 7): ?>
+                                                        <a href="https://wa.me/<?= Html::encode($phoneDigits) ?>" target="_blank" rel="noopener" class="small text-success text-decoration-none">
+                                                            <span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;">chat</span>
+                                                            <?= Html::encode($telefono) ?>
+                                                        </a>
+                                                    <?php else: ?>
+                                                        <span class="small text-muted"><?= Html::encode($telefono) ?></span>
+                                                    <?php endif; ?>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td><?= $tipo !== '' ? Html::encode($tipo) : '<span class="text-muted">—</span>' ?></td>
+                                            <td>
+                                                <div class="small">
+                                                    <?= $model->fecha_inicio ? date('d/m/Y', strtotime($model->fecha_inicio)) : '—' ?>
+                                                    <?php if ($model->hora_inicio): ?>
+                                                        <span class="text-muted"><?= Html::encode($model->hora_inicio) ?></span>
+                                                    <?php endif; ?>
+                                                </div>
+                                                <div class="small text-muted">
+                                                    → <?= $model->fecha_final ? date('d/m/Y', strtotime($model->fecha_final)) : '—' ?>
+                                                    <?php if ($model->hora_final): ?>
+                                                        <?= Html::encode($model->hora_final) ?>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">Por asignar</span>
+                                            </td>
+                                            <td class="text-end">
+                                                <?= Html::a(
+                                                    '<span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;">edit</span> Asignar vehículo',
+                                                    ['update', 'id' => $model->id],
+                                                    ['class' => 'btn btn-sm btn-outline-primary']
+                                                ) ?>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                        <?php if ($recurringDataProvider->pagination && $recurringDataProvider->pagination->pageCount > 1): ?>
+                        <div class="d-flex justify-content-center p-3 border-top">
+                            <?= \yii\widgets\LinkPager::widget([
+                                'pagination' => $recurringDataProvider->pagination,
+                                'options' => ['class' => 'pagination mb-0'],
+                                'linkOptions' => ['class' => 'page-link'],
+                                'pageCssClass' => 'page-item',
+                                'prevPageCssClass' => 'page-item',
+                                'nextPageCssClass' => 'page-item',
+                                'activePageCssClass' => 'active',
+                                'disabledPageCssClass' => 'disabled',
+                            ]) ?>
+                        </div>
+                        <?php endif; ?>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+        <!-- Fin Tab 2: Solicitudes recurrentes -->
+
+        <!-- Tab 3: Calendario de Disponibilidad -->
         <div class="tab-pane fade" id="calendar-pane" role="tabpanel" aria-labelledby="calendar-tab">
             <div class="card">
                 <div class="card-header">

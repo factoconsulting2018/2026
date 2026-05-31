@@ -286,9 +286,12 @@ $today = date('d/m/Y');
                     <span class="material-symbols-outlined" style="font-size:18px;">person_add</span>
                     Solicitar Membresía
                 </a>
-                <a href="<?= Url::to(['/site/login']) ?>" class="btn-pill primary">
+                <a href="<?= Url::to(['/realizar-alquiler']) ?>" class="btn-pill primary">
+                    <span class="material-symbols-outlined" style="font-size:18px;">directions_car</span>
+                    Realizar alquiler
+                </a>
+                <a href="<?= Url::to(['/site/login']) ?>" class="btn-pill" title="Iniciar sesión administrativa" style="padding:7px 12px;">
                     <span class="material-symbols-outlined" style="font-size:18px;">login</span>
-                    Iniciar Sesión
                 </a>
             </div>
         </div>
@@ -325,13 +328,13 @@ $today = date('d/m/Y');
                 </div>
 
                 <div class="cta">
-                    <a href="<?= Url::to(['/solicitud-membresia']) ?>" class="btn-primary-cta">
-                        <span class="material-symbols-outlined" style="font-size:20px;">rocket_launch</span>
-                        Solicitar Membresía
+                    <a href="<?= Url::to(['/realizar-alquiler']) ?>" class="btn-primary-cta">
+                        <span class="material-symbols-outlined" style="font-size:20px;">directions_car</span>
+                        Realizar alquiler
                     </a>
-                    <a href="<?= Url::to(['/site/login']) ?>" class="btn-secondary-cta">
-                        <span class="material-symbols-outlined" style="font-size:20px;">login</span>
-                        Iniciar Sesión
+                    <a href="<?= Url::to(['/solicitud-membresia']) ?>" class="btn-secondary-cta">
+                        <span class="material-symbols-outlined" style="font-size:20px;">person_add</span>
+                        Solicitar Membresía
                     </a>
                 </div>
 
