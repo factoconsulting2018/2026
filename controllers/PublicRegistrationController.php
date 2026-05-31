@@ -32,6 +32,20 @@ class PublicRegistrationController extends Controller
     }
 
     /**
+     * Desactiva CSRF en endpoints AJAX públicos (validate y lookup-client) para que el
+     * formulario pueda consultarlos sin token. Estos endpoints son de solo lectura
+     * (validate) o devuelven datos no sensibles del cliente para autocompletar.
+     */
+    public function beforeAction($action)
+    {
+        if (in_array($action->id, ['validate', 'lookup-client'], true)) {
+            $this->enableCsrfValidation = false;
+            Yii::$app->request->enableCsrfValidation = false;
+        }
+        return parent::beforeAction($action);
+    }
+
+    /**
      * Muestra el formulario de registro público (Solicitud de Membresía).
      */
     public function actionIndex()
