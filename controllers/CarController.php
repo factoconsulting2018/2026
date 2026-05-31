@@ -443,8 +443,12 @@ class CarController extends Controller
     {
         $req = Yii::$app->request;
 
+        // La tasa de conversión solo es válida si visitas y alquileres se
+        // cuentan en la MISMA ventana. Como el tracking de visitas arrancó hoy,
+        // por defecto el rango es [hoy → último día del mes]. El usuario puede
+        // ampliar el rango con el filtro si quiere ver datos históricos de alquileres.
         $today = new \DateTimeImmutable('today');
-        $defaultStart = $today->modify('first day of this month')->format('Y-m-d');
+        $defaultStart = $today->format('Y-m-d');
         $defaultEnd = $today->modify('last day of this month')->format('Y-m-d');
 
         $start = (string) $req->get('start', $defaultStart);

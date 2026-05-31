@@ -124,15 +124,23 @@ $conversionTotal = $totalVisits > 0
                         <span class="material-symbols-outlined align-middle" style="font-size:18px;">filter_alt</span>
                         Aplicar filtro
                     </button>
-                    <?= Html::a(
-                        '<span class="material-symbols-outlined align-middle" style="font-size:18px;">calendar_month</span> Mes actual',
-                        ['analytics'],
-                        ['class' => 'btn btn-outline-secondary']
-                    ) ?>
                     <?php
+                    $todayStr = (new \DateTimeImmutable('today'))->format('Y-m-d');
+                    $endOfMonth = (new \DateTimeImmutable('last day of this month'))->format('Y-m-d');
+                    $firstOfMonth = (new \DateTimeImmutable('first day of this month'))->format('Y-m-d');
                     $prevStart = (new \DateTimeImmutable('first day of last month'))->format('Y-m-d');
                     $prevEnd = (new \DateTimeImmutable('last day of last month'))->format('Y-m-d');
                     ?>
+                    <?= Html::a(
+                        '<span class="material-symbols-outlined align-middle" style="font-size:18px;">today</span> Hoy → fin de mes',
+                        ['analytics', 'start' => $todayStr, 'end' => $endOfMonth],
+                        ['class' => 'btn btn-outline-primary']
+                    ) ?>
+                    <?= Html::a(
+                        '<span class="material-symbols-outlined align-middle" style="font-size:18px;">calendar_month</span> Mes completo',
+                        ['analytics', 'start' => $firstOfMonth, 'end' => $endOfMonth],
+                        ['class' => 'btn btn-outline-secondary']
+                    ) ?>
                     <?= Html::a(
                         '<span class="material-symbols-outlined align-middle" style="font-size:18px;">history</span> Mes pasado',
                         ['analytics', 'start' => $prevStart, 'end' => $prevEnd],
