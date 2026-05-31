@@ -375,4 +375,46 @@ class PublicRegistrationController extends Controller
 
         return [];
     }
+
+    /**
+     * Lookup AJAX: dado un número de cédula devuelve los datos del cliente si existe,
+     * para autocompletar el formulario en /realizar-alquiler.
+     */
+    public function actionLookupClient()
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+
+        $req = Yii::$app->request;
+        $cedula = trim((string) ($req->post('cedula', $req->get('cedula', ''))));
+        if ($cedula === '') {
+            return ['success' => false, 'found' => false, 'reason' => 'empty'];
+        }
+
+        $client = $this->findExistingClient($cedula);
+        if ($client === null) {
+            return ['success' => true, 'found' => false];
+        }
+
+        $name = trim((string) ($client->full_name ?? ''));
+        if ($name === '') {
+            $name = trim(((string) ($client->nombre ?? '')) . ' ' . ((string) ($client->apellido ?? '')));
+        }
+
+        return [
+            'success' => true,
+            'found' => true,
+            'data' => [
+                'cedula_fisica' => (string) ($client->cedula_fisica ?? ''),
+                'full_name' => $name,
+                'email' => (string) ($client->email ?? ''),
+                'whatsapp' => (string) ($client->whatsapp ?? ''),
+                'address' => (string) ($client->address ?? ''),
+                'licencias_choferes' => (string) ($client->licencias_choferes ?? ''),
+                'fecha_vencimiento_licencia' => (string) ($client->fecha_vencimiento_licencia ?? ''),
+                'fecha_vencimiento_cedula' => (string) ($client->fecha_vencimiento_cedula ?? ''),
+                'situacion_financiera' => (string) ($client->situacion_financiera ?? ''),
+                'situacion_financiera_detalle' => (string) ($client->situacion_financiera_detalle ?? ''),
+            ],
+        ];
+    }
 }

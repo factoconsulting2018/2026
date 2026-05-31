@@ -82,6 +82,7 @@ $config = [
                 'solicitud-membresia/validate' => 'public-registration/validate',
                 'realizar-alquiler' => 'public-registration/realizar-alquiler',
                 'realizar-alquiler/validate' => 'public-registration/validate',
+                'realizar-alquiler/lookup-client' => 'public-registration/lookup-client',
                 'promo/<slug:[a-z0-9\-]+>/validate' => 'public-registration/validate',
                 'promo/<slug:[a-z0-9\-]+>' => 'public-registration/promo',
                 'promo' => 'public-registration/promo',

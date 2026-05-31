@@ -75,6 +75,7 @@ if ($promoCar !== null) {
 }
 
 $promoNavUrlTemplate = Url::to(['public-registration/promo', 'slug' => '__SLUG__']);
+$lookupClientUrl = Url::to(['public-registration/lookup-client']);
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -1096,7 +1097,98 @@ $promoNavUrlTemplate = Url::to(['public-registration/promo', 'slug' => '__SLUG__
         const nombreInput = document.getElementById('public-nombre-input');
         const loadingEl = document.getElementById('hacienda-loading-public');
         const errorEl = document.getElementById('hacienda-error-public');
-        
+
+        const isRecurringMode = <?= $isRecurringMode ? 'true' : 'false' ?>;
+        const lookupClientUrl = <?= json_encode($lookupClientUrl) ?>;
+
+        // Mapea atributo Cliente -> id del input renderizado por ActiveForm.
+        // ActiveForm usa por defecto "client-{atributo}" en lowercase.
+        const recurringFieldMap = {
+            full_name: 'public-nombre-input',
+            email: 'client-email',
+            whatsapp: 'client-whatsapp',
+            address: 'client-address',
+            licencias_choferes: 'client-licencias_choferes',
+            fecha_vencimiento_licencia: 'client-fecha_vencimiento_licencia',
+            fecha_vencimiento_cedula: 'client-fecha_vencimiento_cedula',
+            situacion_financiera: 'situacion-financiera',
+            situacion_financiera_detalle: 'client-situacion_financiera_detalle'
+        };
+
+        let lookupTimeout = null;
+        let lastLookupCedula = '';
+
+        function flashFieldFilled(field) {
+            if (!field) return;
+            const original = field.style.backgroundColor;
+            field.style.backgroundColor = '#e8f5e8';
+            setTimeout(function () { field.style.backgroundColor = original; }, 2000);
+        }
+
+        function showRecurringBanner(client) {
+            const wrapper = document.getElementById('registration-form-wrapper');
+            if (!wrapper) return;
+            let banner = document.getElementById('recurring-client-banner');
+            if (!banner) {
+                banner = document.createElement('div');
+                banner.id = 'recurring-client-banner';
+                banner.className = 'alert alert-success d-flex align-items-center mb-4';
+                banner.style.borderRadius = '12px';
+                wrapper.insertBefore(banner, wrapper.firstChild);
+            }
+            const niceName = (client && client.full_name) ? client.full_name : 'cliente';
+            banner.innerHTML =
+                '<span class="material-symbols-outlined me-2" style="font-size:22px;">verified_user</span>' +
+                '<div>' +
+                '<strong>¡Bienvenido de vuelta, ' + escapeHtml(niceName) + '!</strong><br>' +
+                '<span class="small">Detectamos que ya estás registrado con nosotros. Completamos tus datos automáticamente; revisa que estén correctos y envía tu solicitud.</span>' +
+                '</div>';
+        }
+
+        function hideRecurringBanner() {
+            const banner = document.getElementById('recurring-client-banner');
+            if (banner) banner.remove();
+        }
+
+        function escapeHtml(s) {
+            return String(s)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+        }
+
+        function fillRecurringClientFields(data) {
+            if (!data || typeof data !== 'object') return;
+            Object.keys(recurringFieldMap).forEach(function (attr) {
+                if (!Object.prototype.hasOwnProperty.call(data, attr)) return;
+                const field = document.getElementById(recurringFieldMap[attr]);
+                if (!field) return;
+                const value = data[attr] != null ? String(data[attr]) : '';
+                field.value = value;
+                flashFieldFilled(field);
+                ['input', 'change'].forEach(function (evt) {
+                    field.dispatchEvent(new Event(evt, { bubbles: true }));
+                });
+            });
+            if (typeof window.__publicRegRefreshFieldStatuses === 'function') {
+                window.__publicRegRefreshFieldStatuses();
+            }
+        }
+
+        function lookupRecurringClient(cedula) {
+            return fetch(lookupClientUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({ cedula: cedula })
+            }).then(function (r) {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.json();
+            });
+        }
+
         let consultaTimeout = null;
         
         if (cedulaInput && nombreInput) {
@@ -1110,6 +1202,13 @@ $promoNavUrlTemplate = Url::to(['public-registration/promo', 'slug' => '__SLUG__
                 if (consultaTimeout) {
                     clearTimeout(consultaTimeout);
                 }
+                if (lookupTimeout) {
+                    clearTimeout(lookupTimeout);
+                }
+
+                if (isRecurringMode && cedula !== lastLookupCedula) {
+                    hideRecurringBanner();
+                }
                 
                 // Validar formato de cédula (9 o 10 dígitos)
                 if (!/^\d{9,10}$/.test(cedula)) {
@@ -1120,6 +1219,26 @@ $promoNavUrlTemplate = Url::to(['public-registration/promo', 'slug' => '__SLUG__
                 if (loadingEl) loadingEl.style.display = 'inline-flex';
                 if (errorEl) errorEl.style.display = 'none';
                 
+                if (isRecurringMode) {
+                    lookupTimeout = setTimeout(function () {
+                        lookupRecurringClient(cedula).then(function (resp) {
+                            if (resp && resp.found && resp.data) {
+                                if (loadingEl) loadingEl.style.display = 'none';
+                                lastLookupCedula = cedula;
+                                fillRecurringClientFields(resp.data);
+                                showRecurringBanner(resp.data);
+                                return;
+                            }
+                            // Cliente no existe: caer a la consulta Hacienda normal.
+                            consultarHaciendaPublic(cedula);
+                        }).catch(function (e) {
+                            console.error('lookup-client error:', e);
+                            consultarHaciendaPublic(cedula);
+                        });
+                    }, 400);
+                    return;
+                }
+
                 // Esperar 500ms después de que el usuario termine de escribir
                 consultaTimeout = setTimeout(function() {
                     consultarHaciendaPublic(cedula);
