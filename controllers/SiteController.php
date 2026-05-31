@@ -46,11 +46,15 @@ class SiteController extends Controller
                 'class' => AccessControl::class,
                 'rules' => [
                     [
-                        'actions' => ['login', 'error'],
+                        'actions' => ['login', 'error', 'portada'],
                         'allow' => true,
                     ],
                     [
-                        'actions' => ['logout', 'index', 'logs'],
+                        'actions' => ['index'],
+                        'allow' => true,
+                    ],
+                    [
+                        'actions' => ['logout', 'logs'],
                         'allow' => true,
                         'roles' => ['@'],
                     ],
@@ -78,12 +82,76 @@ class SiteController extends Controller
     }
 
     /**
+     * Portada pública (landing). Mismo render que `index` cuando el usuario
+     * no está autenticado. Mantenemos la action separada para tener una URL
+     * estable a la que enlazar directamente.
+     */
+    public function actionPortada()
+    {
+        $this->layout = false;
+        return $this->render('portada', [
+            'backgroundUrl' => $this->pickDailyBackground(),
+        ]);
+    }
+
+    /**
+     * Selecciona una imagen de fondo (montaña/playa) de forma determinista
+     * según el día del año. Cambia cada día y vuelve a empezar al año siguiente.
+     */
+    private function pickDailyBackground(): string
+    {
+        // Fotos libres en Unsplash (montaña + playa). Parámetros &w=1920&q=80
+        // entregan ~250 KB optimizadas vía CDN.
+        $photos = [
+            'https://images.unsplash.com/photo-1469474968028-56623f02e42e',
+            'https://images.unsplash.com/photo-1507525428034-b723cf961d3e',
+            'https://images.unsplash.com/photo-1444930694458-01babe71870e',
+            'https://images.unsplash.com/photo-1502082553048-f009c37129b9',
+            'https://images.unsplash.com/photo-1506905925346-21bda4d32df4',
+            'https://images.unsplash.com/photo-1418065460487-3956ef138a02',
+            'https://images.unsplash.com/photo-1473496169904-658ba7c44d8a',
+            'https://images.unsplash.com/photo-1439066615861-d1af74d74000',
+            'https://images.unsplash.com/photo-1518837695005-2083093ee35b',
+            'https://images.unsplash.com/photo-1454496522488-7a8e488e8606',
+            'https://images.unsplash.com/photo-1505228395891-9a51e7e86bf6',
+            'https://images.unsplash.com/photo-1426604966848-d7adac402bff',
+            'https://images.unsplash.com/photo-1507525428034-b723cf961d3e',
+            'https://images.unsplash.com/photo-1519046904884-53103b34b206',
+            'https://images.unsplash.com/photo-1551918120-9739cb430c6d',
+            'https://images.unsplash.com/photo-1483728642387-6c3bdd6c93e5',
+            'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b',
+            'https://images.unsplash.com/photo-1542401886-65d6c61db217',
+            'https://images.unsplash.com/photo-1493558103817-58b2924bce98',
+            'https://images.unsplash.com/photo-1520962880247-cfaf541c8724',
+            'https://images.unsplash.com/photo-1502082553048-f009c37129b9',
+            'https://images.unsplash.com/photo-1476610182048-b716b8518aae',
+            'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800',
+            'https://images.unsplash.com/photo-1500964757637-c85e8a162699',
+            'https://images.unsplash.com/photo-1455218873509-8097305ee378',
+            'https://images.unsplash.com/photo-1542401886-65d6c61db217',
+            'https://images.unsplash.com/photo-1414235077428-338989a2e8c0',
+            'https://images.unsplash.com/photo-1521295121783-8a321d551ad2',
+            'https://images.unsplash.com/photo-1502082553048-f009c37129b9',
+            'https://images.unsplash.com/photo-1507525428034-b723cf961d3e',
+            'https://images.unsplash.com/photo-1519046904884-53103b34b206',
+        ];
+        $dayOfYear = (int) date('z');
+        $url = $photos[$dayOfYear % count($photos)];
+
+        return $url . '?auto=format&fit=crop&w=1920&q=80';
+    }
+
+    /**
      * Displays homepage (Dashboard).
      *
      * @return string
      */
     public function actionIndex()
     {
+        if (Yii::$app->user->isGuest) {
+            return $this->actionPortada();
+        }
+
         try {
             $dateColumn = $this->resolveRentalColumn(['created_at', 'fecha_inicio', 'updated_at']);
             $amountColumn = $this->resolveRentalColumn(['total_precio', 'precio_por_dia']);
