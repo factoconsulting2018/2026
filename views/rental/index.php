@@ -623,6 +623,54 @@ $this->registerCss('
     .crud-actions-mobile .action-btn .material-symbols-outlined {
         font-size: 18px;
     }
+
+    /* ========================================
+       TABS DE ALQUILERES — color uniforme + texto blanco
+       ======================================== */
+    #rentalTabs.nav-tabs {
+        border-bottom: 2px solid #1b305b;
+        gap: 6px;
+    }
+
+    #rentalTabs.nav-tabs .nav-link {
+        background: linear-gradient(135deg, #3fa9f5 0%, #1b305b 100%);
+        color: #ffffff !important;
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        border-bottom: none;
+        border-radius: 12px 12px 0 0;
+        font-weight: 600;
+        padding: 10px 18px;
+        transition: filter 0.2s ease, transform 0.2s ease;
+        opacity: 0.85;
+    }
+
+    #rentalTabs.nav-tabs .nav-link:hover,
+    #rentalTabs.nav-tabs .nav-link:focus {
+        filter: brightness(1.1);
+        opacity: 1;
+        color: #ffffff !important;
+        border-color: rgba(255, 255, 255, 0.4);
+    }
+
+    #rentalTabs.nav-tabs .nav-link.active {
+        background: linear-gradient(135deg, #1b305b 0%, #3fa9f5 100%);
+        color: #ffffff !important;
+        opacity: 1;
+        border-color: #1b305b;
+        box-shadow: 0 4px 12px rgba(27, 48, 91, 0.25);
+        transform: translateY(-1px);
+    }
+
+    #rentalTabs.nav-tabs .nav-link .material-symbols-outlined {
+        color: #ffffff;
+        vertical-align: middle;
+    }
+
+    #rentalTabs.nav-tabs .nav-link .badge {
+        background-color: #ffffff !important;
+        color: #1b305b !important;
+        font-weight: 700;
+    }
     
     @media (max-width: 576px) {
         /* Acciones móviles más pequeñas en pantallas pequeñas */
@@ -705,8 +753,6 @@ $this->registerCss('
         .nav-tabs .material-symbols-outlined {
             font-size: 16px !important;
         }
-        
-        /* Contador responsive */
         .stat-item {
             font-size: 0.75rem;
             padding: 0.4rem 0.8rem;

@@ -508,12 +508,12 @@ $lookupClientUrl = Url::to(['public-registration/lookup-client']);
             <?= Html::hiddenInput('rental_tipo_auto', '', ['id' => 'h_rental_tipo_auto']) ?>
             <?= Html::hiddenInput('rental_tipo_auto_otro', '', ['id' => 'h_rental_tipo_auto_otro']) ?>
             
-            <!-- Cédula Física -->
+            <!-- Cédula Física / Jurídica -->
             <div class="row mb-3">
                 <div class="col-sm-4">
                     <label class="form-label">
                         <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle;">badge</span>
-                        Cédula Física *
+                        Cédula Física / Jurídica *
                     </label>
                 </div>
                 <div class="col-sm-8">
