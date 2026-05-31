@@ -5,6 +5,7 @@ namespace app\models;
 use Yii;
 use yii\db\ActiveRecord;
 use yii\db\Expression;
+use yii\db\Query;
 
 /**
  * Registro de visitas a la landing /promo/{slug}.
@@ -91,12 +92,12 @@ class PromoVisit extends ActiveRecord
         $start = $startDate . ' 00:00:00';
         $end = $endDate . ' 23:59:59';
 
-        $rows = self::find()
-            ->select(['car_id', 'cnt' => new Expression('COUNT(*)')])
+        $rows = (new Query())
+            ->from(self::tableName())
+            ->select(['car_id', 'cnt' => 'COUNT(*)'])
             ->andWhere(['between', 'created_at', $start, $end])
             ->andWhere(['not', ['car_id' => null]])
-            ->groupBy(['car_id'])
-            ->asArray()
+            ->groupBy('car_id')
             ->all();
 
         $out = [];
@@ -116,12 +117,12 @@ class PromoVisit extends ActiveRecord
         $start = $startDate . ' 00:00:00';
         $end = $endDate . ' 23:59:59';
 
-        $rows = self::find()
-            ->select(['d' => new Expression('DATE(created_at)'), 'cnt' => new Expression('COUNT(*)')])
+        $rows = (new Query())
+            ->from(self::tableName())
+            ->select(['d' => 'DATE(created_at)', 'cnt' => 'COUNT(*)'])
             ->andWhere(['between', 'created_at', $start, $end])
-            ->groupBy(new Expression('DATE(created_at)'))
-            ->orderBy(new Expression('DATE(created_at) ASC'))
-            ->asArray()
+            ->groupBy('DATE(created_at)')
+            ->orderBy('DATE(created_at) ASC')
             ->all();
 
         $out = [];
