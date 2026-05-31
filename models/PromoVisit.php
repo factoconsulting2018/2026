@@ -119,8 +119,8 @@ class PromoVisit extends ActiveRecord
         $rows = self::find()
             ->select(['d' => new Expression('DATE(created_at)'), 'cnt' => new Expression('COUNT(*)')])
             ->andWhere(['between', 'created_at', $start, $end])
-            ->groupBy([new Expression('DATE(created_at)')])
-            ->orderBy([new Expression('DATE(created_at)') => SORT_ASC])
+            ->groupBy(new Expression('DATE(created_at)'))
+            ->orderBy(new Expression('DATE(created_at) ASC'))
             ->asArray()
             ->all();
 
