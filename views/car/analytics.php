@@ -69,8 +69,25 @@ $conversionTotal = $totalVisits > 0
         padding: 16px 18px;
         box-shadow: 0 4px 16px rgba(0,0,0,0.08);
         margin-bottom: 20px;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
     }
     .analytics-container .chart-card h5 { margin-bottom: 16px; }
+    .analytics-container .chart-wrap {
+        position: relative;
+        width: 100%;
+        height: 280px;
+        flex: 1 1 auto;
+    }
+    .analytics-container .chart-wrap canvas {
+        width: 100% !important;
+        height: 100% !important;
+        display: block;
+    }
+    @media (max-width: 768px) {
+        .analytics-container .chart-wrap { height: 240px; }
+    }
     .analytics-container .promo-url-cell {
         font-family: ui-monospace, 'Cascadia Code', Menlo, Consolas, monospace;
         font-size: 12px;
@@ -158,32 +175,31 @@ $conversionTotal = $totalVisits > 0
     </div>
 
     <div class="row g-3">
-        <div class="col-12 col-xl-7">
+        <div class="col-12 col-md-6 col-xl-4">
             <div class="chart-card">
                 <h5>📊 Visitas por vehículo</h5>
-                <canvas id="chartVisits" height="280"></canvas>
+                <div class="chart-wrap"><canvas id="chartVisits"></canvas></div>
             </div>
         </div>
-        <div class="col-12 col-xl-5">
+        <div class="col-12 col-md-6 col-xl-4">
+            <div class="chart-card">
+                <h5>🚙 Alquileres por vehículo</h5>
+                <div class="chart-wrap"><canvas id="chartRentals"></canvas></div>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 col-xl-4">
             <div class="chart-card">
                 <h5>🏆 Top 5 más visitados</h5>
-                <canvas id="chartTop" height="280"></canvas>
+                <div class="chart-wrap"><canvas id="chartTop"></canvas></div>
                 <?php if (empty($top) || $top[0]['visits'] === 0): ?>
                     <p class="text-muted small mt-2 mb-0">Aún no hay visitas registradas en este período.</p>
                 <?php endif; ?>
             </div>
         </div>
-
-        <div class="col-12 col-xl-7">
-            <div class="chart-card">
-                <h5>🚙 Alquileres por vehículo</h5>
-                <canvas id="chartRentals" height="280"></canvas>
-            </div>
-        </div>
-        <div class="col-12 col-xl-5">
+        <div class="col-12 col-md-6 col-xl-4">
             <div class="chart-card">
                 <h5>📈 Tendencia de visitas</h5>
-                <canvas id="chartDaily" height="280"></canvas>
+                <div class="chart-wrap"><canvas id="chartDaily"></canvas></div>
             </div>
         </div>
     </div>
