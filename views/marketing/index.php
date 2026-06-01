@@ -66,11 +66,21 @@ $csrfToken = Yii::$app->request->csrfToken;
     .clients-table .col-exclude { width: 44px; text-align: center; }
     .btn-exclude { background: transparent; border: 1px solid transparent; border-radius: 6px; padding: 2px 6px; cursor: pointer; color: #c33; font-size: 14px; line-height: 1; }
     .btn-exclude:hover { background: #fde2e1; }
-    .btn-exclude.active { background: #fde2e1; border-color: #f1c4c2; color: #9a1f1c; }
-    tr.row-excluded { background: #fff4f4 !important; opacity: 0.85; }
-    tr.row-excluded td { color: #9a1f1c; }
-    tr.row-excluded .mk-row-check { pointer-events: none; opacity: 0.4; }
-    .exclude-counter { font-size: 12px; color: #9a1f1c; }
+
+    /* Panel de excluidos */
+    .excluded-panel { margin-top: 12px; border: 1px solid #f1c4c2; background: #fff7f6; border-radius: 10px; overflow: hidden; }
+    .excluded-panel .head { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: #fde2e1; cursor: pointer; }
+    .excluded-panel .head .title { font-weight: 600; color: #9a1f1c; flex: 1; }
+    .excluded-panel .head .actions { display: flex; gap: 8px; }
+    .excluded-panel .head .toggle { font-size: 12px; color: #9a1f1c; }
+    .excluded-panel .body { max-height: 220px; overflow-y: auto; }
+    .excluded-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .excluded-table tbody td { padding: 6px 10px; border-top: 1px solid #fbd6d4; vertical-align: middle; color: #5b2422; }
+    .excluded-table .col-cedula { width: 130px; font-family: monospace; color: #6f3a37; }
+    .excluded-table .col-phone { width: 140px; font-family: monospace; color: #6f3a37; }
+    .excluded-table .col-action { width: 110px; text-align: right; padding-right: 12px; }
+    .btn-reinclude { font-size: 12px; padding: 3px 10px; border-radius: 999px; border: 1px solid #198754; color: #198754; background: #fff; cursor: pointer; }
+    .btn-reinclude:hover { background: #198754; color: #fff; }
 </style>
 
 <div class="marketing-wrap">
@@ -94,10 +104,7 @@ $csrfToken = Yii::$app->request->csrfToken;
                     <input type="text" id="mk-search" class="form-control search" placeholder="Buscar por nombre, cédula o teléfono…">
                     <button type="button" class="btn btn-outline-primary btn-sm" id="mk-select-all">Seleccionar todos</button>
                     <button type="button" class="btn btn-outline-secondary btn-sm" id="mk-clear">Limpiar</button>
-                    <button type="button" class="btn btn-outline-danger btn-sm" id="mk-clear-excluded" title="Quitar todas las exclusiones guardadas en este navegador">
-                        Borrar exclusiones (<span id="mk-excluded-total">0</span>)
-                    </button>
-                    <span class="selection-info"><span id="mk-selected-count">0</span> de <?= count($clients) ?> seleccionados</span>
+                    <span class="selection-info"><span id="mk-selected-count">0</span> de <span id="mk-visible-count"><?= count($clients) ?></span> visibles</span>
                 </div>
                 <div class="clients-list-wrap">
                     <table class="clients-table">
@@ -129,6 +136,24 @@ $csrfToken = Yii::$app->request->csrfToken;
                             <?php endif; ?>
                         </tbody>
                     </table>
+                </div>
+
+                <div class="excluded-panel" id="mk-excluded-panel" style="display:none;">
+                    <div class="head" id="mk-excluded-head">
+                        <span class="material-symbols-outlined" style="color:#9a1f1c;">block</span>
+                        <span class="title">Destinatarios excluidos (<span id="mk-excluded-total">0</span>)</span>
+                        <div class="actions">
+                            <button type="button" class="btn btn-sm btn-outline-success" id="mk-include-all" title="Volver a incluir a todos">
+                                Incluir a todos
+                            </button>
+                            <span class="toggle" id="mk-excluded-toggle">Mostrar ▼</span>
+                        </div>
+                    </div>
+                    <div class="body" id="mk-excluded-body" style="display:none;">
+                        <table class="excluded-table">
+                            <tbody id="mk-excluded-tbody"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -282,9 +307,15 @@ $csrfToken = Yii::$app->request->csrfToken;
     const headerCheck = document.getElementById('mk-check-header');
     const selectAllBtn = document.getElementById('mk-select-all');
     const clearBtn = document.getElementById('mk-clear');
-    const clearExcludedBtn = document.getElementById('mk-clear-excluded');
     const excludedTotalEl = document.getElementById('mk-excluded-total');
+    const excludedPanel = document.getElementById('mk-excluded-panel');
+    const excludedHead = document.getElementById('mk-excluded-head');
+    const excludedBody = document.getElementById('mk-excluded-body');
+    const excludedTbody = document.getElementById('mk-excluded-tbody');
+    const excludedToggle = document.getElementById('mk-excluded-toggle');
+    const includeAllBtn = document.getElementById('mk-include-all');
     const selectedCountEl = document.getElementById('mk-selected-count');
+    const visibleCountEl = document.getElementById('mk-visible-count');
     const sendBtn = document.getElementById('mk-send-btn');
     const progress = document.getElementById('mk-progress');
     const progressBar = document.getElementById('mk-progress-bar');
