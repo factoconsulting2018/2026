@@ -88,6 +88,11 @@ $conditionsModel = new \app\models\CompanyConfig();
                                 <i class="fab fa-whatsapp text-success"></i> WhatsApp
                             </button>
                         </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="marketing-tab" data-bs-toggle="tab" data-bs-target="#marketing" type="button" role="tab" aria-controls="marketing" aria-selected="false">
+                                <i class="fas fa-bullhorn text-primary"></i> Marketing
+                            </button>
+                        </li>
                     </ul>
 
                     <div class="tab-content" id="configTabsContent">
@@ -1447,6 +1452,61 @@ sudo docker-compose exec app php yii migrate</code></pre>
                                 </div>
                             </div>
                         </div>
+
+                        <?php $mkConfig = \app\models\CompanyConfig::getMarketingConfig(); ?>
+                        <div class="tab-pane fade" id="marketing" role="tabpanel" aria-labelledby="marketing-tab">
+                            <div class="row mt-4">
+                                <div class="col-lg-9">
+                                    <h5 class="mb-3"><i class="fas fa-bullhorn text-primary"></i> Configuración de campañas de marketing</h5>
+                                    <p class="text-muted">
+                                        Aquí controla cómo se envían las campañas masivas de WhatsApp para evitar bloqueos o que la cuenta sea
+                                        marcada como spam. Las campañas se gestionan desde
+                                        <a href="<?= \yii\helpers\Url::to(['/marketing/index']) ?>">Menú &gt; Marketing</a>.
+                                    </p>
+
+                                    <?php $mkForm = ActiveForm::begin([
+                                        'action' => ['config/update-marketing'],
+                                        'method' => 'post',
+                                        'options' => ['class' => 'needs-validation', 'novalidate' => true],
+                                    ]); ?>
+
+                                    <div class="row g-3">
+                                        <div class="col-md-4">
+                                            <label class="form-label" for="marketing_interval_seconds">Intervalo por defecto (segundos)</label>
+                                            <input type="number" class="form-control" id="marketing_interval_seconds" name="marketing_interval_seconds" min="1" max="120" value="<?= (int) $mkConfig['interval_seconds'] ?>">
+                                            <small class="form-text text-muted">Tiempo entre cada mensaje individual. Recomendado: 5–10s.</small>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label" for="marketing_batch_size">Tamaño del lote</label>
+                                            <input type="number" class="form-control" id="marketing_batch_size" name="marketing_batch_size" min="1" max="500" value="<?= (int) $mkConfig['batch_size'] ?>">
+                                            <small class="form-text text-muted">Cuántos contactos se procesan por petición.</small>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label" for="marketing_batch_pause">Pausa entre lotes (segundos)</label>
+                                            <input type="number" class="form-control" id="marketing_batch_pause" name="marketing_batch_pause" min="0" max="3600" value="<?= (int) $mkConfig['batch_pause'] ?>">
+                                            <small class="form-text text-muted">Pausa adicional al completar cada lote.</small>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-3">
+                                        <label class="form-label" for="marketing_signature">Firma al pie del mensaje</label>
+                                        <textarea class="form-control" name="marketing_signature" id="marketing_signature" rows="4" placeholder="Ej: — FACTO RENT A CAR · 8367-0937 · www.factorentacar.com"><?= \yii\helpers\Html::encode($mkConfig['signature']) ?></textarea>
+                                        <small class="form-text text-muted">Se agrega automáticamente al final de cada mensaje enviado en una campaña.</small>
+                                    </div>
+
+                                    <?php if (!empty($mkConfig['last_campaign_at'])): ?>
+                                        <p class="text-muted mt-3 mb-0">Última campaña enviada: <strong><?= \yii\helpers\Html::encode($mkConfig['last_campaign_at']) ?></strong></p>
+                                    <?php endif; ?>
+
+                                    <div class="mt-3">
+                                        <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar configuración de Marketing</button>
+                                        <a href="<?= \yii\helpers\Url::to(['/marketing/index']) ?>" class="btn btn-outline-success ms-2"><i class="fas fa-bullhorn"></i> Ir a Marketing</a>
+                                    </div>
+
+                                    <?php ActiveForm::end(); ?>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1483,6 +1543,12 @@ document.addEventListener('DOMContentLoaded', function() {
         var waTabBtn = document.getElementById('whatsapp-tab');
         if (waTabBtn) {
             (new bootstrap.Tab(waTabBtn)).show();
+        }
+    }
+    if (window.location.hash === '#marketing' && window.bootstrap && window.bootstrap.Tab) {
+        var mkTabBtn = document.getElementById('marketing-tab');
+        if (mkTabBtn) {
+            (new bootstrap.Tab(mkTabBtn)).show();
         }
     }
     if (window.location.hash === '#orden-renta-pdf' && window.bootstrap && window.bootstrap.Tab) {

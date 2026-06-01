@@ -69,11 +69,19 @@ class CompanyConfig extends ActiveRecord
     const WHATSAPP_ADMIN_PHONE_5 = 'whatsapp_admin_phone_5';
     const WHATSAPP_PUBLIC_BASE_URL = 'whatsapp_public_base_url';
 
+    // Marketing (campañas WhatsApp)
+    const MARKETING_INTERVAL_SECONDS = 'marketing_interval_seconds';
+    const MARKETING_BATCH_SIZE = 'marketing_batch_size';
+    const MARKETING_BATCH_PAUSE = 'marketing_batch_pause';
+    const MARKETING_SIGNATURE = 'marketing_signature';
+    const MARKETING_LAST_CAMPAIGN_AT = 'marketing_last_campaign_at';
+
     // Directorios para archivos
     const UPLOAD_DIR = 'uploads/company/';
     const LOGO_DIR = 'uploads/company/logo/';
     const CONDITIONS_DIR = 'uploads/company/conditions/';
     const BANKS_LOGO_DIR = 'uploads/company/banks/';
+    const MARKETING_DIR = 'uploads/marketing/';
 
     public $logoFile;
     public $conditionsFile;
@@ -859,5 +867,41 @@ class CompanyConfig extends ActiveRecord
         }
 
         return '<div style="padding-top:8px;"><h2 style="font-size:13pt;text-align:center;margin:0 0 12px;font-family:helvetica,sans-serif;">TÉRMINOS Y CONDICIONES DEL<br>ALQUILER</h2>' . $html . '</div>';
+    }
+
+    /**
+     * Configuración de campañas de marketing.
+     *
+     * @return array{
+     *     interval_seconds: int,
+     *     batch_size: int,
+     *     batch_pause: int,
+     *     signature: string,
+     *     last_campaign_at: string
+     * }
+     */
+    public static function getMarketingConfig(): array
+    {
+        return [
+            'interval_seconds' => max(1, (int) self::getConfig(self::MARKETING_INTERVAL_SECONDS, '6')),
+            'batch_size' => max(1, (int) self::getConfig(self::MARKETING_BATCH_SIZE, '20')),
+            'batch_pause' => max(0, (int) self::getConfig(self::MARKETING_BATCH_PAUSE, '60')),
+            'signature' => (string) self::getConfig(self::MARKETING_SIGNATURE, ''),
+            'last_campaign_at' => (string) self::getConfig(self::MARKETING_LAST_CAMPAIGN_AT, ''),
+        ];
+    }
+
+    /**
+     * Guarda la configuración de marketing.
+     */
+    public static function saveMarketingConfig(int $intervalSeconds, int $batchSize, int $batchPause, string $signature): void
+    {
+        $intervalSeconds = max(1, min(300, $intervalSeconds));
+        $batchSize = max(1, min(500, $batchSize));
+        $batchPause = max(0, min(3600, $batchPause));
+        self::setConfig(self::MARKETING_INTERVAL_SECONDS, (string) $intervalSeconds, 'Segundos entre cada mensaje en una campaña');
+        self::setConfig(self::MARKETING_BATCH_SIZE, (string) $batchSize, 'Cantidad de mensajes por lote antes de pausar');
+        self::setConfig(self::MARKETING_BATCH_PAUSE, (string) $batchPause, 'Segundos de pausa al terminar un lote');
+        self::setConfig(self::MARKETING_SIGNATURE, $signature, 'Firma anexada al pie de cada mensaje de campaña');
     }
 }

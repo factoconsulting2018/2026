@@ -1,0 +1,419 @@
+<?php
+
+use yii\helpers\Html;
+use yii\helpers\Url;
+
+/* @var $this yii\web\View */
+/* @var $clients array  */
+/* @var $waConfig array */
+/* @var $mkConfig array */
+/* @var $connected bool */
+
+$this->title = 'Marketing — Campañas WhatsApp';
+$this->params['breadcrumbs'][] = $this->title;
+$this->registerCssFile('https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css');
+$this->registerJsFile('https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js', ['position' => \yii\web\View::POS_END]);
+
+$csrfParam = Yii::$app->request->csrfParam;
+$csrfToken = Yii::$app->request->csrfToken;
+?>
+
+<style>
+    .marketing-wrap { padding: 12px 4px; }
+    .marketing-card { background: #fff; border-radius: 14px; box-shadow: 0 6px 18px rgba(0,0,0,0.06); padding: 18px; margin-bottom: 18px; }
+    .marketing-card h5 { margin-top: 0; }
+    .status-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+    .status-pill.connected { background: #d1f5d3; color: #176d3b; }
+    .status-pill.disconnected { background: #fde2e1; color: #9a1f1c; }
+    .clients-toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
+    .clients-toolbar .search { flex: 1; min-width: 220px; }
+    .clients-list-wrap { max-height: 460px; overflow-y: auto; border: 1px solid #e3e6ef; border-radius: 10px; }
+    .clients-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+    .clients-table thead th { background: #f1f4fa; padding: 8px 10px; text-align: left; position: sticky; top: 0; z-index: 1; font-weight: 600; color: #334; }
+    .clients-table tbody td { padding: 6px 10px; border-top: 1px solid #f1f3f7; vertical-align: middle; }
+    .clients-table tbody tr:hover { background: #fafbff; }
+    .clients-table .col-check { width: 36px; }
+    .clients-table .col-cedula { width: 130px; font-family: monospace; color: #555; }
+    .clients-table .col-phone { width: 140px; font-family: monospace; color: #1a6db5; }
+    .selection-info { font-size: 13px; color: #345; margin-left: auto; }
+    .editor-wrap { min-height: 220px; border: 1px solid #d9dde6; border-radius: 0 0 10px 10px; background: #fff; }
+    .ql-toolbar.ql-snow { border-radius: 10px 10px 0 0; border-color: #d9dde6 !important; }
+    .image-preview { display: flex; gap: 12px; align-items: center; margin-top: 10px; padding: 10px; background: #f7f9ff; border: 1px dashed #b9c3df; border-radius: 10px; }
+    .image-preview img { max-height: 84px; max-width: 120px; border-radius: 6px; border: 1px solid #d9dde6; }
+    .image-preview .info { flex: 1; font-size: 13px; color: #345; word-break: break-all; }
+    .send-progress { margin-top: 12px; background: #f7f9ff; border-radius: 10px; padding: 12px; border: 1px solid #e0e6f3; display: none; }
+    .send-progress.active { display: block; }
+    .send-progress .bar { height: 10px; background: #e3e7f1; border-radius: 999px; overflow: hidden; }
+    .send-progress .bar > i { display: block; height: 100%; background: linear-gradient(90deg, #25d366, #128c7e); width: 0; transition: width 0.3s ease; }
+    .send-progress .stats { display: flex; gap: 12px; font-size: 13px; margin-bottom: 6px; flex-wrap: wrap; color: #345; }
+    .send-progress .stat-pill { padding: 3px 10px; border-radius: 999px; background: #fff; border: 1px solid #d9dde6; }
+    .send-progress .stat-pill.ok { color: #176d3b; border-color: #b9e6c2; }
+    .send-progress .stat-pill.fail { color: #9a1f1c; border-color: #f1c4c2; }
+    .results-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 12px; }
+    .results-table th, .results-table td { padding: 6px 8px; border-bottom: 1px solid #f0f2f7; text-align: left; }
+    .results-table .row-ok { color: #176d3b; }
+    .results-table .row-fail { color: #9a1f1c; }
+    .placeholders-hint { font-size: 12px; color: #6a7186; }
+    .placeholders-hint code { background: #f1f3f9; padding: 1px 4px; border-radius: 4px; color: #345; }
+</style>
+
+<div class="marketing-wrap">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap" style="gap:10px;">
+        <h3 class="m-0"><i class="material-symbols-outlined align-middle">campaign</i> Marketing — Campañas WhatsApp</h3>
+        <div>
+            <?php if ($connected): ?>
+                <span class="status-pill connected"><i class="material-symbols-outlined" style="font-size:14px;">check_circle</i> Sesión WhatsApp conectada</span>
+            <?php else: ?>
+                <span class="status-pill disconnected"><i class="material-symbols-outlined" style="font-size:14px;">error</i> WhatsApp desconectado</span>
+                <a class="btn btn-sm btn-outline-primary ms-2" href="<?= Url::to(['/config/index']) ?>#whatsapp">Ir a WhatsApp</a>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="marketing-card">
+                <h5>1. Seleccionar destinatarios</h5>
+                <div class="clients-toolbar">
+                    <input type="text" id="mk-search" class="form-control search" placeholder="Buscar por nombre, cédula o teléfono…">
+                    <button type="button" class="btn btn-outline-primary btn-sm" id="mk-select-all">Seleccionar todos</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="mk-clear">Limpiar</button>
+                    <span class="selection-info"><span id="mk-selected-count">0</span> de <?= count($clients) ?> seleccionados</span>
+                </div>
+                <div class="clients-list-wrap">
+                    <table class="clients-table">
+                        <thead>
+                            <tr>
+                                <th class="col-check"><input type="checkbox" id="mk-check-header" title="Seleccionar visibles"></th>
+                                <th>Nombre</th>
+                                <th class="col-cedula">Cédula</th>
+                                <th class="col-phone">WhatsApp</th>
+                            </tr>
+                        </thead>
+                        <tbody id="mk-clients-tbody">
+                            <?php foreach ($clients as $c): ?>
+                                <tr data-cli-id="<?= (int) $c['id'] ?>" data-search="<?= Html::encode(strtolower($c['name'] . ' ' . $c['cedula'] . ' ' . $c['phone'])) ?>">
+                                    <td class="col-check"><input type="checkbox" class="mk-row-check" value="<?= (int) $c['id'] ?>"></td>
+                                    <td><?= Html::encode($c['name']) ?></td>
+                                    <td class="col-cedula"><?= Html::encode($c['cedula']) ?></td>
+                                    <td class="col-phone"><?= Html::encode($c['phone']) ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                            <?php if (empty($clients)): ?>
+                                <tr><td colspan="4" class="text-center text-muted p-4">No hay clientes con WhatsApp registrado.</td></tr>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="marketing-card">
+                <h5>2. Mensaje</h5>
+                <p class="placeholders-hint">
+                    Puede usar marcadores que se reemplazan por cliente:
+                    <code>{nombre}</code>, <code>{cedula}</code>.
+                </p>
+
+                <div id="mk-editor-toolbar">
+                    <span class="ql-formats">
+                        <button class="ql-bold"></button>
+                        <button class="ql-italic"></button>
+                        <button class="ql-underline"></button>
+                    </span>
+                    <span class="ql-formats">
+                        <button class="ql-list" value="ordered"></button>
+                        <button class="ql-list" value="bullet"></button>
+                    </span>
+                    <span class="ql-formats">
+                        <button class="ql-link"></button>
+                        <button class="ql-clean"></button>
+                    </span>
+                </div>
+                <div id="mk-editor" class="editor-wrap"></div>
+
+                <div class="mt-3">
+                    <label class="form-label fw-semibold">Adjuntar imagen (opcional)</label>
+                    <input type="file" id="mk-image-input" accept="image/png,image/jpeg,image/gif,image/webp" class="form-control form-control-sm">
+                    <div class="image-preview" id="mk-image-preview" style="display:none;">
+                        <img id="mk-image-thumb" src="" alt="preview">
+                        <div class="info">
+                            <div><strong>Archivo:</strong> <span id="mk-image-name">—</span></div>
+                            <div><strong>URL pública:</strong> <span id="mk-image-url">—</span></div>
+                            <div class="text-muted">Esta imagen se envía como mensaje con el texto como pie. Asegúrese de tener la URL pública configurada en WhatsApp.</div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-danger" id="mk-image-remove">Quitar</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="marketing-card">
+                <h5>3. Envío controlado</h5>
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-6">
+                        <label class="form-label">Segundos entre cada mensaje</label>
+                        <input type="number" min="1" max="120" id="mk-interval" class="form-control" value="<?= (int) $mkConfig['interval_seconds'] ?>">
+                        <div class="form-text">Recomendado: 5 a 10 segundos para no ser marcado como spam.</div>
+                    </div>
+                    <div class="col-md-6">
+                        <button type="button" class="btn btn-success w-100" id="mk-send-btn" <?= $connected ? '' : 'disabled' ?>>
+                            <i class="material-symbols-outlined align-middle">send</i>
+                            Enviar campaña
+                        </button>
+                    </div>
+                </div>
+
+                <div class="send-progress" id="mk-progress">
+                    <div class="stats">
+                        <span class="stat-pill">Total: <strong id="mk-stat-total">0</strong></span>
+                        <span class="stat-pill ok">Enviados: <strong id="mk-stat-ok">0</strong></span>
+                        <span class="stat-pill fail">Fallidos: <strong id="mk-stat-fail">0</strong></span>
+                        <span class="stat-pill">Restantes: <strong id="mk-stat-pending">0</strong></span>
+                    </div>
+                    <div class="bar"><i id="mk-progress-bar"></i></div>
+                    <div class="mt-2 text-muted" id="mk-progress-text">Preparando…</div>
+                </div>
+
+                <div id="mk-results"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    const CSRF_PARAM = <?= json_encode($csrfParam) ?>;
+    const CSRF_TOKEN = <?= json_encode($csrfToken) ?>;
+    const URL_SEND = <?= json_encode(Url::to(['marketing/send'])) ?>;
+    const URL_UPLOAD = <?= json_encode(Url::to(['marketing/upload-image'])) ?>;
+    const BATCH_SIZE = <?= max(1, (int) $mkConfig['batch_size']) ?>;
+
+    const quill = new Quill('#mk-editor', {
+        modules: { toolbar: '#mk-editor-toolbar' },
+        placeholder: 'Escriba aquí el mensaje para sus clientes…',
+        theme: 'snow'
+    });
+
+    const tbody = document.getElementById('mk-clients-tbody');
+    const searchInput = document.getElementById('mk-search');
+    const headerCheck = document.getElementById('mk-check-header');
+    const selectAllBtn = document.getElementById('mk-select-all');
+    const clearBtn = document.getElementById('mk-clear');
+    const selectedCountEl = document.getElementById('mk-selected-count');
+    const sendBtn = document.getElementById('mk-send-btn');
+    const progress = document.getElementById('mk-progress');
+    const progressBar = document.getElementById('mk-progress-bar');
+    const progressText = document.getElementById('mk-progress-text');
+    const statTotal = document.getElementById('mk-stat-total');
+    const statOk = document.getElementById('mk-stat-ok');
+    const statFail = document.getElementById('mk-stat-fail');
+    const statPending = document.getElementById('mk-stat-pending');
+    const resultsBox = document.getElementById('mk-results');
+    const intervalInput = document.getElementById('mk-interval');
+
+    function getAllRows() {
+        return Array.from(tbody.querySelectorAll('tr[data-cli-id]'));
+    }
+    function getCheckedIds() {
+        return getAllRows()
+            .filter(r => r.querySelector('.mk-row-check')?.checked)
+            .map(r => parseInt(r.dataset.cliId, 10));
+    }
+    function refreshSelectedCount() {
+        selectedCountEl.textContent = getCheckedIds().length;
+    }
+
+    searchInput.addEventListener('input', function() {
+        const term = this.value.trim().toLowerCase();
+        getAllRows().forEach(row => {
+            row.style.display = (!term || row.dataset.search.indexOf(term) !== -1) ? '' : 'none';
+        });
+    });
+
+    headerCheck.addEventListener('change', function() {
+        const checked = this.checked;
+        getAllRows().forEach(row => {
+            if (row.style.display !== 'none') {
+                const cb = row.querySelector('.mk-row-check');
+                if (cb) cb.checked = checked;
+            }
+        });
+        refreshSelectedCount();
+    });
+
+    selectAllBtn.addEventListener('click', function() {
+        getAllRows().forEach(row => {
+            const cb = row.querySelector('.mk-row-check');
+            if (cb) cb.checked = true;
+        });
+        refreshSelectedCount();
+    });
+
+    clearBtn.addEventListener('click', function() {
+        getAllRows().forEach(row => {
+            const cb = row.querySelector('.mk-row-check');
+            if (cb) cb.checked = false;
+        });
+        headerCheck.checked = false;
+        refreshSelectedCount();
+    });
+
+    tbody.addEventListener('change', function(e) {
+        if (e.target && e.target.classList.contains('mk-row-check')) {
+            refreshSelectedCount();
+        }
+    });
+
+    // === Subida de imagen ===
+    const imageInput = document.getElementById('mk-image-input');
+    const previewBox = document.getElementById('mk-image-preview');
+    const imageThumb = document.getElementById('mk-image-thumb');
+    const imageName = document.getElementById('mk-image-name');
+    const imageUrlEl = document.getElementById('mk-image-url');
+    const imageRemove = document.getElementById('mk-image-remove');
+    let uploadedImage = null; // { public_url, url, filename }
+
+    imageInput.addEventListener('change', async function() {
+        const file = this.files && this.files[0];
+        if (!file) return;
+        const fd = new FormData();
+        fd.append('image', file);
+        fd.append(CSRF_PARAM, CSRF_TOKEN);
+        previewBox.style.display = 'flex';
+        imageName.textContent = 'Subiendo…';
+        imageUrlEl.textContent = '—';
+        imageThumb.src = URL.createObjectURL(file);
+        try {
+            const res = await fetch(URL_UPLOAD, { method: 'POST', body: fd, credentials: 'same-origin' });
+            const data = await res.json();
+            if (data && data.success) {
+                uploadedImage = { public_url: data.public_url, url: data.url, filename: data.filename };
+                imageName.textContent = data.filename;
+                imageUrlEl.textContent = data.public_url;
+            } else {
+                uploadedImage = null;
+                imageName.textContent = 'Error: ' + (data && data.message ? data.message : 'fallo al subir');
+                imageUrlEl.textContent = '—';
+            }
+        } catch (e) {
+            uploadedImage = null;
+            imageName.textContent = 'Error: ' + e.message;
+        }
+    });
+
+    imageRemove.addEventListener('click', function() {
+        uploadedImage = null;
+        imageInput.value = '';
+        previewBox.style.display = 'none';
+    });
+
+    // === Envío en lotes ===
+    function getPlainMessage() {
+        const html = quill.root.innerHTML;
+        // Conservar saltos de línea: convertir <p>, <br> a \n
+        let text = html
+            .replace(/<\s*br\s*\/?>/gi, '\n')
+            .replace(/<\/p>/gi, '\n')
+            .replace(/<p[^>]*>/gi, '')
+            .replace(/<li[^>]*>/gi, '• ')
+            .replace(/<\/li>/gi, '\n')
+            .replace(/<\/?(strong|b)>/gi, '*')
+            .replace(/<\/?(em|i)>/gi, '_')
+            .replace(/<[^>]+>/g, '')
+            .replace(/&nbsp;/g, ' ')
+            .replace(/&amp;/g, '&')
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&quot;/g, '"');
+        return text.replace(/\n{3,}/g, '\n\n').trim();
+    }
+
+    async function sendBatch(ids, message, interval, isFirst) {
+        const fd = new FormData();
+        fd.append(CSRF_PARAM, CSRF_TOKEN);
+        ids.forEach(id => fd.append('client_ids[]', id));
+        fd.append('message', message);
+        fd.append('interval_seconds', interval);
+        if (uploadedImage && uploadedImage.public_url) {
+            fd.append('image_public_url', uploadedImage.public_url);
+        }
+        const res = await fetch(URL_SEND, { method: 'POST', body: fd, credentials: 'same-origin' });
+        return res.json();
+    }
+
+    sendBtn.addEventListener('click', async function() {
+        const ids = getCheckedIds();
+        if (ids.length === 0) {
+            alert('Seleccione al menos un cliente.');
+            return;
+        }
+        const message = getPlainMessage();
+        if (!message && !uploadedImage) {
+            alert('Escriba un mensaje o adjunte una imagen.');
+            return;
+        }
+        const interval = Math.max(1, parseInt(intervalInput.value || '6', 10));
+        const estSec = Math.ceil(ids.length * interval * 1.05);
+        if (!confirm('Va a enviar el mensaje a ' + ids.length + ' contacto(s). Tiempo estimado: ~' + estSec + 's. ¿Continuar?')) {
+            return;
+        }
+
+        sendBtn.disabled = true;
+        progress.classList.add('active');
+        statTotal.textContent = ids.length;
+        statOk.textContent = '0';
+        statFail.textContent = '0';
+        statPending.textContent = ids.length;
+        progressBar.style.width = '0%';
+        progressText.textContent = 'Iniciando…';
+        resultsBox.innerHTML = '';
+
+        let totalOk = 0;
+        let totalFail = 0;
+        const allDetails = [];
+
+        for (let i = 0; i < ids.length; i += BATCH_SIZE) {
+            const batch = ids.slice(i, i + BATCH_SIZE);
+            progressText.textContent = 'Enviando lote ' + (Math.floor(i / BATCH_SIZE) + 1) + ' (' + batch.length + ' contactos)…';
+            try {
+                const data = await sendBatch(batch, message, interval, i === 0);
+                if (data && typeof data === 'object') {
+                    totalOk += parseInt(data.sent || 0, 10);
+                    totalFail += parseInt(data.failed || 0, 10);
+                    if (Array.isArray(data.details)) {
+                        data.details.forEach(d => allDetails.push(d));
+                    }
+                }
+            } catch (e) {
+                totalFail += batch.length;
+                batch.forEach(id => allDetails.push({ id, ok: false, error: e.message }));
+            }
+            const processed = Math.min(i + batch.length, ids.length);
+            const pct = Math.round((processed / ids.length) * 100);
+            progressBar.style.width = pct + '%';
+            statOk.textContent = totalOk;
+            statFail.textContent = totalFail;
+            statPending.textContent = ids.length - processed;
+        }
+
+        progressText.textContent = 'Campaña finalizada. Enviados: ' + totalOk + ' / ' + ids.length;
+        sendBtn.disabled = false;
+
+        if (allDetails.length > 0) {
+            let html = '<h6 class="mt-3">Resultado por contacto</h6><table class="results-table"><thead><tr><th>Cliente</th><th>WhatsApp</th><th>Estado</th></tr></thead><tbody>';
+            allDetails.forEach(d => {
+                html += '<tr class="' + (d.ok ? 'row-ok' : 'row-fail') + '">'
+                    + '<td>' + (d.name || ('#' + d.id)) + '</td>'
+                    + '<td>' + (d.phone || '—') + '</td>'
+                    + '<td>' + (d.ok ? 'Enviado' : ('Error: ' + (d.error || 'fallo'))) + '</td>'
+                    + '</tr>';
+            });
+            html += '</tbody></table>';
+            resultsBox.innerHTML = html;
+        }
+    });
+
+    refreshSelectedCount();
+})();
+</script>

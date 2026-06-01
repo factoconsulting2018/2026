@@ -777,6 +777,32 @@ class ConfigController extends Controller
         return $this->redirect(Url::to(['config/index']) . '#dekra');
     }
 
+    // ==================== Marketing ====================
+
+    /**
+     * Guarda la configuración general de campañas de marketing.
+     */
+    public function actionUpdateMarketing()
+    {
+        if (!Yii::$app->request->isPost) {
+            return $this->redirect(Url::to(['config/index']) . '#marketing');
+        }
+
+        $interval = (int) Yii::$app->request->post('marketing_interval_seconds', 6);
+        $batch = (int) Yii::$app->request->post('marketing_batch_size', 20);
+        $pause = (int) Yii::$app->request->post('marketing_batch_pause', 60);
+        $signature = trim((string) Yii::$app->request->post('marketing_signature', ''));
+
+        try {
+            CompanyConfig::saveMarketingConfig($interval, $batch, $pause, $signature);
+            Yii::$app->session->setFlash('success', 'Configuración de Marketing guardada correctamente.');
+        } catch (\Throwable $e) {
+            Yii::$app->session->setFlash('error', 'Error al guardar Marketing: ' . $e->getMessage());
+        }
+
+        return $this->redirect(Url::to(['config/index']) . '#marketing');
+    }
+
     // ==================== WhatsApp API ====================
 
     /**

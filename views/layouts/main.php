@@ -519,6 +519,13 @@ $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => Yii
                 </a>
             </li>
             <li class="nav-item">
+                <a class="nav-link <?= Yii::$app->controller->id === 'marketing' ? 'active' : '' ?>"
+                   href="<?= \yii\helpers\Url::to(['/marketing/index']) ?>">
+                    <span class="nav-icon material-symbols-outlined">campaign</span>
+                    <span class="nav-text">Marketing</span>
+                </a>
+            </li>
+            <li class="nav-item">
                 <a class="nav-link <?= Yii::$app->controller->id === 'config' ? 'active' : '' ?>" 
                    href="<?= \yii\helpers\Url::to(['/config/index']) ?>">
                     <span class="nav-icon material-symbols-outlined">settings</span>
