@@ -313,8 +313,32 @@ $csrfToken = Yii::$app->request->csrfToken;
             const data = await res.json();
             if (data && data.success) {
                 uploadedImage = { public_url: data.public_url, url: data.url, filename: data.filename };
-                imageName.textContent = data.filename;
-                imageUrlEl.textContent = data.public_url;
+                imageName.textContent = data.filename + ' (' + Math.round((data.size || 0)/1024) + ' KB)';
+                imageUrlEl.innerHTML = '<a href="' + data.public_url + '" target="_blank" rel="noopener">' + data.public_url + '</a>';
+
+                // Mostrar alerta si la imagen no es accesible públicamente (la API no podrá descargarla)
+                let warn = document.getElementById('mk-image-warn');
+                if (!warn) {
+                    warn = document.createElement('div');
+                    warn.id = 'mk-image-warn';
+                    warn.className = 'alert alert-warning mt-2 mb-0 p-2';
+                    warn.style.fontSize = '12px';
+                    previewBox.parentElement.appendChild(warn);
+                }
+                if (data.reachable === false) {
+                    warn.style.display = 'block';
+                    warn.innerHTML = '<strong>⚠ La URL pública NO es accesible desde Internet</strong><br>'
+                        + 'La API de WhatsApp no podrá descargar la imagen y los mensajes con imagen fallarán.<br>'
+                        + 'Detalle: ' + (data.reachable_error || 'desconocido') + '<br>'
+                        + 'Solución: vaya a <code>Configuración → WhatsApp</code> y configure correctamente la URL pública base (https).';
+                } else if (data.reachable === true) {
+                    warn.style.display = 'block';
+                    warn.className = 'alert alert-success mt-2 mb-0 p-2';
+                    warn.style.fontSize = '12px';
+                    warn.innerHTML = '✅ La URL pública es accesible desde Internet — la API podrá descargar la imagen.';
+                } else {
+                    warn.style.display = 'none';
+                }
             } else {
                 uploadedImage = null;
                 imageName.textContent = 'Error: ' + (data && data.message ? data.message : 'fallo al subir');
@@ -427,10 +451,17 @@ $csrfToken = Yii::$app->request->csrfToken;
         if (allDetails.length > 0) {
             let html = '<h6 class="mt-3">Resultado por contacto</h6><table class="results-table"><thead><tr><th>Cliente</th><th>WhatsApp</th><th>Estado</th></tr></thead><tbody>';
             allDetails.forEach(d => {
+                let estado;
+                if (d.ok) {
+                    estado = 'Enviado';
+                    if (d.note) estado += ' <span class="text-warning">(' + d.note + ')</span>';
+                } else {
+                    estado = 'Error: ' + (d.error || 'fallo');
+                }
                 html += '<tr class="' + (d.ok ? 'row-ok' : 'row-fail') + '">'
                     + '<td>' + (d.name || ('#' + d.id)) + '</td>'
                     + '<td>' + (d.phone || '—') + '</td>'
-                    + '<td>' + (d.ok ? 'Enviado' : ('Error: ' + (d.error || 'fallo'))) + '</td>'
+                    + '<td>' + estado + '</td>'
                     + '</tr>';
             });
             html += '</tbody></table>';

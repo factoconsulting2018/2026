@@ -102,7 +102,41 @@ class MarketingController extends Controller
     }
 
     /**
-     * Sube una imagen y devuelve la URL pública. Acepta multipart con `image`.
+     * Construye la URL base pública (https) usando, en orden:
+     *  1) public_base_url configurado en WhatsApp.
+     *  2) hostInfo de la request actual (forzando https si la conexión es segura o si
+     *     el proxy reporta X-Forwarded-Proto=https).
+     */
+    private function publicBaseUrl(): string
+    {
+        $publicBase = trim((string) (CompanyConfig::getWhatsAppConfig()['public_base_url'] ?? ''));
+        if ($publicBase !== '') {
+            return rtrim($publicBase, '/');
+        }
+        try {
+            $hostInfo = (string) Yii::$app->request->hostInfo;
+            if ($hostInfo !== '') {
+                $isSecure = Yii::$app->request->isSecureConnection
+                    || (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && stripos($_SERVER['HTTP_X_FORWARDED_PROTO'], 'https') !== false);
+                if ($isSecure && strpos($hostInfo, 'http://') === 0) {
+                    $hostInfo = 'https://' . substr($hostInfo, 7);
+                }
+                return rtrim($hostInfo, '/');
+            }
+        } catch (\Throwable $e) {
+            // ignore
+        }
+        return '';
+    }
+
+    /**
+     * Sube una imagen al outbox público y devuelve la URL pública.
+     * Acepta multipart con `image`.
+     *
+     * Importante: se guarda en `uploads/whatsapp_outbox/` (mismo directorio que usa el
+     * resto del sistema para enviar archivos a la API), porque ese directorio ya está
+     * accesible públicamente desde Internet y la API descargapro lo descarga sin
+     * problemas.
      */
     public function actionUploadImage()
     {
@@ -122,31 +156,61 @@ class MarketingController extends Controller
             return ['success' => false, 'message' => 'La imagen excede el tamaño máximo de 8 MB.'];
         }
 
-        $dirRel = CompanyConfig::MARKETING_DIR;
+        // Guardar en el outbox público (mismo dir que usa el resto del sistema).
+        $dirRel = \app\components\WhatsAppNotifier::OUTBOX_DIR;
         $dirAbs = Yii::getAlias('@webroot/' . $dirRel);
         if (!is_dir($dirAbs)) {
-            @mkdir($dirAbs, 0775, true);
+            if (!@mkdir($dirAbs, 0775, true) && !is_dir($dirAbs)) {
+                return ['success' => false, 'message' => 'No se pudo crear el directorio público para imágenes.'];
+            }
         }
 
-        $name = 'mk_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+        $name = 'mk_' . date('Ymd_His') . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
         $absolute = rtrim($dirAbs, '/\\') . DIRECTORY_SEPARATOR . $name;
         if (!$file->saveAs($absolute)) {
-            return ['success' => false, 'message' => 'No se pudo guardar la imagen.'];
+            return ['success' => false, 'message' => 'No se pudo guardar la imagen en el servidor.'];
         }
+        @chmod($absolute, 0644);
 
-        $webUrl = Yii::getAlias('@web/' . $dirRel . $name);
-        $publicBase = (string) (CompanyConfig::getWhatsAppConfig()['public_base_url'] ?? '');
-        if ($publicBase !== '') {
-            $publicUrl = rtrim($publicBase, '/') . '/' . ltrim($dirRel . $name, '/');
-        } else {
-            $publicUrl = Url::to($webUrl, true);
+        $base = $this->publicBaseUrl();
+        if ($base === '') {
+            return [
+                'success' => false,
+                'message' => 'No se pudo determinar la URL pública del servidor. Configure "URL pública base" en Configuración → WhatsApp.',
+            ];
+        }
+        $publicUrl = $base . '/' . ltrim($dirRel, '/') . $name;
+
+        // Verificación opcional: hacer un HEAD a la URL para confirmar que es accesible.
+        $reachable = null;
+        $reachableError = null;
+        if (function_exists('curl_init')) {
+            $ch = curl_init($publicUrl);
+            curl_setopt($ch, CURLOPT_NOBODY, true);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 8);
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+            curl_exec($ch);
+            $http = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $err = curl_error($ch);
+            curl_close($ch);
+            $reachable = ($http >= 200 && $http < 400);
+            if (!$reachable) {
+                $reachableError = $err !== '' ? $err : ('HTTP ' . $http);
+            }
         }
 
         return [
             'success' => true,
-            'url' => $webUrl,
+            'url' => '/' . ltrim($dirRel, '/') . $name,
             'public_url' => $publicUrl,
             'filename' => $name,
+            'size' => $file->size,
+            'reachable' => $reachable,
+            'reachable_error' => $reachableError,
         ];
     }
 
@@ -262,6 +326,26 @@ class MarketingController extends Controller
                     $imagePublicUrl,
                     $caption
                 );
+
+                // Fallback: si el envío de la imagen falla (URL inaccesible o
+                // formato no soportado), al menos intentamos enviar el texto.
+                if (empty($res['ok']) && $personalMessage !== '') {
+                    Yii::warning(
+                        'Marketing sendImage fallo, fallback a sendText. URL=' . $imagePublicUrl
+                        . ' error=' . (string) ($res['error'] ?? '') . ' body=' . json_encode($res['body'] ?? null),
+                        'marketing'
+                    );
+                    $resText = WhatsAppNotifier::sendText(
+                        $waConfig['api_url'],
+                        $waConfig['session_id'],
+                        $number,
+                        $personalMessage
+                    );
+                    if (!empty($resText['ok'])) {
+                        $res = $resText;
+                        $res['fallback'] = 'text_only';
+                    }
+                }
             } else {
                 $res = WhatsAppNotifier::sendText(
                     $waConfig['api_url'],
@@ -275,14 +359,24 @@ class MarketingController extends Controller
 
             if (!empty($res['ok'])) {
                 $sent++;
-                $details[] = [
+                $row = [
                     'id' => $client->id,
                     'name' => $client->full_name,
                     'phone' => $number,
                     'ok' => true,
                 ];
+                if (!empty($res['fallback'])) {
+                    $row['note'] = 'Sólo texto (imagen no aceptada por la API)';
+                }
+                $details[] = $row;
             } else {
                 $failed++;
+                Yii::warning(
+                    'Marketing fallo envio. number=' . $number
+                    . ' image=' . ($imagePublicUrl !== '' ? $imagePublicUrl : '-')
+                    . ' error=' . (string) ($res['error'] ?? '') . ' body=' . json_encode($res['body'] ?? null),
+                    'marketing'
+                );
                 $details[] = [
                     'id' => $client->id,
                     'name' => $client->full_name,
