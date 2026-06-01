@@ -253,6 +253,263 @@ $today = date('d/m/Y');
             background: rgba(255,255,255,0.22);
             transform: translateY(-2px);
         }
+
+        /* Botón Sobre la empresa: estilo neutro (no compite con verde/celeste) */
+        a.btn-action-about {
+            background: rgba(255,255,255,0.14) !important;
+            color: #ffffff !important;
+            border: 1px solid rgba(255,255,255,0.32) !important;
+            backdrop-filter: blur(6px);
+        }
+        a.btn-action-about:hover {
+            background: rgba(255,255,255,0.26) !important;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+        }
+
+        /* Modal "Sobre la empresa" */
+        .about-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(5,2,18,0.72);
+            backdrop-filter: blur(6px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            padding: 24px;
+            animation: aboutFade .25s ease;
+        }
+        .about-backdrop.is-open { display: flex; }
+        @keyframes aboutFade {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .about-modal {
+            background: linear-gradient(160deg, #1b1530 0%, #0d001e 100%);
+            color: #fff;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.12);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+            width: 100%;
+            max-width: 640px;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            animation: aboutSlide .3s ease;
+        }
+        @keyframes aboutSlide {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .about-modal-header {
+            padding: 24px 28px 8px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+        .about-modal-header img {
+            max-height: 64px;
+            margin-bottom: 10px;
+            filter: drop-shadow(0 4px 10px rgba(0,0,0,0.4));
+        }
+        .about-modal-header h2 {
+            margin: 0 0 4px;
+            font-size: 1.4rem;
+            font-weight: 700;
+        }
+        .about-modal-header .tagline {
+            font-size: 13px;
+            opacity: 0.8;
+            margin-bottom: 18px;
+        }
+        .about-modal-close {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.18);
+            background: rgba(255,255,255,0.08);
+            color: #fff;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background .15s ease, transform .15s ease;
+        }
+        .about-modal-close:hover {
+            background: rgba(255,255,255,0.18);
+            transform: scale(1.05);
+        }
+        .about-modal-body {
+            padding: 18px 28px 24px;
+        }
+        .about-info-list {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 18px;
+            display: grid;
+            gap: 10px;
+        }
+        .about-info-list li {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            font-size: 14px;
+            padding: 10px 12px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+        }
+        .about-info-list li .material-symbols-outlined {
+            font-size: 22px;
+            color: #38bdf8;
+            margin-top: 1px;
+        }
+        .about-info-list a {
+            color: #38bdf8;
+            text-decoration: none;
+        }
+        .about-info-list a:hover { text-decoration: underline; }
+
+        /* Cuentas bancarias */
+        .about-banks-title {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.7;
+            margin: 14px 0 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .about-banks-title .material-symbols-outlined { font-size: 18px; }
+        .about-banks {
+            display: grid;
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+        .bank-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.10);
+            border-radius: 14px;
+            padding: 10px 12px;
+            transition: background .15s ease, border-color .15s ease;
+        }
+        .bank-card:hover {
+            background: rgba(255,255,255,0.10);
+            border-color: rgba(255,255,255,0.18);
+        }
+        .bank-logo {
+            width: 52px;
+            height: 52px;
+            flex: 0 0 52px;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            color: #fff;
+            font-size: 13px;
+            letter-spacing: 0.5px;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15), 0 4px 10px rgba(0,0,0,0.25);
+            text-align: center;
+            line-height: 1.1;
+        }
+        .bank-logo.bcr {
+            background: linear-gradient(135deg, #1b4e8a 0%, #0b2d59 100%);
+            border: 1px solid #ffd200;
+            color: #ffd200;
+        }
+        .bank-logo.bn {
+            background: linear-gradient(135deg, #e2231a 0%, #9c0e0a 100%);
+            color: #fff;
+        }
+        .bank-logo.sinpe {
+            background: linear-gradient(135deg, #14b8a6 0%, #0f766e 100%);
+            color: #fff;
+            font-size: 10px;
+        }
+        .bank-meta {
+            flex: 1;
+            min-width: 0;
+        }
+        .bank-name {
+            font-weight: 700;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .bank-currency {
+            background: rgba(255,255,255,0.14);
+            border-radius: 8px;
+            padding: 1px 8px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .bank-account {
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 12.5px;
+            opacity: 0.92;
+            word-break: break-all;
+            margin-top: 2px;
+        }
+        .bank-copy {
+            background: rgba(255,255,255,0.10);
+            border: 1px solid rgba(255,255,255,0.18);
+            color: #fff;
+            border-radius: 10px;
+            padding: 6px 10px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background .15s ease, transform .15s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .bank-copy:hover {
+            background: rgba(255,255,255,0.20);
+            transform: translateY(-1px);
+        }
+        .bank-copy.copied {
+            background: rgba(34, 197, 94, 0.3);
+            border-color: rgba(34, 197, 94, 0.5);
+        }
+        .bank-copy .material-symbols-outlined {
+            font-size: 14px;
+        }
+
+        .about-requirements-title {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.7;
+            margin: 8px 0 8px;
+        }
+        .about-requirements {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.10);
+            border-radius: 12px;
+            padding: 14px 16px;
+            font-size: 13.5px;
+            line-height: 1.55;
+            max-height: 220px;
+            overflow-y: auto;
+        }
+        .about-requirements * { color: #fff; }
+        .about-requirements ul,
+        .about-requirements ol { padding-left: 22px; margin: 6px 0; }
+        @media (max-width: 640px) {
+            .about-modal-header { padding: 18px 18px 6px; }
+            .about-modal-body { padding: 14px 18px 18px; }
+            .about-modal-header h2 { font-size: 1.2rem; }
+        }
         .hero-card .contact-row {
             margin-top: 22px;
             font-size: 13px;
@@ -310,6 +567,10 @@ $today = date('d/m/Y');
                     <span class="material-symbols-outlined" style="font-size:18px;">person_add</span>
                     Solicitar Membresía
                 </a>
+                <a href="#" class="btn-pill btn-action-about" data-open-about="1">
+                    <span class="material-symbols-outlined" style="font-size:18px;">apartment</span>
+                    Sobre la empresa
+                </a>
                 <a href="<?= Url::to(['/realizar-alquiler']) ?>" class="btn-pill btn-action-rent">
                     <span class="material-symbols-outlined" style="font-size:18px;">directions_car</span>
                     Realizar alquiler
@@ -360,6 +621,10 @@ $today = date('d/m/Y');
                         <span class="material-symbols-outlined" style="font-size:20px;">person_add</span>
                         Solicitar Membresía
                     </a>
+                    <a href="#" class="btn-secondary-cta btn-action-about" data-open-about="1">
+                        <span class="material-symbols-outlined" style="font-size:20px;">apartment</span>
+                        Sobre la empresa
+                    </a>
                 </div>
 
                 <div class="contact-row">
@@ -386,6 +651,140 @@ $today = date('d/m/Y');
         </div>
     </div>
 
+    <?php
+        $address = trim((string) ($companyInfo['address'] ?? ''));
+        $phone = trim((string) ($companyInfo['phone'] ?? ''));
+        $email = trim((string) ($companyInfo['email'] ?? ''));
+        $requirementsHtml = (string) ($companyInfo['requirements'] ?? '');
+        $hasRequirements = trim(strip_tags($requirementsHtml)) !== '';
+        $phoneDigits = $phone !== '' ? preg_replace('/\D+/', '', $phone) : '';
+
+        $cedulaJuridica = '';
+        if (preg_match('/\b(\d-\d{3}-\d{6})\b/', $address, $mCed)) {
+            $cedulaJuridica = $mCed[1];
+        }
+
+        $bankAccounts = is_array($companyInfo['bank_accounts'] ?? null) ? $companyInfo['bank_accounts'] : [];
+        $simpemovilRaw = trim((string) ($companyInfo['simemovil'] ?? ''));
+        $simpemovilDigits = $simpemovilRaw !== '' ? preg_replace('/\D+/', '', $simpemovilRaw) : '';
+        $simpemovilDisplay = $simpemovilDigits !== '' && strlen($simpemovilDigits) === 8
+            ? substr($simpemovilDigits, 0, 4) . '-' . substr($simpemovilDigits, 4)
+            : ($simpemovilRaw !== '' ? $simpemovilRaw : '');
+    ?>
+    <div class="about-backdrop" id="about-backdrop" role="dialog" aria-modal="true" aria-labelledby="about-title" aria-hidden="true">
+        <div class="about-modal" id="about-modal">
+            <button type="button" class="about-modal-close" id="about-close" aria-label="Cerrar">
+                <span class="material-symbols-outlined" style="font-size:20px;">close</span>
+            </button>
+            <div class="about-modal-header">
+                <?php if ($logoPath): ?>
+                    <img src="<?= Html::encode($logoPath) ?>" alt="<?= Html::encode($companyName) ?>">
+                <?php endif; ?>
+                <h2 id="about-title"><?= Html::encode($companyName) ?></h2>
+                <p class="tagline">Renta de vehículos en Costa Rica</p>
+                <?php if ($cedulaJuridica !== ''): ?>
+                    <div style="font-size:12.5px; opacity:0.85; margin-bottom:6px;">
+                        <span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;">badge</span>
+                        Cédula Jurídica: <strong><?= Html::encode($cedulaJuridica) ?></strong>
+                    </div>
+                <?php endif; ?>
+            </div>
+            <div class="about-modal-body">
+                <ul class="about-info-list">
+                    <?php if ($address !== ''): ?>
+                        <li>
+                            <span class="material-symbols-outlined">location_on</span>
+                            <span><?= Html::encode($address) ?></span>
+                        </li>
+                    <?php endif; ?>
+                    <?php if ($phone !== ''): ?>
+                        <li>
+                            <span class="material-symbols-outlined">call</span>
+                            <span>
+                                <a href="tel:<?= Html::encode($phoneDigits ?: $phone) ?>"><?= Html::encode($phone) ?></a>
+                                <?php if ($phoneDigits !== '' && strlen($phoneDigits) >= 7): ?>
+                                    &nbsp;·&nbsp;
+                                    <a href="https://wa.me/<?= Html::encode($phoneDigits) ?>" target="_blank" rel="noopener">WhatsApp</a>
+                                <?php endif; ?>
+                            </span>
+                        </li>
+                    <?php endif; ?>
+                    <?php if ($email !== ''): ?>
+                        <li>
+                            <span class="material-symbols-outlined">mail</span>
+                            <span><a href="mailto:<?= Html::encode($email) ?>"><?= Html::encode($email) ?></a></span>
+                        </li>
+                    <?php endif; ?>
+                    <li>
+                        <span class="material-symbols-outlined">language</span>
+                        <span><a href="https://factorentacar.com" target="_blank" rel="noopener">factorentacar.com</a></span>
+                    </li>
+                </ul>
+
+                <?php if (!empty($bankAccounts) || $simpemovilDisplay !== ''): ?>
+                    <div class="about-banks-title">
+                        <span class="material-symbols-outlined">account_balance</span>
+                        Cuentas Bancarias
+                    </div>
+                    <div class="about-banks">
+                        <?php foreach ($bankAccounts as $acc):
+                            $bankRaw = strtoupper(trim((string) ($acc['bank'] ?? '')));
+                            $account = trim((string) ($acc['account'] ?? ''));
+                            $currency = trim((string) ($acc['currency'] ?? ''));
+                            $logoClass = '';
+                            $logoText = $bankRaw;
+                            if (strpos($bankRaw, 'BCR') !== false) {
+                                $logoClass = 'bcr';
+                                $logoText = 'BCR';
+                            } elseif ($bankRaw === 'BN' || strpos($bankRaw, 'NACIONAL') !== false) {
+                                $logoClass = 'bn';
+                                $logoText = 'BN';
+                            }
+                            $copyValue = preg_replace('/^IBAN\s*:?\s*/i', '', $account);
+                            if ($copyValue === '') $copyValue = $account;
+                        ?>
+                            <div class="bank-card">
+                                <div class="bank-logo <?= $logoClass ?>" aria-hidden="true"><?= Html::encode($logoText) ?></div>
+                                <div class="bank-meta">
+                                    <div class="bank-name">
+                                        <?= Html::encode($bankRaw ?: 'Banco') ?>
+                                        <?php if ($currency !== ''): ?>
+                                            <span class="bank-currency"><?= Html::encode($currency) ?></span>
+                                        <?php endif; ?>
+                                    </div>
+                                    <div class="bank-account"><?= Html::encode($account) ?></div>
+                                </div>
+                                <button type="button" class="bank-copy" data-copy="<?= Html::encode($copyValue) ?>">
+                                    <span class="material-symbols-outlined">content_copy</span>
+                                    Copiar
+                                </button>
+                            </div>
+                        <?php endforeach; ?>
+
+                        <?php if ($simpemovilDisplay !== ''): ?>
+                            <div class="bank-card">
+                                <div class="bank-logo sinpe" aria-hidden="true">SINPE<br>MÓVIL</div>
+                                <div class="bank-meta">
+                                    <div class="bank-name">SINPE Móvil</div>
+                                    <div class="bank-account"><?= Html::encode($simpemovilDisplay) ?></div>
+                                </div>
+                                <button type="button" class="bank-copy" data-copy="<?= Html::encode($simpemovilDigits ?: $simpemovilDisplay) ?>">
+                                    <span class="material-symbols-outlined">content_copy</span>
+                                    Copiar
+                                </button>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
+
+                <?php if ($hasRequirements): ?>
+                    <div class="about-requirements-title">Requisitos para alquilar</div>
+                    <div class="about-requirements"><?= $requirementsHtml ?></div>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+
     <script>
         (function () {
             const bg = document.getElementById('bg-image');
@@ -396,6 +795,67 @@ $today = date('d/m/Y');
             img.onload = function () { bg.classList.add('loaded'); };
             img.onerror = function () { bg.classList.add('loaded'); };
             img.src = url;
+        })();
+
+        (function () {
+            const backdrop = document.getElementById('about-backdrop');
+            const closeBtn = document.getElementById('about-close');
+            const triggers = document.querySelectorAll('[data-open-about]');
+            if (!backdrop) return;
+
+            function openAbout(e) {
+                if (e) e.preventDefault();
+                backdrop.classList.add('is-open');
+                backdrop.setAttribute('aria-hidden', 'false');
+                document.body.style.overflow = 'hidden';
+            }
+            function closeAbout() {
+                backdrop.classList.remove('is-open');
+                backdrop.setAttribute('aria-hidden', 'true');
+                document.body.style.overflow = '';
+            }
+
+            triggers.forEach(function (t) { t.addEventListener('click', openAbout); });
+            if (closeBtn) closeBtn.addEventListener('click', closeAbout);
+            backdrop.addEventListener('click', function (e) {
+                if (e.target === backdrop) closeAbout();
+            });
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && backdrop.classList.contains('is-open')) closeAbout();
+            });
+
+            backdrop.querySelectorAll('.bank-copy').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    const value = btn.getAttribute('data-copy') || '';
+                    if (!value) return;
+                    const done = function () {
+                        const original = btn.innerHTML;
+                        btn.classList.add('copied');
+                        btn.innerHTML = '<span class="material-symbols-outlined">check</span> Copiado';
+                        setTimeout(function () {
+                            btn.classList.remove('copied');
+                            btn.innerHTML = original;
+                        }, 1600);
+                    };
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(value).then(done).catch(function () {
+                            const ta = document.createElement('textarea');
+                            ta.value = value;
+                            document.body.appendChild(ta);
+                            ta.select();
+                            try { document.execCommand('copy'); done(); } catch (e) {}
+                            document.body.removeChild(ta);
+                        });
+                    } else {
+                        const ta = document.createElement('textarea');
+                        ta.value = value;
+                        document.body.appendChild(ta);
+                        ta.select();
+                        try { document.execCommand('copy'); done(); } catch (e) {}
+                        document.body.removeChild(ta);
+                    }
+                });
+            });
         })();
     </script>
 </body>
