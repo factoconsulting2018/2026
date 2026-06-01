@@ -189,7 +189,30 @@ $ogImageMime = [
             border-radius: 22px;
             padding: 28px 26px 24px;
             box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+            position: relative;
+            isolation: isolate;
+            overflow: hidden;
         }
+        <?php if ($logoPath): ?>
+        /* Mosaico transparente del logo como fondo decorativo */
+        .info-card::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background-image: url('<?= Html::encode($logoPath) ?>');
+            background-repeat: repeat;
+            background-size: 140px 140px;
+            background-position: center;
+            opacity: 0.07;
+            pointer-events: none;
+            z-index: 0;
+            border-radius: inherit;
+        }
+        .info-card > * { position: relative; z-index: 1; }
+        @media (max-width: 640px) {
+            .info-card::before { background-size: 110px 110px; opacity: 0.06; }
+        }
+        <?php endif; ?>
         .info-header { text-align: center; padding-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,0.10); margin-bottom: 18px; }
         .info-header img.company-logo {
             width: 92px; height: 92px; object-fit: contain;
