@@ -9,8 +9,33 @@ use app\models\CompanyConfig;
 $companyInfo = CompanyConfig::getCompanyInfo();
 $logoPath = $companyInfo['logo'] ?? null;
 $companyName = $companyInfo['name'] ?? 'Facto Rent a Car';
+$razonSocial = trim((string) ($companyInfo['razon_social'] ?? CompanyConfig::getConfig(CompanyConfig::COMPANY_RAZON_SOCIAL, '')));
+$companyAddress = trim((string) ($companyInfo['address'] ?? ''));
+$companyEmail = trim((string) ($companyInfo['email'] ?? ''));
+$companyPhoneRaw = trim((string) ($companyInfo['phone'] ?? '4070-0485'));
+$companyPhoneDigits = preg_replace('/\D+/', '', $companyPhoneRaw);
+$companyPhoneE164 = $companyPhoneDigits !== '' && strpos($companyPhoneDigits, '506') !== 0 && strlen($companyPhoneDigits) === 8
+    ? '+506' . $companyPhoneDigits
+    : '+' . $companyPhoneDigits;
+$simpemovilRaw = trim((string) ($companyInfo['simemovil'] ?? '83670937'));
+$simpemovilDigits = preg_replace('/\D+/', '', $simpemovilRaw);
+$simpemovilDisplay = strlen($simpemovilDigits) === 8
+    ? substr($simpemovilDigits, 0, 4) . '-' . substr($simpemovilDigits, 4)
+    : $simpemovilRaw;
+$waFullNumber = strlen($simpemovilDigits) === 8 && strpos($simpemovilDigits, '506') !== 0
+    ? '506' . $simpemovilDigits
+    : $simpemovilDigits;
+$waLink = 'https://wa.me/' . $waFullNumber;
 
-$this->title = $companyName . ' — Renta de Vehículos';
+$siteHomeUrl = Url::home(true);
+$canonicalUrl = rtrim($siteHomeUrl, '/') . '/';
+$ogImageUrl = $logoPath ? Url::to($logoPath, true) : '';
+
+$seoTitle = $companyName . ' — Renta de Vehículos en Costa Rica · Reserve por WhatsApp ' . $simpemovilDisplay;
+$seoDescription = $companyName . ': renta de vehículos en Costa Rica. Sedanes, SUV, Pickup 4x4 y más. Reserve por WhatsApp ' . $simpemovilDisplay . ' o llame al ' . $companyPhoneRaw . '. Atención personalizada, disponibilidad inmediata y precios competitivos.';
+$seoKeywords = 'renta de vehiculos Costa Rica, alquiler de carros Costa Rica, rent a car San Ramon, alquiler SUV, alquiler pickup 4x4, alquiler sedan, FACTO Rent a Car, factorentacar';
+
+$this->title = $seoTitle;
 
 $year = date('Y');
 $today = date('d/m/Y');
@@ -21,6 +46,42 @@ $today = date('d/m/Y');
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= Html::encode($this->title) ?></title>
+
+    <meta name="description" content="<?= Html::encode($seoDescription) ?>">
+    <meta name="keywords" content="<?= Html::encode($seoKeywords) ?>">
+    <meta name="author" content="<?= Html::encode($razonSocial !== '' ? $razonSocial : $companyName) ?>">
+    <meta name="robots" content="index, follow">
+    <meta name="theme-color" content="#0d001e">
+    <meta name="geo.region" content="CR-A">
+    <meta name="geo.placename" content="San Ramón, Alajuela, Costa Rica">
+    <link rel="canonical" href="<?= Html::encode($canonicalUrl) ?>">
+
+    <?php if ($logoPath): ?>
+        <link rel="icon" type="image/png" href="<?= Html::encode($logoPath) ?>">
+        <link rel="apple-touch-icon" href="<?= Html::encode($logoPath) ?>">
+    <?php endif; ?>
+
+    <meta property="og:site_name" content="<?= Html::encode($companyName) ?>">
+    <meta property="og:title" content="<?= Html::encode($companyName . ' — Renta de Vehículos en Costa Rica') ?>">
+    <meta property="og:description" content="<?= Html::encode('Reserve su vehículo por WhatsApp ' . $simpemovilDisplay . ' o al teléfono ' . $companyPhoneRaw . '. Sedanes, SUV, Pickup 4x4, Camiones y Busetas. Atención personalizada, disponibilidad inmediata.') ?>">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="<?= Html::encode($canonicalUrl) ?>">
+    <meta property="og:locale" content="es_CR">
+    <?php if ($ogImageUrl !== ''): ?>
+        <meta property="og:image" content="<?= Html::encode($ogImageUrl) ?>">
+        <meta property="og:image:secure_url" content="<?= Html::encode($ogImageUrl) ?>">
+        <meta property="og:image:alt" content="Logo <?= Html::encode($companyName) ?>">
+        <meta property="og:image:width" content="600">
+        <meta property="og:image:height" content="600">
+    <?php endif; ?>
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="<?= Html::encode($companyName . ' — Renta de Vehículos') ?>">
+    <meta name="twitter:description" content="<?= Html::encode('WhatsApp ' . $simpemovilDisplay . ' · Tel ' . $companyPhoneRaw . ' · factorentacar.com') ?>">
+    <?php if ($ogImageUrl !== ''): ?>
+        <meta name="twitter:image" content="<?= Html::encode($ogImageUrl) ?>">
+    <?php endif; ?>
+
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="<?= Html::encode(Url::to('@web/css/material-symbols.css')) ?>" />
     <style>
@@ -217,6 +278,22 @@ $today = date('d/m/Y');
         .hero-card .feature .label {
             font-size: 13px;
             font-weight: 600;
+            margin: 0;
+            line-height: 1.25;
+            color: inherit;
+            letter-spacing: 0;
+        }
+        /* Fallback por si Bootstrap no aplica (visually-hidden ya existe en Bootstrap 5) */
+        .visually-hidden {
+            position: absolute !important;
+            width: 1px !important;
+            height: 1px !important;
+            padding: 0 !important;
+            margin: -1px !important;
+            overflow: hidden !important;
+            clip: rect(0, 0, 0, 0) !important;
+            white-space: nowrap !important;
+            border: 0 !important;
         }
         .hero-card .cta {
             display: flex;
@@ -588,14 +665,14 @@ $today = date('d/m/Y');
     <div class="bg-overlay"></div>
 
     <div class="page">
-        <div class="topbar">
-            <a href="<?= Url::to(['/site/index']) ?>" class="brand">
+        <header class="topbar" role="banner">
+            <a href="<?= Url::to(['/site/index']) ?>" class="brand" rel="home" aria-label="<?= Html::encode($companyName) ?> — Inicio">
                 <?php if ($logoPath): ?>
                     <img src="<?= Html::encode($logoPath) ?>" alt="<?= Html::encode($companyName) ?>">
                 <?php endif; ?>
                 <span><?= Html::encode($companyName) ?></span>
             </a>
-            <div class="nav-actions">
+            <nav class="nav-actions" aria-label="Navegación principal">
                 <a href="<?= Url::to(['/solicitud-membresia']) ?>" class="btn-pill btn-action-membership">
                     <span class="material-symbols-outlined" style="font-size:18px;">person_add</span>
                     Solicitar Membresía
@@ -608,17 +685,23 @@ $today = date('d/m/Y');
                     <span class="material-symbols-outlined" style="font-size:18px;">directions_car</span>
                     Realizar alquiler
                 </a>
-                <a href="<?= Url::to(['/site/login']) ?>" class="btn-pill" title="Iniciar sesión administrativa" style="padding:7px 12px;">
+                <a href="<?= Url::to(['/site/login']) ?>" class="btn-pill" title="Iniciar sesión administrativa" style="padding:7px 12px;" aria-label="Iniciar sesión administrativa">
                     <span class="material-symbols-outlined" style="font-size:18px;">login</span>
                 </a>
-            </div>
-        </div>
+            </nav>
+        </header>
 
-        <div class="hero">
-            <div class="hero-card">
+        <main class="hero" role="main">
+            <article class="hero-card" itemscope itemtype="https://schema.org/AutoRental">
+                <meta itemprop="name" content="<?= Html::encode($companyName) ?>">
+                <meta itemprop="url" content="<?= Html::encode($canonicalUrl) ?>">
+                <?php if ($ogImageUrl !== ''): ?>
+                    <meta itemprop="image" content="<?= Html::encode($ogImageUrl) ?>">
+                <?php endif; ?>
+
                 <?php if ($logoPath): ?>
                     <div class="logo-wrap">
-                        <img src="<?= Html::encode($logoPath) ?>" alt="Logo">
+                        <img src="<?= Html::encode($logoPath) ?>" alt="Logo de <?= Html::encode($companyName) ?>" itemprop="logo">
                     </div>
                 <?php endif; ?>
 
@@ -627,25 +710,26 @@ $today = date('d/m/Y');
                     <?= Html::encode($today) ?>
                 </div>
 
-                <h1><?= Html::encode($companyName) ?></h1>
-                <p class="tagline">Renta de vehículos en Costa Rica · Tu próxima aventura empieza aquí</p>
+                <h1 itemprop="legalName"><?= Html::encode($companyName) ?></h1>
+                <p class="tagline" itemprop="slogan">Renta de vehículos en Costa Rica · Tu próxima aventura empieza aquí</p>
 
-                <div class="features">
+                <section class="features" aria-labelledby="srv-heading">
+                    <h2 id="srv-heading" class="visually-hidden">Por qué elegirnos</h2>
                     <div class="feature">
                         <div class="icon"><span class="material-symbols-outlined" style="font-size:28px;">verified</span></div>
-                        <div class="label">Disponibilidad inmediata</div>
+                        <h3 class="label">Disponibilidad inmediata</h3>
                     </div>
                     <div class="feature">
                         <div class="icon"><span class="material-symbols-outlined" style="font-size:28px;">support_agent</span></div>
-                        <div class="label">Atención personalizada</div>
+                        <h3 class="label">Atención personalizada</h3>
                     </div>
                     <div class="feature">
                         <div class="icon"><span class="material-symbols-outlined" style="font-size:28px;">paid</span></div>
-                        <div class="label">Precios competitivos</div>
+                        <h3 class="label">Precios competitivos</h3>
                     </div>
-                </div>
+                </section>
 
-                <div class="cta">
+                <nav class="cta" aria-label="Acciones rápidas">
                     <a href="<?= Url::to(['/realizar-alquiler']) ?>" class="btn-primary-cta btn-action-rent">
                         <span class="material-symbols-outlined" style="font-size:20px;">directions_car</span>
                         Realizar alquiler
@@ -658,35 +742,64 @@ $today = date('d/m/Y');
                         <span class="material-symbols-outlined" style="font-size:20px;">apartment</span>
                         Sobre la empresa
                     </a>
-                </div>
+                </nav>
 
-                <div class="contact-row">
-                    <a href="tel:+50640700485">
+                <address class="contact-row" aria-label="Datos de contacto">
+                    <a href="tel:<?= Html::encode($companyPhoneE164) ?>" itemprop="telephone">
                         <span class="material-symbols-outlined" style="font-size:16px;">call</span>
-                        4070-0485
+                        <?= Html::encode($companyPhoneRaw) ?>
                     </a>
-                    <a href="https://wa.me/50683670937" target="_blank" rel="noopener" title="Consulte Disponibilidad">
+                    <a href="<?= Html::encode($waLink) ?>" target="_blank" rel="noopener" title="Consulte Disponibilidad por WhatsApp">
                         <span class="wa-logo-sm" aria-hidden="true">
                             <svg viewBox="0 0 32 32" width="18" height="18" xmlns="http://www.w3.org/2000/svg">
                                 <path fill="#25D366" d="M16 .4C7.4.4.5 7.3.5 15.8c0 2.8.7 5.5 2.1 7.9L.3 31.6l8.1-2.1c2.3 1.2 4.9 1.9 7.6 1.9 8.6 0 15.5-6.9 15.5-15.5S24.6.4 16 .4z"/>
                                 <path fill="#fff" d="M23.7 19.3c-.3-.2-2-1-2.3-1.1-.3-.1-.6-.2-.8.2s-.9 1.1-1.1 1.4c-.2.3-.4.3-.7.1-2-1-3.3-1.8-4.6-4-.4-.6.4-.6 1-1.9.1-.2 0-.4 0-.6s-.8-1.9-1.1-2.6c-.3-.7-.6-.6-.8-.6h-.7c-.2 0-.6.1-.9.4-.3.3-1.2 1.2-1.2 2.9s1.2 3.3 1.4 3.6c.2.3 2.4 3.6 5.8 5.1.8.3 1.4.5 1.9.7.8.3 1.6.2 2.1.1.7-.1 2-.8 2.3-1.6.3-.8.3-1.5.2-1.6-.1-.2-.3-.3-.5-.4z"/>
                             </svg>
                         </span>
-                        8367-0937
+                        <?= Html::encode($simpemovilDisplay) ?>
                     </a>
-                    <a href="https://www.factorentacar.com" target="_blank" rel="noopener">
+                    <a href="https://www.factorentacar.com" target="_blank" rel="noopener" itemprop="url">
                         <span class="material-symbols-outlined" style="font-size:16px;">language</span>
                         factorentacar.com
                     </a>
-                </div>
-            </div>
-        </div>
+                </address>
+            </article>
 
-        <div class="footer">
+            <section class="visually-hidden" aria-label="Información adicional para buscadores">
+                <h2>Renta de vehículos en Costa Rica con <?= Html::encode($companyName) ?></h2>
+                <p>
+                    <?= Html::encode($razonSocial !== '' ? $razonSocial : $companyName) ?> es una empresa costarricense
+                    dedicada al alquiler y renta de vehículos en Costa Rica. Ofrecemos automóviles sedán, SUV, pickup 4x4,
+                    camionetas, busetas y vehículos comerciales para alquileres diarios, semanales y mensuales en
+                    San Ramón, Alajuela y todo el territorio nacional.
+                </p>
+                <h3>Reserve hoy mismo</h3>
+                <ul>
+                    <li>WhatsApp directo: <?= Html::encode($simpemovilDisplay) ?> (reservas inmediatas)</li>
+                    <li>Teléfono de oficina: <?= Html::encode($companyPhoneRaw) ?></li>
+                    <?php if ($companyEmail !== ''): ?>
+                        <li>Correo electrónico: <?= Html::encode($companyEmail) ?></li>
+                    <?php endif; ?>
+                    <li>Sitio web oficial: factorentacar.com</li>
+                    <?php if ($companyAddress !== ''): ?>
+                        <li>Ubicación: <?= Html::encode($companyAddress) ?></li>
+                    <?php endif; ?>
+                </ul>
+                <h3>Servicios destacados</h3>
+                <ul>
+                    <li>Alquiler de vehículos por día, semana o mes</li>
+                    <li>Membresía de cliente recurrente con tarifas preferenciales</li>
+                    <li>Solicitudes de alquiler en línea sin volver a registrarse</li>
+                    <li>Pagos por SINPE Móvil y transferencia (BN, BCR, BAC)</li>
+                </ul>
+            </section>
+        </main>
+
+        <footer class="footer" role="contentinfo">
             &copy; <?= $year ?> <?= Html::encode($companyName) ?>. Todos los derechos reservados.
             <span class="divider">·</span>
             Desarrollado por Ing. Ronald Rojas Castro
-        </div>
+        </footer>
     </div>
 
     <?php
@@ -966,6 +1079,63 @@ $today = date('d/m/Y');
                 });
             });
         })();
+    </script>
+
+    <?php
+        $jsonLd = [
+            '@context' => 'https://schema.org',
+            '@type'    => 'AutoRental',
+            'name'     => $companyName,
+            'legalName' => $razonSocial !== '' ? $razonSocial : $companyName,
+            'url'      => $canonicalUrl,
+            'description' => $seoDescription,
+            'telephone' => $companyPhoneE164,
+            'priceRange' => '$$',
+            'areaServed' => [
+                '@type' => 'Country',
+                'name'  => 'Costa Rica',
+            ],
+        ];
+        if ($ogImageUrl !== '') {
+            $jsonLd['image'] = $ogImageUrl;
+            $jsonLd['logo']  = $ogImageUrl;
+        }
+        if ($companyEmail !== '') {
+            $jsonLd['email'] = $companyEmail;
+        }
+        if ($companyAddress !== '') {
+            $jsonLd['address'] = [
+                '@type' => 'PostalAddress',
+                'streetAddress'   => $companyAddress,
+                'addressLocality' => 'San Ramón',
+                'addressRegion'   => 'Alajuela',
+                'addressCountry'  => 'CR',
+            ];
+        }
+        $jsonLd['contactPoint'] = [
+            [
+                '@type'       => 'ContactPoint',
+                'telephone'   => $companyPhoneE164,
+                'contactType' => 'customer service',
+                'availableLanguage' => ['es', 'en'],
+                'areaServed'  => 'CR',
+            ],
+            [
+                '@type'       => 'ContactPoint',
+                'telephone'   => '+' . $waFullNumber,
+                'contactType' => 'reservations',
+                'contactOption' => 'WhatsApp',
+                'availableLanguage' => ['es', 'en'],
+                'areaServed'  => 'CR',
+            ],
+        ];
+        $jsonLd['sameAs'] = [
+            $waLink,
+            'https://www.factorentacar.com',
+        ];
+    ?>
+    <script type="application/ld+json">
+    <?= json_encode($jsonLd, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) ?>
     </script>
 </body>
 </html>
