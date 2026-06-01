@@ -27,6 +27,7 @@ class CompanyConfig extends ActiveRecord
     const COMPANY_ADDRESS = 'company_address';
     const COMPANY_PHONE = 'company_phone';
     const COMPANY_EMAIL = 'company_email';
+    const COMPANY_RAZON_SOCIAL = 'company_razon_social';
     const BANK_ACCOUNTS = 'bank_accounts';
     const SIMPEMOVIL_NUMBER = 'simemovil_number';
     const SIMPEMOVIL_LOGO_FILE = 'simemovil_logo_file';
@@ -296,6 +297,7 @@ class CompanyConfig extends ActiveRecord
             'bank_accounts' => self::getBankAccounts(),
             'simemovil' => self::getConfig(self::SIMPEMOVIL_NUMBER, '83670937'),
             'simemovil_logo' => self::getSimpemovilLogoUrl(),
+            'razon_social' => self::getConfig(self::COMPANY_RAZON_SOCIAL, ''),
         ];
     }
 
@@ -346,6 +348,58 @@ class CompanyConfig extends ActiveRecord
     }
 
     /**
+     * Cuentas bancarias por defecto (FACTO Rent a Car).
+     *
+     * @return array<int, array{bank:string,currency:string,account_number:string,iban:string}>
+     */
+    public static function getDefaultBankAccounts(): array
+    {
+        return [
+            ['bank' => 'BN',  'currency' => '₡', 'account_number' => '200-01-020-097705-0', 'iban' => 'CR49015102020010977051'],
+            ['bank' => 'BN',  'currency' => '$', 'account_number' => '200-02-020-012611-0', 'iban' => 'CR53015102020020126116'],
+            ['bank' => 'BCR', 'currency' => '₡', 'account_number' => '',                    'iban' => 'CR75015201001050506181'],
+            ['bank' => 'BCR', 'currency' => '$', 'account_number' => '',                    'iban' => 'CR22015201001050506262'],
+            ['bank' => 'BAC', 'currency' => '₡', 'account_number' => '965550031',           'iban' => 'CR65010200009655500311'],
+            ['bank' => 'BAC', 'currency' => '$', 'account_number' => '9655500239',          'iban' => 'CR69010200009655500239'],
+        ];
+    }
+
+    /**
+     * Normaliza una fila de cuenta bancaria (legacy + campos nuevos).
+     */
+    private static function normalizeBankAccountRow(array $acc): array
+    {
+        $acc['bank'] = trim((string) ($acc['bank'] ?? ''));
+        $acc['currency'] = trim((string) ($acc['currency'] ?? '₡'));
+        $acc['account_number'] = trim((string) ($acc['account_number'] ?? ''));
+        $acc['iban'] = trim((string) ($acc['iban'] ?? ''));
+
+        $legacyAccount = trim((string) ($acc['account'] ?? ''));
+        if ($acc['iban'] === '' && $legacyAccount !== '') {
+            if (preg_match('/IBAN\s*:?\s*(CR[\d\s]+)/i', $legacyAccount, $m)) {
+                $acc['iban'] = strtoupper(preg_replace('/\s+/', '', $m[1]));
+            } else {
+                $acc['iban'] = strtoupper(preg_replace('/\s+/', '', preg_replace('/^IBAN\s*:?\s*/i', '', $legacyAccount)));
+            }
+        }
+
+        if ($acc['account_number'] !== '' && $acc['iban'] !== '') {
+            $acc['account'] = $acc['account_number'] . ' / IBAN: ' . $acc['iban'];
+        } elseif ($acc['iban'] !== '') {
+            $acc['account'] = 'IBAN: ' . $acc['iban'];
+        } elseif ($acc['account_number'] !== '') {
+            $acc['account'] = $acc['account_number'];
+        } else {
+            $acc['account'] = $legacyAccount;
+        }
+
+        $acc['logo'] = isset($acc['logo']) ? (string) $acc['logo'] : '';
+        $acc['logo_url'] = $acc['logo'] !== '' ? self::getBankLogoUrl($acc['logo']) : null;
+
+        return $acc;
+    }
+
+    /**
      * Obtener cuentas bancarias.
      * Cada entrada puede tener un campo `logo` (nombre de archivo en uploads/company/banks/).
      * Se enriquece con `logo_url` (URL pública) cuando el archivo existe.
@@ -356,28 +410,17 @@ class CompanyConfig extends ActiveRecord
         $list = [];
         if ($accounts) {
             if (is_string($accounts) && !json_decode($accounts)) {
-                $list = [
-                    ['bank' => 'BCR', 'account' => 'IBAN:CR75015201001050506181', 'currency' => '₡'],
-                    ['bank' => 'BN', 'account' => 'IBAN: CR49015102020010977051', 'currency' => '₡'],
-                ];
+                $list = self::getDefaultBankAccounts();
             } else {
                 $list = json_decode($accounts, true) ?: [];
             }
         } else {
-            $list = [
-                ['bank' => 'BCR', 'account' => 'IBAN:CR75015201001050506181', 'currency' => '₡'],
-                ['bank' => 'BN', 'account' => 'IBAN: CR49015102020010977051', 'currency' => '₡'],
-            ];
+            $list = self::getDefaultBankAccounts();
         }
 
-        foreach ($list as &$acc) {
-            $acc['bank'] = $acc['bank'] ?? '';
-            $acc['account'] = $acc['account'] ?? '';
-            $acc['currency'] = $acc['currency'] ?? '₡';
-            $acc['logo'] = isset($acc['logo']) ? (string) $acc['logo'] : '';
-            $acc['logo_url'] = $acc['logo'] !== '' ? self::getBankLogoUrl($acc['logo']) : null;
+        foreach ($list as $i => $acc) {
+            $list[$i] = self::normalizeBankAccountRow(is_array($acc) ? $acc : []);
         }
-        unset($acc);
 
         return $list;
     }

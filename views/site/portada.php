@@ -455,12 +455,34 @@ $today = date('d/m/Y');
             font-size: 11px;
             font-weight: 600;
         }
+        .bank-currency.colones {
+            background: rgba(34, 197, 94, 0.25);
+            color: #86efac;
+        }
+        .bank-currency.dolares {
+            background: rgba(250, 204, 21, 0.25);
+            color: #fde68a;
+        }
         .bank-account {
             font-family: 'Consolas', 'Monaco', monospace;
             font-size: 12.5px;
             opacity: 0.92;
             word-break: break-all;
             margin-top: 2px;
+        }
+        .bank-account-line {
+            display: block;
+            line-height: 1.45;
+        }
+        .bank-account-line + .bank-account-line {
+            margin-top: 4px;
+        }
+        .bank-account-line .lbl {
+            opacity: 0.6;
+            font-size: 10.5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-right: 4px;
         }
         .bank-copy {
             background: rgba(255,255,255,0.10);
@@ -643,7 +665,7 @@ $today = date('d/m/Y');
                         <span class="material-symbols-outlined" style="font-size:16px;">call</span>
                         4070-0485
                     </a>
-                    <a href="https://wa.me/50683670937" target="_blank" rel="noopener">
+                    <a href="https://wa.me/50683670937" target="_blank" rel="noopener" title="Consulte Disponibilidad">
                         <span class="wa-logo-sm" aria-hidden="true">
                             <svg viewBox="0 0 32 32" width="18" height="18" xmlns="http://www.w3.org/2000/svg">
                                 <path fill="#25D366" d="M16 .4C7.4.4.5 7.3.5 15.8c0 2.8.7 5.5 2.1 7.9L.3 31.6l8.1-2.1c2.3 1.2 4.9 1.9 7.6 1.9 8.6 0 15.5-6.9 15.5-15.5S24.6.4 16 .4z"/>
@@ -681,6 +703,7 @@ $today = date('d/m/Y');
         }
 
         $bankAccounts = is_array($companyInfo['bank_accounts'] ?? null) ? $companyInfo['bank_accounts'] : [];
+        $razonSocial = trim((string) ($companyInfo['razon_social'] ?? CompanyConfig::getConfig(CompanyConfig::COMPANY_RAZON_SOCIAL, '')));
         $simpemovilRaw = trim((string) ($companyInfo['simemovil'] ?? ''));
         $simpemovilDigits = $simpemovilRaw !== '' ? preg_replace('/\D+/', '', $simpemovilRaw) : '';
         $simpemovilDisplay = $simpemovilDigits !== '' && strlen($simpemovilDigits) === 8
@@ -697,6 +720,9 @@ $today = date('d/m/Y');
                     <img src="<?= Html::encode($logoPath) ?>" alt="<?= Html::encode($companyName) ?>">
                 <?php endif; ?>
                 <h2 id="about-title"><?= Html::encode($companyName) ?></h2>
+                <?php if ($razonSocial !== ''): ?>
+                    <p class="razon-social" style="font-size:13px;opacity:0.78;margin:0 0 4px;"><?= Html::encode($razonSocial) ?></p>
+                <?php endif; ?>
                 <p class="tagline">Renta de vehículos en Costa Rica</p>
                 <?php if ($cedulaJuridica !== ''): ?>
                     <div style="font-size:12.5px; opacity:0.85; margin-bottom:6px;">
@@ -769,8 +795,15 @@ $today = date('d/m/Y');
                     <div class="about-banks">
                         <?php foreach ($bankAccounts as $acc):
                             $bankRaw = strtoupper(trim((string) ($acc['bank'] ?? '')));
-                            $account = trim((string) ($acc['account'] ?? ''));
                             $currency = trim((string) ($acc['currency'] ?? ''));
+                            $accountNumber = trim((string) ($acc['account_number'] ?? ''));
+                            $iban = trim((string) ($acc['iban'] ?? ''));
+                            if ($iban === '' && !empty($acc['account'])) {
+                                $iban = preg_replace('/^IBAN\s*:?\s*/i', '', trim((string) $acc['account']));
+                                $iban = strtoupper(preg_replace('/\s+/', '', $iban));
+                            }
+                            $copyValue = $iban !== '' ? $iban : $accountNumber;
+
                             $logoClass = '';
                             $logoText = $bankRaw;
                             $logoFile = '';
@@ -785,9 +818,17 @@ $today = date('d/m/Y');
                                 $logoText = 'BN';
                                 $logoFile = 'bn.png';
                                 $bankFullName = 'Banco Nacional';
+                            } elseif (strpos($bankRaw, 'BAC') !== false || strpos($bankRaw, 'CREDOMATIC') !== false) {
+                                $logoClass = 'bac';
+                                $logoText = 'BAC';
+                                $logoFile = 'bac.png';
+                                $bankFullName = 'BAC Credomatic';
                             }
-                            $copyValue = preg_replace('/^IBAN\s*:?\s*/i', '', $account);
-                            if ($copyValue === '') $copyValue = $account;
+
+                            $currencyClass = 'colones';
+                            if ($currency === '$' || stripos($currency, 'usd') !== false || stripos($currency, 'dolar') !== false) {
+                                $currencyClass = 'dolares';
+                            }
                         ?>
                             <div class="bank-card">
                                 <div class="bank-logo <?= $logoClass ?>" aria-hidden="true">
@@ -801,10 +842,24 @@ $today = date('d/m/Y');
                                     <div class="bank-name">
                                         <?= Html::encode($bankFullName) ?>
                                         <?php if ($currency !== ''): ?>
-                                            <span class="bank-currency"><?= Html::encode($currency) ?></span>
+                                            <span class="bank-currency <?= $currencyClass ?>"><?= Html::encode($currency) ?></span>
                                         <?php endif; ?>
                                     </div>
-                                    <div class="bank-account"><?= Html::encode($account) ?></div>
+                                    <div class="bank-account">
+                                        <?php if ($accountNumber !== ''): ?>
+                                            <span class="bank-account-line">
+                                                <span class="lbl">Cta</span><?= Html::encode($accountNumber) ?>
+                                            </span>
+                                        <?php endif; ?>
+                                        <?php if ($iban !== ''): ?>
+                                            <span class="bank-account-line">
+                                                <span class="lbl">IBAN</span><?= Html::encode($iban) ?>
+                                            </span>
+                                        <?php endif; ?>
+                                        <?php if ($accountNumber === '' && $iban === '' && !empty($acc['account'])): ?>
+                                            <span class="bank-account-line"><?= Html::encode($acc['account']) ?></span>
+                                        <?php endif; ?>
+                                    </div>
                                 </div>
                                 <button type="button" class="bank-copy" data-copy="<?= Html::encode($copyValue) ?>">
                                     <span class="material-symbols-outlined">content_copy</span>
