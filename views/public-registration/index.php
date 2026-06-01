@@ -88,14 +88,35 @@ $lookupClientUrl = Url::to(['public-registration/lookup-client']);
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css">
     <style>
         body {
-            background: #2e6faa;
+            background-color: #2e6faa;
             min-height: 100vh;
             padding: 40px 20px;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            position: relative;
         }
+        <?php if ($logoPath): ?>
+        /* Mosaico transparente del logo como fondo decorativo */
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background-image: url('<?= Html::encode($logoPath) ?>');
+            background-repeat: repeat;
+            background-size: 140px 140px;
+            background-position: center;
+            opacity: 0.07;
+            pointer-events: none;
+            z-index: 0;
+        }
+        @media (max-width: 640px) {
+            body::before { background-size: 110px 110px; opacity: 0.06; }
+        }
+        <?php endif; ?>
         .registration-container {
             max-width: 800px;
             margin: 0 auto;
+            position: relative;
+            z-index: 1;
         }
         .card {
             border: none;
