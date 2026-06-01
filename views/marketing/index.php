@@ -8,6 +8,7 @@ use yii\helpers\Url;
 /* @var $waConfig array */
 /* @var $mkConfig array */
 /* @var $connected bool */
+/* @var $templates array */
 
 $this->title = 'Marketing — Campañas WhatsApp';
 $this->params['breadcrumbs'][] = $this->title;
@@ -55,6 +56,21 @@ $csrfToken = Yii::$app->request->csrfToken;
     .results-table .row-fail { color: #9a1f1c; }
     .placeholders-hint { font-size: 12px; color: #6a7186; }
     .placeholders-hint code { background: #f1f3f9; padding: 1px 4px; border-radius: 4px; color: #345; }
+
+    /* Plantillas */
+    .templates-bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 10px; background: #f5f8ff; border: 1px solid #e0e6f3; border-radius: 10px; margin-bottom: 12px; }
+    .templates-bar select { flex: 1; min-width: 180px; }
+    .templates-bar .templates-label { font-size: 13px; color: #345; font-weight: 600; }
+
+    /* Excluir destinatarios */
+    .clients-table .col-exclude { width: 44px; text-align: center; }
+    .btn-exclude { background: transparent; border: 1px solid transparent; border-radius: 6px; padding: 2px 6px; cursor: pointer; color: #c33; font-size: 14px; line-height: 1; }
+    .btn-exclude:hover { background: #fde2e1; }
+    .btn-exclude.active { background: #fde2e1; border-color: #f1c4c2; color: #9a1f1c; }
+    tr.row-excluded { background: #fff4f4 !important; opacity: 0.85; }
+    tr.row-excluded td { color: #9a1f1c; }
+    tr.row-excluded .mk-row-check { pointer-events: none; opacity: 0.4; }
+    .exclude-counter { font-size: 12px; color: #9a1f1c; }
 </style>
 
 <div class="marketing-wrap">
@@ -78,6 +94,9 @@ $csrfToken = Yii::$app->request->csrfToken;
                     <input type="text" id="mk-search" class="form-control search" placeholder="Buscar por nombre, cédula o teléfono…">
                     <button type="button" class="btn btn-outline-primary btn-sm" id="mk-select-all">Seleccionar todos</button>
                     <button type="button" class="btn btn-outline-secondary btn-sm" id="mk-clear">Limpiar</button>
+                    <button type="button" class="btn btn-outline-danger btn-sm" id="mk-clear-excluded" title="Quitar todas las exclusiones guardadas en este navegador">
+                        Borrar exclusiones (<span id="mk-excluded-total">0</span>)
+                    </button>
                     <span class="selection-info"><span id="mk-selected-count">0</span> de <?= count($clients) ?> seleccionados</span>
                 </div>
                 <div class="clients-list-wrap">
@@ -88,6 +107,7 @@ $csrfToken = Yii::$app->request->csrfToken;
                                 <th>Nombre</th>
                                 <th class="col-cedula">Cédula</th>
                                 <th class="col-phone">WhatsApp</th>
+                                <th class="col-exclude" title="Excluir destinatario">Excluir</th>
                             </tr>
                         </thead>
                         <tbody id="mk-clients-tbody">
@@ -97,10 +117,15 @@ $csrfToken = Yii::$app->request->csrfToken;
                                     <td><?= Html::encode($c['name']) ?></td>
                                     <td class="col-cedula"><?= Html::encode($c['cedula']) ?></td>
                                     <td class="col-phone"><?= Html::encode($c['phone']) ?></td>
+                                    <td class="col-exclude">
+                                        <button type="button" class="btn-exclude" title="Excluir este destinatario de TODAS las campañas (incluido cuando se usa &laquo;Seleccionar todos&raquo;)">
+                                            <i class="material-symbols-outlined" style="font-size:18px;">block</i>
+                                        </button>
+                                    </td>
                                 </tr>
                             <?php endforeach; ?>
                             <?php if (empty($clients)): ?>
-                                <tr><td colspan="4" class="text-center text-muted p-4">No hay clientes con WhatsApp registrado.</td></tr>
+                                <tr><td colspan="5" class="text-center text-muted p-4">No hay clientes con WhatsApp registrado.</td></tr>
                             <?php endif; ?>
                         </tbody>
                     </table>
@@ -115,6 +140,36 @@ $csrfToken = Yii::$app->request->csrfToken;
                     Puede usar marcadores que se reemplazan por cliente:
                     <code>{nombre}</code>, <code>{cedula}</code>.
                 </p>
+
+                <div class="templates-bar">
+                    <span class="templates-label">Plantillas guardadas:</span>
+                    <select id="mk-template-select" class="form-select form-select-sm">
+                        <option value="">— Ninguna —</option>
+                        <?php foreach ($templates as $t): ?>
+                            <option
+                                value="<?= (int) $t['id'] ?>"
+                                data-html="<?= Html::encode($t['message_html']) ?>"
+                                data-text="<?= Html::encode($t['message_text']) ?>"
+                                data-image-url="<?= Html::encode($t['image_public_url']) ?>"
+                                data-image-name="<?= Html::encode($t['image_filename']) ?>"
+                            >
+                                <?= Html::encode($t['name']) ?>
+                                <?php if (!empty($t['updated_at'])): ?>
+                                    — <?= Html::encode(substr((string) $t['updated_at'], 0, 16)) ?>
+                                <?php endif; ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <button type="button" id="mk-template-load" class="btn btn-sm btn-outline-primary" title="Cargar la plantilla seleccionada en el editor">
+                        <i class="material-symbols-outlined align-middle" style="font-size:16px;">download</i> Cargar
+                    </button>
+                    <button type="button" id="mk-template-save" class="btn btn-sm btn-success" title="Guardar el mensaje actual como plantilla">
+                        <i class="material-symbols-outlined align-middle" style="font-size:16px;">save</i> Guardar mensaje
+                    </button>
+                    <button type="button" id="mk-template-delete" class="btn btn-sm btn-outline-danger" title="Eliminar la plantilla seleccionada" disabled>
+                        <i class="material-symbols-outlined align-middle" style="font-size:16px;">delete</i> Eliminar
+                    </button>
+                </div>
 
                 <div id="mk-editor-toolbar">
                     <span class="ql-formats">
@@ -187,7 +242,10 @@ $csrfToken = Yii::$app->request->csrfToken;
     const CSRF_TOKEN = <?= json_encode($csrfToken) ?>;
     const URL_SEND = <?= json_encode(Url::to(['marketing/send'])) ?>;
     const URL_UPLOAD = <?= json_encode(Url::to(['marketing/upload-image'])) ?>;
+    const URL_SAVE_TEMPLATE = <?= json_encode(Url::to(['marketing/save-template'])) ?>;
+    const URL_DELETE_TEMPLATE = <?= json_encode(Url::to(['marketing/delete-template'])) ?>;
     const BATCH_SIZE = <?= max(1, (int) $mkConfig['batch_size']) ?>;
+    const EXCLUDED_STORAGE_KEY = 'mk_excluded_client_ids_v1';
 
     // Espera a que Quill esté disponible (Yii inyecta el JS de Quill al final del body).
     function whenReady(cb) {
@@ -224,6 +282,8 @@ $csrfToken = Yii::$app->request->csrfToken;
     const headerCheck = document.getElementById('mk-check-header');
     const selectAllBtn = document.getElementById('mk-select-all');
     const clearBtn = document.getElementById('mk-clear');
+    const clearExcludedBtn = document.getElementById('mk-clear-excluded');
+    const excludedTotalEl = document.getElementById('mk-excluded-total');
     const selectedCountEl = document.getElementById('mk-selected-count');
     const sendBtn = document.getElementById('mk-send-btn');
     const progress = document.getElementById('mk-progress');
@@ -236,12 +296,53 @@ $csrfToken = Yii::$app->request->csrfToken;
     const resultsBox = document.getElementById('mk-results');
     const intervalInput = document.getElementById('mk-interval');
 
+    // ===== Excluidos (persistidos en localStorage) =====
+    function loadExcluded() {
+        try {
+            const raw = localStorage.getItem(EXCLUDED_STORAGE_KEY);
+            const parsed = raw ? JSON.parse(raw) : [];
+            return Array.isArray(parsed) ? new Set(parsed.map(Number).filter(n => !isNaN(n))) : new Set();
+        } catch (e) {
+            return new Set();
+        }
+    }
+    function saveExcluded() {
+        try {
+            localStorage.setItem(EXCLUDED_STORAGE_KEY, JSON.stringify(Array.from(excludedSet)));
+        } catch (e) { /* ignore */ }
+    }
+    const excludedSet = loadExcluded();
+
+    function updateExcludedCounter() {
+        excludedTotalEl.textContent = excludedSet.size;
+    }
+    function applyExclusionStyles() {
+        getAllRows().forEach(row => {
+            const id = parseInt(row.dataset.cliId, 10);
+            const btn = row.querySelector('.btn-exclude');
+            if (excludedSet.has(id)) {
+                row.classList.add('row-excluded');
+                if (btn) btn.classList.add('active');
+                const cb = row.querySelector('.mk-row-check');
+                if (cb) cb.checked = false;
+            } else {
+                row.classList.remove('row-excluded');
+                if (btn) btn.classList.remove('active');
+            }
+        });
+        updateExcludedCounter();
+    }
+
     function getAllRows() {
         return Array.from(tbody.querySelectorAll('tr[data-cli-id]'));
     }
     function getCheckedIds() {
         return getAllRows()
-            .filter(r => r.querySelector('.mk-row-check')?.checked)
+            .filter(r => {
+                const id = parseInt(r.dataset.cliId, 10);
+                if (excludedSet.has(id)) return false; // exclusión SIEMPRE gana
+                return r.querySelector('.mk-row-check')?.checked;
+            })
             .map(r => parseInt(r.dataset.cliId, 10));
     }
     function refreshSelectedCount() {
@@ -258,16 +359,19 @@ $csrfToken = Yii::$app->request->csrfToken;
     headerCheck.addEventListener('change', function() {
         const checked = this.checked;
         getAllRows().forEach(row => {
-            if (row.style.display !== 'none') {
-                const cb = row.querySelector('.mk-row-check');
-                if (cb) cb.checked = checked;
-            }
+            if (row.style.display === 'none') return;
+            const id = parseInt(row.dataset.cliId, 10);
+            if (excludedSet.has(id)) return; // no se selecciona si está excluido
+            const cb = row.querySelector('.mk-row-check');
+            if (cb) cb.checked = checked;
         });
         refreshSelectedCount();
     });
 
     selectAllBtn.addEventListener('click', function() {
         getAllRows().forEach(row => {
+            const id = parseInt(row.dataset.cliId, 10);
+            if (excludedSet.has(id)) return;
             const cb = row.querySelector('.mk-row-check');
             if (cb) cb.checked = true;
         });
@@ -283,11 +387,45 @@ $csrfToken = Yii::$app->request->csrfToken;
         refreshSelectedCount();
     });
 
+    clearExcludedBtn.addEventListener('click', function() {
+        if (excludedSet.size === 0) return;
+        if (!confirm('¿Quitar las ' + excludedSet.size + ' exclusiones guardadas?')) return;
+        excludedSet.clear();
+        saveExcluded();
+        applyExclusionStyles();
+        refreshSelectedCount();
+    });
+
+    tbody.addEventListener('click', function(e) {
+        const btn = e.target.closest('.btn-exclude');
+        if (!btn) return;
+        const row = btn.closest('tr[data-cli-id]');
+        if (!row) return;
+        const id = parseInt(row.dataset.cliId, 10);
+        if (excludedSet.has(id)) {
+            excludedSet.delete(id);
+        } else {
+            excludedSet.add(id);
+        }
+        saveExcluded();
+        applyExclusionStyles();
+        refreshSelectedCount();
+    });
+
     tbody.addEventListener('change', function(e) {
         if (e.target && e.target.classList.contains('mk-row-check')) {
+            const row = e.target.closest('tr[data-cli-id]');
+            if (row) {
+                const id = parseInt(row.dataset.cliId, 10);
+                if (excludedSet.has(id)) {
+                    e.target.checked = false; // no se puede marcar un excluido
+                }
+            }
             refreshSelectedCount();
         }
     });
+
+    applyExclusionStyles();
 
     // === Subida de imagen ===
     const imageInput = document.getElementById('mk-image-input');
@@ -354,6 +492,147 @@ $csrfToken = Yii::$app->request->csrfToken;
         uploadedImage = null;
         imageInput.value = '';
         previewBox.style.display = 'none';
+    });
+
+    // === Plantillas de mensajes ===
+    const templateSelect = document.getElementById('mk-template-select');
+    const templateLoadBtn = document.getElementById('mk-template-load');
+    const templateSaveBtn = document.getElementById('mk-template-save');
+    const templateDeleteBtn = document.getElementById('mk-template-delete');
+
+    function refreshTemplateButtons() {
+        const hasSelection = templateSelect.value !== '';
+        templateLoadBtn.disabled = !hasSelection;
+        templateDeleteBtn.disabled = !hasSelection;
+    }
+    templateSelect.addEventListener('change', refreshTemplateButtons);
+    refreshTemplateButtons();
+
+    templateLoadBtn.addEventListener('click', function() {
+        const opt = templateSelect.options[templateSelect.selectedIndex];
+        if (!opt || !opt.value) return;
+        const html = opt.getAttribute('data-html') || '';
+        const text = opt.getAttribute('data-text') || '';
+        const imgUrl = opt.getAttribute('data-image-url') || '';
+        const imgName = opt.getAttribute('data-image-name') || '';
+
+        if (html.trim() !== '') {
+            quill.root.innerHTML = html;
+        } else {
+            quill.setText(text);
+        }
+
+        if (imgUrl !== '') {
+            uploadedImage = { public_url: imgUrl, url: imgUrl, filename: imgName || 'plantilla.jpg' };
+            previewBox.style.display = 'flex';
+            imageThumb.src = imgUrl;
+            imageName.textContent = imgName || 'plantilla.jpg';
+            imageUrlEl.innerHTML = '<a href="' + imgUrl + '" target="_blank" rel="noopener">' + imgUrl + '</a>';
+        } else {
+            uploadedImage = null;
+            imageInput.value = '';
+            previewBox.style.display = 'none';
+        }
+    });
+
+    templateSaveBtn.addEventListener('click', async function() {
+        const html = quill.root.innerHTML;
+        const text = getPlainMessage();
+        if (!text && !uploadedImage) {
+            alert('No hay nada que guardar: escriba un mensaje o adjunte una imagen primero.');
+            return;
+        }
+
+        // Si hay una plantilla seleccionada, preguntar si actualizarla o crear una nueva.
+        let id = 0;
+        let suggestedName = '';
+        if (templateSelect.value !== '') {
+            const opt = templateSelect.options[templateSelect.selectedIndex];
+            const currentName = opt ? opt.textContent.trim().split(' — ')[0] : '';
+            const overwrite = confirm('Hay una plantilla seleccionada («' + currentName + '»). '
+                + '¿Reemplazarla con el mensaje actual?\n\n'
+                + 'Aceptar = reemplazar la existente.\n'
+                + 'Cancelar = guardar como nueva.');
+            if (overwrite) {
+                id = parseInt(templateSelect.value, 10);
+                suggestedName = currentName;
+            }
+        }
+        let name = suggestedName;
+        if (!id) {
+            name = prompt('Nombre para esta plantilla:', name || 'Mensaje ' + (new Date()).toLocaleDateString());
+            if (!name) return;
+            name = name.trim();
+            if (!name) return;
+        }
+
+        const fd = new FormData();
+        fd.append(CSRF_PARAM, CSRF_TOKEN);
+        if (id) fd.append('id', String(id));
+        fd.append('name', name);
+        fd.append('message_html', html);
+        fd.append('message_text', text);
+        if (uploadedImage) {
+            fd.append('image_public_url', uploadedImage.public_url || '');
+            fd.append('image_filename', uploadedImage.filename || '');
+        }
+
+        templateSaveBtn.disabled = true;
+        try {
+            const res = await fetch(URL_SAVE_TEMPLATE, { method: 'POST', body: fd, credentials: 'same-origin' });
+            const data = await res.json();
+            if (!data.success) {
+                alert('No se pudo guardar: ' + (data.message || 'error desconocido'));
+                return;
+            }
+            const t = data.template;
+            // Actualiza el <select>
+            let opt = templateSelect.querySelector('option[value="' + t.id + '"]');
+            if (!opt) {
+                opt = document.createElement('option');
+                opt.value = String(t.id);
+                templateSelect.appendChild(opt);
+            }
+            opt.textContent = t.name + (t.updated_at ? ' — ' + t.updated_at.substr(0, 16) : '');
+            opt.setAttribute('data-html', t.message_html || '');
+            opt.setAttribute('data-text', t.message_text || '');
+            opt.setAttribute('data-image-url', t.image_public_url || '');
+            opt.setAttribute('data-image-name', t.image_filename || '');
+            templateSelect.value = String(t.id);
+            refreshTemplateButtons();
+            alert(data.message || 'Plantilla guardada.');
+        } catch (e) {
+            alert('Error: ' + e.message);
+        } finally {
+            templateSaveBtn.disabled = false;
+        }
+    });
+
+    templateDeleteBtn.addEventListener('click', async function() {
+        if (templateSelect.value === '') return;
+        const opt = templateSelect.options[templateSelect.selectedIndex];
+        const name = opt ? opt.textContent.trim().split(' — ')[0] : '';
+        if (!confirm('¿Eliminar la plantilla «' + name + '»? Esta acción no se puede deshacer.')) return;
+        const fd = new FormData();
+        fd.append(CSRF_PARAM, CSRF_TOKEN);
+        fd.append('id', templateSelect.value);
+        templateDeleteBtn.disabled = true;
+        try {
+            const res = await fetch(URL_DELETE_TEMPLATE, { method: 'POST', body: fd, credentials: 'same-origin' });
+            const data = await res.json();
+            if (!data.success) {
+                alert('No se pudo eliminar: ' + (data.message || 'error'));
+                return;
+            }
+            if (opt) opt.remove();
+            templateSelect.value = '';
+            refreshTemplateButtons();
+            alert(data.message || 'Plantilla eliminada.');
+        } catch (e) {
+            alert('Error: ' + e.message);
+        } finally {
+            templateDeleteBtn.disabled = false;
+        }
     });
 
     // === Envío en lotes ===

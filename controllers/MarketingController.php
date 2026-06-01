@@ -5,6 +5,7 @@ namespace app\controllers;
 use Yii;
 use app\models\Client;
 use app\models\CompanyConfig;
+use app\models\MarketingTemplate;
 use app\components\WhatsAppNotifier;
 use yii\helpers\Url;
 use yii\web\Controller;
@@ -42,6 +43,8 @@ class MarketingController extends Controller
                 'actions' => [
                     'send' => ['post'],
                     'upload-image' => ['post'],
+                    'save-template' => ['post'],
+                    'delete-template' => ['post'],
                 ],
             ],
         ];
@@ -93,12 +96,100 @@ class MarketingController extends Controller
         }
         $connected = WhatsAppNotifier::isConnected($status);
 
+        $templates = [];
+        foreach (MarketingTemplate::findAllSafe() as $t) {
+            $templates[] = [
+                'id' => (int) $t->id,
+                'name' => (string) $t->name,
+                'message_html' => (string) ($t->message_html ?? ''),
+                'message_text' => (string) ($t->message_text ?? ''),
+                'image_public_url' => (string) ($t->image_public_url ?? ''),
+                'image_filename' => (string) ($t->image_filename ?? ''),
+                'updated_at' => (string) ($t->updated_at ?? ''),
+            ];
+        }
+
         return $this->render('index', [
             'clients' => $rows,
             'waConfig' => $waConfig,
             'mkConfig' => $mkConfig,
             'connected' => $connected,
+            'templates' => $templates,
         ]);
+    }
+
+    /**
+     * Guarda (o actualiza) una plantilla con el mensaje actual.
+     * Espera: id (opcional, para actualizar), name, message_html, message_text, image_public_url, image_filename.
+     */
+    public function actionSaveTemplate()
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        $req = Yii::$app->request;
+
+        try {
+            $schema = Yii::$app->db->getTableSchema(MarketingTemplate::tableName(), true);
+            if ($schema === null) {
+                return ['success' => false, 'message' => 'La tabla marketing_templates aún no existe. Ejecute la migración.'];
+            }
+        } catch (\Throwable $e) {
+            return ['success' => false, 'message' => 'No se pudo verificar la tabla: ' . $e->getMessage()];
+        }
+
+        $id = (int) $req->post('id', 0);
+        $name = trim((string) $req->post('name', ''));
+        if ($name === '') {
+            return ['success' => false, 'message' => 'El nombre de la plantilla es obligatorio.'];
+        }
+
+        $template = $id > 0 ? MarketingTemplate::findOne($id) : null;
+        if (!$template) {
+            $template = new MarketingTemplate();
+        }
+
+        $template->name = mb_substr($name, 0, 160);
+        $template->message_html = (string) $req->post('message_html', '');
+        $template->message_text = (string) $req->post('message_text', '');
+        $template->image_public_url = trim((string) $req->post('image_public_url', '')) ?: null;
+        $template->image_filename = trim((string) $req->post('image_filename', '')) ?: null;
+
+        if (!$template->save()) {
+            return ['success' => false, 'message' => 'No se pudo guardar: ' . implode('; ', $template->getFirstErrors())];
+        }
+
+        return [
+            'success' => true,
+            'template' => [
+                'id' => (int) $template->id,
+                'name' => (string) $template->name,
+                'message_html' => (string) ($template->message_html ?? ''),
+                'message_text' => (string) ($template->message_text ?? ''),
+                'image_public_url' => (string) ($template->image_public_url ?? ''),
+                'image_filename' => (string) ($template->image_filename ?? ''),
+                'updated_at' => (string) ($template->updated_at ?? ''),
+            ],
+            'message' => 'Plantilla guardada correctamente.',
+        ];
+    }
+
+    /**
+     * Elimina una plantilla guardada.
+     */
+    public function actionDeleteTemplate()
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        $id = (int) Yii::$app->request->post('id', 0);
+        if ($id <= 0) {
+            return ['success' => false, 'message' => 'ID inválido.'];
+        }
+        $template = MarketingTemplate::findOne($id);
+        if (!$template) {
+            return ['success' => false, 'message' => 'La plantilla no existe.'];
+        }
+        if (!$template->delete()) {
+            return ['success' => false, 'message' => 'No se pudo eliminar la plantilla.'];
+        }
+        return ['success' => true, 'message' => 'Plantilla eliminada.'];
     }
 
     /**
