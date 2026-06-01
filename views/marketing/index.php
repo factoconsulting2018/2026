@@ -12,7 +12,7 @@ use yii\helpers\Url;
 $this->title = 'Marketing — Campañas WhatsApp';
 $this->params['breadcrumbs'][] = $this->title;
 $this->registerCssFile('https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css');
-$this->registerJsFile('https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js', ['position' => \yii\web\View::POS_END]);
+$this->registerJsFile('https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js', ['position' => \yii\web\View::POS_HEAD]);
 
 $csrfParam = Yii::$app->request->csrfParam;
 $csrfToken = Yii::$app->request->csrfToken;
@@ -189,6 +189,30 @@ $csrfToken = Yii::$app->request->csrfToken;
     const URL_UPLOAD = <?= json_encode(Url::to(['marketing/upload-image'])) ?>;
     const BATCH_SIZE = <?= max(1, (int) $mkConfig['batch_size']) ?>;
 
+    // Espera a que Quill esté disponible (Yii inyecta el JS de Quill al final del body).
+    function whenReady(cb) {
+        if (typeof Quill !== 'undefined' && document.readyState !== 'loading') {
+            cb();
+        } else if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function () { whenReady(cb); });
+        } else {
+            let tries = 0;
+            const t = setInterval(function () {
+                tries++;
+                if (typeof Quill !== 'undefined') {
+                    clearInterval(t);
+                    cb();
+                } else if (tries > 50) {
+                    clearInterval(t);
+                    console.error('Marketing: Quill no se cargó.');
+                }
+            }, 100);
+        }
+    }
+
+    whenReady(function () { init(); });
+
+    function init() {
     const quill = new Quill('#mk-editor', {
         modules: { toolbar: '#mk-editor-toolbar' },
         placeholder: 'Escriba aquí el mensaje para sus clientes…',
@@ -415,5 +439,6 @@ $csrfToken = Yii::$app->request->csrfToken;
     });
 
     refreshSelectedCount();
+    } // fin de init()
 })();
 </script>
