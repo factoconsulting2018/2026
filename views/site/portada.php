@@ -405,34 +405,27 @@ $today = date('d/m/Y');
             border-color: rgba(255,255,255,0.18);
         }
         .bank-logo {
-            width: 52px;
-            height: 52px;
-            flex: 0 0 52px;
+            width: 56px;
+            height: 56px;
+            flex: 0 0 56px;
             border-radius: 12px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            font-weight: 800;
-            color: #fff;
-            font-size: 13px;
-            letter-spacing: 0.5px;
+            background: #ffffff;
             box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15), 0 4px 10px rgba(0,0,0,0.25);
-            text-align: center;
-            line-height: 1.1;
+            padding: 6px;
+            overflow: hidden;
         }
-        .bank-logo.bcr {
-            background: linear-gradient(135deg, #1b4e8a 0%, #0b2d59 100%);
-            border: 1px solid #ffd200;
-            color: #ffd200;
-        }
-        .bank-logo.bn {
-            background: linear-gradient(135deg, #e2231a 0%, #9c0e0a 100%);
-            color: #fff;
+        .bank-logo img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            display: block;
         }
         .bank-logo.sinpe {
-            background: linear-gradient(135deg, #14b8a6 0%, #0f766e 100%);
-            color: #fff;
-            font-size: 10px;
+            background: #ffffff;
+            padding: 4px;
         }
         .bank-meta {
             flex: 1;
