@@ -207,6 +207,24 @@ $lookupClientUrl = Url::to(['public-registration/lookup-client']);
             .reg-stepper .step-num { width: 22px; height: 22px; font-size: 12px; }
             .reg-stepper .step-divider { flex-basis: 18px; }
         }
+        .link-requisitos {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: #22487a;
+            font-size: 13.5px;
+            font-weight: 600;
+            text-decoration: underline;
+            text-decoration-style: dotted;
+            text-underline-offset: 3px;
+            cursor: pointer;
+            transition: color .15s ease;
+        }
+        .link-requisitos:hover {
+            color: #0d001e;
+            text-decoration-style: solid;
+        }
+        .link-requisitos i { font-size: 13px; }
         /* Indicadores visuales por campo (check / precaución / x) */
         .field-status-wrap {
             position: relative;
@@ -374,17 +392,17 @@ $lookupClientUrl = Url::to(['public-registration/lookup-client']);
 
             <ul class="reg-stepper" id="reg-stepper" aria-label="Pasos para completar la solicitud">
                 <?php if ($showRequirementsFirst): ?>
-                    <li class="step active" data-step="1" role="button" tabindex="0" aria-current="step">
+                    <li class="step" data-step="1" role="button" tabindex="0">
                         <span class="step-num"><span>1</span></span>
                         <span class="step-label">Requisitos</span>
                     </li>
                     <li class="step-divider" aria-hidden="true"></li>
                 <?php endif; ?>
-                <li class="step <?= $showRequirementsFirst ? '' : 'active' ?>"
+                <li class="step active"
                     data-step="2"
                     role="button"
                     tabindex="0"
-                    <?= $showRequirementsFirst ? '' : 'aria-current="step"' ?>>
+                    aria-current="step">
                     <span class="step-num"><span>2</span></span>
                     <span class="step-label">Detalles del alquiler</span>
                 </li>
@@ -396,7 +414,7 @@ $lookupClientUrl = Url::to(['public-registration/lookup-client']);
             </ul>
 
             <?php if ($showRequirementsFirst): ?>
-                <div id="requisitos-section" class="mb-4">
+                <div id="requisitos-section" class="mb-4" style="display:none;">
                     <h4 class="mb-3"><i class="fas fa-list-check"></i> Requisitos</h4>
                     <div class="border rounded p-3 bg-light">
                         <?= $requirements ?>
@@ -409,9 +427,17 @@ $lookupClientUrl = Url::to(['public-registration/lookup-client']);
                 </div>
             <?php endif; ?>
 
-            <div id="rental-details-section" class="mb-4"<?= $showRequirementsFirst ? ' style="display:none;"' : '' ?>>
+            <div id="rental-details-section" class="mb-4">
                 <h4 class="mb-3"><i class="fas fa-calendar-check"></i> Detalles del alquiler</h4>
-                <p class="text-muted small mb-3">Indique las fechas que necesita alquilar y el tipo de vehículo que busca.</p>
+                <p class="text-muted small mb-2">Indique las fechas que necesita alquilar y el tipo de vehículo que busca.</p>
+                <?php if ($showRequirementsFirst): ?>
+                    <p class="mb-3">
+                        <a href="#" id="btn-ver-requisitos" class="link-requisitos">
+                            <i class="fas fa-list-check me-1"></i>
+                            Conozca nuestros requisitos
+                        </a>
+                    </p>
+                <?php endif; ?>
 
                 <div class="row g-3">
                     <div class="col-12"><h6 class="mb-1 text-uppercase text-muted small">Tipo de vehículo</h6></div>
@@ -893,6 +919,13 @@ $lookupClientUrl = Url::to(['public-registration/lookup-client']);
         }
         if (btnRentalBack) {
             btnRentalBack.addEventListener('click', function () { setStep(1); });
+        }
+        var btnVerRequisitos = document.getElementById('btn-ver-requisitos');
+        if (btnVerRequisitos) {
+            btnVerRequisitos.addEventListener('click', function (e) {
+                e.preventDefault();
+                setStep(1);
+            });
         }
         if (btnRentalNext) {
             btnRentalNext.addEventListener('click', function () {
