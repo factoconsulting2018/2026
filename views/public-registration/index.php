@@ -414,7 +414,31 @@ $lookupClientUrl = Url::to(['public-registration/lookup-client']);
                 <p class="text-muted small mb-3">Indique las fechas que necesita alquilar y el tipo de vehículo que busca.</p>
 
                 <div class="row g-3">
-                    <div class="col-12"><h6 class="mb-1 text-uppercase text-muted small">Inicio del alquiler</h6></div>
+                    <div class="col-12"><h6 class="mb-1 text-uppercase text-muted small">Tipo de vehículo</h6></div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="rental_tipo_auto">
+                            <span class="material-symbols-outlined align-middle" style="font-size:18px;">directions_car</span>
+                            Tipo de auto *
+                        </label>
+                        <?php $tipoOpts = ['Sedán' => '🚗 Sedán', 'SUV' => '🚙 SUV', 'Pickup 4x4' => '🛻 Pickup 4x4', 'Camión' => '🚚 Camión', 'Buseta' => '🚐 Buseta', 'otro' => 'Otro…']; ?>
+                        <select class="form-select" id="rental_tipo_auto" name="rental_tipo_auto" required>
+                            <option value="">Seleccione una opción</option>
+                            <?php foreach ($tipoOpts as $value => $label): ?>
+                                <option value="<?= Html::encode($value) ?>"<?= $postedRentalTipoAuto === $value ? ' selected' : '' ?>><?= Html::encode($label) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="col-md-6" id="rental-tipo-otro-wrap" style="display:none;">
+                        <label class="form-label" for="rental_tipo_auto_otro">
+                            <span class="material-symbols-outlined align-middle" style="font-size:18px;">edit</span>
+                            Especifique
+                        </label>
+                        <input type="text" class="form-control" id="rental_tipo_auto_otro" name="rental_tipo_auto_otro"
+                               value="<?= Html::encode($postedRentalTipoAutoOtro) ?>"
+                               placeholder="Ej: Furgón, motocicleta, etc.">
+                    </div>
+
+                    <div class="col-12 mt-4"><h6 class="mb-1 text-uppercase text-muted small">Inicio del alquiler</h6></div>
                     <div class="col-sm-7">
                         <label class="form-label" for="rental_fecha_inicio">
                             <span class="material-symbols-outlined align-middle" style="font-size:18px;">event</span>
@@ -448,30 +472,6 @@ $lookupClientUrl = Url::to(['public-registration/lookup-client']);
                         </label>
                         <input type="time" class="form-control" id="rental_hora_final" name="rental_hora_final"
                                value="<?= Html::encode($postedRentalHoraFinal) ?>" required>
-                    </div>
-
-                    <div class="col-12 mt-4"><h6 class="mb-1 text-uppercase text-muted small">Tipo de vehículo</h6></div>
-                    <div class="col-md-6">
-                        <label class="form-label" for="rental_tipo_auto">
-                            <span class="material-symbols-outlined align-middle" style="font-size:18px;">directions_car</span>
-                            Tipo de auto *
-                        </label>
-                        <?php $tipoOpts = ['Sedán' => '🚗 Sedán', 'SUV' => '🚙 SUV', 'Pickup 4x4' => '🛻 Pickup 4x4', 'Camión' => '🚚 Camión', 'Buseta' => '🚐 Buseta', 'otro' => 'Otro…']; ?>
-                        <select class="form-select" id="rental_tipo_auto" name="rental_tipo_auto" required>
-                            <option value="">Seleccione una opción</option>
-                            <?php foreach ($tipoOpts as $value => $label): ?>
-                                <option value="<?= Html::encode($value) ?>"<?= $postedRentalTipoAuto === $value ? ' selected' : '' ?>><?= Html::encode($label) ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    <div class="col-md-6" id="rental-tipo-otro-wrap" style="display:none;">
-                        <label class="form-label" for="rental_tipo_auto_otro">
-                            <span class="material-symbols-outlined align-middle" style="font-size:18px;">edit</span>
-                            Especifique
-                        </label>
-                        <input type="text" class="form-control" id="rental_tipo_auto_otro" name="rental_tipo_auto_otro"
-                               value="<?= Html::encode($postedRentalTipoAutoOtro) ?>"
-                               placeholder="Ej: Furgón, motocicleta, etc.">
                     </div>
                 </div>
 
