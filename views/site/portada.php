@@ -532,6 +532,14 @@ $today = date('d/m/Y');
         .hero-card .contact-row a:hover {
             text-decoration: underline;
         }
+        .hero-card .contact-row a .wa-logo-sm {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 18px;
+        }
+        .hero-card .contact-row a .wa-logo-sm svg { display: block; }
         .footer {
             text-align: center;
             padding: 16px 12px;
@@ -636,8 +644,13 @@ $today = date('d/m/Y');
                         4070-0485
                     </a>
                     <a href="https://wa.me/50683670937" target="_blank" rel="noopener">
-                        <span class="material-symbols-outlined" style="font-size:16px;">chat</span>
-                        WhatsApp 8367-0937
+                        <span class="wa-logo-sm" aria-hidden="true">
+                            <svg viewBox="0 0 32 32" width="18" height="18" xmlns="http://www.w3.org/2000/svg">
+                                <path fill="#25D366" d="M16 .4C7.4.4.5 7.3.5 15.8c0 2.8.7 5.5 2.1 7.9L.3 31.6l8.1-2.1c2.3 1.2 4.9 1.9 7.6 1.9 8.6 0 15.5-6.9 15.5-15.5S24.6.4 16 .4z"/>
+                                <path fill="#fff" d="M23.7 19.3c-.3-.2-2-1-2.3-1.1-.3-.1-.6-.2-.8.2s-.9 1.1-1.1 1.4c-.2.3-.4.3-.7.1-2-1-3.3-1.8-4.6-4-.4-.6.4-.6 1-1.9.1-.2 0-.4 0-.6s-.8-1.9-1.1-2.6c-.3-.7-.6-.6-.8-.6h-.7c-.2 0-.6.1-.9.4-.3.3-1.2 1.2-1.2 2.9s1.2 3.3 1.4 3.6c.2.3 2.4 3.6 5.8 5.1.8.3 1.4.5 1.9.7.8.3 1.6.2 2.1.1.7-.1 2-.8 2.3-1.6.3-.8.3-1.5.2-1.6-.1-.2-.3-.3-.5-.4z"/>
+                            </svg>
+                        </span>
+                        8367-0937
                     </a>
                     <a href="https://www.factorentacar.com" target="_blank" rel="noopener">
                         <span class="material-symbols-outlined" style="font-size:16px;">language</span>
