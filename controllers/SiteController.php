@@ -95,6 +95,19 @@ class SiteController extends Controller
     }
 
     /**
+     * Página pública "Sobre la empresa" accesible directamente vía `/info`
+     * (o `/sobre-la-empresa`). Pensada para compartir en redes sociales y
+     * WhatsApp con su propio Open Graph (logo + descripción + contactos).
+     */
+    public function actionInfo()
+    {
+        $this->layout = false;
+        return $this->render('info', [
+            'backgroundUrl' => $this->pickDailyBackground(),
+        ]);
+    }
+
+    /**
      * Selecciona una imagen de fondo (montaña/playa) de forma determinista
      * según el día del año. Cambia cada día y vuelve a empezar al año siguiente.
      */
