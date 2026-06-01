@@ -426,7 +426,6 @@ $today = date('d/m/Y');
             width: 100%;
             max-width: 640px;
             max-height: 90vh;
-            isolation: isolate;
             overflow-y: auto;
             position: relative;
             animation: aboutSlide .3s ease;
@@ -436,21 +435,23 @@ $today = date('d/m/Y');
             to { transform: translateY(0); opacity: 1; }
         }
         <?php if ($logoPath): ?>
-        /* Mosaico transparente del logo como fondo decorativo del modal */
-        .about-modal::before {
+        /* Mosaico transparente del logo en el fondo del backdrop (NO sobre el contenido del modal) */
+        .about-backdrop::before {
             content: "";
             position: absolute;
             inset: 0;
             background-image: url('<?= Html::encode($logoPath) ?>');
             background-repeat: repeat;
-            background-size: 120px 120px;
+            background-size: 140px 140px;
             background-position: center;
-            opacity: 0.06;
+            opacity: 0.07;
             pointer-events: none;
             z-index: 0;
-            border-radius: inherit;
         }
-        .about-modal > * { position: relative; z-index: 1; }
+        .about-backdrop > * { position: relative; z-index: 1; }
+        @media (max-width: 640px) {
+            .about-backdrop::before { background-size: 110px 110px; opacity: 0.06; }
+        }
         <?php endif; ?>
         .about-modal-header {
             padding: 24px 28px 8px;
