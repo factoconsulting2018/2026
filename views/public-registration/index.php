@@ -246,6 +246,26 @@ $lookupClientUrl = Url::to(['public-registration/lookup-client']);
             text-decoration-style: solid;
         }
         .link-requisitos i { font-size: 13px; }
+        /* Indicador visual cuando intentan saltar un campo obligatorio del paso de alquiler */
+        .form-select.is-required-empty,
+        .form-control.is-required-empty {
+            border: 2px solid #dc3545 !important;
+            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+            background-color: #fff5f5 !important;
+            animation: shakeField 0.45s ease-in-out;
+        }
+        .form-select.is-required-empty:focus,
+        .form-control.is-required-empty:focus {
+            border-color: #dc3545 !important;
+            box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.35) !important;
+        }
+        @keyframes shakeField {
+            0%, 100% { transform: translateX(0); }
+            20%      { transform: translateX(-6px); }
+            40%      { transform: translateX(6px); }
+            60%      { transform: translateX(-4px); }
+            80%      { transform: translateX(4px); }
+        }
         /* Indicadores visuales por campo (check / precaución / x) */
         .field-status-wrap {
             position: relative;
@@ -892,8 +912,36 @@ $lookupClientUrl = Url::to(['public-registration/lookup-client']);
             rentalError.style.display = msg ? '' : 'none';
         }
 
+        function markInvalid(el) {
+            if (!el) return;
+            el.classList.remove('is-required-empty');
+            // Forzar reflow para que la animación se reproduzca cada vez.
+            void el.offsetWidth;
+            el.classList.add('is-required-empty');
+            try { el.focus({ preventScroll: false }); } catch (e) { el.focus(); }
+            if (el.scrollIntoView) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+        function clearInvalid(el) {
+            if (el) el.classList.remove('is-required-empty');
+        }
+
+        // Limpiar el indicador rojo en cuanto el usuario interactúa con el campo.
+        if (rentalInputs.tipoAuto) {
+            rentalInputs.tipoAuto.addEventListener('change', function () { clearInvalid(rentalInputs.tipoAuto); });
+            rentalInputs.tipoAuto.addEventListener('focus',  function () { clearInvalid(rentalInputs.tipoAuto); });
+        }
+        if (rentalInputs.tipoAutoOtro) {
+            rentalInputs.tipoAutoOtro.addEventListener('input', function () { clearInvalid(rentalInputs.tipoAutoOtro); });
+            rentalInputs.tipoAutoOtro.addEventListener('focus', function () { clearInvalid(rentalInputs.tipoAutoOtro); });
+        }
+
         function validateRentalStep() {
             showRentalError('');
+            clearInvalid(rentalInputs.tipoAuto);
+            clearInvalid(rentalInputs.tipoAutoOtro);
+
             const fIni = rentalInputs.fechaInicio && rentalInputs.fechaInicio.value;
             const hIni = rentalInputs.horaInicio && rentalInputs.horaInicio.value;
             const fFin = rentalInputs.fechaFinal && rentalInputs.fechaFinal.value;
@@ -917,10 +965,12 @@ $lookupClientUrl = Url::to(['public-registration/lookup-client']);
             }
             if (!tipo) {
                 showRentalError('Seleccione el tipo de vehículo.');
+                markInvalid(rentalInputs.tipoAuto);
                 return false;
             }
             if (tipo === 'otro' && !otro) {
                 showRentalError('Indique en el campo "Especifique" qué tipo de vehículo busca.');
+                markInvalid(rentalInputs.tipoAutoOtro);
                 return false;
             }
             return true;
