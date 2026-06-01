@@ -61,26 +61,65 @@ $today = date('d/m/Y');
         <link rel="apple-touch-icon" href="<?= Html::encode($logoPath) ?>">
     <?php endif; ?>
 
-    <meta property="og:site_name" content="<?= Html::encode($companyName) ?>">
-    <meta property="og:title" content="<?= Html::encode($companyName . ' — Renta de Vehículos en Costa Rica') ?>">
-    <meta property="og:description" content="<?= Html::encode('Reserve su vehículo por WhatsApp ' . $simpemovilDisplay . ' o al teléfono ' . $companyPhoneRaw . '. Sedanes, SUV, Pickup 4x4, Camiones y Busetas. Atención personalizada, disponibilidad inmediata.') ?>">
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="<?= Html::encode($canonicalUrl) ?>">
-    <meta property="og:locale" content="es_CR">
+    <?php
+        $ogTitle = $companyName . ' — Renta de Vehículos en Costa Rica';
+        $ogDescription = 'Reserve su vehículo por WhatsApp ' . $simpemovilDisplay . ' o al teléfono ' . $companyPhoneRaw . '. Sedanes, SUV, Pickup 4x4, Camiones y Busetas. Atención personalizada, disponibilidad inmediata y precios competitivos en todo Costa Rica.';
+        $ogImageExt = '';
+        if ($ogImageUrl !== '') {
+            $ogImageExt = strtolower(pathinfo(parse_url($ogImageUrl, PHP_URL_PATH) ?? '', PATHINFO_EXTENSION));
+        }
+        $ogImageMime = [
+            'png'  => 'image/png',
+            'jpg'  => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'gif'  => 'image/gif',
+            'webp' => 'image/webp',
+            'svg'  => 'image/svg+xml',
+        ][$ogImageExt] ?? 'image/png';
+    ?>
+    <!-- ==================== Open Graph (Facebook, WhatsApp, LinkedIn, Telegram) ==================== -->
+    <meta property="og:site_name"    content="<?= Html::encode($companyName) ?>">
+    <meta property="og:title"        content="<?= Html::encode($ogTitle) ?>">
+    <meta property="og:description"  content="<?= Html::encode($ogDescription) ?>">
+    <meta property="og:type"         content="business.business">
+    <meta property="og:url"          content="<?= Html::encode($canonicalUrl) ?>">
+    <meta property="og:locale"       content="es_CR">
+    <meta property="og:locale:alternate" content="es_ES">
+    <meta property="og:locale:alternate" content="en_US">
+    <meta property="og:determiner"   content="">
     <?php if ($ogImageUrl !== ''): ?>
-        <meta property="og:image" content="<?= Html::encode($ogImageUrl) ?>">
+        <meta property="og:image"            content="<?= Html::encode($ogImageUrl) ?>">
         <meta property="og:image:secure_url" content="<?= Html::encode($ogImageUrl) ?>">
-        <meta property="og:image:alt" content="Logo <?= Html::encode($companyName) ?>">
-        <meta property="og:image:width" content="600">
-        <meta property="og:image:height" content="600">
+        <meta property="og:image:type"       content="<?= Html::encode($ogImageMime) ?>">
+        <meta property="og:image:width"      content="600">
+        <meta property="og:image:height"     content="600">
+        <meta property="og:image:alt"        content="Logo de <?= Html::encode($companyName) ?> — Renta de Vehículos en Costa Rica">
     <?php endif; ?>
 
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="<?= Html::encode($companyName . ' — Renta de Vehículos') ?>">
-    <meta name="twitter:description" content="<?= Html::encode('WhatsApp ' . $simpemovilDisplay . ' · Tel ' . $companyPhoneRaw . ' · factorentacar.com') ?>">
-    <?php if ($ogImageUrl !== ''): ?>
-        <meta name="twitter:image" content="<?= Html::encode($ogImageUrl) ?>">
+    <!-- ==================== Open Graph: Business contact (Facebook Business / WhatsApp) ==================== -->
+    <meta property="business:contact_data:street_address"   content="<?= Html::encode($companyAddress !== '' ? $companyAddress : 'San Ramón, Alajuela') ?>">
+    <meta property="business:contact_data:locality"         content="San Ramón">
+    <meta property="business:contact_data:region"           content="Alajuela">
+    <meta property="business:contact_data:postal_code"      content="20201">
+    <meta property="business:contact_data:country_name"     content="Costa Rica">
+    <meta property="business:contact_data:phone_number"     content="<?= Html::encode($companyPhoneE164) ?>">
+    <?php if ($companyEmail !== ''): ?>
+        <meta property="business:contact_data:email"        content="<?= Html::encode($companyEmail) ?>">
     <?php endif; ?>
+    <meta property="business:contact_data:website"          content="<?= Html::encode($canonicalUrl) ?>">
+    <meta property="place:location:latitude"                content="10.0888">
+    <meta property="place:location:longitude"               content="-84.4717">
+
+    <!-- ==================== Twitter Cards (X / Twitter) ==================== -->
+    <meta name="twitter:card"        content="summary_large_image">
+    <meta name="twitter:title"       content="<?= Html::encode($ogTitle) ?>">
+    <meta name="twitter:description" content="<?= Html::encode('WhatsApp ' . $simpemovilDisplay . ' · Tel ' . $companyPhoneRaw . ' · Renta de vehículos en Costa Rica') ?>">
+    <meta name="twitter:url"         content="<?= Html::encode($canonicalUrl) ?>">
+    <?php if ($ogImageUrl !== ''): ?>
+        <meta name="twitter:image"     content="<?= Html::encode($ogImageUrl) ?>">
+        <meta name="twitter:image:alt" content="Logo de <?= Html::encode($companyName) ?>">
+    <?php endif; ?>
+    <!-- ==================== Fin Open Graph ==================== -->
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="<?= Html::encode(Url::to('@web/css/material-symbols.css')) ?>" />
