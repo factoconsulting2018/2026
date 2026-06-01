@@ -1619,11 +1619,25 @@ $this->registerCss('
                                                 <span class="badge bg-secondary">Por asignar</span>
                                             </td>
                                             <td class="text-end">
-                                                <?= Html::a(
-                                                    '<span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;">edit</span> Asignar vehículo',
-                                                    ['update', 'id' => $model->id],
-                                                    ['class' => 'btn btn-sm btn-outline-primary']
-                                                ) ?>
+                                                <div class="d-inline-flex gap-1 flex-wrap justify-content-end">
+                                                    <?= Html::a(
+                                                        '<span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;">edit</span> Asignar vehículo',
+                                                        ['update', 'id' => $model->id],
+                                                        ['class' => 'btn btn-sm btn-outline-primary']
+                                                    ) ?>
+                                                    <?= Html::a(
+                                                        '<span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;">delete</span> Eliminar',
+                                                        ['delete', 'id' => $model->id],
+                                                        [
+                                                            'class' => 'btn btn-sm btn-outline-danger',
+                                                            'data' => [
+                                                                'confirm' => '¿Eliminar esta solicitud recurrente de ' . trim((string) ($client->full_name ?? ($client->nombre ?? '') . ' ' . ($client->apellido ?? ''))) . '?',
+                                                                'method' => 'post',
+                                                            ],
+                                                            'title' => 'Eliminar solicitud',
+                                                        ]
+                                                    ) ?>
+                                                </div>
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>
