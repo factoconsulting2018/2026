@@ -752,6 +752,111 @@ $today = date('d/m/Y');
             height: 19px;
         }
 
+        /* Widget flotante "Imagen Gráfica" - esquina derecha */
+        .brand-assets-widget {
+            position: fixed;
+            top: 50%;
+            right: 18px;
+            transform: translateY(-50%);
+            z-index: 50;
+            background: linear-gradient(160deg, rgba(27,21,48,0.92) 0%, rgba(13,0,30,0.95) 100%);
+            border: 1px solid rgba(255,255,255,0.18);
+            border-radius: 16px;
+            padding: 14px 14px 12px;
+            box-shadow: 0 14px 32px rgba(0,0,0,0.45);
+            color: #fff;
+            width: 168px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            backdrop-filter: blur(6px);
+        }
+        .brand-assets-widget .bw-title {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.1px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            opacity: 0.95;
+            border-bottom: 1px solid rgba(255,255,255,0.12);
+            padding-bottom: 8px;
+            margin: 0;
+        }
+        .brand-assets-widget .bw-title .material-symbols-outlined {
+            font-size: 16px;
+        }
+        .brand-assets-widget .bw-row {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            align-items: center;
+        }
+        .brand-assets-widget a.bw-btn {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            flex: 1 1 0;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.18);
+            border-radius: 12px;
+            color: #fff;
+            text-decoration: none;
+            padding: 8px 6px;
+            font-size: 11px;
+            font-weight: 600;
+            transition: background .15s ease, transform .15s ease, border-color .15s ease;
+        }
+        .brand-assets-widget a.bw-btn:hover {
+            background: rgba(255,255,255,0.18);
+            border-color: rgba(255,255,255,0.32);
+            transform: translateY(-2px);
+        }
+        .brand-assets-widget a.bw-btn .bw-ico-wrap {
+            width: 38px;
+            height: 38px;
+            border-radius: 8px;
+            background: #ffffff;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+        }
+        .brand-assets-widget a.bw-btn .bw-ico-wrap img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+        .brand-assets-widget a.bw-btn .bw-fmt {
+            font-size: 10.5px;
+            opacity: 0.9;
+            letter-spacing: 0.4px;
+        }
+        .brand-assets-widget a.bw-btn .bw-dl {
+            font-size: 14px;
+            opacity: 0.85;
+        }
+        /* En móvil: ajustamos a un tamaño más compacto, sin tapar contenido */
+        @media (max-width: 640px) {
+            .brand-assets-widget {
+                right: 10px;
+                width: 140px;
+                padding: 10px 10px 9px;
+                border-radius: 14px;
+            }
+            .brand-assets-widget a.bw-btn .bw-ico-wrap {
+                width: 32px;
+                height: 32px;
+            }
+        }
+
         .footer {
             text-align: center;
             padding: 16px 12px;
@@ -954,6 +1059,53 @@ $today = date('d/m/Y');
             ? substr($simpemovilDigits, 0, 4) . '-' . substr($simpemovilDigits, 4)
             : ($simpemovilRaw !== '' ? $simpemovilRaw : '');
     ?>
+    <?php
+        $brandPngFile = 'logo-facto.png';
+        $brandPdfFile = 'logo-facto.pdf';
+        $brandPngAbs  = Yii::getAlias('@webroot/img/brand/' . $brandPngFile);
+        $brandPdfAbs  = Yii::getAlias('@webroot/img/brand/' . $brandPdfFile);
+        $brandPngUrl  = Url::to('@web/img/brand/' . $brandPngFile) . (is_file($brandPngAbs) ? ('?v=' . filemtime($brandPngAbs)) : '');
+        $brandPdfUrl  = Url::to('@web/img/brand/' . $brandPdfFile) . (is_file($brandPdfAbs) ? ('?v=' . filemtime($brandPdfAbs)) : '');
+        $brandHasPng  = is_file($brandPngAbs);
+        $brandHasPdf  = is_file($brandPdfAbs);
+    ?>
+    <?php if ($brandHasPng || $brandHasPdf): ?>
+        <aside class="brand-assets-widget" aria-label="Descargar imagen gráfica de la empresa">
+            <h3 class="bw-title">
+                <span class="material-symbols-outlined" aria-hidden="true">image</span>
+                Imagen Gráfica
+            </h3>
+            <div class="bw-row">
+                <?php if ($brandHasPng): ?>
+                    <a href="<?= Html::encode($brandPngUrl) ?>" download="logo-facto.png" class="bw-btn" title="Descargar logo en PNG">
+                        <span class="bw-ico-wrap">
+                            <img src="<?= Html::encode($brandPngUrl) ?>" alt="Logo PNG">
+                        </span>
+                        <span class="bw-fmt">PNG</span>
+                        <span class="bw-dl">
+                            <span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;">download</span>
+                        </span>
+                    </a>
+                <?php endif; ?>
+                <?php if ($brandHasPdf): ?>
+                    <a href="<?= Html::encode($brandPdfUrl) ?>" download="logo-facto.pdf" class="bw-btn" title="Descargar logo vectorial en PDF">
+                        <span class="bw-ico-wrap">
+                            <?php if ($brandHasPng): ?>
+                                <img src="<?= Html::encode($brandPngUrl) ?>" alt="Logo PDF">
+                            <?php else: ?>
+                                <span class="material-symbols-outlined" style="font-size:24px;color:#c0392b;">picture_as_pdf</span>
+                            <?php endif; ?>
+                        </span>
+                        <span class="bw-fmt">PDF</span>
+                        <span class="bw-dl">
+                            <span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;">download</span>
+                        </span>
+                    </a>
+                <?php endif; ?>
+            </div>
+        </aside>
+    <?php endif; ?>
+
     <div class="about-backdrop" id="about-backdrop" role="dialog" aria-modal="true" aria-labelledby="about-title" aria-hidden="true">
         <div class="about-modal" id="about-modal">
             <button type="button" class="about-modal-close" id="about-close" aria-label="Cerrar">
