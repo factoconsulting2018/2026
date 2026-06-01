@@ -344,25 +344,18 @@ $csrfToken = Yii::$app->request->csrfToken;
     }
     const excludedSet = loadExcluded();
 
-    function updateExcludedCounter() {
-        excludedTotalEl.textContent = excludedSet.size;
-    }
-    function applyExclusionStyles() {
-        getAllRows().forEach(row => {
-            const id = parseInt(row.dataset.cliId, 10);
-            const btn = row.querySelector('.btn-exclude');
-            if (excludedSet.has(id)) {
-                row.classList.add('row-excluded');
-                if (btn) btn.classList.add('active');
-                const cb = row.querySelector('.mk-row-check');
-                if (cb) cb.checked = false;
-            } else {
-                row.classList.remove('row-excluded');
-                if (btn) btn.classList.remove('active');
-            }
-        });
-        updateExcludedCounter();
-    }
+    // Captura los datos originales de cada fila para reconstruir el panel de excluidos.
+    const clientsMap = {};
+    Array.from(tbody.querySelectorAll('tr[data-cli-id]')).forEach(row => {
+        const id = parseInt(row.dataset.cliId, 10);
+        const tds = row.querySelectorAll('td');
+        clientsMap[id] = {
+            id,
+            name: (tds[1]?.textContent || '').trim(),
+            cedula: (tds[2]?.textContent || '').trim(),
+            phone: (tds[3]?.textContent || '').trim(),
+        };
+    });
 
     function getAllRows() {
         return Array.from(tbody.querySelectorAll('tr[data-cli-id]'));
@@ -370,14 +363,68 @@ $csrfToken = Yii::$app->request->csrfToken;
     function getCheckedIds() {
         return getAllRows()
             .filter(r => {
+                if (r.style.display === 'none') return false;
                 const id = parseInt(r.dataset.cliId, 10);
-                if (excludedSet.has(id)) return false; // exclusión SIEMPRE gana
+                if (excludedSet.has(id)) return false;
                 return r.querySelector('.mk-row-check')?.checked;
             })
             .map(r => parseInt(r.dataset.cliId, 10));
     }
+    function getVisibleNonExcludedRows() {
+        const term = (searchInput.value || '').trim().toLowerCase();
+        return getAllRows().filter(row => {
+            const id = parseInt(row.dataset.cliId, 10);
+            if (excludedSet.has(id)) return false;
+            if (term && row.dataset.search.indexOf(term) === -1) return false;
+            return true;
+        });
+    }
     function refreshSelectedCount() {
         selectedCountEl.textContent = getCheckedIds().length;
+        visibleCountEl.textContent = getVisibleNonExcludedRows().length;
+    }
+
+    function renderExcludedPanel() {
+        const ids = Array.from(excludedSet);
+        excludedTotalEl.textContent = ids.length;
+        if (ids.length === 0) {
+            excludedPanel.style.display = 'none';
+            excludedBody.style.display = 'none';
+            excludedToggle.textContent = 'Mostrar ▼';
+            excludedTbody.innerHTML = '';
+            return;
+        }
+        excludedPanel.style.display = 'block';
+
+        // Construir filas usando el mapa de clientes.
+        const html = ids
+            .filter(id => clientsMap[id])
+            .map(id => {
+                const c = clientsMap[id];
+                const esc = s => String(s == null ? '' : s).replace(/[<>&"]/g, ch => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[ch]));
+                return '<tr data-cli-id="' + id + '">'
+                    + '<td>' + esc(c.name) + '</td>'
+                    + '<td class="col-cedula">' + esc(c.cedula) + '</td>'
+                    + '<td class="col-phone">' + esc(c.phone) + '</td>'
+                    + '<td class="col-action"><button type="button" class="btn-reinclude" data-cli-id="' + id + '">↩ Incluir</button></td>'
+                    + '</tr>';
+            })
+            .join('');
+        excludedTbody.innerHTML = html;
+    }
+
+    function applyExclusionStyles() {
+        getAllRows().forEach(row => {
+            const id = parseInt(row.dataset.cliId, 10);
+            if (excludedSet.has(id)) {
+                row.style.display = 'none'; // sacar de la lista principal
+                const cb = row.querySelector('.mk-row-check');
+                if (cb) cb.checked = false;
+            } else if (row.style.display === 'none' && !row.dataset.hiddenBySearch) {
+                row.style.display = '';
+            }
+        });
+        renderExcludedPanel();
     }
 
     searchInput.addEventListener('input', function() {
