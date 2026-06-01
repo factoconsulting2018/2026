@@ -37,6 +37,16 @@ $siteHomeUrl = Url::home(true);
 $canonicalUrl = rtrim($siteHomeUrl, '/') . '/';
 $ogImageUrl = $logoPath ? Url::to($logoPath, true) : '';
 
+// Recursos descargables de marca (PNG / PDF) usados en el modal "Imagen Gráfica".
+$brandPngFile = 'logo-facto.png';
+$brandPdfFile = 'logo-facto.pdf';
+$brandPngAbs  = Yii::getAlias('@webroot/img/brand/' . $brandPngFile);
+$brandPdfAbs  = Yii::getAlias('@webroot/img/brand/' . $brandPdfFile);
+$brandHasPng  = is_file($brandPngAbs);
+$brandHasPdf  = is_file($brandPdfAbs);
+$brandPngUrl  = Url::to('@web/img/brand/' . $brandPngFile) . ($brandHasPng ? ('?v=' . filemtime($brandPngAbs)) : '');
+$brandPdfUrl  = Url::to('@web/img/brand/' . $brandPdfFile) . ($brandHasPdf ? ('?v=' . filemtime($brandPdfAbs)) : '');
+
 $seoTitle = $companyName . ' — Renta de Vehículos en Costa Rica · Reserve por WhatsApp ' . $simpemovilDisplay;
 $seoDescription = $companyName . ': renta de vehículos en Costa Rica. Sedanes, SUV, Pickup 4x4 y más. Reserve por WhatsApp ' . $simpemovilDisplay . ' o llame al ' . $companyPhoneRaw . '. Atención personalizada, disponibilidad inmediata y precios competitivos.';
 $seoKeywords = 'renta de vehiculos Costa Rica, alquiler de carros Costa Rica, rent a car San Ramon, alquiler SUV, alquiler pickup 4x4, alquiler sedan, FACTO Rent a Car, factorentacar';
@@ -1101,16 +1111,6 @@ $today = date('d/m/Y');
         $simpemovilDisplay = $simpemovilDigits !== '' && strlen($simpemovilDigits) === 8
             ? substr($simpemovilDigits, 0, 4) . '-' . substr($simpemovilDigits, 4)
             : ($simpemovilRaw !== '' ? $simpemovilRaw : '');
-    ?>
-    <?php
-        $brandPngFile = 'logo-facto.png';
-        $brandPdfFile = 'logo-facto.pdf';
-        $brandPngAbs  = Yii::getAlias('@webroot/img/brand/' . $brandPngFile);
-        $brandPdfAbs  = Yii::getAlias('@webroot/img/brand/' . $brandPdfFile);
-        $brandPngUrl  = Url::to('@web/img/brand/' . $brandPngFile) . (is_file($brandPngAbs) ? ('?v=' . filemtime($brandPngAbs)) : '');
-        $brandPdfUrl  = Url::to('@web/img/brand/' . $brandPdfFile) . (is_file($brandPdfAbs) ? ('?v=' . filemtime($brandPdfAbs)) : '');
-        $brandHasPng  = is_file($brandPngAbs);
-        $brandHasPdf  = is_file($brandPdfAbs);
     ?>
     <?php if ($brandHasPng || $brandHasPdf): ?>
         <div class="brand-backdrop" id="brand-backdrop" role="dialog" aria-modal="true" aria-labelledby="brand-title" aria-hidden="true">
