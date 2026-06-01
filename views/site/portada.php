@@ -752,109 +752,145 @@ $today = date('d/m/Y');
             height: 19px;
         }
 
-        /* Widget flotante "Imagen Gráfica" - esquina derecha */
-        .brand-assets-widget {
+        /* Modal "Imagen Gráfica" - descargas del logo en PNG/PDF */
+        .brand-backdrop {
             position: fixed;
-            top: 50%;
-            right: 18px;
-            transform: translateY(-50%);
-            z-index: 50;
-            background: linear-gradient(160deg, rgba(27,21,48,0.92) 0%, rgba(13,0,30,0.95) 100%);
-            border: 1px solid rgba(255,255,255,0.18);
-            border-radius: 16px;
-            padding: 14px 14px 12px;
-            box-shadow: 0 14px 32px rgba(0,0,0,0.45);
-            color: #fff;
-            width: 168px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
+            inset: 0;
+            background: rgba(5,2,18,0.72);
             backdrop-filter: blur(6px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            padding: 24px;
+            animation: aboutFade .25s ease;
         }
-        .brand-assets-widget .bw-title {
-            font-size: 12px;
+        .brand-backdrop.is-open { display: flex; }
+        .brand-modal {
+            background: linear-gradient(160deg, #1b1530 0%, #0d001e 100%);
+            color: #fff;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.12);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+            width: 100%;
+            max-width: 460px;
+            position: relative;
+            padding: 22px 24px 24px;
+            animation: aboutSlide .3s ease;
+        }
+        .brand-modal-close {
+            position: absolute;
+            top: 10px; right: 10px;
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.18);
+            background: rgba(255,255,255,0.08);
+            color: #fff; cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: background .15s ease;
+        }
+        .brand-modal-close:hover { background: rgba(255,255,255,0.18); }
+        .brand-modal .bw-title {
+            font-size: 14px;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 1.1px;
+            letter-spacing: 1.2px;
             text-align: center;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
+            gap: 8px;
             opacity: 0.95;
             border-bottom: 1px solid rgba(255,255,255,0.12);
-            padding-bottom: 8px;
-            margin: 0;
+            padding-bottom: 12px;
+            margin: 0 0 16px;
         }
-        .brand-assets-widget .bw-title .material-symbols-outlined {
-            font-size: 16px;
+        .brand-modal .bw-title .material-symbols-outlined { font-size: 18px; }
+        .brand-modal .bw-subtitle {
+            text-align: center;
+            font-size: 12.5px;
+            opacity: 0.78;
+            margin: -6px 0 14px;
         }
-        .brand-assets-widget .bw-row {
+        .brand-modal .bw-row {
             display: flex;
-            gap: 8px;
+            gap: 12px;
             justify-content: center;
-            align-items: center;
+            align-items: stretch;
         }
-        .brand-assets-widget a.bw-btn {
+        .brand-modal a.bw-btn {
             display: inline-flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 4px;
+            gap: 8px;
             flex: 1 1 0;
             background: rgba(255,255,255,0.08);
             border: 1px solid rgba(255,255,255,0.18);
-            border-radius: 12px;
+            border-radius: 14px;
             color: #fff;
             text-decoration: none;
-            padding: 8px 6px;
-            font-size: 11px;
+            padding: 16px 12px;
+            font-size: 13px;
             font-weight: 600;
             transition: background .15s ease, transform .15s ease, border-color .15s ease;
         }
-        .brand-assets-widget a.bw-btn:hover {
+        .brand-modal a.bw-btn:hover {
             background: rgba(255,255,255,0.18);
             border-color: rgba(255,255,255,0.32);
             transform: translateY(-2px);
         }
-        .brand-assets-widget a.bw-btn .bw-ico-wrap {
-            width: 38px;
-            height: 38px;
-            border-radius: 8px;
+        .brand-modal a.bw-btn .bw-ico-wrap {
+            width: 72px;
+            height: 72px;
+            border-radius: 12px;
             background: #ffffff;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             overflow: hidden;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+            box-shadow: 0 6px 14px rgba(0,0,0,0.35);
         }
-        .brand-assets-widget a.bw-btn .bw-ico-wrap img {
+        .brand-modal a.bw-btn .bw-ico-wrap img {
             width: 100%;
             height: 100%;
             object-fit: contain;
             display: block;
         }
-        .brand-assets-widget a.bw-btn .bw-fmt {
-            font-size: 10.5px;
-            opacity: 0.9;
-            letter-spacing: 0.4px;
-        }
-        .brand-assets-widget a.bw-btn .bw-dl {
+        .brand-modal a.bw-btn .bw-fmt {
             font-size: 14px;
-            opacity: 0.85;
+            letter-spacing: 0.5px;
         }
-        /* En móvil: ajustamos a un tamaño más compacto, sin tapar contenido */
+        .brand-modal a.bw-btn .bw-dl {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11.5px;
+            opacity: 0.85;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+        }
+        .brand-modal a.bw-btn .bw-dl .material-symbols-outlined { font-size: 14px; }
+
+        /* Link en el footer para abrir el modal */
+        .footer .brand-link {
+            color: #fff;
+            text-decoration: none;
+            border-bottom: 1px dashed rgba(255,255,255,0.45);
+            cursor: pointer;
+            font-weight: 600;
+            transition: color .15s ease, border-color .15s ease;
+        }
+        .footer .brand-link:hover {
+            color: #fff;
+            border-bottom-color: #fff;
+        }
+
         @media (max-width: 640px) {
-            .brand-assets-widget {
-                right: 10px;
-                width: 140px;
-                padding: 10px 10px 9px;
-                border-radius: 14px;
-            }
-            .brand-assets-widget a.bw-btn .bw-ico-wrap {
-                width: 32px;
-                height: 32px;
-            }
+            .brand-modal a.bw-btn .bw-ico-wrap { width: 60px; height: 60px; }
+            .brand-modal a.bw-btn { padding: 12px 8px; }
         }
 
         .footer {
@@ -1033,6 +1069,13 @@ $today = date('d/m/Y');
 
         <footer class="footer" role="contentinfo">
             &copy; <?= $year ?> <?= Html::encode($companyName) ?>. Todos los derechos reservados.
+            <?php if ($brandHasPng || $brandHasPdf): ?>
+                <span class="divider">·</span>
+                <a href="#" class="brand-link" data-open-brand="1" title="Descargar logotipo oficial">
+                    <span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;">image</span>
+                    Imagen Gráfica
+                </a>
+            <?php endif; ?>
             <span class="divider">·</span>
             Desarrollado por Ing. Ronald Rojas Castro
         </footer>
@@ -1070,40 +1113,48 @@ $today = date('d/m/Y');
         $brandHasPdf  = is_file($brandPdfAbs);
     ?>
     <?php if ($brandHasPng || $brandHasPdf): ?>
-        <aside class="brand-assets-widget" aria-label="Descargar imagen gráfica de la empresa">
-            <h3 class="bw-title">
-                <span class="material-symbols-outlined" aria-hidden="true">image</span>
-                Imagen Gráfica
-            </h3>
-            <div class="bw-row">
-                <?php if ($brandHasPng): ?>
-                    <a href="<?= Html::encode($brandPngUrl) ?>" download="logo-facto.png" class="bw-btn" title="Descargar logo en PNG">
-                        <span class="bw-ico-wrap">
-                            <img src="<?= Html::encode($brandPngUrl) ?>" alt="Logo PNG">
-                        </span>
-                        <span class="bw-fmt">PNG</span>
-                        <span class="bw-dl">
-                            <span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;">download</span>
-                        </span>
-                    </a>
-                <?php endif; ?>
-                <?php if ($brandHasPdf): ?>
-                    <a href="<?= Html::encode($brandPdfUrl) ?>" download="logo-facto.pdf" class="bw-btn" title="Descargar logo vectorial en PDF">
-                        <span class="bw-ico-wrap">
-                            <?php if ($brandHasPng): ?>
-                                <img src="<?= Html::encode($brandPngUrl) ?>" alt="Logo PDF">
-                            <?php else: ?>
-                                <span class="material-symbols-outlined" style="font-size:24px;color:#c0392b;">picture_as_pdf</span>
-                            <?php endif; ?>
-                        </span>
-                        <span class="bw-fmt">PDF</span>
-                        <span class="bw-dl">
-                            <span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;">download</span>
-                        </span>
-                    </a>
-                <?php endif; ?>
+        <div class="brand-backdrop" id="brand-backdrop" role="dialog" aria-modal="true" aria-labelledby="brand-title" aria-hidden="true">
+            <div class="brand-modal" id="brand-modal">
+                <button type="button" class="brand-modal-close" id="brand-close" aria-label="Cerrar">
+                    <span class="material-symbols-outlined" style="font-size:20px;">close</span>
+                </button>
+                <h2 class="bw-title" id="brand-title">
+                    <span class="material-symbols-outlined" aria-hidden="true">image</span>
+                    Imagen Gráfica
+                </h2>
+                <p class="bw-subtitle">Descargue el logotipo oficial para uso autorizado.</p>
+                <div class="bw-row">
+                    <?php if ($brandHasPng): ?>
+                        <a href="<?= Html::encode($brandPngUrl) ?>" download="logo-facto.png" class="bw-btn" title="Descargar logo en PNG">
+                            <span class="bw-ico-wrap">
+                                <img src="<?= Html::encode($brandPngUrl) ?>" alt="Logo PNG">
+                            </span>
+                            <span class="bw-fmt">PNG</span>
+                            <span class="bw-dl">
+                                <span class="material-symbols-outlined">download</span>
+                                Descargar
+                            </span>
+                        </a>
+                    <?php endif; ?>
+                    <?php if ($brandHasPdf): ?>
+                        <a href="<?= Html::encode($brandPdfUrl) ?>" download="logo-facto.pdf" class="bw-btn" title="Descargar logo vectorial en PDF">
+                            <span class="bw-ico-wrap">
+                                <?php if ($brandHasPng): ?>
+                                    <img src="<?= Html::encode($brandPngUrl) ?>" alt="Logo PDF">
+                                <?php else: ?>
+                                    <span class="material-symbols-outlined" style="font-size:32px;color:#c0392b;">picture_as_pdf</span>
+                                <?php endif; ?>
+                            </span>
+                            <span class="bw-fmt">PDF</span>
+                            <span class="bw-dl">
+                                <span class="material-symbols-outlined">download</span>
+                                Descargar
+                            </span>
+                        </a>
+                    <?php endif; ?>
+                </div>
             </div>
-        </aside>
+        </div>
     <?php endif; ?>
 
     <div class="about-backdrop" id="about-backdrop" role="dialog" aria-modal="true" aria-labelledby="about-title" aria-hidden="true">
@@ -1392,6 +1443,41 @@ $today = date('d/m/Y');
                         try { document.execCommand('copy'); done(); } catch (e) {}
                         document.body.removeChild(ta);
                     }
+                });
+            });
+        })();
+
+        (function () {
+            const brandBackdrop = document.getElementById('brand-backdrop');
+            const brandClose    = document.getElementById('brand-close');
+            const brandTriggers = document.querySelectorAll('[data-open-brand]');
+            if (!brandBackdrop) return;
+
+            function openBrand(e) {
+                if (e) e.preventDefault();
+                brandBackdrop.classList.add('is-open');
+                brandBackdrop.setAttribute('aria-hidden', 'false');
+                document.body.style.overflow = 'hidden';
+            }
+            function closeBrand() {
+                brandBackdrop.classList.remove('is-open');
+                brandBackdrop.setAttribute('aria-hidden', 'true');
+                document.body.style.overflow = '';
+            }
+
+            brandTriggers.forEach(function (t) { t.addEventListener('click', openBrand); });
+            if (brandClose) brandClose.addEventListener('click', closeBrand);
+            brandBackdrop.addEventListener('click', function (e) {
+                if (e.target === brandBackdrop) closeBrand();
+            });
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && brandBackdrop.classList.contains('is-open')) closeBrand();
+            });
+
+            // Cerrar el modal después de hacer clic en una descarga (UX limpia).
+            brandBackdrop.querySelectorAll('a.bw-btn').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    setTimeout(closeBrand, 400);
                 });
             });
         })();
