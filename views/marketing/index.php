@@ -68,7 +68,7 @@ $csrfToken = Yii::$app->request->csrfToken;
     .btn-exclude:hover { background: #fde2e1; }
 
     /* Panel de excluidos */
-    .excluded-panel { margin-top: 12px; border: 1px solid #f1c4c2; background: #fff7f6; border-radius: 10px; overflow: hidden; }
+    .excluded-panel { margin: 0 0 12px; border: 1px solid #f1c4c2; background: #fff7f6; border-radius: 10px; overflow: hidden; }
     .excluded-panel .head { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: #fde2e1; cursor: pointer; }
     .excluded-panel .head .title { font-weight: 600; color: #9a1f1c; flex: 1; }
     .excluded-panel .head .actions { display: flex; gap: 8px; }
@@ -100,6 +100,25 @@ $csrfToken = Yii::$app->request->csrfToken;
         <div class="col-lg-6">
             <div class="marketing-card">
                 <h5>1. Seleccionar destinatarios</h5>
+
+                <div class="excluded-panel" id="mk-excluded-panel" style="display:none;">
+                    <div class="head" id="mk-excluded-head">
+                        <span class="material-symbols-outlined" style="color:#9a1f1c;">block</span>
+                        <span class="title">Destinatarios excluidos (<span id="mk-excluded-total">0</span>)</span>
+                        <div class="actions">
+                            <button type="button" class="btn btn-sm btn-outline-success" id="mk-include-all" title="Volver a incluir a todos">
+                                Incluir a todos
+                            </button>
+                            <span class="toggle" id="mk-excluded-toggle">Mostrar ▼</span>
+                        </div>
+                    </div>
+                    <div class="body" id="mk-excluded-body" style="display:none;">
+                        <table class="excluded-table">
+                            <tbody id="mk-excluded-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
                 <div class="clients-toolbar">
                     <input type="text" id="mk-search" class="form-control search" placeholder="Buscar por nombre, cédula o teléfono…">
                     <button type="button" class="btn btn-outline-primary btn-sm" id="mk-select-all">Seleccionar todos</button>
@@ -136,24 +155,6 @@ $csrfToken = Yii::$app->request->csrfToken;
                             <?php endif; ?>
                         </tbody>
                     </table>
-                </div>
-
-                <div class="excluded-panel" id="mk-excluded-panel" style="display:none;">
-                    <div class="head" id="mk-excluded-head">
-                        <span class="material-symbols-outlined" style="color:#9a1f1c;">block</span>
-                        <span class="title">Destinatarios excluidos (<span id="mk-excluded-total">0</span>)</span>
-                        <div class="actions">
-                            <button type="button" class="btn btn-sm btn-outline-success" id="mk-include-all" title="Volver a incluir a todos">
-                                Incluir a todos
-                            </button>
-                            <span class="toggle" id="mk-excluded-toggle">Mostrar ▼</span>
-                        </div>
-                    </div>
-                    <div class="body" id="mk-excluded-body" style="display:none;">
-                        <table class="excluded-table">
-                            <tbody id="mk-excluded-tbody"></tbody>
-                        </table>
-                    </div>
                 </div>
             </div>
         </div>
@@ -427,11 +428,27 @@ $csrfToken = Yii::$app->request->csrfToken;
         renderExcludedPanel();
     }
 
-    searchInput.addEventListener('input', function() {
-        const term = this.value.trim().toLowerCase();
+    function applySearchFilter() {
+        const term = (searchInput.value || '').trim().toLowerCase();
         getAllRows().forEach(row => {
-            row.style.display = (!term || row.dataset.search.indexOf(term) !== -1) ? '' : 'none';
+            const id = parseInt(row.dataset.cliId, 10);
+            if (excludedSet.has(id)) {
+                row.style.display = 'none';
+                return;
+            }
+            if (!term || row.dataset.search.indexOf(term) !== -1) {
+                row.style.display = '';
+                delete row.dataset.hiddenBySearch;
+            } else {
+                row.style.display = 'none';
+                row.dataset.hiddenBySearch = '1';
+            }
         });
+    }
+
+    searchInput.addEventListener('input', function() {
+        applySearchFilter();
+        refreshSelectedCount();
     });
 
     headerCheck.addEventListener('change', function() {
@@ -450,6 +467,7 @@ $csrfToken = Yii::$app->request->csrfToken;
         getAllRows().forEach(row => {
             const id = parseInt(row.dataset.cliId, 10);
             if (excludedSet.has(id)) return;
+            if (row.style.display === 'none') return;
             const cb = row.querySelector('.mk-row-check');
             if (cb) cb.checked = true;
         });
@@ -465,40 +483,51 @@ $csrfToken = Yii::$app->request->csrfToken;
         refreshSelectedCount();
     });
 
-    clearExcludedBtn.addEventListener('click', function() {
-        if (excludedSet.size === 0) return;
-        if (!confirm('¿Quitar las ' + excludedSet.size + ' exclusiones guardadas?')) return;
-        excludedSet.clear();
-        saveExcluded();
-        applyExclusionStyles();
-        refreshSelectedCount();
-    });
-
+    // Botón EXCLUIR en cada fila: oculta la fila y la mueve al panel de excluidos.
     tbody.addEventListener('click', function(e) {
         const btn = e.target.closest('.btn-exclude');
         if (!btn) return;
         const row = btn.closest('tr[data-cli-id]');
         if (!row) return;
         const id = parseInt(row.dataset.cliId, 10);
-        if (excludedSet.has(id)) {
-            excludedSet.delete(id);
-        } else {
-            excludedSet.add(id);
-        }
+        excludedSet.add(id);
         saveExcluded();
         applyExclusionStyles();
         refreshSelectedCount();
     });
 
+    // Botón INCLUIR dentro del panel de excluidos: vuelve a la lista principal.
+    excludedTbody.addEventListener('click', function(e) {
+        const btn = e.target.closest('.btn-reinclude');
+        if (!btn) return;
+        const id = parseInt(btn.dataset.cliId, 10);
+        excludedSet.delete(id);
+        saveExcluded();
+        applyExclusionStyles();
+        applySearchFilter();
+        refreshSelectedCount();
+    });
+
+    excludedHead.addEventListener('click', function(e) {
+        if (e.target.closest('#mk-include-all')) return;
+        const open = excludedBody.style.display !== 'none';
+        excludedBody.style.display = open ? 'none' : 'block';
+        excludedToggle.textContent = open ? 'Mostrar ▼' : 'Ocultar ▲';
+    });
+
+    includeAllBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (excludedSet.size === 0) return;
+        if (!confirm('¿Volver a incluir a los ' + excludedSet.size + ' destinatarios excluidos?')) return;
+        excludedSet.clear();
+        saveExcluded();
+        applyExclusionStyles();
+        applySearchFilter();
+        refreshSelectedCount();
+    });
+
     tbody.addEventListener('change', function(e) {
         if (e.target && e.target.classList.contains('mk-row-check')) {
-            const row = e.target.closest('tr[data-cli-id]');
-            if (row) {
-                const id = parseInt(row.dataset.cliId, 10);
-                if (excludedSet.has(id)) {
-                    e.target.checked = false; // no se puede marcar un excluido
-                }
-            }
             refreshSelectedCount();
         }
     });
