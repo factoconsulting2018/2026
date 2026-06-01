@@ -191,23 +191,6 @@ $ogImageMime = [
             box-shadow: 0 24px 60px rgba(0,0,0,0.5);
             position: relative;
         }
-        <?php if ($logoPath): ?>
-        /* Mosaico transparente del logo solo en el fondo (NO sobre el contenido) */
-        .bg-mosaic {
-            position: fixed;
-            inset: 0;
-            background-image: url('<?= Html::encode($logoPath) ?>');
-            background-repeat: repeat;
-            background-size: 140px 140px;
-            background-position: center;
-            opacity: 0.07;
-            pointer-events: none;
-            z-index: 1;
-        }
-        @media (max-width: 640px) {
-            .bg-mosaic { background-size: 110px 110px; opacity: 0.06; }
-        }
-        <?php endif; ?>
         .info-header { text-align: center; padding-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,0.10); margin-bottom: 18px; }
         .info-header img.company-logo {
             width: 92px; height: 92px; object-fit: contain;
@@ -354,9 +337,6 @@ $ogImageMime = [
 <body>
     <div class="bg-image" id="bg-image"></div>
     <div class="bg-overlay"></div>
-    <?php if ($logoPath): ?>
-        <div class="bg-mosaic" aria-hidden="true"></div>
-    <?php endif; ?>
 
     <div class="page">
         <header class="topbar" role="banner">
