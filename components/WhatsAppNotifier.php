@@ -713,6 +713,10 @@ class WhatsAppNotifier
         $lines[] = '';
         $lines[] = 'Revíselo en el panel: Clientes → Pendientes.';
 
+        foreach (self::socialFooterLines() as $sl) {
+            $lines[] = $sl;
+        }
+
         return implode("\n", $lines);
     }
 
@@ -853,8 +857,9 @@ class WhatsAppNotifier
         if ($tipo !== '') $lines[] = '🚙 *Tipo de auto:* ' . $tipo;
         $lines[] = '🚘 *Vehículo:* Por asignar';
 
-        $lines[] = '';
-        $lines[] = 'Revíselo en el panel: Alquileres → Solicitudes recurrentes.';
+        foreach (self::socialFooterLines() as $sl) {
+            $lines[] = $sl;
+        }
 
         return implode("\n", $lines);
     }
@@ -1228,6 +1233,10 @@ class WhatsAppNotifier
             $lines[] = 'Se adjunta la orden en PDF.';
         }
 
+        foreach (self::socialFooterLines() as $sl) {
+            $lines[] = $sl;
+        }
+
         return implode("\n", $lines);
     }
 
@@ -1242,6 +1251,24 @@ class WhatsAppNotifier
         return [
             'Tel: 4070-0485 | Whatsapp: 8367-0937',
             'www.factorentacar.com',
+        ];
+    }
+
+    /**
+     * Pie con iconos de redes sociales (Facebook, Instagram, WhatsApp).
+     * WhatsApp renderiza automáticamente las URLs como enlaces clicables.
+     *
+     * @return array<int,string>
+     */
+    private static function socialFooterLines(): array
+    {
+        return [
+            '',
+            '━━━━━━━━━━━━━━━',
+            '🌐 *No olvides seguirnos en redes sociales*',
+            '📘 Facebook → https://www.facebook.com/factorentacar',
+            '📷 Instagram → https://www.instagram.com/factorentacar',
+            '💬 WhatsApp → https://wa.me/50683670937',
         ];
     }
 
@@ -1559,6 +1586,10 @@ class WhatsAppNotifier
                 $plate = trim((string) ($car->placa ?? ''));
                 $lines[] = '• ' . $label . ($plate !== '' ? ' (' . $plate . ')' : '');
             }
+        }
+
+        foreach (self::socialFooterLines() as $sl) {
+            $lines[] = $sl;
         }
 
         return implode("\n", $lines);
