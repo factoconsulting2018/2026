@@ -29,6 +29,7 @@ class CompanyConfig extends ActiveRecord
     const COMPANY_EMAIL = 'company_email';
     const BANK_ACCOUNTS = 'bank_accounts';
     const SIMPEMOVIL_NUMBER = 'simemovil_number';
+    const SIMPEMOVIL_LOGO_FILE = 'simemovil_logo_file';
     const COMPANY_REQUIREMENTS = 'company_requirements';
     const INCIDENT_NOTIF_ENABLED = 'incident_notifications_enabled';
     const INCIDENT_NOTIF_FREQUENCY_DAYS = 'incident_notifications_frequency_days';
@@ -71,6 +72,7 @@ class CompanyConfig extends ActiveRecord
     const UPLOAD_DIR = 'uploads/company/';
     const LOGO_DIR = 'uploads/company/logo/';
     const CONDITIONS_DIR = 'uploads/company/conditions/';
+    const BANKS_LOGO_DIR = 'uploads/company/banks/';
 
     public $logoFile;
     public $conditionsFile;
@@ -293,7 +295,30 @@ class CompanyConfig extends ActiveRecord
             'conditions' => self::getConditionsPath(),
             'bank_accounts' => self::getBankAccounts(),
             'simemovil' => self::getConfig(self::SIMPEMOVIL_NUMBER, '83670937'),
+            'simemovil_logo' => self::getSimpemovilLogoUrl(),
         ];
+    }
+
+    /**
+     * Devuelve la URL pública del logo de un banco guardado en uploads/company/banks/.
+     * Si el archivo no existe o no se ha configurado, devuelve null.
+     */
+    public static function getBankLogoUrl($logoFilename): ?string
+    {
+        $logoFilename = trim((string) $logoFilename);
+        if ($logoFilename === '') return null;
+        $abs = Yii::getAlias('@webroot/' . self::BANKS_LOGO_DIR . $logoFilename);
+        if (!file_exists($abs)) return null;
+        return Yii::getAlias('@web/' . self::BANKS_LOGO_DIR . $logoFilename);
+    }
+
+    /**
+     * Devuelve la URL pública del logo de SINPE Móvil configurado, o null.
+     */
+    public static function getSimpemovilLogoUrl(): ?string
+    {
+        $file = self::getConfig(self::SIMPEMOVIL_LOGO_FILE);
+        return self::getBankLogoUrl((string) $file);
     }
 
     /**
@@ -321,43 +346,40 @@ class CompanyConfig extends ActiveRecord
     }
 
     /**
-     * Obtener cuentas bancarias
+     * Obtener cuentas bancarias.
+     * Cada entrada puede tener un campo `logo` (nombre de archivo en uploads/company/banks/).
+     * Se enriquece con `logo_url` (URL pública) cuando el archivo existe.
      */
     public static function getBankAccounts()
     {
         $accounts = self::getConfig(self::BANK_ACCOUNTS);
+        $list = [];
         if ($accounts) {
-            // Si es un string simple, convertirlo a array
             if (is_string($accounts) && !json_decode($accounts)) {
-                return [
-                    [
-                        'bank' => 'BCR',
-                        'account' => 'IBAN:CR75015201001050506181',
-                        'currency' => '₡'
-                    ],
-                    [
-                        'bank' => 'BN',
-                        'account' => 'IBAN: CR49015102020010977051',
-                        'currency' => '₡'
-                    ]
+                $list = [
+                    ['bank' => 'BCR', 'account' => 'IBAN:CR75015201001050506181', 'currency' => '₡'],
+                    ['bank' => 'BN', 'account' => 'IBAN: CR49015102020010977051', 'currency' => '₡'],
                 ];
+            } else {
+                $list = json_decode($accounts, true) ?: [];
             }
-            return json_decode($accounts, true) ?: [];
+        } else {
+            $list = [
+                ['bank' => 'BCR', 'account' => 'IBAN:CR75015201001050506181', 'currency' => '₡'],
+                ['bank' => 'BN', 'account' => 'IBAN: CR49015102020010977051', 'currency' => '₡'],
+            ];
         }
-        
-        // Cuentas por defecto basadas en el formato de orden
-        return [
-            [
-                'bank' => 'BCR',
-                'account' => 'IBAN:CR75015201001050506181',
-                'currency' => '₡'
-            ],
-            [
-                'bank' => 'BN',
-                'account' => 'IBAN: CR49015102020010977051',
-                'currency' => '₡'
-            ]
-        ];
+
+        foreach ($list as &$acc) {
+            $acc['bank'] = $acc['bank'] ?? '';
+            $acc['account'] = $acc['account'] ?? '';
+            $acc['currency'] = $acc['currency'] ?? '₡';
+            $acc['logo'] = isset($acc['logo']) ? (string) $acc['logo'] : '';
+            $acc['logo_url'] = $acc['logo'] !== '' ? self::getBankLogoUrl($acc['logo']) : null;
+        }
+        unset($acc);
+
+        return $list;
     }
 
     /**

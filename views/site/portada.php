@@ -726,21 +726,33 @@ $today = date('d/m/Y');
                             $currency = trim((string) ($acc['currency'] ?? ''));
                             $logoClass = '';
                             $logoText = $bankRaw;
+                            $logoFile = '';
+                            $bankFullName = $bankRaw ?: 'Banco';
                             if (strpos($bankRaw, 'BCR') !== false) {
                                 $logoClass = 'bcr';
                                 $logoText = 'BCR';
+                                $logoFile = 'bcr.png';
+                                $bankFullName = 'Banco de Costa Rica';
                             } elseif ($bankRaw === 'BN' || strpos($bankRaw, 'NACIONAL') !== false) {
                                 $logoClass = 'bn';
                                 $logoText = 'BN';
+                                $logoFile = 'bn.png';
+                                $bankFullName = 'Banco Nacional';
                             }
                             $copyValue = preg_replace('/^IBAN\s*:?\s*/i', '', $account);
                             if ($copyValue === '') $copyValue = $account;
                         ?>
                             <div class="bank-card">
-                                <div class="bank-logo <?= $logoClass ?>" aria-hidden="true"><?= Html::encode($logoText) ?></div>
+                                <div class="bank-logo <?= $logoClass ?>" aria-hidden="true">
+                                    <?php if ($logoFile !== ''): ?>
+                                        <img src="<?= Html::encode(Url::to('@web/img/banks/' . $logoFile)) ?>" alt="<?= Html::encode($bankFullName) ?>">
+                                    <?php else: ?>
+                                        <span style="color:#1b305b;font-weight:800;font-size:13px;"><?= Html::encode($logoText) ?></span>
+                                    <?php endif; ?>
+                                </div>
                                 <div class="bank-meta">
                                     <div class="bank-name">
-                                        <?= Html::encode($bankRaw ?: 'Banco') ?>
+                                        <?= Html::encode($bankFullName) ?>
                                         <?php if ($currency !== ''): ?>
                                             <span class="bank-currency"><?= Html::encode($currency) ?></span>
                                         <?php endif; ?>
@@ -756,7 +768,9 @@ $today = date('d/m/Y');
 
                         <?php if ($simpemovilDisplay !== ''): ?>
                             <div class="bank-card">
-                                <div class="bank-logo sinpe" aria-hidden="true">SINPE<br>MÓVIL</div>
+                                <div class="bank-logo sinpe" aria-hidden="true">
+                                    <img src="<?= Html::encode(Url::to('@web/img/banks/sinpe-movil.png')) ?>" alt="SINPE Móvil">
+                                </div>
                                 <div class="bank-meta">
                                     <div class="bank-name">SINPE Móvil</div>
                                     <div class="bank-account"><?= Html::encode($simpemovilDisplay) ?></div>
