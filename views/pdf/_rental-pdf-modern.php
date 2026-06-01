@@ -58,6 +58,9 @@ if (is_array($accounts) && $accounts !== []) {
     foreach ($accounts as $acc) {
         $b = strtoupper(trim((string) ($acc['bank'] ?? '')));
         $cur = trim((string) ($acc['currency'] ?? '₡'));
+        if ($cur === '₡') {
+            $cur = '¢';
+        }
         $cuenta = trim((string) ($acc['account_number'] ?? ''));
         $iban = strtoupper(preg_replace('/\s+/', '', (string) ($acc['iban'] ?? '')));
         if ($iban === '' && !empty($acc['account'])) {
@@ -78,8 +81,8 @@ if (is_array($accounts) && $accounts !== []) {
 }
 if ($bancosList === []) {
     $bancosList = [
-        ['banco' => 'BCR', 'moneda' => '₡', 'cuenta' => '', 'iban' => pdf_escape($ibanBcr)],
-        ['banco' => 'BN',  'moneda' => '₡', 'cuenta' => '', 'iban' => pdf_escape($ibanBn)],
+        ['banco' => 'BCR', 'moneda' => '¢', 'cuenta' => '', 'iban' => pdf_escape($ibanBcr)],
+        ['banco' => 'BN',  'moneda' => '¢', 'cuenta' => '', 'iban' => pdf_escape($ibanBn)],
     ];
 }
 

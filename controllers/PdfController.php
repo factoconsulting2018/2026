@@ -700,6 +700,9 @@ class PdfController extends Controller
             foreach ($accounts as $acc) {
                 $b = strtoupper(trim((string) ($acc['bank'] ?? '')));
                 $cur = trim((string) ($acc['currency'] ?? '₡'));
+                if ($cur === '₡') {
+                    $cur = '¢';
+                }
                 $cuenta = trim((string) ($acc['account_number'] ?? ''));
                 $iban = strtoupper(preg_replace('/\s+/', '', (string) ($acc['iban'] ?? '')));
                 if ($iban === '' && !empty($acc['account'])) {
@@ -720,8 +723,8 @@ class PdfController extends Controller
         }
         if ($bancosList === []) {
             $bancosList = [
-                ['banco' => 'BCR', 'moneda' => '₡', 'cuenta' => '', 'iban' => $ibanBcr],
-                ['banco' => 'BN',  'moneda' => '₡', 'cuenta' => '', 'iban' => $ibanBn],
+                ['banco' => 'BCR', 'moneda' => '¢', 'cuenta' => '', 'iban' => $ibanBcr],
+                ['banco' => 'BN',  'moneda' => '¢', 'cuenta' => '', 'iban' => $ibanBn],
             ];
         }
 
@@ -731,7 +734,7 @@ class PdfController extends Controller
             $oa = $order[$a['banco']] ?? 9;
             $ob = $order[$b['banco']] ?? 9;
             if ($oa !== $ob) return $oa <=> $ob;
-            $ma = ($a['moneda'] === '$') ? 2 : 1;
+            $ma = ($a['moneda'] === '$') ? 2 : 1; // colones primero, dólares después
             $mb = ($b['moneda'] === '$') ? 2 : 1;
             return $ma <=> $mb;
         });
