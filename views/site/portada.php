@@ -367,6 +367,16 @@ $today = date('d/m/Y');
             color: #38bdf8;
             margin-top: 1px;
         }
+        .about-info-list li .wa-logo {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 22px;
+            height: 22px;
+            flex: 0 0 22px;
+            margin-top: 1px;
+        }
+        .about-info-list li .wa-logo svg { display: block; }
         .about-info-list a {
             color: #38bdf8;
             text-decoration: none;
@@ -695,10 +705,34 @@ $today = date('d/m/Y');
                             <span class="material-symbols-outlined">call</span>
                             <span>
                                 <a href="tel:<?= Html::encode($phoneDigits ?: $phone) ?>"><?= Html::encode($phone) ?></a>
-                                <?php if ($phoneDigits !== '' && strlen($phoneDigits) >= 7): ?>
-                                    &nbsp;·&nbsp;
-                                    <a href="https://wa.me/<?= Html::encode($phoneDigits) ?>" target="_blank" rel="noopener">WhatsApp</a>
-                                <?php endif; ?>
+                            </span>
+                        </li>
+                    <?php endif; ?>
+                    <?php
+                        // WhatsApp: usar el número de SIMPEMOVIL si está disponible, si no caer al teléfono
+                        $waDigits = $simpemovilDigits !== '' ? $simpemovilDigits : $phoneDigits;
+                        $waDisplay = $simpemovilDisplay !== ''
+                            ? $simpemovilDisplay
+                            : ($phoneDigits !== '' && strlen($phoneDigits) === 8
+                                ? substr($phoneDigits, 0, 4) . '-' . substr($phoneDigits, 4)
+                                : ($phone ?: $waDigits));
+                        // Costa Rica country code para wa.me
+                        $waFullNumber = $waDigits !== '' && strpos($waDigits, '506') !== 0 && strlen($waDigits) === 8
+                            ? '506' . $waDigits
+                            : $waDigits;
+                    ?>
+                    <?php if ($waDigits !== ''): ?>
+                        <li>
+                            <span class="wa-logo" aria-hidden="true">
+                                <svg viewBox="0 0 32 32" width="22" height="22" xmlns="http://www.w3.org/2000/svg">
+                                    <path fill="#25D366" d="M16 .4C7.4.4.5 7.3.5 15.8c0 2.8.7 5.5 2.1 7.9L.3 31.6l8.1-2.1c2.3 1.2 4.9 1.9 7.6 1.9 8.6 0 15.5-6.9 15.5-15.5S24.6.4 16 .4z"/>
+                                    <path fill="#fff" d="M23.7 19.3c-.3-.2-2-1-2.3-1.1-.3-.1-.6-.2-.8.2s-.9 1.1-1.1 1.4c-.2.3-.4.3-.7.1-2-1-3.3-1.8-4.6-4-.4-.6.4-.6 1-1.9.1-.2 0-.4 0-.6s-.8-1.9-1.1-2.6c-.3-.7-.6-.6-.8-.6h-.7c-.2 0-.6.1-.9.4-.3.3-1.2 1.2-1.2 2.9s1.2 3.3 1.4 3.6c.2.3 2.4 3.6 5.8 5.1.8.3 1.4.5 1.9.7.8.3 1.6.2 2.1.1.7-.1 2-.8 2.3-1.6.3-.8.3-1.5.2-1.6-.1-.2-.3-.3-.5-.4z"/>
+                                </svg>
+                            </span>
+                            <span>
+                                <a href="https://wa.me/<?= Html::encode($waFullNumber) ?>" target="_blank" rel="noopener">
+                                    <?= Html::encode($waDisplay) ?>
+                                </a>
                             </span>
                         </li>
                     <?php endif; ?>
