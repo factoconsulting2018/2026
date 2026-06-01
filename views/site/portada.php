@@ -553,6 +553,15 @@ $today = date('d/m/Y');
             background: #ffffff;
             padding: 4px;
         }
+        /* Ajuste específico para el logo BAC: la imagen tiene mucho espacio en blanco
+           alrededor del logo, así que reducimos padding y ampliamos para que se vea bien. */
+        .bank-logo.bac {
+            padding: 2px;
+        }
+        .bank-logo.bac img {
+            transform: scale(1.25);
+            transform-origin: center center;
+        }
         .bank-meta {
             flex: 1;
             min-width: 0;
