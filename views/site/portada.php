@@ -27,6 +27,12 @@ $waFullNumber = strlen($simpemovilDigits) === 8 && strpos($simpemovilDigits, '50
     : $simpemovilDigits;
 $waLink = 'https://wa.me/' . $waFullNumber;
 
+$socialLinks = [
+    'facebook'  => 'https://www.facebook.com/factorentacar',
+    'instagram' => 'https://www.instagram.com/factorentacar',
+    'whatsapp'  => $waLink,
+];
+
 $siteHomeUrl = Url::home(true);
 $canonicalUrl = rtrim($siteHomeUrl, '/') . '/';
 $ogImageUrl = $logoPath ? Url::to($logoPath, true) : '';
@@ -538,8 +544,8 @@ $today = date('d/m/Y');
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            background: #ffffff;
-            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15), 0 4px 10px rgba(0,0,0,0.25);
+            background-color: #ffffff !important;
+            box-shadow: inset 0 0 0 1px rgba(0,0,0,0.08), 0 4px 10px rgba(0,0,0,0.25);
             padding: 6px;
             overflow: hidden;
         }
@@ -548,16 +554,18 @@ $today = date('d/m/Y');
             max-height: 100%;
             object-fit: contain;
             display: block;
+            background-color: #ffffff;
         }
-        .bank-logo.sinpe {
-            background: #ffffff;
-            padding: 4px;
-        }
-        /* Ajuste específico para el logo BAC: la imagen tiene mucho espacio en blanco
-           alrededor del logo, así que reducimos padding y ampliamos para que se vea bien. */
+        .bank-logo.sinpe,
+        .bank-logo.bcr,
+        .bank-logo.bn,
         .bank-logo.bac {
-            padding: 2px;
+            background-color: #ffffff !important;
         }
+        .bank-logo.sinpe { padding: 4px; }
+        /* Ajuste específico para el logo BAC: la imagen tiene espacio en blanco
+           alrededor del logo, así que reducimos padding y ampliamos para que se vea mejor. */
+        .bank-logo.bac { padding: 2px; }
         .bank-logo.bac img {
             transform: scale(1.25);
             transform-origin: center center;
@@ -687,6 +695,63 @@ $today = date('d/m/Y');
             height: 18px;
         }
         .hero-card .contact-row a .wa-logo-sm svg { display: block; }
+
+        /* Redes sociales */
+        .social-row {
+            display: flex;
+            gap: 14px;
+            justify-content: center;
+            align-items: center;
+            margin-top: 18px;
+            flex-wrap: wrap;
+        }
+        .social-row a.social-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.10);
+            border: 1px solid rgba(255,255,255,0.18);
+            color: #fff;
+            text-decoration: none;
+            transition: transform .2s ease, box-shadow .2s ease, background .2s ease;
+            position: relative;
+        }
+        .social-row a.social-icon:hover {
+            transform: translateY(-3px) scale(1.06);
+            box-shadow: 0 10px 22px rgba(0,0,0,0.35);
+        }
+        .social-row a.social-icon svg {
+            width: 22px;
+            height: 22px;
+            display: block;
+        }
+        .social-row a.social-icon.facebook:hover  { background: #1877F2; border-color: #1877F2; }
+        .social-row a.social-icon.instagram:hover {
+            background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+            border-color: rgba(255,255,255,0.4);
+        }
+        .social-row a.social-icon.whatsapp:hover  { background: #25D366; border-color: #25D366; }
+
+        /* Versión compacta para el modal "Sobre la empresa" */
+        .about-social-row {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 12px 0 4px;
+            flex-wrap: wrap;
+        }
+        .about-social-row a.social-icon {
+            width: 38px;
+            height: 38px;
+        }
+        .about-social-row a.social-icon svg {
+            width: 19px;
+            height: 19px;
+        }
+
         .footer {
             text-align: center;
             padding: 16px 12px;
@@ -811,6 +876,24 @@ $today = date('d/m/Y');
                         factorentacar.com
                     </a>
                 </address>
+
+                <nav class="social-row" aria-label="Síguenos en redes sociales">
+                    <a href="<?= Html::encode($socialLinks['facebook']) ?>" target="_blank" rel="noopener" class="social-icon facebook" title="Facebook" aria-label="Facebook" itemprop="sameAs">
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <path fill="currentColor" d="M22 12.06C22 6.5 17.52 2 12 2S2 6.5 2 12.06c0 5 3.66 9.13 8.44 9.88v-6.99H7.9v-2.89h2.54V9.85c0-2.51 1.49-3.89 3.77-3.89 1.09 0 2.24.2 2.24.2v2.47h-1.26c-1.24 0-1.63.77-1.63 1.56v1.87h2.77l-.44 2.89h-2.33V22c4.78-.75 8.44-4.88 8.44-9.94z"/>
+                        </svg>
+                    </a>
+                    <a href="<?= Html::encode($socialLinks['instagram']) ?>" target="_blank" rel="noopener" class="social-icon instagram" title="Instagram" aria-label="Instagram" itemprop="sameAs">
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <path fill="currentColor" d="M12 2.16c3.2 0 3.58.01 4.85.07 1.17.05 1.8.25 2.23.41.56.22.96.48 1.38.9.42.42.68.82.9 1.38.16.42.36 1.06.41 2.23.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.05 1.17-.25 1.8-.41 2.23-.22.56-.48.96-.9 1.38-.42.42-.82.68-1.38.9-.42.16-1.06.36-2.23.41-1.27.06-1.65.07-4.85.07s-3.58-.01-4.85-.07c-1.17-.05-1.8-.25-2.23-.41-.56-.22-.96-.48-1.38-.9-.42-.42-.68-.82-.9-1.38-.16-.42-.36-1.06-.41-2.23C2.17 15.58 2.16 15.2 2.16 12s.01-3.58.07-4.85c.05-1.17.25-1.8.41-2.23.22-.56.48-.96.9-1.38.42-.42.82-.68 1.38-.9.42-.16 1.06-.36 2.23-.41C8.42 2.17 8.8 2.16 12 2.16M12 0C8.74 0 8.33.01 7.05.07 5.77.13 4.9.34 4.14.63c-.79.31-1.46.72-2.13 1.39C1.34 2.69.93 3.36.63 4.14.34 4.9.13 5.77.07 7.05.01 8.33 0 8.74 0 12s.01 3.67.07 4.95c.06 1.28.27 2.15.56 2.91.31.79.72 1.46 1.39 2.13.67.67 1.34 1.08 2.13 1.39.76.29 1.63.5 2.91.56C8.33 23.99 8.74 24 12 24s3.67-.01 4.95-.07c1.28-.06 2.15-.27 2.91-.56.79-.31 1.46-.72 2.13-1.39.67-.67 1.08-1.34 1.39-2.13.29-.76.5-1.63.56-2.91.06-1.28.07-1.69.07-4.95s-.01-3.67-.07-4.95c-.06-1.28-.27-2.15-.56-2.91-.31-.79-.72-1.46-1.39-2.13C21.31 1.34 20.64.93 19.86.63 19.1.34 18.23.13 16.95.07 15.67.01 15.26 0 12 0zm0 5.84A6.16 6.16 0 1 0 12 18.16 6.16 6.16 0 0 0 12 5.84zm0 10.16A4 4 0 1 1 12 8a4 4 0 0 1 0 8zm6.41-11.85a1.44 1.44 0 1 0 0 2.88 1.44 1.44 0 0 0 0-2.88z"/>
+                        </svg>
+                    </a>
+                    <a href="<?= Html::encode($socialLinks['whatsapp']) ?>" target="_blank" rel="noopener" class="social-icon whatsapp" title="WhatsApp" aria-label="WhatsApp" itemprop="sameAs">
+                        <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <path fill="currentColor" d="M16 .4C7.4.4.5 7.3.5 15.8c0 2.8.7 5.5 2.1 7.9L.3 31.6l8.1-2.1c2.3 1.2 4.9 1.9 7.6 1.9 8.6 0 15.5-6.9 15.5-15.5S24.6.4 16 .4zM23.7 19.3c-.3-.2-2-1-2.3-1.1-.3-.1-.6-.2-.8.2s-.9 1.1-1.1 1.4c-.2.3-.4.3-.7.1-2-1-3.3-1.8-4.6-4-.4-.6.4-.6 1-1.9.1-.2 0-.4 0-.6s-.8-1.9-1.1-2.6c-.3-.7-.6-.6-.8-.6h-.7c-.2 0-.6.1-.9.4-.3.3-1.2 1.2-1.2 2.9s1.2 3.3 1.4 3.6c.2.3 2.4 3.6 5.8 5.1.8.3 1.4.5 1.9.7.8.3 1.6.2 2.1.1.7-.1 2-.8 2.3-1.6.3-.8.3-1.5.2-1.6-.1-.2-.3-.3-.5-.4z"/>
+                        </svg>
+                    </a>
+                </nav>
             </article>
 
             <section class="visually-hidden" aria-label="Información adicional para buscadores">
@@ -948,6 +1031,24 @@ $today = date('d/m/Y');
                     </li>
                 </ul>
 
+                <nav class="about-social-row social-row" aria-label="Síguenos en redes sociales">
+                    <a href="<?= Html::encode($socialLinks['facebook']) ?>" target="_blank" rel="noopener" class="social-icon facebook" title="Facebook" aria-label="Facebook">
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <path fill="currentColor" d="M22 12.06C22 6.5 17.52 2 12 2S2 6.5 2 12.06c0 5 3.66 9.13 8.44 9.88v-6.99H7.9v-2.89h2.54V9.85c0-2.51 1.49-3.89 3.77-3.89 1.09 0 2.24.2 2.24.2v2.47h-1.26c-1.24 0-1.63.77-1.63 1.56v1.87h2.77l-.44 2.89h-2.33V22c4.78-.75 8.44-4.88 8.44-9.94z"/>
+                        </svg>
+                    </a>
+                    <a href="<?= Html::encode($socialLinks['instagram']) ?>" target="_blank" rel="noopener" class="social-icon instagram" title="Instagram" aria-label="Instagram">
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <path fill="currentColor" d="M12 2.16c3.2 0 3.58.01 4.85.07 1.17.05 1.8.25 2.23.41.56.22.96.48 1.38.9.42.42.68.82.9 1.38.16.42.36 1.06.41 2.23.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.05 1.17-.25 1.8-.41 2.23-.22.56-.48.96-.9 1.38-.42.42-.82.68-1.38.9-.42.16-1.06.36-2.23.41-1.27.06-1.65.07-4.85.07s-3.58-.01-4.85-.07c-1.17-.05-1.8-.25-2.23-.41-.56-.22-.96-.48-1.38-.9-.42-.42-.68-.82-.9-1.38-.16-.42-.36-1.06-.41-2.23C2.17 15.58 2.16 15.2 2.16 12s.01-3.58.07-4.85c.05-1.17.25-1.8.41-2.23.22-.56.48-.96.9-1.38.42-.42.82-.68 1.38-.9.42-.16 1.06-.36 2.23-.41C8.42 2.17 8.8 2.16 12 2.16M12 0C8.74 0 8.33.01 7.05.07 5.77.13 4.9.34 4.14.63c-.79.31-1.46.72-2.13 1.39C1.34 2.69.93 3.36.63 4.14.34 4.9.13 5.77.07 7.05.01 8.33 0 8.74 0 12s.01 3.67.07 4.95c.06 1.28.27 2.15.56 2.91.31.79.72 1.46 1.39 2.13.67.67 1.34 1.08 2.13 1.39.76.29 1.63.5 2.91.56C8.33 23.99 8.74 24 12 24s3.67-.01 4.95-.07c1.28-.06 2.15-.27 2.91-.56.79-.31 1.46-.72 2.13-1.39.67-.67 1.08-1.34 1.39-2.13.29-.76.5-1.63.56-2.91.06-1.28.07-1.69.07-4.95s-.01-3.67-.07-4.95c-.06-1.28-.27-2.15-.56-2.91-.31-.79-.72-1.46-1.39-2.13C21.31 1.34 20.64.93 19.86.63 19.1.34 18.23.13 16.95.07 15.67.01 15.26 0 12 0zm0 5.84A6.16 6.16 0 1 0 12 18.16 6.16 6.16 0 0 0 12 5.84zm0 10.16A4 4 0 1 1 12 8a4 4 0 0 1 0 8zm6.41-11.85a1.44 1.44 0 1 0 0 2.88 1.44 1.44 0 0 0 0-2.88z"/>
+                        </svg>
+                    </a>
+                    <a href="<?= Html::encode($socialLinks['whatsapp']) ?>" target="_blank" rel="noopener" class="social-icon whatsapp" title="WhatsApp" aria-label="WhatsApp">
+                        <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <path fill="currentColor" d="M16 .4C7.4.4.5 7.3.5 15.8c0 2.8.7 5.5 2.1 7.9L.3 31.6l8.1-2.1c2.3 1.2 4.9 1.9 7.6 1.9 8.6 0 15.5-6.9 15.5-15.5S24.6.4 16 .4zM23.7 19.3c-.3-.2-2-1-2.3-1.1-.3-.1-.6-.2-.8.2s-.9 1.1-1.1 1.4c-.2.3-.4.3-.7.1-2-1-3.3-1.8-4.6-4-.4-.6.4-.6 1-1.9.1-.2 0-.4 0-.6s-.8-1.9-1.1-2.6c-.3-.7-.6-.6-.8-.6h-.7c-.2 0-.6.1-.9.4-.3.3-1.2 1.2-1.2 2.9s1.2 3.3 1.4 3.6c.2.3 2.4 3.6 5.8 5.1.8.3 1.4.5 1.9.7.8.3 1.6.2 2.1.1.7-.1 2-.8 2.3-1.6.3-.8.3-1.5.2-1.6-.1-.2-.3-.3-.5-.4z"/>
+                        </svg>
+                    </a>
+                </nav>
+
                 <?php if (!empty($bankAccounts) || $simpemovilDisplay !== ''): ?>
                     <div class="about-banks-title">
                         <span class="material-symbols-outlined">account_balance</span>
@@ -992,9 +1093,19 @@ $today = date('d/m/Y');
                             }
                         ?>
                             <div class="bank-card">
-                                <div class="bank-logo <?= $logoClass ?>" aria-hidden="true">
-                                    <?php if ($logoFile !== ''): ?>
-                                        <img src="<?= Html::encode(Url::to('@web/img/banks/' . $logoFile)) ?>" alt="<?= Html::encode($bankFullName) ?>">
+                                <div class="bank-logo <?= $logoClass ?>" aria-hidden="true" style="background:#fff;">
+                                    <?php
+                                        $logoUrl = '';
+                                        if ($logoFile !== '') {
+                                            $logoUrl = Url::to('@web/img/banks/' . $logoFile);
+                                            $logoAbs = Yii::getAlias('@webroot/img/banks/' . $logoFile);
+                                            if (is_file($logoAbs)) {
+                                                $logoUrl .= '?v=' . filemtime($logoAbs);
+                                            }
+                                        }
+                                    ?>
+                                    <?php if ($logoUrl !== ''): ?>
+                                        <img src="<?= Html::encode($logoUrl) ?>" alt="<?= Html::encode($bankFullName) ?>" style="background:#fff;">
                                     <?php else: ?>
                                         <span style="color:#1b305b;font-weight:800;font-size:13px;"><?= Html::encode($logoText) ?></span>
                                     <?php endif; ?>
@@ -1029,10 +1140,15 @@ $today = date('d/m/Y');
                             </div>
                         <?php endforeach; ?>
 
-                        <?php if ($simpemovilDisplay !== ''): ?>
+                        <?php if ($simpemovilDisplay !== ''):
+                            $sinpeFile = 'sinpe-movil.png';
+                            $sinpeUrl  = Url::to('@web/img/banks/' . $sinpeFile);
+                            $sinpeAbs  = Yii::getAlias('@webroot/img/banks/' . $sinpeFile);
+                            if (is_file($sinpeAbs)) { $sinpeUrl .= '?v=' . filemtime($sinpeAbs); }
+                        ?>
                             <div class="bank-card">
-                                <div class="bank-logo sinpe" aria-hidden="true">
-                                    <img src="<?= Html::encode(Url::to('@web/img/banks/sinpe-movil.png')) ?>" alt="SINPE Móvil">
+                                <div class="bank-logo sinpe" aria-hidden="true" style="background:#fff;">
+                                    <img src="<?= Html::encode($sinpeUrl) ?>" alt="SINPE Móvil" style="background:#fff;">
                                 </div>
                                 <div class="bank-meta">
                                     <div class="bank-name">SINPE Móvil</div>
@@ -1177,10 +1293,12 @@ $today = date('d/m/Y');
                 'areaServed'  => 'CR',
             ],
         ];
-        $jsonLd['sameAs'] = [
+        $jsonLd['sameAs'] = array_values(array_filter([
+            $socialLinks['facebook']  ?? null,
+            $socialLinks['instagram'] ?? null,
             $waLink,
             'https://www.factorentacar.com',
-        ];
+        ]));
     ?>
     <script type="application/ld+json">
     <?= json_encode($jsonLd, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) ?>
