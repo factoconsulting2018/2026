@@ -56,21 +56,42 @@ try {
 $bancosList = [];
 if (is_array($accounts) && $accounts !== []) {
     foreach ($accounts as $acc) {
-        $b = trim((string) ($acc['bank'] ?? ''));
-        $a = trim((string) ($acc['account'] ?? ''));
-        $a = preg_replace('/^IBAN:?\s*/i', '', $a);
-        $a = preg_replace('/\s+/', '', $a);
-        if ($b !== '' && $a !== '') {
-            $bancosList[] = ['banco' => pdf_escape($b), 'iban' => pdf_escape($a)];
+        $b = strtoupper(trim((string) ($acc['bank'] ?? '')));
+        $cur = trim((string) ($acc['currency'] ?? '₡'));
+        $cuenta = trim((string) ($acc['account_number'] ?? ''));
+        $iban = strtoupper(preg_replace('/\s+/', '', (string) ($acc['iban'] ?? '')));
+        if ($iban === '' && !empty($acc['account'])) {
+            $legacy = (string) $acc['account'];
+            if (preg_match('/IBAN\s*:?\s*(CR[\d\s]+)/i', $legacy, $m)) {
+                $iban = strtoupper(preg_replace('/\s+/', '', $m[1]));
+            }
+        }
+        if ($b !== '' && ($iban !== '' || $cuenta !== '')) {
+            $bancosList[] = [
+                'banco' => pdf_escape($b),
+                'moneda' => pdf_escape($cur),
+                'cuenta' => pdf_escape($cuenta),
+                'iban' => pdf_escape($iban),
+            ];
         }
     }
 }
 if ($bancosList === []) {
     $bancosList = [
-        ['banco' => 'BCR', 'iban' => pdf_escape($ibanBcr)],
-        ['banco' => 'BN', 'iban' => pdf_escape($ibanBn)],
+        ['banco' => 'BCR', 'moneda' => '₡', 'cuenta' => '', 'iban' => pdf_escape($ibanBcr)],
+        ['banco' => 'BN',  'moneda' => '₡', 'cuenta' => '', 'iban' => pdf_escape($ibanBn)],
     ];
 }
+
+usort($bancosList, function ($a, $b) {
+    $order = ['BN' => 1, 'BCR' => 2, 'BAC' => 3];
+    $oa = $order[$a['banco']] ?? 9;
+    $ob = $order[$b['banco']] ?? 9;
+    if ($oa !== $ob) return $oa <=> $ob;
+    $ma = ($a['moneda'] === '$') ? 2 : 1;
+    $mb = ($b['moneda'] === '$') ? 2 : 1;
+    return $ma <=> $mb;
+});
 
 $transmisionTxt = '—';
 if ($car && !empty($car->caracteristicas)) {
@@ -211,8 +232,15 @@ $tarifaDiaNum = (float) $model->precio_por_dia;
         font-size: 9.5pt;
         line-height: 1.5;
     }
-    .bancos b { display: block; margin-bottom: 4px; font-size: 10pt; }
+    .bancos b { display: block; margin-bottom: 6px; font-size: 10pt; }
     .bancos .marker { display: inline-block; width: 8px; height: 8px; background: #fff; margin: 0 6px 0 4px; }
+    .bancos .banks-table { width: 100%; border-collapse: collapse; color: #fff; font-size: 9pt; }
+    .bancos .banks-table td { padding: 2px 6px; vertical-align: top; color: #fff; }
+    .bancos .banks-table td.bank-name  { font-weight: 700; white-space: nowrap; width: 60px; }
+    .bancos .banks-table td.bank-cur   { font-weight: 700; white-space: nowrap; width: 18px; }
+    .bancos .banks-table td.bank-label { white-space: nowrap; width: 56px; opacity: 0.85; }
+    .bancos .banks-table td.bank-value { font-family: dejavusansmono, monospace; font-size: 8.5pt; letter-spacing: 0.3px; }
+    .bancos .sinpe-row { margin-top: 6px; }
 
     .firmas { margin-top: 60px; width: 100%; }
     .firmas td { width: 50%; text-align: center; vertical-align: top; padding: 0 30px; }
@@ -320,11 +348,13 @@ $tarifaDiaNum = (float) $model->precio_por_dia;
         <td>Retiro en sucursal</td>
         <td>Subtotal: ¢<?= $subtotalFmt ?></td>
     </tr>
+    <?php if ((float) ($ivaNum ?? 0) > 0): ?>
     <tr>
         <td></td>
         <td></td>
         <td>IVA: ¢<?= $ivaFmt ?></td>
     </tr>
+    <?php endif; ?>
     <tr>
         <td></td>
         <td></td>
@@ -334,10 +364,30 @@ $tarifaDiaNum = (float) $model->precio_por_dia;
 
 <div class="bancos">
     <b>CUENTAS BANCARIAS PARA DEPÓSITO</b>
-    <?php foreach ($bancosList as $b): ?>
-        <?= $b['banco'] ?> <span class="marker"></span> IBAN: <?= $b['iban'] ?><br>
-    <?php endforeach; ?>
-    SINPE Móvil: <?= pdf_escape($simpeDisplay) ?><br><br>
+    <table class="banks-table">
+        <?php foreach ($bancosList as $b):
+            $bancoTxt = (string) ($b['banco'] ?? '');
+            $monedaTxt = (string) ($b['moneda'] ?? '₡');
+            $cuentaTxt = (string) ($b['cuenta'] ?? '');
+            $ibanTxt = (string) ($b['iban'] ?? '');
+        ?>
+            <tr>
+                <td class="bank-name"><?= $bancoTxt ?></td>
+                <td class="bank-cur"><?= $monedaTxt ?></td>
+                <?php if ($cuentaTxt !== ''): ?>
+                    <td class="bank-label">Cuenta:</td>
+                    <td class="bank-value"><?= $cuentaTxt ?></td>
+                <?php else: ?>
+                    <td class="bank-label"></td>
+                    <td class="bank-value"></td>
+                <?php endif; ?>
+                <td class="bank-label">IBAN:</td>
+                <td class="bank-value"><?= $ibanTxt ?></td>
+            </tr>
+        <?php endforeach; ?>
+    </table>
+    <div class="sinpe-row">SINPE Móvil: <?= pdf_escape($simpeDisplay) ?></div>
+    <br>
     <b>Monto de la reservación: <?= $fmtColones($totalNum) ?></b> — Reservación firme contra depósito.
 </div>
 

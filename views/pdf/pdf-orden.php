@@ -123,8 +123,15 @@ $txtEmpresaLinea = (int) ($t['empresa_linea'] ?? 24);
         font-size: 9.5pt;
         line-height: 1.5;
     }
-    .bancos b { display: block; margin-bottom: 4px; font-size: 10pt; }
+    .bancos b { display: block; margin-bottom: 6px; font-size: 10pt; }
     .bancos .marker { display: inline-block; width: 8px; height: 8px; background: #fff; margin: 0 6px 0 4px; }
+    .bancos .banks-table { width: 100%; border-collapse: collapse; color: #fff; font-size: 9pt; }
+    .bancos .banks-table td { padding: 2px 6px; vertical-align: top; color: #fff; }
+    .bancos .banks-table td.bank-name  { font-weight: 700; white-space: nowrap; width: 60px; }
+    .bancos .banks-table td.bank-cur   { font-weight: 700; white-space: nowrap; width: 18px; }
+    .bancos .banks-table td.bank-label { white-space: nowrap; width: 56px; opacity: 0.85; }
+    .bancos .banks-table td.bank-value { font-family: dejavusansmono, monospace; font-size: 8.5pt; letter-spacing: 0.3px; }
+    .bancos .sinpe-row { margin-top: 6px; }
 
     .firmas { margin-top: 60px; width: 100%; border-collapse: collapse; }
     .firmas td { width: 50%; text-align: center; vertical-align: top; padding: 0 30px; }
@@ -259,11 +266,13 @@ $txtEmpresaLinea = (int) ($t['empresa_linea'] ?? 24);
         <td><?= $h($d['devolucion']['tipo']) ?></td>
         <td>Subtotal: <?= $fmt($d['resumen']['subtotal']) ?></td>
     </tr>
+    <?php if ((float) ($d['resumen']['iva'] ?? 0) > 0): ?>
     <tr>
         <td></td>
         <td></td>
         <td>IVA: <?= $fmt($d['resumen']['iva']) ?></td>
     </tr>
+    <?php endif; ?>
     <tr>
         <td></td>
         <td></td>
@@ -273,10 +282,30 @@ $txtEmpresaLinea = (int) ($t['empresa_linea'] ?? 24);
 
 <div class="bancos">
     <b>CUENTAS BANCARIAS PARA DEPÓSITO</b>
-    <?php foreach ($d['bancos'] as $b): ?>
-        <?= $h($b['banco']) ?> <span class="marker"></span> IBAN: <?= $h($b['iban']) ?><br>
-    <?php endforeach; ?>
-    SINPE Móvil: <?= $h($d['sinpe']) ?><br><br>
+    <table class="banks-table">
+        <?php foreach ($d['bancos'] as $b):
+            $banco = strtoupper(trim((string) ($b['banco'] ?? '')));
+            $moneda = trim((string) ($b['moneda'] ?? '₡'));
+            $cuenta = trim((string) ($b['cuenta'] ?? ''));
+            $iban = strtoupper(preg_replace('/\s+/', '', (string) ($b['iban'] ?? '')));
+        ?>
+            <tr>
+                <td class="bank-name"><?= $h($banco) ?></td>
+                <td class="bank-cur"><?= $h($moneda) ?></td>
+                <?php if ($cuenta !== ''): ?>
+                    <td class="bank-label">Cuenta:</td>
+                    <td class="bank-value"><?= $h($cuenta) ?></td>
+                <?php else: ?>
+                    <td class="bank-label"></td>
+                    <td class="bank-value"></td>
+                <?php endif; ?>
+                <td class="bank-label">IBAN:</td>
+                <td class="bank-value"><?= $h($iban) ?></td>
+            </tr>
+        <?php endforeach; ?>
+    </table>
+    <div class="sinpe-row">SINPE Móvil: <?= $h($d['sinpe']) ?></div>
+    <br>
     <b>Monto de la reservación: <?= $fmt($d['monto_reservacion']) ?></b> — Reservación firme contra depósito.
 </div>
 

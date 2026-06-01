@@ -698,21 +698,43 @@ class PdfController extends Controller
         $bancosList = [];
         if (is_array($accounts)) {
             foreach ($accounts as $acc) {
-                $b = trim((string) ($acc['bank'] ?? ''));
-                $a = trim((string) ($acc['account'] ?? ''));
-                $a = preg_replace('/^IBAN:?\s*/i', '', $a);
-                $a = preg_replace('/\s+/', '', $a);
-                if ($b !== '' && $a !== '') {
-                    $bancosList[] = ['banco' => $b, 'iban' => $a];
+                $b = strtoupper(trim((string) ($acc['bank'] ?? '')));
+                $cur = trim((string) ($acc['currency'] ?? '₡'));
+                $cuenta = trim((string) ($acc['account_number'] ?? ''));
+                $iban = strtoupper(preg_replace('/\s+/', '', (string) ($acc['iban'] ?? '')));
+                if ($iban === '' && !empty($acc['account'])) {
+                    $legacy = (string) $acc['account'];
+                    if (preg_match('/IBAN\s*:?\s*(CR[\d\s]+)/i', $legacy, $m)) {
+                        $iban = strtoupper(preg_replace('/\s+/', '', $m[1]));
+                    }
+                }
+                if ($b !== '' && ($iban !== '' || $cuenta !== '')) {
+                    $bancosList[] = [
+                        'banco' => $b,
+                        'moneda' => $cur,
+                        'cuenta' => $cuenta,
+                        'iban' => $iban,
+                    ];
                 }
             }
         }
         if ($bancosList === []) {
             $bancosList = [
-                ['banco' => 'BCR', 'iban' => $ibanBcr],
-                ['banco' => 'BN', 'iban' => $ibanBn],
+                ['banco' => 'BCR', 'moneda' => '₡', 'cuenta' => '', 'iban' => $ibanBcr],
+                ['banco' => 'BN',  'moneda' => '₡', 'cuenta' => '', 'iban' => $ibanBn],
             ];
         }
+
+        // Orden: BN, BCR, BAC, otros; dentro de cada banco primero ₡ y luego $.
+        usort($bancosList, function ($a, $b) {
+            $order = ['BN' => 1, 'BCR' => 2, 'BAC' => 3];
+            $oa = $order[$a['banco']] ?? 9;
+            $ob = $order[$b['banco']] ?? 9;
+            if ($oa !== $ob) return $oa <=> $ob;
+            $ma = ($a['moneda'] === '$') ? 2 : 1;
+            $mb = ($b['moneda'] === '$') ? 2 : 1;
+            return $ma <=> $mb;
+        });
 
         $resumenDiasTxt = (int) $model->cantidad_dias . ' día' . ((int) $model->cantidad_dias === 1 ? '' : 's')
             . ' • ' . $cantidadVehiculos . ' vehículo' . ($cantidadVehiculos === 1 ? '' : 's');
