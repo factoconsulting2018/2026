@@ -270,8 +270,28 @@ $csrfToken = Yii::$app->request->csrfToken;
     const URL_UPLOAD = <?= json_encode(Url::to(['marketing/upload-image'])) ?>;
     const URL_SAVE_TEMPLATE = <?= json_encode(Url::to(['marketing/save-template'])) ?>;
     const URL_DELETE_TEMPLATE = <?= json_encode(Url::to(['marketing/delete-template'])) ?>;
-    const BATCH_SIZE = <?= max(1, (int) $mkConfig['batch_size']) ?>;
+    const BATCH_PAUSE_EVERY = <?= max(1, (int) $mkConfig['batch_size']) ?>;
+    const BATCH_PAUSE_SECONDS = <?= max(0, (int) $mkConfig['batch_pause']) ?>;
     const EXCLUDED_STORAGE_KEY = 'mk_excluded_client_ids_v1';
+
+    let activeCsrfToken = CSRF_TOKEN;
+
+    function refreshCsrfToken() {
+        const meta = document.querySelector('meta[name="csrf-token"]');
+        if (meta && meta.getAttribute('content')) {
+            activeCsrfToken = meta.getAttribute('content');
+            return activeCsrfToken;
+        }
+        const inp = document.querySelector('input[name="' + CSRF_PARAM + '"]');
+        if (inp && inp.value) {
+            activeCsrfToken = inp.value;
+        }
+        return activeCsrfToken;
+    }
+
+    function sleep(ms) {
+        return new Promise(function (resolve) { setTimeout(resolve, ms); });
+    }
 
     // Espera a que Quill esté disponible (Yii inyecta el JS de Quill al final del body).
     function whenReady(cb) {
@@ -763,18 +783,74 @@ $csrfToken = Yii::$app->request->csrfToken;
         return text.replace(/\n{3,}/g, '\n\n').trim();
     }
 
-    async function sendBatch(ids, message, interval, isFirst) {
+    function isRetryableSendError(errMsg) {
+        const s = String(errMsg || '').toLowerCase();
+        return /respuesta no json|failed to fetch|networkerror|timeout|aborted|502|503|504|gateway/i.test(s);
+    }
+
+    async function sendOne(clientId, message, options) {
+        const opts = options || {};
         const fd = new FormData();
-        fd.append(CSRF_PARAM, CSRF_TOKEN);
-        ids.forEach(id => fd.append('client_ids[]', id));
+        fd.append(CSRF_PARAM, activeCsrfToken);
+        fd.append('client_ids[]', String(clientId));
         fd.append('message', message);
-        fd.append('interval_seconds', interval);
+        fd.append('interval_seconds', '0');
+        if (opts.skipStatusCheck) {
+            fd.append('skip_status_check', '1');
+        }
+        if (opts.finalizeCampaign) {
+            fd.append('finalize_campaign', '1');
+        }
         if (uploadedImage && uploadedImage.public_url) {
             fd.append('image_public_url', uploadedImage.public_url);
         }
         const res = await fetch(URL_SEND, { method: 'POST', body: fd, credentials: 'same-origin' });
-        return res.json();
+        const ct = (res.headers.get('content-type') || '').toLowerCase();
+        if (!ct.includes('application/json')) {
+            const text = (await res.text()).slice(0, 200).replace(/\s+/g, ' ').trim();
+            throw new Error('Respuesta no JSON (HTTP ' + res.status + '): ' + text);
+        }
+        const data = await res.json();
+        if (!res.ok && data && data.message) {
+            throw new Error(data.message);
+        }
+        return data;
     }
+
+    function mergeSendResult(target, data) {
+        if (!data || typeof data !== 'object') {
+            target.failed += 1;
+            return;
+        }
+        target.sent += parseInt(data.sent || 0, 10);
+        target.failed += parseInt(data.failed || 0, 10);
+        if (Array.isArray(data.details)) {
+            data.details.forEach(function (d) { target.details.push(d); });
+        }
+    }
+
+    function renderResultsTable(allDetails) {
+        if (!allDetails.length) return;
+        let html = '<h6 class="mt-3">Resultado por contacto</h6><table class="results-table"><thead><tr><th>Cliente</th><th>WhatsApp</th><th>Estado</th></tr></thead><tbody>';
+        allDetails.forEach(function (d) {
+            let estado;
+            if (d.ok) {
+                estado = 'Enviado';
+                if (d.note) estado += ' <span class="text-warning">(' + d.note + ')</span>';
+            } else {
+                estado = 'Error: ' + (d.error || 'fallo');
+            }
+            html += '<tr class="' + (d.ok ? 'row-ok' : 'row-fail') + '">'
+                + '<td>' + (d.name || ('#' + d.id)) + '</td>'
+                + '<td>' + (d.phone || '—') + '</td>'
+                + '<td>' + estado + '</td>'
+                + '</tr>';
+        });
+        html += '</tbody></table>';
+        resultsBox.innerHTML = html;
+    }
+
+    let campaignAbort = false;
 
     sendBtn.addEventListener('click', async function() {
         const ids = getCheckedIds();
@@ -788,11 +864,18 @@ $csrfToken = Yii::$app->request->csrfToken;
             return;
         }
         const interval = Math.max(1, parseInt(intervalInput.value || '6', 10));
-        const estSec = Math.ceil(ids.length * interval * 1.05);
-        if (!confirm('Va a enviar el mensaje a ' + ids.length + ' contacto(s). Tiempo estimado: ~' + estSec + 's. ¿Continuar?')) {
+        const pauseEvery = BATCH_PAUSE_EVERY;
+        const pauseSec = BATCH_PAUSE_SECONDS;
+        let estSec = ids.length * interval;
+        if (pauseSec > 0 && ids.length > pauseEvery) {
+            estSec += Math.floor(ids.length / pauseEvery) * pauseSec;
+        }
+        if (!confirm('Va a enviar el mensaje a ' + ids.length + ' contacto(s). Tiempo estimado: ~' + estSec + ' s (un envío por contacto). ¿Continuar?')) {
             return;
         }
 
+        refreshCsrfToken();
+        campaignAbort = false;
         sendBtn.disabled = true;
         progress.classList.add('active');
         statTotal.textContent = ids.length;
@@ -807,52 +890,78 @@ $csrfToken = Yii::$app->request->csrfToken;
         let totalFail = 0;
         const allDetails = [];
 
-        for (let i = 0; i < ids.length; i += BATCH_SIZE) {
-            const batch = ids.slice(i, i + BATCH_SIZE);
-            progressText.textContent = 'Enviando lote ' + (Math.floor(i / BATCH_SIZE) + 1) + ' (' + batch.length + ' contactos)…';
+        for (let i = 0; i < ids.length; i++) {
+            if (campaignAbort) break;
+
+            const clientId = ids[i];
+            const isLast = i === ids.length - 1;
+            progressText.textContent = 'Enviando ' + (i + 1) + ' de ' + ids.length + '…';
+
+            let result = { sent: 0, failed: 0, details: [] };
+
             try {
-                const data = await sendBatch(batch, message, interval, i === 0);
-                if (data && typeof data === 'object') {
-                    totalOk += parseInt(data.sent || 0, 10);
-                    totalFail += parseInt(data.failed || 0, 10);
-                    if (Array.isArray(data.details)) {
-                        data.details.forEach(d => allDetails.push(d));
-                    }
+                let data = await sendOne(clientId, message, {
+                    skipStatusCheck: i > 0,
+                    finalizeCampaign: isLast,
+                });
+                mergeSendResult(result, data);
+
+                const firstDetail = result.details[0];
+                const firstFailed = firstDetail && !firstDetail.ok;
+                if (firstFailed && isRetryableSendError(firstDetail.error)) {
+                    await sleep(2000);
+                    refreshCsrfToken();
+                    data = await sendOne(clientId, message, {
+                        skipStatusCheck: true,
+                        finalizeCampaign: isLast,
+                    });
+                    result = { sent: 0, failed: 0, details: [] };
+                    mergeSendResult(result, data);
                 }
             } catch (e) {
-                totalFail += batch.length;
-                batch.forEach(id => allDetails.push({ id, ok: false, error: e.message }));
+                result.failed = 1;
+                result.details.push({ id: clientId, ok: false, error: e.message });
+                if (isRetryableSendError(e.message)) {
+                    await sleep(2000);
+                    refreshCsrfToken();
+                    try {
+                        const retryData = await sendOne(clientId, message, {
+                            skipStatusCheck: true,
+                            finalizeCampaign: isLast,
+                        });
+                        result = { sent: 0, failed: 0, details: [] };
+                        mergeSendResult(result, retryData);
+                    } catch (e2) {
+                        result = { sent: 0, failed: 1, details: [{ id: clientId, ok: false, error: e2.message }] };
+                    }
+                }
             }
-            const processed = Math.min(i + batch.length, ids.length);
+
+            totalOk += result.sent;
+            totalFail += result.failed;
+            result.details.forEach(function (d) { allDetails.push(d); });
+
+            const processed = i + 1;
             const pct = Math.round((processed / ids.length) * 100);
             progressBar.style.width = pct + '%';
             statOk.textContent = totalOk;
             statFail.textContent = totalFail;
             statPending.textContent = ids.length - processed;
+            renderResultsTable(allDetails);
+
+            if (i < ids.length - 1) {
+                if (pauseSec > 0 && processed % pauseEvery === 0) {
+                    progressText.textContent = 'Pausa entre lotes (' + pauseSec + ' s)…';
+                    await sleep(pauseSec * 1000);
+                } else {
+                    await sleep(interval * 1000);
+                }
+            }
         }
 
         progressText.textContent = 'Campaña finalizada. Enviados: ' + totalOk + ' / ' + ids.length;
         sendBtn.disabled = false;
-
-        if (allDetails.length > 0) {
-            let html = '<h6 class="mt-3">Resultado por contacto</h6><table class="results-table"><thead><tr><th>Cliente</th><th>WhatsApp</th><th>Estado</th></tr></thead><tbody>';
-            allDetails.forEach(d => {
-                let estado;
-                if (d.ok) {
-                    estado = 'Enviado';
-                    if (d.note) estado += ' <span class="text-warning">(' + d.note + ')</span>';
-                } else {
-                    estado = 'Error: ' + (d.error || 'fallo');
-                }
-                html += '<tr class="' + (d.ok ? 'row-ok' : 'row-fail') + '">'
-                    + '<td>' + (d.name || ('#' + d.id)) + '</td>'
-                    + '<td>' + (d.phone || '—') + '</td>'
-                    + '<td>' + estado + '</td>'
-                    + '</tr>';
-            });
-            html += '</tbody></table>';
-            resultsBox.innerHTML = html;
-        }
+        renderResultsTable(allDetails);
     });
 
     refreshSelectedCount();

@@ -23,8 +23,8 @@ use yii\filters\VerbFilter;
  */
 class MarketingController extends Controller
 {
-    /** Máximo de destinatarios por petición de envío (resto se procesa con paginación del cliente). */
-    const MAX_RECIPIENTS_PER_REQUEST = 500;
+    /** Máximo de destinatarios por petición HTTP (el cliente envía 1 por 1; límite defensivo). */
+    const MAX_RECIPIENTS_PER_REQUEST = 3;
 
     public function behaviors()
     {
@@ -314,6 +314,11 @@ class MarketingController extends Controller
     public function actionSend()
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
+        // Liberar lock de sesión para permitir peticiones paralelas/secuenciales rápidas desde el navegador.
+        if (Yii::$app->session->isActive) {
+            Yii::$app->session->close();
+        }
+
         $req = Yii::$app->request;
 
         $waConfig = CompanyConfig::getWhatsAppConfig();
@@ -323,13 +328,16 @@ class MarketingController extends Controller
             return ['success' => false, 'message' => 'La integración de WhatsApp está deshabilitada en Configuración.'];
         }
 
-        try {
-            $status = WhatsAppNotifier::getStatus($waConfig['api_url'], $waConfig['session_id']);
-        } catch (\Throwable $e) {
-            return ['success' => false, 'message' => 'No se pudo verificar el estado de la sesión: ' . $e->getMessage()];
-        }
-        if (!WhatsAppNotifier::isConnected($status)) {
-            return ['success' => false, 'message' => 'La sesión de WhatsApp no está conectada. Escanee el QR primero.'];
+        $skipStatusCheck = (int) $req->post('skip_status_check', 0) === 1;
+        if (!$skipStatusCheck) {
+            try {
+                $status = WhatsAppNotifier::getStatus($waConfig['api_url'], $waConfig['session_id']);
+            } catch (\Throwable $e) {
+                return ['success' => false, 'message' => 'No se pudo verificar el estado de la sesión: ' . $e->getMessage()];
+            }
+            if (!WhatsAppNotifier::isConnected($status)) {
+                return ['success' => false, 'message' => 'La sesión de WhatsApp no está conectada. Escanee el QR primero.'];
+            }
         }
 
         $ids = (array) $req->post('client_ids', []);
@@ -343,9 +351,6 @@ class MarketingController extends Controller
         $message = trim((string) $req->post('message', ''));
         $imagePublicUrl = trim((string) $req->post('image_public_url', ''));
         $imageCaption = trim((string) $req->post('image_caption', ''));
-        $interval = (int) $req->post('interval_seconds', $mkConfig['interval_seconds']);
-        $interval = max(1, min(120, $interval));
-
         if ($message === '' && $imagePublicUrl === '') {
             return ['success' => false, 'message' => 'Debe escribir un mensaje o adjuntar una imagen.'];
         }
@@ -353,10 +358,12 @@ class MarketingController extends Controller
         if (count($ids) > self::MAX_RECIPIENTS_PER_REQUEST) {
             return [
                 'success' => false,
-                'message' => 'Demasiados destinatarios en una sola petición. Envíe en lotes de hasta '
-                    . self::MAX_RECIPIENTS_PER_REQUEST . ' contactos.',
+                'message' => 'Envíe de a un contacto por petición (máximo '
+                    . self::MAX_RECIPIENTS_PER_REQUEST . ' por solicitud).',
             ];
         }
+
+        $finalizeCampaign = (int) $req->post('finalize_campaign', 0) === 1;
 
         $signature = trim((string) $mkConfig['signature']);
         if ($signature !== '') {
@@ -371,11 +378,7 @@ class MarketingController extends Controller
         $failed = 0;
         $details = [];
 
-        // Tiempo máximo de ejecución conservador (PHP CLI/HTTP)
-        @set_time_limit(0);
-
         $startedAt = microtime(true);
-        $last = 0.0;
 
         foreach ($clients as $client) {
             $rawPhone = trim((string) $client->whatsapp) !== ''
@@ -401,12 +404,6 @@ class MarketingController extends Controller
                 '{Nombre}' => (string) $client->full_name,
                 '{NOMBRE}' => strtoupper((string) $client->full_name),
             ]);
-
-            // Throttling: separar cada envío por al menos $interval segundos.
-            $elapsed = microtime(true) - $last;
-            if ($last > 0 && $elapsed < $interval) {
-                usleep((int) (($interval - $elapsed) * 1000000));
-            }
 
             if ($imagePublicUrl !== '') {
                 $caption = $personalMessage !== '' ? $personalMessage : $imageCaption;
@@ -446,8 +443,6 @@ class MarketingController extends Controller
                 );
             }
 
-            $last = microtime(true);
-
             if (!empty($res['ok'])) {
                 $sent++;
                 $row = [
@@ -478,7 +473,13 @@ class MarketingController extends Controller
             }
         }
 
-        CompanyConfig::setConfig(CompanyConfig::MARKETING_LAST_CAMPAIGN_AT, date('Y-m-d H:i:s'), 'Última campaña de marketing enviada');
+        if ($finalizeCampaign && $sent > 0) {
+            CompanyConfig::setConfig(
+                CompanyConfig::MARKETING_LAST_CAMPAIGN_AT,
+                date('Y-m-d H:i:s'),
+                'Última campaña de marketing enviada'
+            );
+        }
 
         $elapsedTotal = number_format(microtime(true) - $startedAt, 1);
 
