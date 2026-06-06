@@ -32,6 +32,7 @@ class CompanyConfig extends ActiveRecord
     const SIMPEMOVIL_NUMBER = 'simemovil_number';
     const SIMPEMOVIL_LOGO_FILE = 'simemovil_logo_file';
     const COMPANY_REQUIREMENTS = 'company_requirements';
+    const FACEBOOK_PIXEL_ID = 'facebook_pixel_id';
     const INCIDENT_NOTIF_ENABLED = 'incident_notifications_enabled';
     const INCIDENT_NOTIF_FREQUENCY_DAYS = 'incident_notifications_frequency_days';
     const RENTAL_ORDER_PDF_FORMAT = 'rental_order_pdf_format';
@@ -307,6 +308,62 @@ class CompanyConfig extends ActiveRecord
             'simemovil_logo' => self::getSimpemovilLogoUrl(),
             'razon_social' => self::getConfig(self::COMPANY_RAZON_SOCIAL, ''),
         ];
+    }
+
+    /**
+     * Devuelve el valor configurado del Píxel de Facebook (Meta).
+     * Puede ser solo el ID numérico o el snippet completo pegado por el usuario.
+     */
+    public static function getFacebookPixelId(): string
+    {
+        return trim((string) self::getConfig(self::FACEBOOK_PIXEL_ID, ''));
+    }
+
+    /**
+     * Genera el código HTML del Píxel de Facebook (Meta) para inyectar en el <head>
+     * de las páginas públicas. Devuelve cadena vacía si no se ha configurado.
+     *
+     * Soporta dos formas de configuración:
+     *  - Solo el ID numérico del píxel (ej: 1234567890): se genera el snippet estándar.
+     *  - El snippet completo pegado desde el administrador de eventos de Meta: se
+     *    devuelve tal cual.
+     */
+    public static function renderFacebookPixel(): string
+    {
+        $value = self::getFacebookPixelId();
+        if ($value === '') {
+            return '';
+        }
+
+        // Si el usuario pegó el snippet completo, devolverlo tal cual.
+        if (stripos($value, 'fbq(') !== false || stripos($value, '<script') !== false) {
+            return $value;
+        }
+
+        // En caso contrario, tratarlo como ID del píxel y generar el snippet estándar.
+        $pixelId = preg_replace('/\D+/', '', $value);
+        if ($pixelId === '') {
+            return '';
+        }
+
+        return <<<HTML
+<!-- Meta Pixel Code -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '{$pixelId}');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id={$pixelId}&ev=PageView&noscript=1"/></noscript>
+<!-- End Meta Pixel Code -->
+HTML;
     }
 
     /**

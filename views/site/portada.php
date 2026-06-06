@@ -63,6 +63,8 @@ $today = date('d/m/Y');
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= Html::encode($this->title) ?></title>
 
+    <?= \app\models\CompanyConfig::renderFacebookPixel() ?>
+
     <meta name="description" content="<?= Html::encode($seoDescription) ?>">
     <meta name="keywords" content="<?= Html::encode($seoKeywords) ?>">
     <meta name="author" content="<?= Html::encode($razonSocial !== '' ? $razonSocial : $companyName) ?>">

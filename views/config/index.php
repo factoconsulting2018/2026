@@ -172,6 +172,24 @@ $conditionsModel = new \app\models\CompanyConfig();
                                         </div>
                                     </div>
 
+                                    <!-- Seguimiento / Marketing -->
+                                    <div class="mb-4">
+                                        <h5><i class="fab fa-facebook"></i> Seguimiento del sitio web</h5>
+                                        <?= Html::label('Píxel de Facebook (Meta)', 'facebook_pixel_id', ['class' => 'form-label']) ?>
+                                        <?= Html::textarea('facebook_pixel_id', \app\models\CompanyConfig::getFacebookPixelId(), [
+                                            'class' => 'form-control',
+                                            'id' => 'facebook_pixel_id',
+                                            'rows' => 3,
+                                            'placeholder' => 'Ej: 1234567890123456 (solo el ID) o pegue el código completo del píxel',
+                                        ]) ?>
+                                        <div class="form-text">
+                                            Pegue el <strong>ID numérico</strong> de su Píxel de Facebook (Meta) o el código completo.
+                                            Se cargará automáticamente en las páginas públicas del sitio
+                                            (portada, sobre la empresa, realizar alquiler y solicitud de membresía)
+                                            para hacer seguimiento de las visitas. Déjelo vacío para desactivarlo.
+                                        </div>
+                                    </div>
+
                                     <!-- Cuentas Bancarias -->
                                     <div class="mb-4">
                                         <h5><i class="fas fa-university"></i> Cuentas Bancarias</h5>

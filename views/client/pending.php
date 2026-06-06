@@ -97,6 +97,14 @@ $currentTab = $tab ?? 'pending';
                     'data-confirm' => '¿Está seguro que desea eliminar permanentemente este cliente? Esta acción no se puede deshacer.',
                     'data-method' => 'post'
                 ]);
+            } else if ($currentTab === 'rejected') {
+                // Botones para clientes rechazados: permitir devolverlos a Pendientes.
+                $buttons .= Html::a('<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">undo</span>Mover a Pendientes', ['restore-to-pending', 'id' => $model->id], [
+                    'class' => 'btn btn-warning me-2',
+                    'data-confirm' => '¿Sacar este cliente de la lista de rechazados y volver a marcarlo como pendiente?',
+                    'data-method' => 'post',
+                    'title' => 'Quitar del rechazo y devolverlo a Pendientes'
+                ]);
             }
             
             $buttons .= Html::a('<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">visibility</span>Ver', ['view', 'id' => $model->id], ['class' => 'btn btn-primary']);

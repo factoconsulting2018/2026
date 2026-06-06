@@ -38,6 +38,7 @@ class ClientController extends Controller
                     'delete-file' => ['POST'],
                     'list-files' => ['GET', 'POST'],
                     'download-file' => ['GET'],
+                    'restore-to-pending' => ['POST'],
                 ],
             ],
         ];
@@ -201,6 +202,31 @@ class ClientController extends Controller
             Yii::$app->session->setFlash('error', 'Error al rechazar el cliente');
         }
         return $this->redirect(['pending']);
+    }
+
+    /**
+     * Saca a un cliente de la lista de rechazados y lo vuelve a poner como pendiente,
+     * limpiando el motivo del rechazo previo.
+     */
+    public function actionRestoreToPending($id)
+    {
+        $model = $this->findModel($id);
+
+        if ($model->approval_status !== 'rejected') {
+            Yii::$app->session->setFlash('warning', 'El cliente no está marcado como rechazado.');
+            return $this->redirect(['pending', 'tab' => 'rejected']);
+        }
+
+        $model->approval_status = 'pending';
+        $model->motivo_rechazo = null;
+
+        if ($model->save(false)) {
+            Yii::$app->session->setFlash('success', 'Cliente movido nuevamente a Pendientes.');
+            return $this->redirect(['pending']);
+        }
+
+        Yii::$app->session->setFlash('error', 'No se pudo mover el cliente a Pendientes.');
+        return $this->redirect(['pending', 'tab' => 'rejected']);
     }
 
     /**

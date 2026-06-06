@@ -218,6 +218,11 @@ class ConfigController extends Controller
             CompanyConfig::setConfig('company_email', $post['company_email'] ?? '');
             CompanyConfig::setConfig('simemovil_number', $post['simemovil_number'] ?? '');
             CompanyConfig::setConfig('company_requirements', $post['company_requirements'] ?? '');
+            CompanyConfig::setConfig(
+                CompanyConfig::FACEBOOK_PIXEL_ID,
+                trim($post['facebook_pixel_id'] ?? ''),
+                'ID o código del Píxel de Facebook (Meta) para seguimiento del sitio web'
+            );
 
             // Actualizar cuentas bancarias
             if (isset($post['bank_accounts'])) {
