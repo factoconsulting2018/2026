@@ -237,6 +237,7 @@ class ClientController extends Controller
     public function actionCreate()
     {
         $model = new Client();
+        $model->status = 'active';
 
         if ($model->load(Yii::$app->request->post())) {
             // Limpiar mensajes flash antes de procesar (por si acaso hay mensajes previos de intentos anteriores)
@@ -260,7 +261,11 @@ class ClientController extends Controller
             
             if ($model->save()) {
                 // Establecer mensaje de éxito (ya limpiamos arriba)
-                Yii::$app->session->setFlash('success', 'Creado con éxito!');
+                $clientName = trim($model->full_name ?: trim(($model->nombre ?? '') . ' ' . ($model->apellido ?? '')));
+                $successMessage = $clientName !== ''
+                    ? 'Cliente "' . $clientName . '" creado exitosamente.'
+                    : 'Cliente creado exitosamente.';
+                Yii::$app->session->setFlash('success', $successMessage);
                 Yii::info('Cliente creado exitosamente con ID: ' . $model->id, 'client');
                 return $this->redirect(['index']);
             } else {

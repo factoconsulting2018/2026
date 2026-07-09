@@ -92,6 +92,11 @@ class Client extends ActiveRecord
             if ($insert && empty($this->approval_status)) {
                 $this->approval_status = 'approved';
             }
+
+            // Estado activo por defecto (evita error ENUM cuando el formulario no envía status)
+            if (empty($this->status) || !in_array($this->status, ['active', 'inactive'], true)) {
+                $this->status = 'active';
+            }
             
             // Convertir nombres a mayúsculas y dividir full_name en nombre y apellido
             if (!empty($this->full_name)) {

@@ -547,7 +547,9 @@ $this->registerCssFile('/css/client-form.css');
                     ])->dropDownList([
                         'active' => 'Activo',
                         'inactive' => 'Inactivo'
-                    ], ['prompt' => 'Seleccionar estado']) ?>
+                    ], $model->isNewRecord
+                        ? []
+                        : ['prompt' => 'Seleccionar estado']) ?>
                 </div>
             </div>
 

@@ -307,6 +307,14 @@ function showNotification(message, type = 'info') {
     }, 5000);
 }
 
+function redirectAfterClientCreate(redirectUrl, message) {
+    const finalMessage = message || '✅ Cliente creado exitosamente. Redirigiendo al listado...';
+    showNotification(finalMessage, 'success');
+    setTimeout(() => {
+        window.location.href = redirectUrl;
+    }, 1200);
+}
+
 // Función para mostrar alerta de éxito (modal Bootstrap)
 function showSuccessAlert(title, message) {
     // Remover modales anteriores si existen
@@ -774,6 +782,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log('Validación exitosa - usando AJAX para creación');
                 e.preventDefault(); // Solo prevenir para creaciones
             
+            showNotification('⏳ Guardando cliente, por favor espere...', 'info');
+            
             // Mostrar loading en el botón de envío
                 const submitBtn = form.querySelector('button[type="submit"]');
                 
@@ -811,7 +821,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     (window.location.origin + '/' + redirectUrl);
                             }
                             console.log('Redirigiendo a:', redirectUrl);
-                            window.location.href = redirectUrl;
+                            redirectAfterClientCreate(redirectUrl);
                             return null;
                         }
                     }
@@ -829,7 +839,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     (window.location.origin + '/' + redirectUrl);
                             }
                             console.log('Redirigiendo a:', redirectUrl);
-                            window.location.href = redirectUrl;
+                            redirectAfterClientCreate(redirectUrl);
                             return null;
                         }
                     }
@@ -859,7 +869,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         window.location.href = '/client/index';
                     } else if (html.includes('Gestión de Clientes') || html.includes('client-index')) {
                         // Si la respuesta es la página de listado, significa que se creó exitosamente
-                        window.location.href = '/client/index';
+                        redirectAfterClientCreate('/client/index');
                     } else {
                         // Para cualquier otro caso, recargar la página con la respuesta
                         console.log('Recargando página con respuesta HTML');
