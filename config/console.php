@@ -12,6 +12,9 @@ $config = [
         '@bower' => '@vendor/bower-asset',
         '@npm'   => '@vendor/npm-asset',
         '@tests' => '@app/tests',
+        // Necesarios para comandos CLI (cron WhatsApp, etc.) que resuelven rutas de uploads/logo
+        '@webroot' => '@app/web',
+        '@web' => '/',
     ],
     'components' => [
         'cache' => [
