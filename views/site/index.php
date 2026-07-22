@@ -37,6 +37,10 @@ $jsDispUrl = json_encode($calendarDispUrl);
                 <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 6px;">sticky_note_2</span>
                 Notas
             </a>
+            <button type="button" id="btn-resumen-dia" class="btn" style="background: linear-gradient(135deg, #25d366 0%, #128c7e 100%); color: #fff; border: none;">
+                <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 6px;">summarize</span>
+                Resumen del día
+            </button>
         </div>
     </div>
 
@@ -1106,6 +1110,63 @@ body {
     if (btnToday) btnToday.addEventListener('click', function () { loadMonth(RC_TODAY.substring(0, 7)); });
 
     loadMonth(currentMonth);
+})();
+</script>
+
+<script>
+(function () {
+    const btn = document.getElementById('btn-resumen-dia');
+    if (!btn) return;
+
+    const dailyUrl = <?= json_encode(Url::to(['config/whatsapp-daily-test'])) ?>;
+    const csrfParam = <?= json_encode(Yii::$app->request->csrfParam) ?>;
+    const csrfToken = <?= json_encode(Yii::$app->request->csrfToken) ?>;
+
+    function showToast(message, type) {
+        const el = document.createElement('div');
+        el.className = 'alert alert-' + (type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'danger')
+            + ' alert-dismissible fade show';
+        el.setAttribute('role', 'alert');
+        el.style.cssText = 'position:fixed;top:20px;right:20px;z-index:9999;min-width:300px;max-width:420px;';
+        el.innerHTML = message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+        document.body.appendChild(el);
+        setTimeout(function () {
+            if (el.parentNode) el.remove();
+        }, 6000);
+    }
+
+    btn.addEventListener('click', async function () {
+        const orig = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Enviando…';
+        try {
+            const body = new URLSearchParams();
+            body.set(csrfParam, csrfToken);
+            const res = await fetch(dailyUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+                body: body.toString(),
+            });
+            const data = await res.json();
+            if (data.success) {
+                showToast('✅ ' + (data.message || 'Resumen del día enviado por WhatsApp.'), 'success');
+            } else {
+                const errs = (data.report && data.report.errors && data.report.errors.length)
+                    ? '<br><small>' + data.report.errors.join('<br>') + '</small>'
+                    : '';
+                showToast('❌ ' + (data.message || 'No se pudo enviar el resumen.') + errs, 'danger');
+            }
+        } catch (e) {
+            showToast('❌ Error al enviar el resumen: ' + (e.message || 'desconocido'), 'danger');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = orig;
+        }
+    });
 })();
 </script>
 
