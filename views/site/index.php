@@ -944,7 +944,7 @@ body {
         if (!m) return '';
         var h = parseInt(m[1], 10);
         var min = m[2];
-        var p = h >= 12 ? 'PM' : 'AM';
+        var p = h >= 12 ? 'pm' : 'am';
         h = h % 12; if (h === 0) h = 12;
         return h + ':' + min + ' ' + p;
     }
@@ -956,23 +956,54 @@ body {
         return m[3] + '/' + m[2] + '/' + m[1];
     }
 
-    function formatCorreapartir(raw) {
+    function formatCorreapartir(raw, refDateStr) {
         if (!raw) return '';
         var s = String(raw).trim();
         if (!s || s.indexOf('0000-00-00') === 0) return '';
         var m = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2}))?/);
         if (!m) return s;
-        var label = m[3] + '/' + m[2] + '/' + m[1];
-        if (m[4] !== undefined && m[5] !== undefined) {
-            var t = formatTime12h(m[4] + ':' + m[5]);
-            if (t) label += ' ' + t;
+
+        var y = parseInt(m[1], 10);
+        var mo = parseInt(m[2], 10);
+        var d = parseInt(m[3], 10);
+        var target = new Date(y, mo - 1, d);
+        if (isNaN(target.getTime())) return s;
+
+        var ref;
+        if (refDateStr && /^\d{4}-\d{2}-\d{2}$/.test(refDateStr)) {
+            var rm = refDateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+            ref = new Date(parseInt(rm[1], 10), parseInt(rm[2], 10) - 1, parseInt(rm[3], 10));
+        } else {
+            var now = new Date();
+            ref = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         }
-        return label;
+
+        var timePart = '';
+        if (m[4] !== undefined && m[5] !== undefined) {
+            timePart = formatTime12h(m[4] + ':' + m[5]);
+        }
+
+        var diffDays = Math.round((target.getTime() - ref.getTime()) / 86400000);
+        var dayLabel;
+        if (diffDays === 0) {
+            dayLabel = 'Hoy';
+        } else if (diffDays === 1) {
+            dayLabel = 'Mañana';
+        } else if (diffDays === -1) {
+            dayLabel = 'Ayer';
+        } else {
+            var dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+            var meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+                'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+            dayLabel = dias[target.getDay()] + ', ' + d + ' de ' + meses[mo - 1] + ' ' + y;
+        }
+
+        return timePart ? (dayLabel + ' ' + timePart) : dayLabel;
     }
 
-    function correapartirBadge(it) {
+    function correapartirBadge(it, refDateStr) {
         if (!it || !it.correapartir_enabled) return '';
-        var f = formatCorreapartir(it.fecha_correapartir);
+        var f = formatCorreapartir(it.fecha_correapartir, refDateStr);
         if (!f) {
             return '<span class="badge bg-warning text-dark" title="Corre apartir habilitado">⏰ Corre apartir</span>';
         }
@@ -1022,7 +1053,7 @@ body {
                 var dRange = formatDateDMY(it.fecha_inicio) + (horaIni ? ' ' + horaIni : '')
                     + ' → ' + formatDateDMY(it.fecha_final) + (horaFin ? ' ' + horaFin : '');
                 var total = Number(it.total_precio || 0).toLocaleString('es-CR');
-                var correa = correapartirBadge(it);
+                var correa = correapartirBadge(it, RC_TODAY);
 
                 rows += '<tr>'
                     + '<td><strong>' + it.rental_id + '</strong></td>'
@@ -1060,7 +1091,7 @@ body {
                 var dRange = formatDateDMY(it.fecha_inicio) + (horaIni ? ' ' + horaIni : '')
                     + ' → ' + formatDateDMY(it.fecha_final) + (horaFin ? ' ' + horaFin : '');
                 var total = Number(it.total_precio || 0).toLocaleString('es-CR');
-                var correa = correapartirBadge(it);
+                var correa = correapartirBadge(it, RC_TODAY);
                 var headerId = accId + '_h_' + idx;
                 var bodyId = accId + '_b_' + idx;
 
