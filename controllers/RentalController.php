@@ -213,14 +213,26 @@ class RentalController extends Controller
     public function actionCreate()
     {
         $model = new Rental();
+        $movilizaPriorityEnabled = CompanyConfig::isMovilizaPriorityRuleEnabled();
 
         if ($model->load(Yii::$app->request->post())) {
             $model->is_async = 0;
             // Debug: Log de los datos recibidos
             Yii::info('DEBUG - Datos POST recibidos: ' . json_encode(Yii::$app->request->post()), 'rental');
             Yii::info('DEBUG - Modelo cargado - car_id: ' . $model->car_id . ', fecha_inicio: ' . $model->fecha_inicio . ', cantidad_dias: ' . $model->cantidad_dias, 'rental');
-            
-            if ($model->save()) {
+
+            $movilizaJustificacion = trim((string) Yii::$app->request->post('moviliza_justificacion', ''));
+            if (!$this->validateMovilizaPriorityRule($model, $movilizaJustificacion)) {
+                // Errores ya añadidos al modelo
+            } elseif ($movilizaJustificacion !== '') {
+                $prefix = "[Prioridad Moviliza] " . $movilizaJustificacion;
+                $existing = trim((string) ($model->condiciones_especiales ?? ''));
+                $model->condiciones_especiales = $existing !== ''
+                    ? $prefix . "\n\n" . $existing
+                    : $prefix;
+            }
+
+            if (!$model->hasErrors() && $model->save()) {
                 // Refrescar el modelo para obtener el total_precio calculado por la columna generada
                 $model->refresh();
                 
@@ -271,7 +283,11 @@ class RentalController extends Controller
             } else {
                 // Debug: Log de errores de validación
                 Yii::info('DEBUG - Errores de validación: ' . json_encode($model->errors), 'rental');
-                Yii::$app->session->setFlash('error', '❌ Error al crear el alquiler. Verifique los datos ingresados.');
+                if (!$model->hasErrors('car_id')) {
+                    Yii::$app->session->setFlash('error', '❌ Error al crear el alquiler. Verifique los datos ingresados.');
+                } else {
+                    Yii::$app->session->setFlash('error', '❌ ' . implode(' ', $model->getErrors('car_id')));
+                }
             }
         }
 
@@ -279,7 +295,81 @@ class RentalController extends Controller
             'model' => $model,
             'clients' => Client::find()->where(['status' => 'active'])->all(),
             'cars' => Car::find()->where(['status' => 'disponible'])->all(),
+            'movilizaPriorityEnabled' => $movilizaPriorityEnabled,
         ]);
+    }
+
+    /**
+     * Si la regla está activa y se elige Moviliza con Facto disponible, exige justificación (≥40).
+     */
+    private function validateMovilizaPriorityRule(Rental $model, string $justificacion): bool
+    {
+        if (!CompanyConfig::isMovilizaPriorityRuleEnabled()) {
+            return true;
+        }
+        $carId = (int) ($model->car_id ?? 0);
+        if ($carId <= 0) {
+            return true;
+        }
+        $car = Car::findOne($carId);
+        if (!$car || (string) ($car->empresa ?? '') !== 'Moviliza') {
+            return true;
+        }
+
+        $startDate = substr((string) ($model->fecha_inicio ?? ''), 0, 10);
+        $days = max(1, (int) ($model->cantidad_dias ?? 1));
+        if ($startDate === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $startDate)) {
+            return true;
+        }
+        try {
+            $endDate = (new \DateTime($startDate))
+                ->modify('+' . ($days - 1) . ' days')
+                ->format('Y-m-d');
+        } catch (\Throwable $e) {
+            return true;
+        }
+
+        $factoCount = $this->countAvailableFactoCars($startDate, $endDate);
+        if ($factoCount <= 0) {
+            return true;
+        }
+
+        if (mb_strlen($justificacion) < 40) {
+            $model->addError(
+                'car_id',
+                'Hay ' . $factoCount . ' vehículo(s) de Facto Rent a Car disponible(s). '
+                . 'Debe justificar por qué alquila Moviliza (mínimo 40 caracteres).'
+            );
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Cuenta vehículos Facto (no Moviliza) disponibles en el rango de fechas.
+     */
+    private function countAvailableFactoCars(string $startDate, string $endDate): int
+    {
+        $cars = Car::find()
+            ->where(['not in', 'status', ['fuera_servicio', 'mantenimiento']])
+            ->andWhere(['or',
+                ['<>', 'empresa', 'Moviliza'],
+                ['empresa' => null],
+                ['empresa' => ''],
+            ])
+            ->all();
+
+        $count = 0;
+        foreach ($cars as $car) {
+            if ((string) ($car->empresa ?? '') === 'Moviliza') {
+                continue;
+            }
+            if (CarAvailability::isCarAvailable((int) $car->id, $startDate, $endDate)) {
+                $count++;
+            }
+        }
+        return $count;
     }
 
     public function actionUpdate($id)

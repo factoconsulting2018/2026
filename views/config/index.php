@@ -89,6 +89,11 @@ $conditionsModel = new \app\models\CompanyConfig();
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="condicionales-tab" data-bs-toggle="tab" data-bs-target="#condicionales" type="button" role="tab" aria-controls="condicionales" aria-selected="false">
+                                <i class="fas fa-balance-scale text-warning"></i> Condicionales
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
                             <button class="nav-link" id="marketing-tab" data-bs-toggle="tab" data-bs-target="#marketing" type="button" role="tab" aria-controls="marketing" aria-selected="false">
                                 <i class="fas fa-bullhorn text-primary"></i> Marketing
                             </button>
@@ -548,6 +553,8 @@ $conditionsModel = new \app\models\CompanyConfig();
 #notificaciones-tab { background-color: #fff4e6; color: #d9480f; }
 #dekra-tab { background-color: #e6fcf5; color: #087f5b; }
 #whatsapp-tab { background-color: #d3f9d8; color: #2b8a3e; }
+#condicionales-tab { background-color: #fff3bf; color: #e67700; }
+#marketing-tab { background-color: #e7f5ff; color: #1864ab; }
 
 /* Permite que los tabs hagan wrap a varias filas si no caben en una sola */
 #configTabs.nav-tabs {
@@ -1442,6 +1449,47 @@ sudo docker-compose exec app php yii migrate</code></pre>
                             </div>
                         </div>
 
+                        <div class="tab-pane fade" id="condicionales" role="tabpanel" aria-labelledby="condicionales-tab">
+                            <div class="row mt-4">
+                                <div class="col-lg-8">
+                                    <h5 class="mb-3"><i class="fas fa-balance-scale text-warning"></i> Condicionales de alquiler</h5>
+                                    <p class="text-muted">
+                                        Reglas de negocio que se aplican al crear una orden en
+                                        <a href="<?= \yii\helpers\Url::to(['/rental/create']) ?>">Alquileres &gt; Crear</a>.
+                                    </p>
+
+                                    <?php $condForm = ActiveForm::begin([
+                                        'action' => ['config/update-condicionales'],
+                                        'method' => 'post',
+                                        'options' => ['class' => 'needs-validation', 'novalidate' => true],
+                                    ]); ?>
+
+                                    <div class="card border-warning mb-3">
+                                        <div class="card-body">
+                                            <div class="form-check form-switch mb-2">
+                                                <input type="hidden" name="condicional_moviliza_priority_enabled" value="0">
+                                                <input class="form-check-input" type="checkbox" role="switch"
+                                                       name="condicional_moviliza_priority_enabled" value="1"
+                                                       id="condicional_moviliza_priority_enabled"
+                                                       <?= !empty($movilizaPriorityEnabled) ? 'checked' : '' ?>>
+                                                <label class="form-check-label" for="condicional_moviliza_priority_enabled">
+                                                    <strong>Priorizar Facto Rent a Car antes de Moviliza</strong>
+                                                </label>
+                                            </div>
+                                            <p class="small text-muted mb-0">
+                                                Si está activo y hay vehículos de <strong>Facto Rent a Car</strong> disponibles
+                                                para las fechas de la orden, no se podrá alquilar un vehículo de
+                                                <strong>Moviliza</strong> sin justificar el motivo (mínimo 40 caracteres).
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar</button>
+                                    <?php ActiveForm::end(); ?>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="tab-pane fade" id="notificaciones" role="tabpanel" aria-labelledby="notificaciones-tab">
                             <div class="row mt-4">
                                 <div class="col-lg-8">
@@ -1561,6 +1609,12 @@ document.addEventListener('DOMContentLoaded', function() {
         var waTabBtn = document.getElementById('whatsapp-tab');
         if (waTabBtn) {
             (new bootstrap.Tab(waTabBtn)).show();
+        }
+    }
+    if (window.location.hash === '#condicionales' && window.bootstrap && window.bootstrap.Tab) {
+        var condTabBtn = document.getElementById('condicionales-tab');
+        if (condTabBtn) {
+            (new bootstrap.Tab(condTabBtn)).show();
         }
     }
     if (window.location.hash === '#marketing' && window.bootstrap && window.bootstrap.Tab) {

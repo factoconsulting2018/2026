@@ -86,6 +86,7 @@ class ConfigController extends Controller
             'rentalOrderPdfTextSizes' => CompanyConfig::getRentalOrderPdfTextSizes(),
             'rentalOrderPdfTextBaseSizes' => CompanyConfig::getRentalOrderPdfTextBaseSizes(),
             'whatsappConfig' => CompanyConfig::getWhatsAppConfig(),
+            'movilizaPriorityEnabled' => CompanyConfig::isMovilizaPriorityRuleEnabled(),
             'rentalOrderPdfTextFormValues' => (function () {
                 $base = CompanyConfig::getRentalOrderPdfTextBaseSizes();
                 return [
@@ -806,6 +807,26 @@ class ConfigController extends Controller
         }
 
         return $this->redirect(Url::to(['config/index']) . '#marketing');
+    }
+
+    /**
+     * Guarda reglas condicionales de negocio (prioridad Facto vs Moviliza, etc.).
+     */
+    public function actionUpdateCondicionales()
+    {
+        if (!Yii::$app->request->isPost) {
+            return $this->redirect(Url::to(['config/index']) . '#condicionales');
+        }
+
+        try {
+            $enabled = (string) Yii::$app->request->post('condicional_moviliza_priority_enabled', '0') === '1';
+            CompanyConfig::saveCondicionalesConfig($enabled);
+            Yii::$app->session->setFlash('success', 'Configuración de Condicionales guardada correctamente.');
+        } catch (\Throwable $e) {
+            Yii::$app->session->setFlash('error', 'Error al guardar Condicionales: ' . $e->getMessage());
+        }
+
+        return $this->redirect(Url::to(['config/index']) . '#condicionales');
     }
 
     // ==================== WhatsApp API ====================

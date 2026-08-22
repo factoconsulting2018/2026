@@ -77,6 +77,9 @@ class CompanyConfig extends ActiveRecord
     const MARKETING_SIGNATURE = 'marketing_signature';
     const MARKETING_LAST_CAMPAIGN_AT = 'marketing_last_campaign_at';
 
+    /** Priorizar vehículos Facto Rent a Car antes de alquilar Moviliza */
+    const CONDICIONAL_MOVILIZA_PRIORITY_ENABLED = 'condicional_moviliza_priority_enabled';
+
     // Directorios para archivos
     const UPLOAD_DIR = 'uploads/company/';
     const LOGO_DIR = 'uploads/company/logo/';
@@ -958,5 +961,23 @@ HTML;
         self::setConfig(self::MARKETING_BATCH_SIZE, (string) $batchSize, 'Cantidad de mensajes por lote antes de pausar');
         self::setConfig(self::MARKETING_BATCH_PAUSE, (string) $batchPause, 'Segundos de pausa al terminar un lote');
         self::setConfig(self::MARKETING_SIGNATURE, $signature, 'Firma anexada al pie de cada mensaje de campaña');
+    }
+
+    /**
+     * Si está activo, al crear una orden con vehículo Moviliza exige justificación
+     * cuando aún hay vehículos Facto Rent a Car disponibles.
+     */
+    public static function isMovilizaPriorityRuleEnabled(): bool
+    {
+        return self::getConfig(self::CONDICIONAL_MOVILIZA_PRIORITY_ENABLED, '1') === '1';
+    }
+
+    public static function saveCondicionalesConfig(bool $movilizaPriorityEnabled): void
+    {
+        self::setConfig(
+            self::CONDICIONAL_MOVILIZA_PRIORITY_ENABLED,
+            $movilizaPriorityEnabled ? '1' : '0',
+            'Exigir justificación al alquilar Moviliza si hay Facto disponible'
+        );
     }
 }

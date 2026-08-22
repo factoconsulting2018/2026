@@ -8,10 +8,13 @@ use yii\helpers\ArrayHelper;
 /** @var app\models\Rental $model */
 /** @var app\models\Client[] $clients */
 /** @var app\models\Car[] $cars */
+/** @var bool $movilizaPriorityEnabled */
 
 $this->title = 'Crear Alquiler';
 $this->params['breadcrumbs'][] = ['label' => 'Alquileres', 'url' => ['index']];
 $this->params['breadcrumbs'][] = $this->title;
+
+$movilizaPriorityEnabled = !empty($movilizaPriorityEnabled);
 
 $carDropdownItems = [];
 $carDropdownOptions = [];
@@ -482,7 +485,47 @@ foreach ($cars as $car) {
         </div>
     </div>
 
+    <?= Html::hiddenInput('moviliza_justificacion', (string) Yii::$app->request->post('moviliza_justificacion', ''), [
+        'id' => 'moviliza-justificacion',
+    ]) ?>
+
     <?php ActiveForm::end(); ?>
+
+    <!-- Modal: justificación al alquilar Moviliza con Facto disponible -->
+    <div class="modal fade" id="movilizaPriorityModal" tabindex="-1" aria-labelledby="movilizaPriorityModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header" style="background: linear-gradient(135deg, #e67700 0%, #d9480f 100%); color: #fff;">
+                    <h5 class="modal-title" id="movilizaPriorityModalLabel" style="color:#fff;">
+                        <span class="material-symbols-outlined align-middle" style="font-size:22px;margin-right:6px;">warning</span>
+                        Justifique el alquiler de Moviliza
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-2">
+                        Hay vehículos de <strong>Facto Rent a Car</strong> disponibles para estas fechas.
+                        Debe justificar por qué alquila <strong>Moviliza</strong> antes que Facto.
+                    </p>
+                    <p class="small text-muted mb-2" id="moviliza-facto-count-msg"></p>
+                    <label class="form-label fw-semibold" for="moviliza-justificacion-input">Motivo (mínimo 40 caracteres)</label>
+                    <textarea id="moviliza-justificacion-input" class="form-control" rows="4"
+                              maxlength="1000"
+                              placeholder="Explique el motivo del alquiler con Moviliza..."></textarea>
+                    <div class="d-flex justify-content-between align-items-center mt-2">
+                        <small class="text-muted"><span id="moviliza-justificacion-count">0</span> / 40 mínimo</small>
+                        <small id="moviliza-justificacion-hint" class="text-danger" style="display:none;">Faltan caracteres.</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-warning" id="moviliza-justificacion-confirm" disabled>
+                        Continuar y crear orden
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Modal: Búsqueda de cliente -->
     <div class="modal fade" id="clientSearchModal" tabindex="-1" aria-labelledby="clientSearchModalLabel" aria-hidden="true">
@@ -1988,3 +2031,100 @@ document.addEventListener('DOMContentLoaded', function() {
         margin-bottom: 0.5rem;
     }
 </style>
+
+<script>
+(function () {
+    var RULE_ENABLED = <?= $movilizaPriorityEnabled ? 'true' : 'false' ?>;
+    if (!RULE_ENABLED) return;
+
+    var form = document.querySelector('form.rental-form');
+    var carSelect = document.getElementById('rental-car_id');
+    var hiddenJust = document.getElementById('moviliza-justificacion');
+    var inputJust = document.getElementById('moviliza-justificacion-input');
+    var countEl = document.getElementById('moviliza-justificacion-count');
+    var hintEl = document.getElementById('moviliza-justificacion-hint');
+    var confirmBtn = document.getElementById('moviliza-justificacion-confirm');
+    var factoMsg = document.getElementById('moviliza-facto-count-msg');
+    var modalEl = document.getElementById('movilizaPriorityModal');
+    if (!form || !carSelect || !hiddenJust || !inputJust || !modalEl) return;
+
+    var allowSubmit = false;
+    var MIN_CHARS = 40;
+
+    function countFactoAvailableInSelect() {
+        var n = 0;
+        Array.prototype.forEach.call(carSelect.options, function (opt) {
+            if (!opt.value) return;
+            if ((opt.dataset.empresa || '') === 'Moviliza') return;
+            n++;
+        });
+        return n;
+    }
+
+    function selectedIsMoviliza() {
+        var opt = carSelect.options[carSelect.selectedIndex];
+        return !!(opt && opt.value && (opt.dataset.empresa || '') === 'Moviliza');
+    }
+
+    function syncCounter() {
+        var len = (inputJust.value || '').trim().length;
+        if (countEl) countEl.textContent = String(len);
+        var ok = len >= MIN_CHARS;
+        if (confirmBtn) confirmBtn.disabled = !ok;
+        if (hintEl) hintEl.style.display = ok || len === 0 ? 'none' : 'inline';
+        return ok;
+    }
+
+    inputJust.addEventListener('input', syncCounter);
+
+    if (confirmBtn) {
+        confirmBtn.addEventListener('click', function () {
+            if (!syncCounter()) return;
+            hiddenJust.value = (inputJust.value || '').trim();
+            allowSubmit = true;
+            if (window.bootstrap && window.bootstrap.Modal) {
+                var inst = bootstrap.Modal.getInstance(modalEl) || bootstrap.Modal.getOrCreateInstance(modalEl);
+                inst.hide();
+            }
+            // Re-disparar submit después de cerrar el modal
+            setTimeout(function () {
+                if (typeof form.requestSubmit === 'function') {
+                    form.requestSubmit();
+                } else {
+                    form.submit();
+                }
+            }, 200);
+        });
+    }
+
+    form.addEventListener('submit', function (e) {
+        if (allowSubmit) {
+            allowSubmit = false;
+            return;
+        }
+        if (!selectedIsMoviliza()) return;
+
+        var existing = (hiddenJust.value || '').trim();
+        if (existing.length >= MIN_CHARS) return;
+
+        var factoCount = countFactoAvailableInSelect();
+        if (factoCount <= 0) return;
+
+        e.preventDefault();
+        e.stopImmediatePropagation();
+
+        if (factoMsg) {
+            factoMsg.textContent = 'Facto Rent a Car disponibles en el listado: ' + factoCount + '.';
+        }
+        inputJust.value = existing;
+        syncCounter();
+
+        if (window.bootstrap && window.bootstrap.Modal) {
+            bootstrap.Modal.getOrCreateInstance(modalEl).show();
+        } else {
+            modalEl.style.display = 'block';
+        }
+        return false;
+    }, true); // capture: antes que otros listeners de validación
+})();
+</script>
