@@ -919,11 +919,9 @@ HTML;
 
     public static function wrapRentalConditionsHtml(string $html): string
     {
-        if (self::getRentalOrderPdfFormat() !== 'moderna') {
-            return $html;
-        }
-
-        return '<div style="padding-top:8px;"><h2 style="font-size:13pt;text-align:center;margin:0 0 12px;font-family:helvetica,sans-serif;">TÉRMINOS Y CONDICIONES DEL<br>ALQUILER</h2>' . $html . '</div>';
+        // El título "TÉRMINOS Y CONDICIONES..." ya lo pone views/pdf/pdf-orden.php (.t-title).
+        // No se vuelve a insertar aquí para evitar espacio vacío y salto de página.
+        return $html;
     }
 
     /**

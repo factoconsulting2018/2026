@@ -1300,26 +1300,27 @@ class PdfController extends Controller
     {
         // Usar HTML personalizado si se provee
         if (!empty($customHtml)) {
-            return '<style>body { font-family: "Times New Roman", Georgia, serif; font-size: 10px; }</style><div>' . $customHtml . '</div>';
+            return $this->normalizeConditionsHtml($customHtml);
         }
 
         // Usar HTML global desde configuración si existe
         $globalHtml = \app\models\CompanyConfig::getConfig('rental_conditions_html', '');
         if (!empty($globalHtml)) {
-            return '<style>body { font-family: Arial, sans-serif; font-size: 10px; }</style><div>' . $globalHtml . '</div>';
+            return $this->normalizeConditionsHtml($globalHtml);
         }
 
         // Fallback: contenido por defecto "Reservación firme contra depósito"
         $html = '
         <style>
-            body { font-family: "Times New Roman", Georgia, serif; font-size: 10px; line-height: 1.6; }
-            h2 { font-size: 14px; font-weight: bold; text-align: center; margin-bottom: 10px; }
-            h3 { font-size: 12px; font-weight: bold; margin-top: 12px; margin-bottom: 6px; }
-            h4 { font-size: 11px; font-weight: bold; margin-top: 10px; margin-bottom: 5px; }
-            ol { margin-left: 15px; padding-left: 10px; }
-            li { margin-bottom: 4px; }
+            .cond-fallback { font-family: "Times New Roman", Georgia, serif; font-size: 9pt; line-height: 1.3; }
+            .cond-fallback h2 { font-size: 11pt; font-weight: bold; text-align: center; margin: 2px 0 6px 0; }
+            .cond-fallback h3 { font-size: 10pt; font-weight: bold; margin: 6px 0 3px 0; }
+            .cond-fallback h4 { font-size: 9.5pt; font-weight: bold; margin: 5px 0 2px 0; }
+            .cond-fallback ol { margin: 2px 0 4px 16px; padding-left: 8px; }
+            .cond-fallback li { margin-bottom: 2px; }
+            .cond-fallback p { margin: 3px 0; }
         </style>
-        <div style="padding: 15px;">
+        <div class="cond-fallback">
         <h2>Reservación firme contra depósito</h2>
         <h3>Indicaciones Importantes:</h3>
         
@@ -1352,6 +1353,24 @@ class PdfController extends Controller
         ';
         
         return $html;
+    }
+
+    /**
+     * Compacta el HTML de condiciones para que quepa en una página del PDF.
+     */
+    private function normalizeConditionsHtml(string $html): string
+    {
+        $html = trim($html);
+        // Quitar paddings/margins grandes que empujan contenido a una 2ª hoja.
+        $html = preg_replace('/padding\s*:\s*\d+px/i', 'padding: 0', $html) ?? $html;
+        $html = preg_replace('/padding-top\s*:\s*\d+px/i', 'padding-top: 0', $html) ?? $html;
+        $html = preg_replace('/padding-bottom\s*:\s*\d+px/i', 'padding-bottom: 0', $html) ?? $html;
+        $html = preg_replace('/margin-top\s*:\s*\d+px/i', 'margin-top: 4px', $html) ?? $html;
+        $html = preg_replace('/margin-bottom\s*:\s*\d+px/i', 'margin-bottom: 4px', $html) ?? $html;
+        $html = preg_replace('/font-size\s*:\s*1[1-6]px/i', 'font-size: 9pt', $html) ?? $html;
+        $html = preg_replace('/line-height\s*:\s*1\.[5-9]/i', 'line-height: 1.3', $html) ?? $html;
+
+        return '<div class="cond-normalized" style="margin:0;padding:0;">' . $html . '</div>';
     }
 
     /**

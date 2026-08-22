@@ -143,12 +143,53 @@ $txtEmpresaLinea = (int) ($t['empresa_linea'] ?? 24);
     .t-title {
         background: #0b1f4a;
         color: #fff;
-        padding: 16px 20px;
-        font-size: 20pt;
+        padding: 8px 14px;
+        font-size: 14pt;
         font-weight: 800;
-        margin-bottom: 16px;
+        margin: 0 0 6px 0;
     }
-    .cond-body { font-size: 10pt; line-height: 1.45; }
+    .cond-body {
+        font-size: 9pt;
+        line-height: 1.3;
+        margin: 0;
+        padding: 0;
+    }
+    .cond-body h2 {
+        font-size: 11pt;
+        margin: 2px 0 6px 0;
+        padding: 0;
+        text-align: center;
+    }
+    .cond-body h3 {
+        font-size: 10pt;
+        margin: 6px 0 3px 0;
+        padding: 0;
+    }
+    .cond-body h4 {
+        font-size: 9.5pt;
+        margin: 5px 0 2px 0;
+        padding: 0;
+    }
+    .cond-body ol,
+    .cond-body ul {
+        margin: 2px 0 4px 16px;
+        padding-left: 8px;
+    }
+    .cond-body li {
+        margin-bottom: 2px;
+    }
+    .cond-body p {
+        margin: 3px 0;
+    }
+    .cond-body > div,
+    .cond-body div {
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+    }
+    .cond-body .cond-normalized {
+        margin: 0 !important;
+        padding: 0 !important;
+    }
     .orden-cambio-banner {
         background: #fff3cd;
         border: 1px solid #ffc107;
