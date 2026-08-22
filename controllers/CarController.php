@@ -33,6 +33,7 @@ class CarController extends Controller
                 'class' => VerbFilter::class,
                 'actions' => [
                     'delete' => ['POST'],
+                    'toggle-skip-priority' => ['POST'],
                 ],
             ],
         ];
@@ -434,6 +435,31 @@ class CarController extends Controller
         $model->save(false);
 
         Yii::$app->session->setFlash('success', '🗑️ Vehículo eliminado exitosamente');
+        return $this->redirect(['index']);
+    }
+
+    /**
+     * Activa/desactiva "Saltar prioridad" para condicionales Facto vs Moviliza.
+     */
+    public function actionToggleSkipPriority($id)
+    {
+        $model = $this->findModel($id);
+        $model->skip_priority = $model->skipsPriority() ? 0 : 1;
+        if ($model->save(false, ['skip_priority', 'updated_at'])) {
+            Yii::$app->session->setFlash(
+                'success',
+                $model->skipsPriority()
+                    ? '✅ «Saltar prioridad» activado: este vehículo no bloquea alquileres Moviliza.'
+                    : '✅ «Saltar prioridad» desactivado: vuelve a contar en la prioridad Facto.'
+            );
+        } else {
+            Yii::$app->session->setFlash('error', 'No se pudo actualizar la opción de prioridad.');
+        }
+
+        $referrer = Yii::$app->request->referrer;
+        if ($referrer) {
+            return $this->redirect($referrer);
+        }
         return $this->redirect(['index']);
     }
 

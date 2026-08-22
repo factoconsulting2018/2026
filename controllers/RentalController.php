@@ -312,7 +312,7 @@ class RentalController extends Controller
             return true;
         }
         $car = Car::findOne($carId);
-        if (!$car || (string) ($car->empresa ?? '') !== 'Moviliza') {
+        if (!$car || !$car->isMoviliza()) {
             return true;
         }
 
@@ -362,7 +362,7 @@ class RentalController extends Controller
 
         $count = 0;
         foreach ($cars as $car) {
-            if ((string) ($car->empresa ?? '') === 'Moviliza') {
+            if ($car->isMoviliza() || $car->skipsPriority()) {
                 continue;
             }
             if (CarAvailability::isCarAvailable((int) $car->id, $startDate, $endDate)) {
@@ -1004,6 +1004,7 @@ class RentalController extends Controller
                     'placa' => $car->placa,
                     'status' => $car->status,
                     'empresa' => (string) ($car->empresa ?? ''),
+                    'skip_priority' => $car->skipsPriority() ? 1 : 0,
                     'disponible' => $isAvailable,
                 ];
 

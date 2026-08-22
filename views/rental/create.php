@@ -23,6 +23,7 @@ foreach ($cars as $car) {
     $carDropdownOptions[$car->id] = [
         'data-empresa' => (string) ($car->empresa ?? ''),
         'data-status' => (string) ($car->status ?? ''),
+        'data-skip-priority' => $car->skipsPriority() ? '1' : '0',
     ];
 }
 ?>
@@ -1734,9 +1735,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     const option = document.createElement('option');
                     option.value = car.id;
                     const empresa = car.empresa || '';
-                    option.textContent = `${car.nombre} (${car.placa})${empresa === 'Moviliza' ? ' · Moviliza' : ''}`;
+                    const isMov = String(empresa).toLowerCase() === 'moviliza';
+                    option.textContent = `${car.nombre} (${car.placa})${isMov ? ' · Moviliza' : ''}`;
                     option.dataset.status = car.status || '';
                     option.dataset.empresa = empresa;
+                    option.dataset.skipPriority = car.skip_priority ? '1' : '0';
                     carSelect.appendChild(option);
                 });
                 
@@ -1992,18 +1995,18 @@ document.addEventListener('DOMContentLoaded', function() {
         font-style: italic;
     }
     
-    .form-select option[data-status="alquilado"]:not([data-empresa="Moviliza"]) {
+    .form-select option[data-status="alquilado"]:not([data-empresa="Moviliza" i]) {
         color: #dc3545;
     }
     
-    .form-select option[data-status="disponible"]:not([data-empresa="Moviliza"]) {
+    .form-select option[data-status="disponible"]:not([data-empresa="Moviliza" i]) {
         color: #28a745;
         font-weight: 700;
     }
 
     /* Vehículos Moviliza: gris (no rojo por estado alquilado/mantenimiento) */
-    #rental-car_id option[data-empresa="Moviliza"],
-    .form-select option[data-empresa="Moviliza"] {
+    #rental-car_id option[data-empresa="Moviliza" i],
+    .form-select option[data-empresa="Moviliza" i] {
         color: #6c757d !important;
         font-weight: 500;
     }
@@ -2051,11 +2054,16 @@ document.addEventListener('DOMContentLoaded', function() {
     var allowSubmit = false;
     var MIN_CHARS = 40;
 
+    function isMovilizaEmpresa(empresa) {
+        return String(empresa || '').toLowerCase() === 'moviliza';
+    }
+
     function countFactoAvailableInSelect() {
         var n = 0;
         Array.prototype.forEach.call(carSelect.options, function (opt) {
             if (!opt.value) return;
-            if ((opt.dataset.empresa || '') === 'Moviliza') return;
+            if (isMovilizaEmpresa(opt.dataset.empresa)) return;
+            if (String(opt.dataset.skipPriority || '0') === '1') return;
             n++;
         });
         return n;
@@ -2063,7 +2071,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function selectedIsMoviliza() {
         var opt = carSelect.options[carSelect.selectedIndex];
-        return !!(opt && opt.value && (opt.dataset.empresa || '') === 'Moviliza');
+        return !!(opt && opt.value && isMovilizaEmpresa(opt.dataset.empresa));
     }
 
     function syncCounter() {

@@ -108,6 +108,20 @@ $this->params['breadcrumbs'][] = $this->title;
                                        title="Nuevo alquiler">
                                         <span class="material-symbols-outlined" style="font-size: 16px;">add_circle</span>
                                     </a>
+                                    <?= Html::a(
+                                        '<span class="material-symbols-outlined" style="font-size: 16px;">' . ($model->skipsPriority() ? 'filter_alt_off' : 'filter_alt') . '</span>',
+                                        ['toggle-skip-priority', 'id' => $model->id],
+                                        [
+                                            'class' => 'btn btn-sm ' . ($model->skipsPriority() ? 'btn-warning' : 'btn-outline-secondary'),
+                                            'title' => $model->skipsPriority()
+                                                ? 'Saltar prioridad: ON (no bloquea Moviliza) — clic para desactivar'
+                                                : 'Saltar prioridad: OFF — clic para activar (vehículo opcional)',
+                                            'data-method' => 'post',
+                                            'data-confirm' => $model->skipsPriority()
+                                                ? '¿Desactivar «Saltar prioridad» para este vehículo?'
+                                                : '¿Activar «Saltar prioridad»? Este vehículo no contará como prioridad Facto frente a Moviliza.',
+                                        ]
+                                    ) ?>
                                     <a href="<?= Url::to(['delete', 'id' => $model->id]) ?>"
                                        class="btn btn-sm btn-outline-danger"
                                        title="Eliminar"
@@ -151,7 +165,12 @@ $this->params['breadcrumbs'][] = $this->title;
                                 </span>
                                 <?php endif; ?>
                             </td>
-                            <td class="d-none d-md-table-cell"><?= Html::encode($model->empresa ?? 'N/A') ?></td>
+                            <td class="d-none d-md-table-cell">
+                                <?= Html::encode($model->empresa ?? 'N/A') ?>
+                                <?php if ($model->skipsPriority()): ?>
+                                    <span class="badge bg-warning text-dark ms-1" title="No cuenta como prioridad Facto">Saltar prioridad</span>
+                                <?php endif; ?>
+                            </td>
                             <td class="d-none d-md-table-cell">
                                 <strong>₡<?= number_format($model->precio_dia ?? 0, 2) ?></strong>
                             </td>
@@ -172,6 +191,20 @@ $this->params['breadcrumbs'][] = $this->title;
                                        title="Nuevo alquiler">
                                         <span class="material-symbols-outlined" style="font-size: 16px;">add_circle</span>
                                     </a>
+                                    <?= Html::a(
+                                        '<span class="material-symbols-outlined" style="font-size: 16px;">' . ($model->skipsPriority() ? 'filter_alt_off' : 'filter_alt') . '</span>',
+                                        ['toggle-skip-priority', 'id' => $model->id],
+                                        [
+                                            'class' => 'btn btn-sm ' . ($model->skipsPriority() ? 'btn-warning' : 'btn-outline-secondary'),
+                                            'title' => $model->skipsPriority()
+                                                ? 'Saltar prioridad: ON (no bloquea Moviliza) — clic para desactivar'
+                                                : 'Saltar prioridad: OFF — clic para activar (vehículo opcional)',
+                                            'data-method' => 'post',
+                                            'data-confirm' => $model->skipsPriority()
+                                                ? '¿Desactivar «Saltar prioridad» para este vehículo?'
+                                                : '¿Activar «Saltar prioridad»? Este vehículo no contará como prioridad Facto frente a Moviliza.',
+                                        ]
+                                    ) ?>
                                     <a href="<?= Url::to(['delete', 'id' => $model->id]) ?>" 
                                        class="btn btn-sm btn-outline-danger" 
                                        title="Eliminar"

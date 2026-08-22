@@ -26,6 +26,7 @@ use yii\web\UploadedFile;
  * @property string $empresa_seguro
  * @property string $telefono_seguro
  * @property string $empresa
+ * @property int $skip_priority
  * @property string $status
  * @property string $created_at
  * @property string $updated_at
@@ -59,9 +60,11 @@ class Car extends ActiveRecord
     {
         return [
             [['nombre', 'placa'], 'required'],
-            [['marca_id', 'cantidad_pasajeros', 'facebook_promo_enabled'], 'integer'],
+            [['marca_id', 'cantidad_pasajeros', 'facebook_promo_enabled', 'skip_priority'], 'integer'],
             [['facebook_promo_enabled'], 'default', 'value' => 0],
             [['facebook_promo_enabled'], 'in', 'range' => [0, 1]],
+            [['skip_priority'], 'default', 'value' => 0],
+            [['skip_priority'], 'in', 'range' => [0, 1]],
             [['created_at', 'updated_at'], 'safe'],
             [['car_id', 'nombre', 'imagen', 'facebook_banner', 'facebook_promo_slug', 'placa', 'vin'], 'string', 'max' => 255],
             [['facebook_promo_slug'], 'string', 'max' => 120],
@@ -114,6 +117,7 @@ class Car extends ActiveRecord
             'empresa_seguro' => 'Empresa de Seguro',
             'telefono_seguro' => 'Teléfono de Seguro',
             'empresa' => 'Empresa',
+            'skip_priority' => 'Saltar prioridad Facto',
             'status' => 'Estado',
             'created_at' => 'Fecha de Creación',
             'updated_at' => 'Fecha de Actualización',
@@ -132,6 +136,7 @@ class Car extends ActiveRecord
             }
 
             $this->facebook_promo_enabled = (int) (bool) $this->facebook_promo_enabled;
+            $this->skip_priority = (int) (bool) $this->skip_priority;
 
             if (!$this->facebook_promo_enabled) {
                 // Mantener slug y banner por si se reactiva; solo desactiva la promo.
@@ -171,6 +176,23 @@ class Car extends ActiveRecord
         $random = mt_rand(100, 999); // 3 dígitos
         $suffix = mt_rand(100, 999); // 3 dígitos más
         return $random . $suffix; // Total: 6 caracteres
+    }
+
+    /**
+     * ¿Es vehículo Moviliza? (tolerante a mayúsculas por beforeSave).
+     */
+    public function isMoviliza(): bool
+    {
+        return strcasecmp(trim((string) ($this->empresa ?? '')), 'Moviliza') === 0;
+    }
+
+    /**
+     * ¿Se excluye de la prioridad Facto en condicionales?
+     * (vehículos opcionales: camión, etc.)
+     */
+    public function skipsPriority(): bool
+    {
+        return (int) ($this->skip_priority ?? 0) === 1;
     }
 
     /**

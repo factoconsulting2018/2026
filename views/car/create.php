@@ -53,6 +53,23 @@ $this->registerJsFile('@web/js/form-validation.js', ['depends' => [yii\web\Jquer
                         'Facto Rent a Car' => 'Facto Rent a Car',
                         'Moviliza' => 'Moviliza'
                     ], ['required' => true]) ?>
+
+                    <div class="form-check form-switch mb-3 p-3 border rounded" style="background:#fff8e6;">
+                        <?= Html::activeCheckbox($model, 'skip_priority', [
+                            'class' => 'form-check-input',
+                            'id' => 'car-skip_priority',
+                            'uncheck' => '0',
+                            'value' => '1',
+                            'label' => false,
+                        ]) ?>
+                        <label class="form-check-label" for="car-skip_priority">
+                            <strong>Saltar prioridad Facto</strong>
+                            <span class="d-block small text-muted">
+                                Si está activo, este vehículo (ej. camión) no se toma como prioridad
+                                sobre sedanes de Moviliza en las condicionales de alquiler.
+                            </span>
+                        </label>
+                    </div>
                     
                     <?= $form->field($model, 'status')->dropDownList([
                         '' => 'Seleccionar estado...',
