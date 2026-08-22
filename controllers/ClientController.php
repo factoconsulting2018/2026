@@ -84,7 +84,18 @@ class ClientController extends Controller
         } elseif ($tipo === 'aliado') {
             $query->andWhere(['es_aliado' => 1]);
         }
-        
+
+        // Filtro por letra del abecedario (inicial del nombre)
+        $letra = strtoupper(trim((string) Yii::$app->request->get('letra', '')));
+        if (preg_match('/^[A-Z]$/', $letra)) {
+            // Collation suele ser case-insensitive; el prefijo evita traer otras letras.
+            $query->andWhere(['like', 'full_name', $letra . '%', false]);
+        } elseif ($letra === '#') {
+            $query->andWhere(['not', ['regexp', 'full_name', '^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]']]);
+        } else {
+            $letra = '';
+        }
+
         $dataProvider = new ActiveDataProvider([
             'query' => $query,
             'pagination' => [
@@ -102,6 +113,7 @@ class ClientController extends Controller
             'search' => $search,
             'tipo' => $tipo,
             'estado' => $estado,
+            'letra' => $letra,
         ]);
     }
 

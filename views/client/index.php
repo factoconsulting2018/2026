@@ -117,7 +117,70 @@ $this->registerCss('
             border-radius: 10px;
         }
     }
+
+    .client-alphabet {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: center;
+        width: 100%;
+        padding: 12px 14px;
+        background: #fff;
+        border: 1px solid #e6ecf3;
+        border-radius: 14px;
+        box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+        margin-bottom: 1rem;
+    }
+
+    .client-alphabet-label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #5b6b82;
+        margin-right: 4px;
+        white-space: nowrap;
+    }
+
+    .client-alphabet a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 34px;
+        height: 34px;
+        padding: 0 8px;
+        border-radius: 10px;
+        border: 1px solid #d9e2ec;
+        background: #ffffff;
+        color: #1b305b;
+        font-weight: 700;
+        font-size: 0.9rem;
+        text-decoration: none;
+        transition: all 0.15s ease;
+    }
+
+    .client-alphabet a:hover {
+        background: #eef4ff;
+        border-color: #b8cae6;
+        color: #163055;
+    }
+
+    .client-alphabet a.active {
+        background: linear-gradient(135deg, #1b305b 0%, #22487a 100%);
+        border-color: #1b305b;
+        color: #ffffff;
+        box-shadow: 0 4px 10px rgba(27, 48, 91, 0.2);
+    }
+
+    @media (max-width: 768px) {
+        .client-alphabet a {
+            min-width: 32px;
+            height: 32px;
+            font-size: 0.85rem;
+        }
+    }
 ');
+
+/** @var string $letra */
+$letra = isset($letra) ? (string) $letra : '';
 
 // Forzar conteo antes de armar el resumen (evita "0 - 0 de 0").
 $totalCount = (int) $dataProvider->getTotalCount();
@@ -228,9 +291,42 @@ $renderPaginationBar = static function () use ($pagerConfig, $start, $end, $tota
                     <button type="submit" class="btn btn-primary me-2"><span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">search</span>Buscar</button>
                     <a href="<?= Url::to(['index']) ?>" class="btn btn-secondary"><span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">clear</span>Limpiar</a>
                 </div>
+                <?php if ($letra !== ''): ?>
+                    <input type="hidden" name="letra" value="<?= Html::encode($letra) ?>">
+                <?php endif; ?>
             </form>
         </div>
     </div>
+
+    <?php
+    $alphabetBase = array_filter([
+        'search' => $search !== null && $search !== '' ? $search : null,
+        'tipo' => $tipo !== null && $tipo !== '' ? $tipo : null,
+        'estado' => ($estado !== null && $estado !== '' && $estado !== 'all') ? $estado : null,
+    ], static function ($v) {
+        return $v !== null && $v !== '';
+    });
+    $letters = range('A', 'Z');
+    ?>
+    <nav class="client-alphabet" aria-label="Filtrar por letra">
+        <span class="client-alphabet-label">
+            <span class="material-symbols-outlined align-middle" style="font-size:18px;">sort_by_alpha</span>
+            Letra:
+        </span>
+        <a href="<?= Html::encode(Url::to(array_merge(['index'], $alphabetBase))) ?>"
+           class="<?= $letra === '' ? 'active' : '' ?>"
+           title="Todas las letras">Todos</a>
+        <?php foreach ($letters as $L):
+            $url = Url::to(array_merge(['index'], $alphabetBase, ['letra' => $L]));
+            ?>
+            <a href="<?= Html::encode($url) ?>"
+               class="<?= $letra === $L ? 'active' : '' ?>"
+               title="Nombres que empiezan con <?= Html::encode($L) ?>"><?= Html::encode($L) ?></a>
+        <?php endforeach; ?>
+        <a href="<?= Html::encode(Url::to(array_merge(['index'], $alphabetBase, ['letra' => '#']))) ?>"
+           class="<?= $letra === '#' ? 'active' : '' ?>"
+           title="Nombres que no empiezan con letra">#</a>
+    </nav>
 
     <?php Pjax::begin([
         'id' => 'client-index-pjax',
