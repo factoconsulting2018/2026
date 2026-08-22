@@ -154,7 +154,7 @@ $jsDispUrl = json_encode($calendarDispUrl);
 
     <!-- ===== Modal: detalle de alquileres del día ===== -->
     <div class="modal fade" id="rcDayModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable rc-day-modal-dialog">
             <div class="modal-content">
                 <div class="modal-header rc-modal-header" style="background: linear-gradient(135deg, #22487a 0%, #0d001e 100%);">
                     <h5 class="modal-title" style="color: #ffffff !important;">
@@ -738,6 +738,54 @@ body {
 .rc-modal-header .modal-title,
 .rc-modal-header .modal-title * { color: #ffffff !important; }
 
+/* Modal de alquileres del día: más ancho y sin corte horizontal */
+.rc-day-modal-dialog {
+    max-width: min(1200px, 96vw);
+    width: 96vw;
+    margin-left: auto;
+    margin-right: auto;
+}
+#rcDayModal .modal-body {
+    overflow-x: hidden;
+}
+#rcDayModal .rc-day-table-wrap {
+    overflow-x: visible;
+}
+#rcDayModal .rc-day-table {
+    width: 100%;
+    table-layout: fixed;
+    margin-bottom: 0.5rem;
+}
+#rcDayModal .rc-day-table th,
+#rcDayModal .rc-day-table td {
+    vertical-align: middle;
+    word-wrap: break-word;
+    overflow-wrap: anywhere;
+    white-space: normal;
+}
+#rcDayModal .rc-day-table th:nth-child(1),
+#rcDayModal .rc-day-table td:nth-child(1) { width: 9%; }
+#rcDayModal .rc-day-table th:nth-child(2),
+#rcDayModal .rc-day-table td:nth-child(2) { width: 18%; }
+#rcDayModal .rc-day-table th:nth-child(3),
+#rcDayModal .rc-day-table td:nth-child(3) { width: 18%; }
+#rcDayModal .rc-day-table th:nth-child(4),
+#rcDayModal .rc-day-table td:nth-child(4) { width: 28%; }
+#rcDayModal .rc-day-table th:nth-child(5),
+#rcDayModal .rc-day-table td:nth-child(5) { width: 10%; }
+#rcDayModal .rc-day-table th:nth-child(6),
+#rcDayModal .rc-day-table td:nth-child(6) { width: 9%; }
+#rcDayModal .rc-day-table th:nth-child(7),
+#rcDayModal .rc-day-table td:nth-child(7) { width: 8%; }
+#rcDayModal .rc-correa-badge {
+    display: inline-block;
+    white-space: normal;
+    text-align: left;
+    line-height: 1.35;
+    max-width: 100%;
+    font-weight: 600;
+}
+
 .rc-day-accordion .accordion-item {
     border-radius: 8px;
     overflow: hidden;
@@ -1005,9 +1053,9 @@ body {
         if (!it || !it.correapartir_enabled) return '';
         var f = formatCorreapartir(it.fecha_correapartir, refDateStr);
         if (!f) {
-            return '<span class="badge bg-warning text-dark" title="Corre apartir habilitado">⏰ Corre apartir</span>';
+            return '<span class="badge bg-warning text-dark rc-correa-badge" title="Corre apartir habilitado">⏰ Corre apartir</span>';
         }
-        return '<span class="badge bg-warning text-dark" title="Corre apartir">⏰ Corre apartir: ' + f + '</span>';
+        return '<span class="badge bg-warning text-dark rc-correa-badge" title="Corre apartir">⏰ Corre apartir: ' + f + '</span>';
     }
 
     function showDay(dateStr) {
@@ -1074,8 +1122,8 @@ body {
                     + '</tr>';
             });
 
-            var deskTable = '<div class="table-responsive d-none d-md-block">'
-                + '<table class="table table-sm table-hover align-middle mb-2">'
+            var deskTable = '<div class="rc-day-table-wrap d-none d-md-block">'
+                + '<table class="table table-sm table-hover align-middle mb-2 rc-day-table">'
                 + '<thead class="table-light"><tr>'
                 + '<th>Orden</th><th>Cliente</th><th>Vehículo</th><th>Periodo</th><th>Estado</th><th class="text-end">Total</th><th></th>'
                 + '</tr></thead>'
