@@ -82,6 +82,14 @@ $txtEmpresaLinea = (int) ($t['empresa_linea'] ?? 24);
     }
     .empresa-band .veh-img { width: <?= $vehImgColW ?>px; text-align: right; vertical-align: middle; }
     .empresa-band .veh-img img { max-width: <?= $vehImgMaxW ?>px; max-height: <?= $vehImgMaxH ?>px; }
+    .empresa-band .veh-img .fecha-creacion {
+        display: block;
+        margin-top: 6px;
+        font-size: 8.5pt;
+        color: #0b1f4a;
+        line-height: 1.2;
+        text-align: right;
+    }
 
     .cuadro { width: 100%; border-collapse: collapse; margin-top: 14px; }
     .cuadro th {
@@ -243,6 +251,9 @@ $txtEmpresaLinea = (int) ($t['empresa_linea'] ?? 24);
             <td class="veh-img">
                 <?php if (!empty($d['vehiculo']['imagen_fs'])): ?>
                     <img src="<?= $h($d['vehiculo']['imagen_fs']) ?>" alt="vehículo" style="max-width: <?= $vehImgMaxW ?>px; max-height: <?= $vehImgMaxH ?>px;">
+                <?php endif; ?>
+                <?php if (!empty($d['fecha_creacion'])): ?>
+                    <span class="fecha-creacion"><?= $h($d['fecha_creacion']) ?></span>
                 <?php endif; ?>
             </td>
         </tr>

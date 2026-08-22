@@ -82,23 +82,61 @@ class RentalController extends Controller
         $query = Rental::find()
             ->where(['is_async' => 0, 'is_recurring_request' => 0])
             ->orderBy(['id' => SORT_DESC]);
-        
-        // Aplicar filtro de estado si existe
-        $estado_pago = Yii::$app->request->get('estado_pago');
-        if ($estado_pago) {
-            $query->andWhere(['estado_pago' => $estado_pago]);
+
+        $estado_pago = trim((string) Yii::$app->request->get('estado_pago', ''));
+        $search = trim((string) Yii::$app->request->get('search', ''));
+        $cliente = trim((string) Yii::$app->request->get('cliente', ''));
+        $carId = Yii::$app->request->get('car_id');
+        $fechaDesde = trim((string) Yii::$app->request->get('fecha_desde', ''));
+        $fechaHasta = trim((string) Yii::$app->request->get('fecha_hasta', ''));
+
+        $needsClientJoin = $search !== '' || $cliente !== '';
+        $needsCarJoin = $search !== '';
+
+        if ($needsClientJoin || $needsCarJoin) {
+            $with = [];
+            if ($needsClientJoin) {
+                $with[] = 'client';
+            }
+            if ($needsCarJoin) {
+                $with[] = 'car';
+            }
+            $query->joinWith($with);
         }
-        
-        // Aplicar búsqueda si existe
-        $search = Yii::$app->request->get('search');
-        if (!empty($search)) {
-            $query->joinWith(['client', 'car']);
+
+        if ($estado_pago !== '') {
+            $query->andWhere([Rental::tableName() . '.estado_pago' => $estado_pago]);
+        }
+
+        if ($cliente !== '') {
+            $query->andWhere([
+                'or',
+                ['like', Client::tableName() . '.full_name', $cliente],
+                ['like', Client::tableName() . '.nombre', $cliente],
+                ['like', Client::tableName() . '.apellido', $cliente],
+            ]);
+        }
+
+        if ($carId !== null && $carId !== '') {
+            $query->andWhere([Rental::tableName() . '.car_id' => (int) $carId]);
+        }
+
+        // Período: alquileres que se solapan con el rango [fecha_desde, fecha_hasta]
+        if ($fechaDesde !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $fechaDesde)) {
+            $query->andWhere(['>=', Rental::tableName() . '.fecha_final', $fechaDesde]);
+        }
+        if ($fechaHasta !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $fechaHasta)) {
+            $query->andWhere(['<=', Rental::tableName() . '.fecha_inicio', $fechaHasta]);
+        }
+
+        if ($search !== '') {
             $query->andWhere([
                 'or',
                 ['like', Rental::tableName() . '.rental_id', $search],
                 ['like', Rental::tableName() . '.id', $search],
                 ['like', Client::tableName() . '.nombre', $search],
                 ['like', Client::tableName() . '.apellido', $search],
+                ['like', Client::tableName() . '.full_name', $search],
                 ['like', Client::tableName() . '.cedula_fisica', $search],
                 ['like', Client::tableName() . '.telefono', $search],
                 ['like', Client::tableName() . '.celular', $search],
@@ -106,21 +144,32 @@ class RentalController extends Controller
                 ['like', Car::tableName() . '.nombre', $search],
                 ['like', Car::tableName() . '.placa', $search],
             ]);
-        } else {
-            // Solo hacer eager loading si no hay búsqueda
-            $query->with(['client', 'car', 'parentRental', 'replacementRental', 'replacementRental.car']);
         }
-        
+
+        $query->with(['client', 'car', 'parentRental', 'replacementRental', 'replacementRental.car']);
+
         // Asegurar que todos los alquileres tengan rental_id
         $this->ensureRentalIds();
-        
+
+        $filterParams = array_filter([
+            'search' => $search !== '' ? $search : null,
+            'estado_pago' => $estado_pago !== '' ? $estado_pago : null,
+            'cliente' => $cliente !== '' ? $cliente : null,
+            'car_id' => ($carId !== null && $carId !== '') ? (int) $carId : null,
+            'fecha_desde' => $fechaDesde !== '' ? $fechaDesde : null,
+            'fecha_hasta' => $fechaHasta !== '' ? $fechaHasta : null,
+        ], static function ($v) {
+            return $v !== null && $v !== '';
+        });
+
         // Crear DataProvider
         $dataProvider = new ActiveDataProvider([
             'query' => $query,
             'pagination' => [
                 'pageSize' => 10,
                 'pageParam' => 'page',
-                'pageSizeParam' => 'per-page'
+                'pageSizeParam' => 'per-page',
+                'params' => array_merge(Yii::$app->request->queryParams, $filterParams),
             ],
             'sort' => [
                 'defaultOrder' => ['id' => SORT_DESC],
@@ -152,11 +201,23 @@ class RentalController extends Controller
             ],
         ]);
 
+        $carsForFilter = Car::find()
+            ->select(['id', 'nombre', 'placa'])
+            ->orderBy(['nombre' => SORT_ASC])
+            ->asArray()
+            ->all();
+
         return $this->render('index', [
             'dataProvider' => $dataProvider,
             'recurringDataProvider' => $recurringDataProvider,
             'recurringCount' => $recurringCount,
             'status' => $estado_pago,
+            'filterCliente' => $cliente,
+            'filterCarId' => ($carId !== null && $carId !== '') ? (int) $carId : '',
+            'filterFechaDesde' => $fechaDesde,
+            'filterFechaHasta' => $fechaHasta,
+            'carsForFilter' => $carsForFilter,
+            'filterParams' => $filterParams,
         ]);
     }
     

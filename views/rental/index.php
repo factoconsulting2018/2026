@@ -4,11 +4,25 @@
 /** @var yii\data\ActiveDataProvider $recurringDataProvider */
 /** @var int $recurringCount */
 /** @var string $status */
+/** @var string $filterCliente */
+/** @var int|string $filterCarId */
+/** @var string $filterFechaDesde */
+/** @var string $filterFechaHasta */
+/** @var array $carsForFilter */
+/** @var array $filterParams */
 
 use yii\helpers\Html;
 use yii\helpers\Url;
 use yii\grid\GridView;
 use yii\widgets\Pjax;
+
+$filterCliente = $filterCliente ?? '';
+$filterCarId = $filterCarId ?? '';
+$filterFechaDesde = $filterFechaDesde ?? '';
+$filterFechaHasta = $filterFechaHasta ?? '';
+$carsForFilter = $carsForFilter ?? [];
+$filterParams = $filterParams ?? [];
+$status = $status ?? '';
 
 $this->title = 'Gestión de Alquileres';
 $this->params['breadcrumbs'][] = $this->title;
@@ -87,10 +101,11 @@ $this->registerCss('
     
     .table-header-row {
         display: grid;
-        grid-template-columns: 1fr 2fr 1.5fr 1.5fr 1fr 1fr 0.8fr;
+        grid-template-columns: minmax(110px, 1fr) minmax(180px, 2fr) minmax(140px, 1.5fr) minmax(130px, 1.5fr) minmax(110px, 1fr) minmax(100px, 1fr) minmax(160px, 0.8fr);
         background: #f8f9fa;
         border-bottom: 2px solid #e9ecef;
         width: 100%;
+        box-sizing: border-box;
     }
     
     .header-cell {
@@ -101,6 +116,8 @@ $this->registerCss('
         align-items: center;
         gap: 8px;
         border-right: 1px solid #e9ecef;
+        min-width: 0;
+        box-sizing: border-box;
     }
     
     .header-cell:last-child {
@@ -110,20 +127,49 @@ $this->registerCss('
     .header-cell .material-symbols-outlined {
         font-size: 18px;
         color: #6c757d;
+        flex-shrink: 0;
+    }
+
+    .header-cell.header-filterable {
+        cursor: pointer;
+        user-select: none;
+        transition: background 0.15s ease, color 0.15s ease;
+    }
+
+    .header-cell.header-filterable:hover {
+        background: #e8f4fc;
+        color: #1b305b;
+    }
+
+    .header-cell.header-filterable:hover .material-symbols-outlined {
+        color: #3fa9f5;
+    }
+
+    .header-cell.header-filter-active {
+        background: #dceefb;
+        color: #1b305b;
+    }
+
+    .header-cell .filter-chevron {
+        margin-left: auto;
+        font-size: 16px !important;
+        opacity: 0.55;
     }
     
     .table-body {
         max-height: 600px;
         overflow-y: auto;
+        scrollbar-gutter: stable;
     }
     
     .rental-row {
         display: grid;
-        grid-template-columns: 1fr 2fr 1.5fr 1.5fr 1fr 1fr 0.8fr;
+        grid-template-columns: minmax(110px, 1fr) minmax(180px, 2fr) minmax(140px, 1.5fr) minmax(130px, 1.5fr) minmax(110px, 1fr) minmax(100px, 1fr) minmax(160px, 0.8fr);
         border-bottom: 1px solid #e9ecef;
         transition: all 0.3s ease;
         background: white;
         width: 100%;
+        box-sizing: border-box;
     }
     
     .rental-row:hover {
@@ -148,6 +194,8 @@ $this->registerCss('
         align-items: center;
         border-right: 1px solid #e9ecef;
         min-height: 80px;
+        min-width: 0;
+        box-sizing: border-box;
     }
     
     .data-cell:last-child {
@@ -173,8 +221,8 @@ $this->registerCss('
         font-size: 16px;
     }
     
-    /* Información del Cliente */
-    .client-info {
+    /* Información del Cliente (solo celdas de datos; no encabezados) */
+    .data-cell .client-info {
         display: flex;
         flex-direction: column;
         gap: 4px;
@@ -200,7 +248,7 @@ $this->registerCss('
     }
     
     /* Información del Vehículo */
-    .vehicle-info {
+    .data-cell .vehicle-info {
         display: flex;
         flex-direction: column;
         gap: 4px;
@@ -225,7 +273,7 @@ $this->registerCss('
     }
     
     /* Rango de Fechas */
-    .date-range {
+    .data-cell .date-range {
         display: flex;
         flex-direction: column;
         gap: 6px;
@@ -318,7 +366,7 @@ $this->registerCss('
     }
     
     /* Monto Total */
-    .total-amount {
+    .data-cell .total-amount {
         display: flex;
         align-items: center;
         gap: 4px;
@@ -711,7 +759,7 @@ $this->registerCss('
     @media (max-width: 1200px) {
         .table-header-row,
         .rental-row {
-            grid-template-columns: 0.8fr 1.5fr 1fr 1fr 0.8fr 0.8fr 0.6fr;
+            grid-template-columns: minmax(90px, 0.8fr) minmax(140px, 1.5fr) minmax(110px, 1fr) minmax(110px, 1fr) minmax(90px, 0.8fr) minmax(90px, 0.8fr) minmax(140px, 0.6fr);
         }
     }
     
@@ -942,10 +990,14 @@ $this->registerCss('
 
     <div class="card mb-4">
         <div class="card-body">
-            <form method="get" class="row g-3">
+            <form method="get" class="row g-3" id="rentalTopFilterForm">
+                <input type="hidden" name="cliente" value="<?= Html::encode($filterCliente) ?>">
+                <input type="hidden" name="car_id" value="<?= Html::encode((string) $filterCarId) ?>">
+                <input type="hidden" name="fecha_desde" value="<?= Html::encode($filterFechaDesde) ?>">
+                <input type="hidden" name="fecha_hasta" value="<?= Html::encode($filterFechaHasta) ?>">
                 <div class="col-md-4">
                     <label class="form-label"><span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">search</span>Buscar</label>
-                    <input type="text" name="search" class="form-control" placeholder="Buscar por ID, cliente, cédula, teléfono, vehículo o placa..." value="<?= Yii::$app->request->get('search', '') ?>">
+                    <input type="text" name="search" class="form-control" placeholder="Buscar por ID, cliente, cédula, teléfono, vehículo o placa..." value="<?= Html::encode(Yii::$app->request->get('search', '')) ?>">
                 </div>
                 <div class="col-md-4">
                     <label class="form-label"><span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">category</span>Estado</label>
@@ -987,31 +1039,47 @@ $this->registerCss('
                 
                 <div class="modern-table">
                     <div class="table-header-row">
-                        <div class="header-cell rental-id">
+                        <div class="header-cell header-col-id">
                             <span class="material-symbols-outlined">tag</span>
                             <span>ID Alquiler</span>
                         </div>
-                        <div class="header-cell client-info">
+                        <div class="header-cell header-col-client header-filterable<?= $filterCliente !== '' ? ' header-filter-active' : '' ?>"
+                             role="button" tabindex="0"
+                             data-bs-toggle="modal" data-bs-target="#filterClienteModal"
+                             title="Filtrar por cliente">
                             <span class="material-symbols-outlined">person</span>
                             <span>Cliente</span>
+                            <span class="material-symbols-outlined filter-chevron">filter_alt</span>
                         </div>
-                        <div class="header-cell vehicle-info">
+                        <div class="header-cell header-col-vehicle header-filterable<?= $filterCarId !== '' && $filterCarId !== null ? ' header-filter-active' : '' ?>"
+                             role="button" tabindex="0"
+                             data-bs-toggle="modal" data-bs-target="#filterVehiculoModal"
+                             title="Filtrar por vehículo">
                             <span class="material-symbols-outlined">directions_car</span>
                             <span>Vehículo</span>
+                            <span class="material-symbols-outlined filter-chevron">filter_alt</span>
                         </div>
-                        <div class="header-cell date-range">
+                        <div class="header-cell header-col-period header-filterable<?= ($filterFechaDesde !== '' || $filterFechaHasta !== '') ? ' header-filter-active' : '' ?>"
+                             role="button" tabindex="0"
+                             data-bs-toggle="modal" data-bs-target="#filterPeriodoModal"
+                             title="Filtrar por período">
                             <span class="material-symbols-outlined">date_range</span>
                             <span>Período</span>
+                            <span class="material-symbols-outlined filter-chevron">filter_alt</span>
                         </div>
-                        <div class="header-cell payment-status">
+                        <div class="header-cell header-col-status header-filterable<?= $status !== '' ? ' header-filter-active' : '' ?>"
+                             role="button" tabindex="0"
+                             data-bs-toggle="modal" data-bs-target="#filterEstadoModal"
+                             title="Filtrar por estado">
                             <span class="material-symbols-outlined">payment</span>
                             <span>Estado</span>
+                            <span class="material-symbols-outlined filter-chevron">filter_alt</span>
                         </div>
-                        <div class="header-cell total-amount">
+                        <div class="header-cell header-col-total">
                             <span class="material-symbols-outlined">attach_money</span>
                             <span>Total</span>
                         </div>
-                        <div class="header-cell actions">
+                        <div class="header-cell header-col-actions">
                             <span class="material-symbols-outlined">more_vert</span>
                             <span>Acciones</span>
                         </div>
@@ -1956,6 +2024,179 @@ $this->registerCss('
     </div>
 </div>
 
+<!-- Modal filtro Cliente -->
+<div class="modal fade" id="filterClienteModal" tabindex="-1" aria-labelledby="filterClienteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="get" action="<?= Url::to(['index']) ?>">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="filterClienteModalLabel">
+                        <span class="material-symbols-outlined" style="font-size:20px;vertical-align:middle;margin-right:6px;">person</span>
+                        Filtrar por cliente
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="search" value="<?= Html::encode(Yii::$app->request->get('search', '')) ?>">
+                    <input type="hidden" name="estado_pago" value="<?= Html::encode($status) ?>">
+                    <input type="hidden" name="car_id" value="<?= Html::encode((string) $filterCarId) ?>">
+                    <input type="hidden" name="fecha_desde" value="<?= Html::encode($filterFechaDesde) ?>">
+                    <input type="hidden" name="fecha_hasta" value="<?= Html::encode($filterFechaHasta) ?>">
+                    <label for="filterClienteInput" class="form-label">Nombre del cliente</label>
+                    <input type="text" class="form-control" id="filterClienteInput" name="cliente"
+                           value="<?= Html::encode($filterCliente) ?>"
+                           placeholder="Ej. Pablo Prado" autofocus>
+                    <div class="form-text">Busca por nombre completo o parcial.</div>
+                </div>
+                <div class="modal-footer">
+                    <a href="<?= Url::to(array_merge(['index'], array_filter([
+                        'search' => Yii::$app->request->get('search') ?: null,
+                        'estado_pago' => $status ?: null,
+                        'car_id' => $filterCarId ?: null,
+                        'fecha_desde' => $filterFechaDesde ?: null,
+                        'fecha_hasta' => $filterFechaHasta ?: null,
+                    ]))) ?>" class="btn btn-outline-secondary me-auto">Quitar filtro</a>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Aplicar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal filtro Vehículo -->
+<div class="modal fade" id="filterVehiculoModal" tabindex="-1" aria-labelledby="filterVehiculoModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="get" action="<?= Url::to(['index']) ?>">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="filterVehiculoModalLabel">
+                        <span class="material-symbols-outlined" style="font-size:20px;vertical-align:middle;margin-right:6px;">directions_car</span>
+                        Filtrar por vehículo
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="search" value="<?= Html::encode(Yii::$app->request->get('search', '')) ?>">
+                    <input type="hidden" name="estado_pago" value="<?= Html::encode($status) ?>">
+                    <input type="hidden" name="cliente" value="<?= Html::encode($filterCliente) ?>">
+                    <input type="hidden" name="fecha_desde" value="<?= Html::encode($filterFechaDesde) ?>">
+                    <input type="hidden" name="fecha_hasta" value="<?= Html::encode($filterFechaHasta) ?>">
+                    <label for="filterCarSelect" class="form-label">Seleccionar vehículo</label>
+                    <select class="form-select" id="filterCarSelect" name="car_id">
+                        <option value="">Todos los vehículos</option>
+                        <?php foreach ($carsForFilter as $carOpt): ?>
+                            <option value="<?= (int) $carOpt['id'] ?>" <?= (string) $filterCarId === (string) $carOpt['id'] ? 'selected' : '' ?>>
+                                <?= Html::encode(($carOpt['nombre'] ?? '') . (!empty($carOpt['placa']) ? ' (' . $carOpt['placa'] . ')' : '')) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <a href="<?= Url::to(array_merge(['index'], array_filter([
+                        'search' => Yii::$app->request->get('search') ?: null,
+                        'estado_pago' => $status ?: null,
+                        'cliente' => $filterCliente ?: null,
+                        'fecha_desde' => $filterFechaDesde ?: null,
+                        'fecha_hasta' => $filterFechaHasta ?: null,
+                    ]))) ?>" class="btn btn-outline-secondary me-auto">Quitar filtro</a>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Aplicar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal filtro Período -->
+<div class="modal fade" id="filterPeriodoModal" tabindex="-1" aria-labelledby="filterPeriodoModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="get" action="<?= Url::to(['index']) ?>">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="filterPeriodoModalLabel">
+                        <span class="material-symbols-outlined" style="font-size:20px;vertical-align:middle;margin-right:6px;">date_range</span>
+                        Filtrar por período
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="search" value="<?= Html::encode(Yii::$app->request->get('search', '')) ?>">
+                    <input type="hidden" name="estado_pago" value="<?= Html::encode($status) ?>">
+                    <input type="hidden" name="cliente" value="<?= Html::encode($filterCliente) ?>">
+                    <input type="hidden" name="car_id" value="<?= Html::encode((string) $filterCarId) ?>">
+                    <div class="mb-3">
+                        <label for="filterFechaDesde" class="form-label">Fecha inicio</label>
+                        <input type="date" class="form-control" id="filterFechaDesde" name="fecha_desde"
+                               value="<?= Html::encode($filterFechaDesde !== '' ? $filterFechaDesde : date('Y-m-d', strtotime('-3 days'))) ?>">
+                        <div class="form-text">Por defecto: hace 3 días.</div>
+                    </div>
+                    <div class="mb-0">
+                        <label for="filterFechaHasta" class="form-label">Fecha final</label>
+                        <input type="date" class="form-control" id="filterFechaHasta" name="fecha_hasta"
+                               value="<?= Html::encode($filterFechaHasta !== '' ? $filterFechaHasta : date('Y-m-d')) ?>">
+                        <div class="form-text">Por defecto: hoy.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <a href="<?= Url::to(array_merge(['index'], array_filter([
+                        'search' => Yii::$app->request->get('search') ?: null,
+                        'estado_pago' => $status ?: null,
+                        'cliente' => $filterCliente ?: null,
+                        'car_id' => $filterCarId ?: null,
+                    ]))) ?>" class="btn btn-outline-secondary me-auto">Quitar filtro</a>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Aplicar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal filtro Estado -->
+<div class="modal fade" id="filterEstadoModal" tabindex="-1" aria-labelledby="filterEstadoModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="get" action="<?= Url::to(['index']) ?>">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="filterEstadoModalLabel">
+                        <span class="material-symbols-outlined" style="font-size:20px;vertical-align:middle;margin-right:6px;">payment</span>
+                        Filtrar por estado
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="search" value="<?= Html::encode(Yii::$app->request->get('search', '')) ?>">
+                    <input type="hidden" name="cliente" value="<?= Html::encode($filterCliente) ?>">
+                    <input type="hidden" name="car_id" value="<?= Html::encode((string) $filterCarId) ?>">
+                    <input type="hidden" name="fecha_desde" value="<?= Html::encode($filterFechaDesde) ?>">
+                    <input type="hidden" name="fecha_hasta" value="<?= Html::encode($filterFechaHasta) ?>">
+                    <label for="filterEstadoSelect" class="form-label">Estado de pago</label>
+                    <select class="form-select" id="filterEstadoSelect" name="estado_pago">
+                        <option value="">Todos</option>
+                        <option value="pendiente" <?= $status === 'pendiente' ? 'selected' : '' ?>>Pendiente</option>
+                        <option value="pagado" <?= $status === 'pagado' ? 'selected' : '' ?>>Pagado</option>
+                        <option value="reservado" <?= $status === 'reservado' ? 'selected' : '' ?>>Reservado</option>
+                        <option value="finalizado" <?= $status === 'finalizado' ? 'selected' : '' ?>>Finalizado</option>
+                        <option value="cancelado" <?= $status === 'cancelado' ? 'selected' : '' ?>>Cancelado</option>
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <a href="<?= Url::to(array_merge(['index'], array_filter([
+                        'search' => Yii::$app->request->get('search') ?: null,
+                        'cliente' => $filterCliente ?: null,
+                        'car_id' => $filterCarId ?: null,
+                        'fecha_desde' => $filterFechaDesde ?: null,
+                        'fecha_hasta' => $filterFechaHasta ?: null,
+                    ]))) ?>" class="btn btn-outline-secondary me-auto">Quitar filtro</a>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Aplicar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <!-- Modal para cambiar estado de pago -->
 <div class="modal fade" id="paymentStatusModal" tabindex="-1" aria-labelledby="paymentStatusModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
@@ -2080,6 +2321,27 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, Bootstrap available:', typeof bootstrap !== 'undefined');
     console.log('jQuery available:', typeof $ !== 'undefined');
     console.log('Modal element exists:', document.getElementById('paymentStatusModal') !== null);
+
+    // Encabezados filtrables: Enter/Espacio abren el modal
+    document.querySelectorAll('.header-cell.header-filterable').forEach(function (cell) {
+        cell.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                cell.click();
+            }
+        });
+    });
+
+    var filterClienteModal = document.getElementById('filterClienteModal');
+    if (filterClienteModal) {
+        filterClienteModal.addEventListener('shown.bs.modal', function () {
+            var input = document.getElementById('filterClienteInput');
+            if (input) {
+                input.focus();
+                input.select();
+            }
+        });
+    }
 });
 
 // Función de debug para probar el modal desde la consola

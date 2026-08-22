@@ -688,11 +688,23 @@ class PdfController extends Controller
         $correTxt = ($model->correapartir_enabled && !empty($fechaCorreapartir)) ? $fechaCorreapartir : '—';
 
         try {
-            $dtEm = new \DateTime($model->created_at ?: date('Y-m-d'));
+            $dtEm = new \DateTime($model->created_at ?: 'now');
             $mesesEm = [1 => 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
             $fechaEmisionDoc = (int) $dtEm->format('j') . ' de ' . $mesesEm[(int) $dtEm->format('n')] . ' de ' . $dtEm->format('Y');
+            // Fecha + hora 12h a.m./p.m. para mostrar bajo la foto del vehículo
+            $horaCreacion12 = str_replace(
+                ['am', 'pm'],
+                ['a.m.', 'p.m.'],
+                strtolower($dtEm->format('g:i a'))
+            );
+            $fechaCreacionDoc = $dtEm->format('d/m/Y') . ' ' . $horaCreacion12;
         } catch (\Exception $e) {
             $fechaEmisionDoc = date('j') . ' de ' . date('F') . ' de ' . date('Y');
+            $fechaCreacionDoc = str_replace(
+                ['am', 'pm'],
+                ['a.m.', 'p.m.'],
+                strtolower(date('d/m/Y g:i a'))
+            );
         }
 
         $bancosList = [];
@@ -763,6 +775,7 @@ class PdfController extends Controller
             'numero_orden' => $rentalId,
             'orden_cambio' => $ordenCambio,
             'fecha_emision' => $fechaEmisionDoc,
+            'fecha_creacion' => $fechaCreacionDoc,
             'empresa' => [
                 'nombre' => $nombreComercial,
                 'razon_social' => $razon,
