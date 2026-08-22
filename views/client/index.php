@@ -122,15 +122,22 @@ $this->registerCss('
 // Forzar conteo antes de armar el resumen (evita "0 - 0 de 0").
 $totalCount = (int) $dataProvider->getTotalCount();
 $pagination = $dataProvider->getPagination();
-$start = $totalCount > 0 ? $pagination->getOffset() + 1 : 0;
-$end = $totalCount > 0
+if ($pagination !== false) {
+    // Preservar filtros de búsqueda en los enlaces de página.
+    $queryParams = Yii::$app->request->getQueryParams();
+    unset($queryParams['page'], $queryParams['per-page']);
+    $pagination->params = $queryParams;
+    $pagination->route = Yii::$app->controller->getRoute();
+}
+$start = ($pagination !== false && $totalCount > 0) ? $pagination->getOffset() + 1 : 0;
+$end = ($pagination !== false && $totalCount > 0)
     ? min($pagination->getOffset() + $pagination->getLimit(), $totalCount)
     : 0;
 
 $pagerConfig = [
     'pagination' => $pagination,
-    'options' => ['class' => 'pagination pagination-modern mb-0'],
-    'linkOptions' => ['class' => 'page-link'],
+    'options' => ['class' => 'pagination pagination-modern mb-0', 'data-pjax' => 0],
+    'linkOptions' => ['class' => 'page-link', 'data-pjax' => 0],
     'pageCssClass' => 'page-item',
     'prevPageCssClass' => 'page-item',
     'nextPageCssClass' => 'page-item',
@@ -138,16 +145,20 @@ $pagerConfig = [
     'lastPageCssClass' => 'page-item',
     'activePageCssClass' => 'active',
     'disabledPageCssClass' => 'disabled',
+    'disabledListItemSubTagOptions' => ['tag' => 'span', 'class' => 'page-link'],
     'prevPageLabel' => '«',
     'nextPageLabel' => '»',
-    'firstPageLabel' => '1',
-    'lastPageLabel' => (string) max(1, $pagination->getPageCount()),
+    'firstPageLabel' => '««',
+    'lastPageLabel' => '»»',
     'maxButtonCount' => 7,
 ];
 
 $renderPaginationBar = static function () use ($pagerConfig, $start, $end, $totalCount) {
+    if ($pagerConfig['pagination'] === false) {
+        return;
+    }
     echo '<div class="client-pagination-bar">';
-    echo '<div class="client-pagination-summary">Mostrando ' . $start . ' - ' . $end . ' de ' . $totalCount . ' clientes</div>';
+    echo '<div class="client-pagination-summary">Mostrando ' . (int) $start . ' - ' . (int) $end . ' de ' . (int) $totalCount . ' clientes</div>';
     echo LinkPager::widget($pagerConfig);
     echo '</div>';
 };
@@ -221,7 +232,13 @@ $renderPaginationBar = static function () use ($pagerConfig, $start, $end, $tota
         </div>
     </div>
 
-    <?php Pjax::begin(); ?>
+    <?php Pjax::begin([
+        'id' => 'client-index-pjax',
+        'timeout' => 10000,
+        'enablePushState' => true,
+        'enableReplaceState' => false,
+        'clientOptions' => ['skipOuterContainers' => true],
+    ]); ?>
 
     <div class="mb-3">
         <?php $renderPaginationBar(); ?>
@@ -231,10 +248,9 @@ $renderPaginationBar = static function () use ($pagerConfig, $start, $end, $tota
         <?= ListView::widget([
             'dataProvider' => $dataProvider,
             'itemView' => '_list_item',
-            'layout' => "{items}",
+            'layout' => '{items}',
             'itemOptions' => ['class' => ''],
             'emptyText' => '<p class="text-muted text-center py-4 mb-0">No se encontraron clientes con los filtros seleccionados.</p>',
-            'pager' => false,
         ]); ?>
     </div>
 
