@@ -27,23 +27,36 @@ $this->registerCss('
     }
 
     .client-pagination-bar {
+        width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px 16px;
         padding: 14px 18px;
         background: #fff;
         border: 1px solid #e6ecf3;
         border-radius: 14px;
         box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+        box-sizing: border-box;
     }
 
     .client-pagination-summary {
+        flex: 0 1 auto;
         font-size: 0.95rem;
         color: #5b6b82;
         font-weight: 500;
     }
 
-    .pagination-modern {
-        gap: 6px;
+    .client-pagination-bar .pagination-modern {
+        flex: 1 1 auto;
+        display: flex;
         flex-wrap: wrap;
-        justify-content: center;
+        gap: 6px;
+        justify-content: flex-end;
+        margin: 0;
+        width: auto;
+        max-width: 100%;
     }
 
     .pagination-modern .page-item .page-link {
@@ -83,7 +96,19 @@ $this->registerCss('
 
     @media (max-width: 768px) {
         .client-pagination-bar {
+            flex-direction: column;
+            align-items: stretch;
             padding: 12px;
+        }
+
+        .client-pagination-summary {
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        .client-pagination-bar .pagination-modern {
+            justify-content: center;
+            width: 100%;
         }
 
         .pagination-modern .page-item .page-link {
@@ -91,17 +116,15 @@ $this->registerCss('
             height: 42px;
             border-radius: 10px;
         }
-
-        .client-pagination-summary {
-            font-size: 0.9rem;
-        }
     }
 ');
 
-$pagination = $dataProvider->pagination;
-$start = $pagination->totalCount > 0 ? $pagination->offset + 1 : 0;
-$end = $pagination->totalCount > 0
-    ? min($pagination->offset + $pagination->limit, $pagination->totalCount)
+// Forzar conteo antes de armar el resumen (evita "0 - 0 de 0").
+$totalCount = (int) $dataProvider->getTotalCount();
+$pagination = $dataProvider->getPagination();
+$start = $totalCount > 0 ? $pagination->getOffset() + 1 : 0;
+$end = $totalCount > 0
+    ? min($pagination->getOffset() + $pagination->getLimit(), $totalCount)
     : 0;
 
 $pagerConfig = [
@@ -111,12 +134,23 @@ $pagerConfig = [
     'pageCssClass' => 'page-item',
     'prevPageCssClass' => 'page-item',
     'nextPageCssClass' => 'page-item',
+    'firstPageCssClass' => 'page-item',
+    'lastPageCssClass' => 'page-item',
     'activePageCssClass' => 'active',
     'disabledPageCssClass' => 'disabled',
     'prevPageLabel' => '«',
     'nextPageLabel' => '»',
-    'maxButtonCount' => 5,
+    'firstPageLabel' => '1',
+    'lastPageLabel' => (string) max(1, $pagination->getPageCount()),
+    'maxButtonCount' => 7,
 ];
+
+$renderPaginationBar = static function () use ($pagerConfig, $start, $end, $totalCount) {
+    echo '<div class="client-pagination-bar">';
+    echo '<div class="client-pagination-summary">Mostrando ' . $start . ' - ' . $end . ' de ' . $totalCount . ' clientes</div>';
+    echo LinkPager::widget($pagerConfig);
+    echo '</div>';
+};
 ?>
 
 <div class="client-index">
@@ -189,14 +223,18 @@ $pagerConfig = [
 
     <?php Pjax::begin(); ?>
 
+    <div class="mb-3">
+        <?php $renderPaginationBar(); ?>
+    </div>
+
     <div class="d-none d-md-block">
         <?= ListView::widget([
             'dataProvider' => $dataProvider,
             'itemView' => '_list_item',
-            'layout' => "{items}\n<div class='client-pagination-bar d-flex flex-column flex-md-row justify-content-between align-items-center gap-3 mt-4'><div class='client-pagination-summary'>Mostrando {$start} - {$end} de {$pagination->totalCount} clientes</div>{pager}</div>",
+            'layout' => "{items}",
             'itemOptions' => ['class' => ''],
             'emptyText' => '<p class="text-muted text-center py-4 mb-0">No se encontraron clientes con los filtros seleccionados.</p>',
-            'pager' => $pagerConfig,
+            'pager' => false,
         ]); ?>
     </div>
 
@@ -237,12 +275,10 @@ $pagerConfig = [
                 <?php endforeach; ?>
             </div>
         <?php endif; ?>
-        <div class="client-pagination-bar d-flex flex-column align-items-center gap-3 mt-4">
-            <div class="client-pagination-summary text-center">
-                Mostrando <?= $start ?> - <?= $end ?> de <?= $pagination->totalCount ?> clientes
-            </div>
-            <?= LinkPager::widget($pagerConfig) ?>
-        </div>
+    </div>
+
+    <div class="mt-4">
+        <?php $renderPaginationBar(); ?>
     </div>
 
     <?php Pjax::end(); ?>
