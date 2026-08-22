@@ -157,10 +157,18 @@ $jsDispUrl = json_encode($calendarDispUrl);
         <div class="modal-dialog modal-xl modal-dialog-scrollable rc-day-modal-dialog">
             <div class="modal-content">
                 <div class="modal-header rc-modal-header" style="background: linear-gradient(135deg, #22487a 0%, #0d001e 100%);">
-                    <h5 class="modal-title" style="color: #ffffff !important;">
-                        <span class="material-symbols-outlined align-middle" style="font-size: 22px; margin-right: 6px; color: #ffffff;">event_note</span>
-                        <span id="rc-modal-title" style="color: #ffffff;">Alquileres del día</span>
-                    </h5>
+                    <div class="rc-modal-title-nav d-flex align-items-center flex-grow-1 me-2">
+                        <button type="button" id="rc-day-prev" class="btn rc-day-nav-btn" title="Día anterior" aria-label="Día anterior">
+                            <span class="material-symbols-outlined">chevron_left</span>
+                        </button>
+                        <h5 class="modal-title mb-0" style="color: #ffffff !important;">
+                            <span class="material-symbols-outlined align-middle" style="font-size: 22px; margin-right: 6px; color: #ffffff;">event_note</span>
+                            <span id="rc-modal-title" style="color: #ffffff;">Alquileres del día</span>
+                        </h5>
+                        <button type="button" id="rc-day-next" class="btn rc-day-nav-btn" title="Día siguiente" aria-label="Día siguiente">
+                            <span class="material-symbols-outlined">chevron_right</span>
+                        </button>
+                    </div>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                 </div>
                 <div class="modal-body" id="rc-modal-body">
@@ -738,6 +746,47 @@ body {
 .rc-modal-header .modal-title,
 .rc-modal-header .modal-title * { color: #ffffff !important; }
 
+.rc-modal-title-nav {
+    gap: 4px;
+    min-width: 0;
+}
+.rc-modal-title-nav .modal-title {
+    flex: 1 1 auto;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.rc-day-nav-btn {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 1px solid rgba(255,255,255,0.45);
+    border-radius: 10px;
+    background: rgba(255,255,255,0.12);
+    color: #ffffff !important;
+    line-height: 1;
+}
+.rc-day-nav-btn .material-symbols-outlined {
+    font-size: 32px !important;
+    color: #ffffff !important;
+    line-height: 1;
+}
+.rc-day-nav-btn:hover,
+.rc-day-nav-btn:focus {
+    background: rgba(255,255,255,0.28);
+    border-color: #ffffff;
+    color: #ffffff !important;
+    box-shadow: none;
+}
+.rc-day-nav-btn:active {
+    background: rgba(255,255,255,0.38);
+}
+
 /* Modal de alquileres del día: más ancho y sin corte horizontal */
 .rc-day-modal-dialog {
     max-width: min(1200px, 96vw);
@@ -859,12 +908,16 @@ body {
     var modalEl = document.getElementById('rcDayModal');
     var modalBody = document.getElementById('rc-modal-body');
     var modalTitle = document.getElementById('rc-modal-title');
+    var btnDayPrev = document.getElementById('rc-day-prev');
+    var btnDayNext = document.getElementById('rc-day-next');
     if (!calRoot) return;
 
     var MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
     var DOW = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
 
     var currentMonth = <?= $jsMonth ?>;
+    var currentModalDate = null;
+    var dayFetchSeq = 0;
 
     function pad(n) { return n < 10 ? ('0' + n) : ('' + n); }
 
@@ -1058,7 +1111,25 @@ body {
         return '<span class="badge bg-warning text-dark rc-correa-badge" title="Corre apartir">⏰ Corre apartir: ' + f + '</span>';
     }
 
+    function shiftDay(dateStr, delta) {
+        var m = String(dateStr || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (!m) return dateStr;
+        var dt = new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10));
+        dt.setDate(dt.getDate() + delta);
+        return dt.getFullYear() + '-' + pad(dt.getMonth() + 1) + '-' + pad(dt.getDate());
+    }
+
     function showDay(dateStr) {
+        if (!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return;
+        currentModalDate = dateStr;
+        var fetchId = ++dayFetchSeq;
+
+        // Si el día pertenece a otro mes, sincronizar el calendario de fondo.
+        var monthOfDay = dateStr.substring(0, 7);
+        if (monthOfDay !== currentMonth) {
+            loadMonth(monthOfDay);
+        }
+
         modalTitle.textContent = 'Alquileres del ' + formatDateDMY(dateStr);
         modalBody.innerHTML = '<div class="text-center text-muted py-4">'
             + '<div class="spinner-border spinner-border-sm" role="status"></div>'
@@ -1078,10 +1149,15 @@ body {
         })
         .then(function (r) { return r.json(); })
         .then(function (data) {
+            if (fetchId !== dayFetchSeq) return; // respuesta obsoleta
             if (!data || !data.items || data.items.length === 0) {
                 modalBody.innerHTML = '<div class="text-center text-muted py-4">'
                     + '<span class="material-symbols-outlined" style="font-size: 48px; opacity: .5;">event_busy</span>'
                     + '<div class="mt-2">No hay alquileres activos en este día.</div>'
+                    + '<div class="text-end mt-3">'
+                    + '<a href="' + RC_DISP_URL + '?fecha=' + encodeURIComponent(dateStr) + '" class="btn btn-sm btn-outline-primary">'
+                    + '<span class="material-symbols-outlined align-middle" style="font-size:16px;">filter_alt</span> Ver disponibles ese día</a>'
+                    + '</div>'
                     + '</div>';
                 return;
             }
@@ -1213,6 +1289,37 @@ body {
         if (!cell) return;
         var d = cell.getAttribute('data-date');
         if (d) showDay(d);
+    });
+
+    if (btnDayPrev) {
+        btnDayPrev.addEventListener('click', function (ev) {
+            ev.preventDefault();
+            ev.stopPropagation();
+            if (!currentModalDate) return;
+            showDay(shiftDay(currentModalDate, -1));
+        });
+    }
+    if (btnDayNext) {
+        btnDayNext.addEventListener('click', function (ev) {
+            ev.preventDefault();
+            ev.stopPropagation();
+            if (!currentModalDate) return;
+            showDay(shiftDay(currentModalDate, 1));
+        });
+    }
+
+    // Flechas del teclado mientras el modal está abierto
+    document.addEventListener('keydown', function (ev) {
+        if (!currentModalDate || !modalEl) return;
+        var open = modalEl.classList.contains('show') || modalEl.style.display === 'block';
+        if (!open) return;
+        if (ev.key === 'ArrowLeft') {
+            ev.preventDefault();
+            showDay(shiftDay(currentModalDate, -1));
+        } else if (ev.key === 'ArrowRight') {
+            ev.preventDefault();
+            showDay(shiftDay(currentModalDate, 1));
+        }
     });
 
     if (btnPrev) btnPrev.addEventListener('click', function () { loadMonth(shiftMonth(currentMonth, -1)); });
