@@ -1711,4 +1711,191 @@ class WhatsAppNotifier
 
         return $line;
     }
+
+    /**
+     * Avisa a administradores 2 horas antes de fecha_correapartir.
+     * Diseñado para el mismo cron (cada minuto): envía una sola vez por orden
+     * cuando ya estamos dentro de la ventana de 2 horas y aún no se notificó.
+     *
+     * Solo administradores (nunca al cliente).
+     *
+     * @return array{enabled:bool, attempted:int, sent:int, rentals:int, errors:array<string>, skipped_reason:?string}
+     */
+    public static function sendCorreapartirReminders(): array
+    {
+        $report = [
+            'enabled' => false,
+            'attempted' => 0,
+            'sent' => 0,
+            'rentals' => 0,
+            'errors' => [],
+            'skipped_reason' => null,
+        ];
+
+        try {
+            $cfg = CompanyConfig::getWhatsAppConfig();
+            if (empty($cfg['enabled'])) {
+                $report['skipped_reason'] = 'Integración WhatsApp desactivada en configuración.';
+                return $report;
+            }
+
+            $numbers = self::getAdminNumbers($cfg);
+            if (empty($numbers)) {
+                $report['skipped_reason'] = 'No hay teléfonos administradores configurados.';
+                return $report;
+            }
+
+            $now = date('Y-m-d H:i:s');
+            $windowEnd = date('Y-m-d H:i:s', strtotime('+2 hours'));
+
+            // Órdenes con correapartir habilitado, dentro de las próximas 2 horas,
+            // aún no notificadas y no canceladas.
+            $rentals = Rental::find()
+                ->with(['client', 'car'])
+                ->andWhere(['correapartir_enabled' => 1])
+                ->andWhere(['not', ['fecha_correapartir' => null]])
+                ->andWhere(['<>', 'fecha_correapartir', ''])
+                ->andWhere(['<>', 'fecha_correapartir', '0000-00-00 00:00:00'])
+                ->andWhere(['>', 'fecha_correapartir', $now])
+                ->andWhere(['<=', 'fecha_correapartir', $windowEnd])
+                ->andWhere(['correapartir_reminder_sent_at' => null])
+                ->andWhere(['<>', 'estado_pago', 'cancelado'])
+                ->orderBy(['fecha_correapartir' => SORT_ASC])
+                ->limit(50)
+                ->all();
+
+            if (empty($rentals)) {
+                $report['skipped_reason'] = 'Sin órdenes con correapartir en la ventana de 2 horas.';
+                return $report;
+            }
+
+            $status = self::getStatus($cfg['api_url'], $cfg['session_id']);
+            if (!self::isConnected($status)) {
+                $bodyStatus = is_array($status['body'] ?? null) ? ($status['body']['status'] ?? 'unknown') : 'unknown';
+                $msg = $status['error'] ?? ('Sesión WhatsApp no conectada (estado: ' . $bodyStatus . ')');
+                $report['errors'][] = $msg;
+                $report['skipped_reason'] = $msg;
+                return $report;
+            }
+
+            $report['enabled'] = true;
+            $report['rentals'] = count($rentals);
+
+            foreach ($rentals as $rental) {
+                $message = self::buildCorreapartirReminderMessage($rental);
+                $anySent = false;
+
+                foreach ($numbers as $number) {
+                    $report['attempted']++;
+                    try {
+                        $res = self::sendText($cfg['api_url'], $cfg['session_id'], $number, $message);
+                        if (!$res['ok']) {
+                            $err = $number . ': ' . ($res['error'] ?? 'fallo');
+                            Yii::warning('Aviso correapartir fallido — ' . $err, 'whatsapp');
+                            $report['errors'][] = 'R' . $rental->id . ' ' . $err;
+                            continue;
+                        }
+                        $report['sent']++;
+                        $anySent = true;
+                        Yii::info(
+                            'Aviso correapartir enviado a ' . $number
+                            . ' (orden ' . ($rental->rental_id ?: ('R' . $rental->id)) . ')',
+                            'whatsapp'
+                        );
+                    } catch (\Throwable $e) {
+                        $report['errors'][] = 'R' . $rental->id . ' ' . $number . ': ' . $e->getMessage();
+                        Yii::error('Aviso correapartir excepción: ' . $e->getMessage(), 'whatsapp');
+                    }
+                }
+
+                // Marcar anti-duplicado si al menos un admin recibió el mensaje.
+                if ($anySent) {
+                    try {
+                        $rental->correapartir_reminder_sent_at = date('Y-m-d H:i:s');
+                        $rental->save(false, ['correapartir_reminder_sent_at', 'updated_at']);
+                    } catch (\Throwable $e) {
+                        Yii::error(
+                            'No se pudo marcar correapartir_reminder_sent_at (R' . $rental->id . '): '
+                            . $e->getMessage(),
+                            'whatsapp'
+                        );
+                        $report['errors'][] = 'R' . $rental->id . ': no se pudo marcar anti-duplicado';
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            Yii::error('sendCorreapartirReminders: ' . $e->getMessage(), 'whatsapp');
+            $report['errors'][] = $e->getMessage();
+            $report['skipped_reason'] = $e->getMessage();
+        }
+
+        return $report;
+    }
+
+    /**
+     * Mensaje de aviso 2h antes de correapartir (solo admins).
+     */
+    private static function buildCorreapartirReminderMessage(Rental $rental): string
+    {
+        $company = CompanyConfig::getCompanyInfo();
+        $companyName = $company['name'] ?? 'FACTO RENT A CAR';
+        $orderId = $rental->rental_id ?: ('R' . $rental->id);
+        $correa = self::formatCorreapartirLabel($rental) ?? trim((string) $rental->fecha_correapartir);
+
+        $clientName = '—';
+        try {
+            $cl = $rental->client ?? null;
+            if ($cl) {
+                $clientName = trim((string) ($cl->full_name ?? ''));
+                if ($clientName === '') {
+                    $clientName = trim(((string) ($cl->nombre ?? '')) . ' ' . ((string) ($cl->apellido ?? '')));
+                }
+                if ($clientName === '') {
+                    $clientName = '—';
+                }
+            }
+        } catch (\Throwable $e) {
+            $clientName = '—';
+        }
+
+        $carLabel = '—';
+        $plate = '';
+        try {
+            $car = $rental->car ?? null;
+            if ($car) {
+                $carLabel = trim((string) ($car->nombre ?? '')) ?: '—';
+                $plate = trim((string) ($car->placa ?? ''));
+            }
+        } catch (\Throwable $e) {
+            $carLabel = '—';
+        }
+
+        $lugar = trim((string) ($rental->lugar_retiro ?? ''));
+        $estado = (string) ($rental->estado_pago ?? '');
+
+        $lines = [];
+        $lines[] = '*⏰ Aviso Corre apartir (2 horas)*';
+        $lines[] = $companyName;
+        foreach (self::brandingLines() as $bl) {
+            $lines[] = $bl;
+        }
+        $lines[] = '';
+        $lines[] = 'Pendiente de la *entrega del vehículo*.';
+        $lines[] = 'El corre apartir inicia en aproximadamente *2 horas*.';
+        $lines[] = '';
+        $lines[] = 'Orden: *' . $orderId . '*';
+        $lines[] = '👤 Cliente: ' . $clientName;
+        $lines[] = '🚙 Vehículo: ' . $carLabel . ($plate !== '' ? ' (' . $plate . ')' : '');
+        $lines[] = '⏰ Corre apartir: *' . $correa . '*';
+        if ($lugar !== '') {
+            $lines[] = '📍 Lugar: ' . $lugar;
+        }
+        if ($estado !== '') {
+            $lines[] = '💵 Estado: ' . $estado;
+        }
+        $lines[] = '';
+        $lines[] = '_Solo administradores — no se envía al cliente._';
+
+        return implode("\n", $lines);
+    }
 }

@@ -1319,7 +1319,7 @@ sudo docker-compose exec app php yii migrate</code></pre>
                                                         <div>
                                                             <strong>Cómo activarlo en el servidor</strong> — para que el envío sea automático debes configurar un cron en el servidor:
                                                             <pre class="mb-1 mt-1" style="white-space: pre-wrap; font-size: 11px;">* * * * * cd /ruta/al/proyecto &amp;&amp; php yii whatsapp/daily-deliveries &gt;&gt; runtime/logs/whatsapp-daily.log 2&gt;&amp;1</pre>
-                                                            El cron se ejecuta cada minuto, pero el sistema solo envía una vez al día a la hora configurada (control anti-duplicado).
+                                                            El cron se ejecuta cada minuto. Incluye: (1) avisos a administradores 2 horas antes de <em>corre apartir</em>, y (2) el resumen diario a la hora configurada (control anti-duplicado).
                                                         </div>
                                                     </div>
                                                 </div>

@@ -16,6 +16,7 @@ use yii\db\ActiveRecord;
  * @property int $is_recurring_request
  * @property int $correapartir_enabled
  * @property string $fecha_correapartir
+ * @property string|null $correapartir_reminder_sent_at
  * @property string $fecha_inicio
  * @property string $hora_inicio
  * @property string $fecha_final
@@ -127,7 +128,7 @@ class Rental extends ActiveRecord
             [['client_id', 'car_id', 'correapartir_enabled', 'medio_dia_enabled', 'cantidad_dias', 'is_async', 'is_recurring_request', 'parent_rental_id', 'swapped_to_rental_id'], 'integer'],
             [['is_recurring_request'], 'default', 'value' => 0],
             [['is_recurring_request'], 'in', 'range' => [0, 1]],
-            [['fecha_inicio', 'fecha_final', 'hora_inicio', 'hora_final', 'fecha_correapartir', 'fecha_factura', 'swap_date', 'created_at', 'updated_at'], 'safe'],
+            [['fecha_inicio', 'fecha_final', 'hora_inicio', 'hora_final', 'fecha_correapartir', 'correapartir_reminder_sent_at', 'fecha_factura', 'swap_date', 'created_at', 'updated_at'], 'safe'],
             [['swap_reason'], 'string'],
             [['precio_por_dia', 'medio_dia_valor', 'abono1_monto', 'abono2_monto', 'abono3_monto', 'abono4_monto', 'abono5_monto'], 'number'], // Removido total_precio porque es columna generada
             [['rental_id', 'lugar_entrega', 'lugar_retiro', 'estado_pago', 'numero_factura', 'ejecutivo', 'ejecutivo_otro', 'abono1_descripcion', 'abono2_descripcion', 'abono3_descripcion', 'abono4_descripcion', 'abono5_descripcion'], 'string', 'max' => 255],
@@ -156,6 +157,7 @@ class Rental extends ActiveRecord
             'is_recurring_request' => 'Solicitud recurrente',
             'correapartir_enabled' => 'Correapartir Habilitado',
             'fecha_correapartir' => 'Fecha Correapartir',
+            'correapartir_reminder_sent_at' => 'Aviso correapartir enviado',
             'fecha_inicio' => 'Fecha de Inicio',
             'hora_inicio' => 'Hora de Inicio',
             'fecha_final' => 'Fecha Final',
