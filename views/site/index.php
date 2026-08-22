@@ -956,6 +956,29 @@ body {
         return m[3] + '/' + m[2] + '/' + m[1];
     }
 
+    function formatCorreapartir(raw) {
+        if (!raw) return '';
+        var s = String(raw).trim();
+        if (!s || s.indexOf('0000-00-00') === 0) return '';
+        var m = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2}))?/);
+        if (!m) return s;
+        var label = m[3] + '/' + m[2] + '/' + m[1];
+        if (m[4] !== undefined && m[5] !== undefined) {
+            var t = formatTime12h(m[4] + ':' + m[5]);
+            if (t) label += ' ' + t;
+        }
+        return label;
+    }
+
+    function correapartirBadge(it) {
+        if (!it || !it.correapartir_enabled) return '';
+        var f = formatCorreapartir(it.fecha_correapartir);
+        if (!f) {
+            return '<span class="badge bg-warning text-dark" title="Corre apartir habilitado">⏰ Corre apartir</span>';
+        }
+        return '<span class="badge bg-warning text-dark" title="Corre apartir">⏰ Corre apartir: ' + f + '</span>';
+    }
+
     function showDay(dateStr) {
         modalTitle.textContent = 'Alquileres del ' + formatDateDMY(dateStr);
         modalBody.innerHTML = '<div class="text-center text-muted py-4">'
@@ -999,6 +1022,7 @@ body {
                 var dRange = formatDateDMY(it.fecha_inicio) + (horaIni ? ' ' + horaIni : '')
                     + ' → ' + formatDateDMY(it.fecha_final) + (horaFin ? ' ' + horaFin : '');
                 var total = Number(it.total_precio || 0).toLocaleString('es-CR');
+                var correa = correapartirBadge(it);
 
                 rows += '<tr>'
                     + '<td><strong>' + it.rental_id + '</strong></td>'
@@ -1007,7 +1031,9 @@ body {
                         + (it.car_name || '—')
                         + (it.car_placa ? ' <span class="badge bg-secondary ms-1">' + it.car_placa + '</span>' : '')
                     + '</td>'
-                    + '<td class="small text-muted">' + dRange + '</td>'
+                    + '<td class="small text-muted">' + dRange
+                        + (correa ? '<div class="mt-1">' + correa + '</div>' : '')
+                    + '</td>'
                     + '<td>' + estadoBadge(it.estado_pago) + '</td>'
                     + '<td class="text-end">₡ ' + total + '</td>'
                     + '<td class="text-end text-nowrap">'
@@ -1034,6 +1060,7 @@ body {
                 var dRange = formatDateDMY(it.fecha_inicio) + (horaIni ? ' ' + horaIni : '')
                     + ' → ' + formatDateDMY(it.fecha_final) + (horaFin ? ' ' + horaFin : '');
                 var total = Number(it.total_precio || 0).toLocaleString('es-CR');
+                var correa = correapartirBadge(it);
                 var headerId = accId + '_h_' + idx;
                 var bodyId = accId + '_b_' + idx;
 
@@ -1051,6 +1078,7 @@ body {
                     + '<span class="material-symbols-outlined align-middle" style="font-size:14px;">person</span> '
                     + (it.client_name || '—')
                     + '</div>'
+                    + (correa ? '<div class="mt-1">' + correa + '</div>' : '')
                     + '</div>'
                     + '</button>'
                     + '</h2>'
@@ -1063,6 +1091,9 @@ body {
                     + (it.car_placa ? ' <span class="badge bg-secondary ms-1">' + it.car_placa + '</span>' : '') + '</dd>'
                     + '<dt><span class="material-symbols-outlined align-middle" style="font-size:14px;">date_range</span> Periodo</dt>'
                     + '<dd class="small">' + dRange + '</dd>'
+                    + (correa
+                        ? '<dt><span class="material-symbols-outlined align-middle" style="font-size:14px;">schedule</span> Corre apartir</dt><dd>' + correa + '</dd>'
+                        : '')
                     + '<dt><span class="material-symbols-outlined align-middle" style="font-size:14px;">payments</span> Total</dt>'
                     + '<dd>₡ ' + total + '</dd>'
                     + '</dl>'

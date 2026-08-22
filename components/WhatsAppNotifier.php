@@ -1141,21 +1141,7 @@ class WhatsAppNotifier
         $days = (int) ($rental->cantidad_dias ?? 0);
 
         // ----- Corre apartir (si está habilitado) -----
-        $correaLine = null;
-        $correaEnabled = !empty($rental->correapartir_enabled);
-        $correaRaw = trim((string) ($rental->fecha_correapartir ?? ''));
-        if ($correaEnabled && $correaRaw !== '' && $correaRaw !== '0000-00-00 00:00:00') {
-            $ts = strtotime($correaRaw);
-            if ($ts !== false) {
-                // Si trae hora distinta de 00:00, mostrar día + fecha + hora 12h
-                $hasTime = (bool) preg_match('/\s\d{2}:\d{2}/', $correaRaw);
-                $correaLine = $hasTime
-                    ? self::dayName($ts) . ' ' . date('d/m/Y h:i A', $ts)
-                    : self::dayName($ts) . ' ' . date('d/m/Y', $ts);
-            } else {
-                $correaLine = $correaRaw;
-            }
-        }
+        $correaLine = self::formatCorreapartirLabel($rental);
 
         // ----- Estado de pago -----
         $payStatusKey = (string) ($rental->estado_pago ?? '');
@@ -1468,11 +1454,24 @@ class WhatsAppNotifier
                 Yii::warning('No se pudo obtener disponibles del día: ' . $e->getMessage(), 'whatsapp');
             }
 
-            $message = self::buildDailyDeliveriesMessage($deliveries, $returns, $availableCars, $hoy);
+            // Reservados activos hoy (cubren la fecha, no cancelados).
+            $reserved = Rental::find()
+                ->with(['client', 'car'])
+                ->andWhere(['estado_pago' => 'reservado'])
+                ->andWhere(['<=', 'fecha_inicio', $hoy])
+                ->andWhere(['or',
+                    ['>=', 'fecha_final', $hoy],
+                    ['fecha_final' => null],
+                ])
+                ->orderBy(['fecha_inicio' => SORT_ASC, 'hora_inicio' => SORT_ASC])
+                ->all();
+
+            $message = self::buildDailyDeliveriesMessage($deliveries, $returns, $availableCars, $hoy, $reserved);
             Yii::info(
                 'Resumen diario preparado (' . strlen($message) . ' chars): '
                 . count($deliveries) . ' entregas, '
                 . count($returns) . ' devoluciones, '
+                . count($reserved) . ' reservados, '
                 . count($availableCars) . ' disponibles',
                 'whatsapp'
             );
@@ -1523,8 +1522,9 @@ class WhatsAppNotifier
      * @param Rental[] $returns    Devoluciones del día (fecha_final = $date)
      * @param array    $availableCars Lista de objetos Car disponibles ese día
      * @param string   $date 'YYYY-MM-DD'
+     * @param Rental[] $reserved   Alquileres reservados activos ese día
      */
-    public static function buildDailyDeliveriesMessage(array $deliveries, array $returns, array $availableCars, string $date): string
+    public static function buildDailyDeliveriesMessage(array $deliveries, array $returns, array $availableCars, string $date, array $reserved = []): string
     {
         $company = CompanyConfig::getCompanyInfo();
         $companyName = $company['name'] ?? 'FACTO RENT A CAR';
@@ -1558,6 +1558,17 @@ class WhatsAppNotifier
         } else {
             foreach ($returns as $r) {
                 $lines[] = self::formatRentalLine($r, 'return');
+            }
+        }
+        $lines[] = '';
+
+        // ===== Reservados activos =====
+        $lines[] = '📌 *Reservados activos (' . count($reserved) . ')*';
+        if (empty($reserved)) {
+            $lines[] = '_Sin reservas activas._';
+        } else {
+            foreach ($reserved as $r) {
+                $lines[] = self::formatRentalLine($r, 'reserved');
             }
         }
         $lines[] = '';
@@ -1596,9 +1607,32 @@ class WhatsAppNotifier
     }
 
     /**
+     * Formatea fecha_correapartir para mensajes WhatsApp, o null si no aplica.
+     */
+    private static function formatCorreapartirLabel(Rental $rental): ?string
+    {
+        if (empty($rental->correapartir_enabled)) {
+            return null;
+        }
+        $correaRaw = trim((string) ($rental->fecha_correapartir ?? ''));
+        if ($correaRaw === '' || $correaRaw === '0000-00-00 00:00:00') {
+            return null;
+        }
+        $ts = strtotime($correaRaw);
+        if ($ts === false) {
+            return $correaRaw;
+        }
+        $hasTime = (bool) preg_match('/\s\d{2}:\d{2}/', $correaRaw);
+        return $hasTime
+            ? self::dayName($ts) . ' ' . date('d/m/Y h:i A', $ts)
+            : self::dayName($ts) . ' ' . date('d/m/Y', $ts);
+    }
+
+    /**
      * Formatea una línea de Rental para el resumen diario.
      * $type: 'delivery' -> usa hora_inicio + lugar_retiro
      *        'return'   -> usa hora_final  + lugar_entrega
+     *        'reserved' -> periodo + correapartir
      */
     private static function formatRentalLine(Rental $r, string $type): string
     {
@@ -1654,9 +1688,27 @@ class WhatsAppNotifier
         $parts[] = $carLabel . ($plate !== '' ? ' (' . $plate . ')' : '');
         $parts[] = $clientName;
         $line = implode(' — ', $parts);
+
+        $estado = (string) ($r->estado_pago ?? '');
+        if ($estado === 'reservado' && $type !== 'reserved') {
+            $line .= ' 📌_Reservado_';
+        }
+
         if ($lugar !== '') {
             $line .= "\n   📍 " . $lugar;
         }
+
+        $correa = self::formatCorreapartirLabel($r);
+        if ($correa !== null) {
+            $line .= "\n   ⏰ Corre apartir: " . $correa;
+        }
+
+        if ($type === 'reserved') {
+            $start = !empty($r->fecha_inicio) ? self::formatDate($r->fecha_inicio) : '—';
+            $end = !empty($r->fecha_final) ? self::formatDate($r->fecha_final) : '—';
+            $line .= "\n   📅 " . $start . ' → ' . $end;
+        }
+
         return $line;
     }
 }

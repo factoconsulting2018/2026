@@ -317,6 +317,8 @@ class CarController extends Controller
                 'hora_final' => (string) $r->hora_final,
                 'estado_pago' => (string) $r->estado_pago,
                 'total_precio' => (float) $r->total_precio,
+                'correapartir_enabled' => (int) ($r->correapartir_enabled ?? 0) === 1,
+                'fecha_correapartir' => (string) ($r->fecha_correapartir ?? ''),
                 'view_url' => \yii\helpers\Url::to(['/rental/view', 'id' => $r->id]),
                 'update_url' => \yii\helpers\Url::to(['/rental/update', 'id' => $r->id]),
             ];

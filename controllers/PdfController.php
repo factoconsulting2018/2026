@@ -1334,7 +1334,7 @@ class PdfController extends Controller
         <h4>SOBRE LA ENTREGA</h4>
         <ol>
             <li>Recuerde entregar el vehículo con el tanque de gasolina lleno. En caso de no poder realizarlo indíquelo a la oficina se cobrará la gasolina + ₡15,000 iva.</li>
-            <li>Recuerde revisar el estado del vehículo antes de entregarlo.</li>
+            <li>Recuerde revisar el estado y la limpieza del vehículo antes de entregarlo. Si el vehículo presenta suciedad excesiva, manchas, residuos, fuertes olores u otras condiciones que requieran una limpieza profunda o el uso de equipo especializado, se aplicará un cargo adicional por limpieza. Este cargo podrá variar entre ¢25.000 y ¢100.000, dependiendo del nivel de suciedad y del tratamiento requerido para devolver el vehículo a condiciones adecuadas.</li>
             <li>En caso de emergencia o accidente debe llamar al 88781108 con Ing. Ronald.</li>
             <li>En caso de rayones o siniestros debe cancelar el monto de $800 dólares en casos mayores como accidente u otros deberá cancelar $1,000.</li>
             <li>Recuerde que el chofer siempre deberá tener licencia al día ya que es requisito para el alquiler y en temas de seguro del mismo.</li>
