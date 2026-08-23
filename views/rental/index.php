@@ -101,7 +101,7 @@ $this->registerCss('
     
     .table-header-row {
         display: grid;
-        grid-template-columns: minmax(110px, 1fr) minmax(180px, 2fr) minmax(140px, 1.5fr) minmax(130px, 1.5fr) minmax(110px, 1fr) minmax(100px, 1fr) minmax(160px, 0.8fr);
+        grid-template-columns: minmax(100px, 0.9fr) minmax(160px, 2fr) minmax(120px, 1.3fr) minmax(120px, 1.3fr) minmax(100px, 0.9fr) minmax(90px, 0.8fr) minmax(120px, 1.1fr);
         background: #f8f9fa;
         border-bottom: 2px solid #e9ecef;
         width: 100%;
@@ -164,7 +164,7 @@ $this->registerCss('
     
     .rental-row {
         display: grid;
-        grid-template-columns: minmax(110px, 1fr) minmax(180px, 2fr) minmax(140px, 1.5fr) minmax(130px, 1.5fr) minmax(110px, 1fr) minmax(100px, 1fr) minmax(160px, 0.8fr);
+        grid-template-columns: minmax(100px, 0.9fr) minmax(160px, 2fr) minmax(120px, 1.3fr) minmax(120px, 1.3fr) minmax(100px, 0.9fr) minmax(90px, 0.8fr) minmax(120px, 1.1fr);
         border-bottom: 1px solid #e9ecef;
         transition: all 0.3s ease;
         background: white;
@@ -252,16 +252,26 @@ $this->registerCss('
         display: flex;
         flex-direction: column;
         gap: 4px;
+        min-width: 0;
+        width: 100%;
     }
     
     .vehicle-name {
         font-weight: 600;
         color: #2c3e50;
-        font-size: 14px;
+        font-size: 13px;
+        line-height: 1.25;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
     
     .vehicle-details {
-        font-size: 12px;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 4px 6px;
+        font-size: 11px;
         color: #6c757d;
     }
     
@@ -270,6 +280,24 @@ $this->registerCss('
         padding: 2px 6px;
         border-radius: 4px;
         font-family: monospace;
+        font-size: 11px;
+        white-space: nowrap;
+    }
+
+    .vehicle-details .badge {
+        font-size: 10px;
+        font-weight: 600;
+        padding: 0.2em 0.45em;
+        line-height: 1.3;
+        white-space: nowrap;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .vehicle-details .badge .material-symbols-outlined {
+        font-size: 12px !important;
+        margin-right: 1px;
     }
     
     /* Rango de Fechas */
@@ -384,16 +412,21 @@ $this->registerCss('
         font-family: monospace;
     }
     
-    /* Acciones CRUD */
+    /* Acciones CRUD — cuadrícula */
     .actions-cell {
         justify-content: center;
+        align-items: center;
     }
     
     .crud-actions {
-        display: flex;
-        gap: 8px;
+        display: grid;
+        grid-template-columns: repeat(3, 32px);
+        gap: 6px;
         align-items: center;
         justify-content: center;
+        width: max-content;
+        max-width: 100%;
+        margin: 0 auto;
     }
     
     .action-btn {
@@ -409,6 +442,7 @@ $this->registerCss('
         cursor: pointer;
         position: relative;
         overflow: hidden;
+        padding: 0;
     }
     
     .action-btn .material-symbols-outlined {
@@ -653,12 +687,15 @@ $this->registerCss('
     
     /* Acciones CRUD para móvil */
     .crud-actions-mobile {
-        display: flex;
-        gap: 12px;
+        display: grid;
+        grid-template-columns: repeat(4, 40px);
+        gap: 10px;
         align-items: center;
         justify-content: center;
         padding: 16px 0;
-        flex-wrap: wrap;
+        width: max-content;
+        max-width: 100%;
+        margin: 0 auto;
     }
     
     .crud-actions-mobile .action-btn {
@@ -759,7 +796,7 @@ $this->registerCss('
     @media (max-width: 1200px) {
         .table-header-row,
         .rental-row {
-            grid-template-columns: minmax(90px, 0.8fr) minmax(140px, 1.5fr) minmax(110px, 1fr) minmax(110px, 1fr) minmax(90px, 0.8fr) minmax(90px, 0.8fr) minmax(140px, 0.6fr);
+            grid-template-columns: minmax(90px, 0.8fr) minmax(140px, 1.5fr) minmax(110px, 1fr) minmax(110px, 1fr) minmax(90px, 0.8fr) minmax(80px, 0.7fr) minmax(118px, 1fr);
         }
     }
     
@@ -1153,21 +1190,21 @@ $this->registerCss('
                                 
                                 <div class="data-cell vehicle-cell">
                                     <div class="vehicle-info">
-                                        <div class="vehicle-name">
+                                        <div class="vehicle-name" title="<?= $model->car ? Html::encode($model->car->nombre ?? '') : '' ?>">
                                             <?= $model->car ? Html::encode($model->car->nombre ?? 'Vehículo sin nombre') : 'Vehículo no encontrado' ?>
                                         </div>
                                         <div class="vehicle-details">
-                                            <span class="vehicle-plate">🚗 <?= $model->car ? Html::encode($model->car->placa ?? 'Sin placa') : 'N/A' ?></span>
+                                            <span class="vehicle-plate"><?= $model->car ? Html::encode($model->car->placa ?? 'Sin placa') : 'N/A' ?></span>
                                             <?php if ($model->isSwapped()): ?>
                                                 <?php $repCar = $model->replacementRental->car ?? null; ?>
-                                                <span class="badge bg-warning text-dark ms-1" title="Cambio de vehículo">
-                                                    <span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;">published_with_changes</span>
-                                                    Cambiado<?= $repCar ? ' a ' . Html::encode($repCar->nombre) : '' ?>
+                                                <span class="badge bg-warning text-dark" title="Cambio de vehículo<?= $repCar ? ' a ' . Html::encode($repCar->nombre) : '' ?>">
+                                                    <span class="material-symbols-outlined">published_with_changes</span>
+                                                    Cambiado
                                                 </span>
                                             <?php elseif ($model->isReplacement()): ?>
-                                                <span class="badge bg-info text-dark ms-1" title="Reemplazo de <?= Html::encode($model->parentRental->rental_id ?? '') ?>">
-                                                    <span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;">sync_alt</span>
-                                                    Reemplazo<?= $model->parentRental ? ' #' . Html::encode($model->parentRental->rental_id) : '' ?>
+                                                <span class="badge bg-info text-dark" title="Reemplazo de <?= Html::encode($model->parentRental->rental_id ?? '') ?>">
+                                                    <span class="material-symbols-outlined">sync_alt</span>
+                                                    Reemp.<?= $model->parentRental ? ' #' . Html::encode($model->parentRental->rental_id) : '' ?>
                                                 </span>
                                             <?php endif; ?>
                                         </div>

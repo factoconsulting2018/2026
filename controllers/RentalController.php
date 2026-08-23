@@ -269,8 +269,23 @@ class RentalController extends Controller
         $model->populateRelation('client', $model->client);
         $model->populateRelation('car', $model->car);
 
+        $clientHistory = [];
+        if (!empty($model->client_id)) {
+            $clientHistory = Rental::find()
+                ->where([
+                    'client_id' => (int) $model->client_id,
+                    'is_async' => 0,
+                    'is_recurring_request' => 0,
+                ])
+                ->with(['car'])
+                ->orderBy(['fecha_inicio' => SORT_DESC, 'id' => SORT_DESC])
+                ->limit(50)
+                ->all();
+        }
+
         return $this->renderPartial('_view_modal_content', [
             'model' => $model,
+            'clientHistory' => $clientHistory,
         ]);
     }
 

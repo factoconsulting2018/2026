@@ -3,10 +3,13 @@
  * Contenido del modal de detalle de alquiler (con tabs).
  *
  * @var app\models\Rental $model
+ * @var app\models\Rental[] $clientHistory
  */
 
 use yii\helpers\Html;
 use yii\helpers\Url;
+
+$clientHistory = $clientHistory ?? [];
 
 $diasSemanaEs = [
     'Sunday' => 'Domingo',
@@ -27,6 +30,13 @@ $formatFechaConDia = static function ($raw) use ($diasSemanaEs) {
     }
     $dia = $diasSemanaEs[date('l', $ts)] ?? '';
     return date('d/m/Y', $ts) . ($dia !== '' ? ' ' . $dia : '');
+};
+$formatFechaCorta = static function ($raw) {
+    if (empty($raw)) {
+        return '—';
+    }
+    $ts = strtotime((string) $raw);
+    return $ts === false ? '—' : date('d/m/Y', $ts);
 };
 
 $rentalCode = !empty($model->rental_id) ? $model->rental_id : ('R' . $model->id);
@@ -112,14 +122,23 @@ $rowsExtra = [
 ];
 
 $uid = 'rmv' . (int) $model->id;
+$historialCount = count($clientHistory);
 ?>
 <div class="rental-modal-view" data-rental-id="<?= (int) $model->id ?>">
-    <ul class="nav nav-tabs mb-3" role="tablist">
+    <ul class="nav nav-tabs mb-3 flex-wrap" role="tablist">
         <li class="nav-item" role="presentation">
             <button class="nav-link active" id="<?= $uid ?>-detalles-tab" data-bs-toggle="tab"
                     data-bs-target="#<?= $uid ?>-detalles" type="button" role="tab">
                 <span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;">info</span>
                 Detalles
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="<?= $uid ?>-historial-tab" data-bs-toggle="tab"
+                    data-bs-target="#<?= $uid ?>-historial" type="button" role="tab">
+                <span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;">history</span>
+                Historial del cliente
+                <span class="badge bg-secondary ms-1"><?= (int) $historialCount ?></span>
             </button>
         </li>
         <li class="nav-item" role="presentation">
@@ -154,6 +173,63 @@ $uid = 'rmv' . (int) $model->id;
             </div>
         </div>
 
+        <div class="tab-pane fade" id="<?= $uid ?>-historial" role="tabpanel">
+            <?php if ($historialCount === 0): ?>
+                <div class="text-center text-muted py-4">
+                    <span class="material-symbols-outlined" style="font-size:40px;opacity:.45;">history</span>
+                    <p class="mb-0 mt-2">No hay historial de alquileres para este cliente.</p>
+                </div>
+            <?php else: ?>
+                <p class="small text-muted mb-2">
+                    Últimos <?= (int) $historialCount ?> alquileres del cliente
+                    <?= $model->client ? '<strong>' . Html::encode($model->client->full_name) . '</strong>' : '' ?>.
+                </p>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Orden</th>
+                                <th>Vehículo</th>
+                                <th>Período</th>
+                                <th>Estado</th>
+                                <th class="text-end">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        <?php foreach ($clientHistory as $hist): ?>
+                            <?php
+                            $histCode = !empty($hist->rental_id) ? $hist->rental_id : ('R' . $hist->id);
+                            $histEstado = $hist->estado_pago ?? 'pendiente';
+                            $histEstadoHtml = $estadoBadges[$histEstado]
+                                ?? ('<span class="badge bg-secondary">' . Html::encode($histEstado) . '</span>');
+                            $histCar = $hist->car
+                                ? ($hist->car->nombre . (!empty($hist->car->placa) ? ' (' . $hist->car->placa . ')' : ''))
+                                : '—';
+                            $isCurrent = ((int) $hist->id === (int) $model->id);
+                            ?>
+                            <tr class="<?= $isCurrent ? 'table-info' : '' ?>">
+                                <td>
+                                    <strong><?= Html::encode($histCode) ?></strong>
+                                    <?php if ($isCurrent): ?>
+                                        <span class="badge bg-primary ms-1">Actual</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td><?= Html::encode($histCar) ?></td>
+                                <td class="small text-nowrap">
+                                    <?= Html::encode($formatFechaCorta($hist->fecha_inicio)) ?>
+                                    →
+                                    <?= Html::encode($formatFechaCorta($hist->fecha_final)) ?>
+                                </td>
+                                <td><?= $histEstadoHtml ?></td>
+                                <td class="text-end text-nowrap">₡<?= number_format((float) ($hist->total_precio ?? 0), 2) ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php endif; ?>
+        </div>
+
         <div class="tab-pane fade" id="<?= $uid ?>-extra" role="tabpanel">
             <div class="table-responsive">
                 <table class="table table-sm table-striped mb-0 rental-modal-detail-table">
@@ -170,30 +246,38 @@ $uid = 'rmv' . (int) $model->id;
         </div>
 
         <div class="tab-pane fade" id="<?= $uid ?>-acciones" role="tabpanel">
-            <div class="d-grid gap-2">
-                <a href="<?= Url::to(['/rental/update', 'id' => $model->id]) ?>" class="btn btn-primary">
-                    <span class="material-symbols-outlined" style="font-size:18px;vertical-align:middle;margin-right:4px;">edit</span>
-                    Editar
-                </a>
-                <a href="<?= Url::to(['/pdf/rental-order', 'id' => $model->id]) ?>" class="btn btn-info text-white" target="_blank" rel="noopener">
-                    <span class="material-symbols-outlined" style="font-size:18px;vertical-align:middle;margin-right:4px;">picture_as_pdf</span>
-                    Orden PDF
-                </a>
-                <a href="<?= Url::to(['/rental/view', 'id' => $model->id]) ?>" class="btn btn-outline-secondary">
-                    <span class="material-symbols-outlined" style="font-size:18px;vertical-align:middle;margin-right:4px;">open_in_new</span>
-                    Abrir página completa
-                </a>
-                <?= Html::a(
-                    '<span class="material-symbols-outlined" style="font-size:18px;vertical-align:middle;margin-right:4px;">delete</span>Eliminar Alquiler',
-                    ['/rental/delete', 'id' => $model->id],
-                    [
-                        'class' => 'btn btn-danger',
-                        'data' => [
-                            'confirm' => '¿Estás seguro de que quieres eliminar este alquiler?',
-                            'method' => 'post',
-                        ],
-                    ]
-                ) ?>
+            <div class="row g-2">
+                <div class="col-6">
+                    <a href="<?= Url::to(['/rental/update', 'id' => $model->id]) ?>" class="btn btn-primary w-100">
+                        <span class="material-symbols-outlined" style="font-size:18px;vertical-align:middle;margin-right:4px;">edit</span>
+                        Editar
+                    </a>
+                </div>
+                <div class="col-6">
+                    <a href="<?= Url::to(['/pdf/rental-order', 'id' => $model->id]) ?>" class="btn btn-info text-white w-100" target="_blank" rel="noopener">
+                        <span class="material-symbols-outlined" style="font-size:18px;vertical-align:middle;margin-right:4px;">picture_as_pdf</span>
+                        Orden PDF
+                    </a>
+                </div>
+                <div class="col-6">
+                    <a href="<?= Url::to(['/rental/view', 'id' => $model->id]) ?>" class="btn btn-outline-secondary w-100">
+                        <span class="material-symbols-outlined" style="font-size:18px;vertical-align:middle;margin-right:4px;">open_in_new</span>
+                        Página completa
+                    </a>
+                </div>
+                <div class="col-6">
+                    <?= Html::a(
+                        '<span class="material-symbols-outlined" style="font-size:18px;vertical-align:middle;margin-right:4px;">delete</span>Eliminar',
+                        ['/rental/delete', 'id' => $model->id],
+                        [
+                            'class' => 'btn btn-danger w-100',
+                            'data' => [
+                                'confirm' => '¿Estás seguro de que quieres eliminar este alquiler?',
+                                'method' => 'post',
+                            ],
+                        ]
+                    ) ?>
+                </div>
             </div>
         </div>
     </div>
