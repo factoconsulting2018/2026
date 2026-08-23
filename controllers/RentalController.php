@@ -622,6 +622,8 @@ class RentalController extends Controller
             $rentalId = Yii::$app->request->post('rentalId');
             $newStatus = Yii::$app->request->post('newStatus');
             $observaciones = Yii::$app->request->post('observaciones', '');
+            $metodoPago = Yii::$app->request->post('comprobante_pago');
+            $numeroFactura = Yii::$app->request->post('numero_factura');
             
             if (!$rentalId || !$newStatus) {
                 return [
@@ -698,9 +700,15 @@ class RentalController extends Controller
             $oldStatus = $model->estado_pago;
             $model->estado_pago = $newStatus;
             
-            // Actualizar comprobante si se subió uno nuevo
-            if ($comprobantePath) {
+            // Método de pago (comprobante_pago) tiene prioridad sobre la ruta del archivo adjunto
+            if ($metodoPago !== null && $metodoPago !== '') {
+                $model->comprobante_pago = $metodoPago;
+            } elseif ($comprobantePath) {
                 $model->comprobante_pago = $comprobantePath;
+            }
+
+            if ($numeroFactura !== null) {
+                $model->numero_factura = $numeroFactura !== '' ? $numeroFactura : null;
             }
             
             // Actualizar abonos si el estado es "reservado"

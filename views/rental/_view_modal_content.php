@@ -300,6 +300,40 @@ $historialCount = count($clientHistory);
                     </select>
                 </div>
 
+                <?php
+                $metodosPago = [
+                    'Sinpe Móvil' => 'Sinpe Móvil',
+                    'Transferencia - BCR' => 'Transferencia - BCR',
+                    'Transferencia - BAC' => 'Transferencia - BAC',
+                    'Transferencia - BN' => 'Transferencia - BN',
+                    'Pago en efectivo' => 'Pago en efectivo',
+                    'Tarjeta de crédito' => 'Tarjeta de crédito',
+                ];
+                $metodoActual = (string) ($model->comprobante_pago ?? '');
+                $metodoEsOpcion = isset($metodosPago[$metodoActual]);
+                $tieneArchivoComprobante = method_exists($model, 'hasComprobante') && $model->hasComprobante();
+                ?>
+                <div class="row mb-3">
+                    <div class="col-md-6 mb-2 mb-md-0">
+                        <label class="form-label" for="<?= $uid ?>-pago-metodo">Comprobante de Pago (método de pago)</label>
+                        <select class="form-select" id="<?= $uid ?>-pago-metodo" name="comprobante_pago">
+                            <option value="">Seleccionar método de pago</option>
+                            <?php foreach ($metodosPago as $val => $label): ?>
+                                <option value="<?= Html::encode($val) ?>"<?= $metodoEsOpcion && $metodoActual === $val ? ' selected' : '' ?>>
+                                    <?= Html::encode($label) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="<?= $uid ?>-pago-factura">Número de Factura</label>
+                        <input type="text" class="form-control" id="<?= $uid ?>-pago-factura"
+                               name="numero_factura"
+                               value="<?= Html::encode((string) ($model->numero_factura ?? '')) ?>"
+                               placeholder="Ej: 001-001-00001234">
+                    </div>
+                </div>
+
                 <div id="<?= $uid ?>-pago-abonos" class="mb-3" style="display:<?= $abonosVisible ? 'block' : 'none' ?>;">
                     <div class="card">
                         <div class="card-header bg-info text-white py-2">
@@ -333,11 +367,11 @@ $historialCount = count($clientHistory);
                     </div>
                 </div>
 
-                <?php if (!empty($model->comprobante_pago)): ?>
+                <?php if ($tieneArchivoComprobante): ?>
                     <div class="mb-3">
-                        <label class="form-label">Comprobante actual</label>
+                        <label class="form-label">Archivo de comprobante actual</label>
                         <div>
-                            <a href="<?= Html::encode(Yii::getAlias('@web') . '/' . ltrim((string) $model->comprobante_pago, '/')) ?>"
+                            <a href="<?= Html::encode($model->getComprobanteUrl()) ?>"
                                target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary">
                                 <span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;">attach_file</span>
                                 Ver comprobante
@@ -347,10 +381,10 @@ $historialCount = count($clientHistory);
                 <?php endif; ?>
 
                 <div class="mb-3">
-                    <label class="form-label" for="<?= $uid ?>-pago-file">Comprobante de pago</label>
+                    <label class="form-label" for="<?= $uid ?>-pago-file">Adjuntar archivo de comprobante</label>
                     <input type="file" class="form-control" id="<?= $uid ?>-pago-file" name="comprobanteFile"
                            accept=".jpg,.jpeg,.png,.pdf,.doc,.docx">
-                    <div class="form-text">JPG, PNG, PDF, DOC, DOCX (máx. 10MB)</div>
+                    <div class="form-text">JPG, PNG, PDF, DOC, DOCX (máx. 10MB). Opcional; no reemplaza el método de pago.</div>
                 </div>
 
                 <div class="mb-3">
