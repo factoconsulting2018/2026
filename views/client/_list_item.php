@@ -47,7 +47,10 @@ use yii\helpers\Url;
             <div class="col-md-4 text-md-end">
                 <div class="d-flex gap-2 justify-content-md-end justify-content-center flex-wrap">
                     <!-- READ - Ver detalles -->
-                    <a href="<?= Url::to(['view', 'id' => $model->id]) ?>" class="btn btn-sm btn-info" title="Ver Detalles">
+                    <a href="<?= Url::to(['view', 'id' => $model->id]) ?>"
+                       class="btn btn-sm btn-info"
+                       title="Ver Detalles"
+                       onclick="return openClientViewModal(<?= (int) $model->id ?>, <?= Html::encode(json_encode($model->fullNameUppercase)) ?>);">
                         <span class="material-symbols-outlined" style="font-size: 16px;">visibility</span>
                     </a>
                     

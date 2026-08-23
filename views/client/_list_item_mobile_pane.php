@@ -56,7 +56,10 @@ $hideHeader = !empty($hideHeader);
         <?php endif; ?>
     </div>
     <div class="d-flex flex-wrap gap-2 justify-content-center align-items-center mt-4 client-mobile-actions">
-        <a href="<?= Url::to(['view', 'id' => $model->id]) ?>" class="btn btn-sm btn-info" title="Ver Detalles">
+        <a href="<?= Url::to(['view', 'id' => $model->id]) ?>"
+           class="btn btn-sm btn-info"
+           title="Ver Detalles"
+           onclick="return openClientViewModal(<?= (int) $model->id ?>, <?= \yii\helpers\Json::encode($model->fullNameUppercase) ?>);">
             <span class="material-symbols-outlined" style="font-size: 18px;">visibility</span>
         </a>
         <a href="<?= Url::to(['update', 'id' => $model->id]) ?>" class="btn btn-sm btn-primary" title="Editar">

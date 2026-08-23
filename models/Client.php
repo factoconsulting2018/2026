@@ -238,7 +238,7 @@ class Client extends ActiveRecord
      */
     public function getRentals()
     {
-        return $this->hasMany(Rental::class, ['cliente_id' => 'id']);
+        return $this->hasMany(Rental::class, ['client_id' => 'id']);
     }
 
     /**

@@ -396,6 +396,11 @@ $renderPaginationBar = static function () use ($pagerConfig, $start, $end, $tota
     <?php Pjax::end(); ?>
 </div>
 
+<?= $this->render('_view_modal_shell') ?>
+<?php
+$this->registerJsFile('@web/js/client-form.js', ['depends' => [yii\web\JqueryAsset::class]]);
+?>
+
 <script>
 function shareClient(clientId, nombre, cedula, whatsapp, email) {
     // Crear el texto con la información del cliente

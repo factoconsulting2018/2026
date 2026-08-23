@@ -3,6 +3,7 @@ namespace app\controllers;
 
 use Yii;
 use app\models\Client;
+use app\models\Rental;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\web\UploadedFile;
@@ -39,6 +40,7 @@ class ClientController extends Controller
                     'list-files' => ['GET', 'POST'],
                     'download-file' => ['GET'],
                     'restore-to-pending' => ['POST'],
+                    'modal-view' => ['GET'],
                 ],
             ],
         ];
@@ -125,9 +127,47 @@ class ClientController extends Controller
      */
     public function actionView($id)
     {
+        $model = $this->findModel($id);
+
         return $this->render('view', [
-            'model' => $this->findModel($id),
+            'model' => $model,
+            'rentalHistory' => $this->getClientRentalHistory((int) $model->id),
+            'clientLibraryFileCount' => (int) \app\models\ClientFile::find()->where(['client_id' => $model->id])->count(),
         ]);
+    }
+
+    /**
+     * Detalle de cliente para modal (HTML parcial con tabs).
+     */
+    public function actionModalView($id)
+    {
+        $model = $this->findModel($id);
+
+        return $this->renderPartial('_view_tabs_content', [
+            'model' => $model,
+            'rentalHistory' => $this->getClientRentalHistory((int) $model->id),
+            'clientLibraryFileCount' => (int) \app\models\ClientFile::find()->where(['client_id' => $model->id])->count(),
+            'uid' => 'cvmodal' . (int) $model->id,
+            'embedInModal' => true,
+        ]);
+    }
+
+    /**
+     * Historial de alquileres del cliente (últimos 50).
+     * @return Rental[]
+     */
+    private function getClientRentalHistory(int $clientId): array
+    {
+        return Rental::find()
+            ->where([
+                'client_id' => $clientId,
+                'is_async' => 0,
+                'is_recurring_request' => 0,
+            ])
+            ->with(['car'])
+            ->orderBy(['fecha_inicio' => SORT_DESC, 'id' => SORT_DESC])
+            ->limit(50)
+            ->all();
     }
 
     /**
