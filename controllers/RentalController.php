@@ -49,6 +49,7 @@ class RentalController extends Controller
                     'pdf-choices' => ['GET'],
                     'overdue-rentals' => ['GET'],
                     'conflicting-rentals' => ['GET'],
+                    'modal-view' => ['GET'],
                 ],
             ],
         ];
@@ -256,6 +257,20 @@ class RentalController extends Controller
         
         return $this->render('view', [
 'model' => $model,
+        ]);
+    }
+
+    /**
+     * Detalle de alquiler para modal (HTML parcial con tabs).
+     */
+    public function actionModalView($id)
+    {
+        $model = $this->findModel($id);
+        $model->populateRelation('client', $model->client);
+        $model->populateRelation('car', $model->car);
+
+        return $this->renderPartial('_view_modal_content', [
+            'model' => $model,
         ]);
     }
 

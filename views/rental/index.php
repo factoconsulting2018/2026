@@ -1257,7 +1257,10 @@ $this->registerCss('
                                 
                                 <div class="data-cell actions-cell">
                                     <div class="crud-actions">
-                                        <a href="<?= Url::to(['view', 'id' => $model->id]) ?>" class="action-btn view-btn" title="Ver Detalles">
+                                        <a href="<?= Url::to(['view', 'id' => $model->id]) ?>"
+                                           class="action-btn view-btn"
+                                           title="Ver Detalles"
+                                           onclick="return openRentalViewModal(<?= (int) $model->id ?>, <?= Html::encode(json_encode($rentalId)) ?>);">
                                             <span class="material-symbols-outlined">visibility</span>
                                         </a>
                                         <a href="<?= Url::to(['update', 'id' => $model->id]) ?>" class="action-btn edit-btn" title="Editar">
@@ -1519,7 +1522,10 @@ $this->registerCss('
                         
                         <div class="accordion-actions">
                             <div class="crud-actions-mobile">
-                                <a href="<?= $viewUrl ?>" class="action-btn view-btn" title="Ver Detalles">
+                                <a href="<?= $viewUrl ?>"
+                                   class="action-btn view-btn"
+                                   title="Ver Detalles"
+                                   onclick="return openRentalViewModal(<?= (int) $model->id ?>, <?= Html::encode(json_encode(!empty($model->rental_id) ? $model->rental_id : ('R' . $model->id))) ?>);">
                                     <span class="material-symbols-outlined">visibility</span>
                                 </a>
                                 <a href="<?= $updateUrl ?>" class="action-btn edit-btn" title="Editar">
@@ -2023,6 +2029,8 @@ $this->registerCss('
         </div>
     </div>
 </div>
+
+<?= $this->render('_view_modal_shell') ?>
 
 <!-- Modal filtro Cliente -->
 <div class="modal fade" id="filterClienteModal" tabindex="-1" aria-labelledby="filterClienteModalLabel" aria-hidden="true">
@@ -3113,7 +3121,8 @@ function renderConflictsList(rentals) {
                         <span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;">edit</span>
                         Modificar fechas
                     </a>
-                    <a href="${r.view_url}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary">
+                    <a href="${r.view_url}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary"
+                       onclick="event.preventDefault(); return openRentalViewModal(${r.id}, ${JSON.stringify(r.rental_id || ('R' + r.id))});">
                         <span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;">visibility</span>
                         Ver
                     </a>
@@ -3267,7 +3276,8 @@ function renderOverdueList(rentals) {
                         <span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;">cancel</span>
                         Cancelar
                     </button>
-                    <a href="${r.view_url}" class="btn btn-sm btn-outline-primary">
+                    <a href="${r.view_url}" class="btn btn-sm btn-outline-primary"
+                       onclick="return openRentalViewModal(${r.id}, ${JSON.stringify(r.rental_id || ('R' + r.id))});">
                         <span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;">visibility</span>
                         Ver
                     </a>

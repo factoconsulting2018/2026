@@ -1072,7 +1072,10 @@ $this->registerCss('
                                 
                                 <div class="data-cell actions-cell">
                                     <div class="crud-actions">
-                                        <a href="<?= Url::to(['view', 'id' => $model->id]) ?>" class="action-btn view-btn" title="Ver Detalles">
+                                        <a href="<?= Url::to(['/rental/view', 'id' => $model->id]) ?>"
+                                           class="action-btn view-btn"
+                                           title="Ver Detalles"
+                                           onclick="return openRentalViewModal(<?= (int) $model->id ?>, <?= Html::encode(json_encode($rentalId)) ?>);">
                                             <span class="material-symbols-outlined">visibility</span>
                                         </a>
                                         <a href="<?= Url::to(['update', 'id' => $model->id]) ?>" class="action-btn edit-btn" title="Editar">
@@ -1301,7 +1304,10 @@ $this->registerCss('
                             </div>
                             
                             <div class="accordion-actions-right">
-                                <a href="<?= $viewUrl ?>" class="action-icon view-icon" title="Ver Detalles">
+                                <a href="<?= Url::to(['/rental/view', 'id' => $model->id]) ?>"
+                                   class="action-icon view-icon"
+                                   title="Ver Detalles"
+                                   onclick="return openRentalViewModal(<?= (int) $model->id ?>, <?= Html::encode(json_encode(!empty($model->rental_id) ? $model->rental_id : ('R' . $model->id))) ?>);">
                                     <span class="material-symbols-outlined">visibility</span>
                                 </a>
                                 <a href="<?= $updateUrl ?>" class="action-icon edit-icon" title="Editar">
@@ -1457,6 +1463,8 @@ $this->registerCss('
 
 
 <!-- Modal para cambiar estado de pago -->
+<?= $this->render('/rental/_view_modal_shell') ?>
+
 <div class="modal fade" id="paymentStatusModal" tabindex="-1" aria-labelledby="paymentStatusModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
