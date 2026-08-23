@@ -39,7 +39,7 @@ $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => Yii
     <?php $this->registerJsFile('@web/js/actions-menu.js'); ?>
     
     <!-- Navigation Drawer -->
-    <?php $this->registerJsFile('@web/js/navigation-drawer.js'); ?>
+    <?php $this->registerJsFile('@web/js/navigation-drawer.js', ['position' => \yii\web\View::POS_END]); ?>
     
     <style>
         :root {
@@ -231,14 +231,15 @@ $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => Yii
         }
 
         .nav-category-items {
-            display: none;
+            display: none !important;
             list-style: none;
             padding: 0 0 6px;
             margin: 0;
+            width: 100%;
         }
 
         .nav-category.open > .nav-category-items {
-            display: block;
+            display: block !important;
         }
 
         .nav-category-items .nav-link {
@@ -253,6 +254,16 @@ $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => Yii
 
         .nav-category-items .nav-icon {
             font-size: 18px;
+        }
+
+        /* El li de categoría debe apilar toggle + submenú */
+        .drawer .nav-category {
+            display: block;
+            width: 100%;
+        }
+
+        .drawer .nav-category-toggle {
+            width: 100%;
         }
         
         /* Main Content */
@@ -698,6 +709,33 @@ $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => Yii
         </div>
     </div>
 </nav>
+
+<script>
+// Fallback inmediato por si el JS externo está en caché viejo
+(function () {
+    function bindCats() {
+        var drawer = document.getElementById('drawer');
+        if (!drawer || drawer.dataset.navCategoriesBound === '1') return;
+        drawer.dataset.navCategoriesBound = '1';
+        drawer.addEventListener('click', function (e) {
+            var btn = e.target.closest('.nav-category-toggle');
+            if (!btn || !drawer.contains(btn)) return;
+            e.preventDefault();
+            e.stopPropagation();
+            var cat = btn.closest('.nav-category');
+            if (!cat) return;
+            var open = !cat.classList.contains('open');
+            cat.classList.toggle('open', open);
+            btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        });
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bindCats);
+    } else {
+        bindCats();
+    }
+})();
+</script>
 
 <!-- Drawer Overlay -->
 <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
