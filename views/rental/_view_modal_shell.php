@@ -7,6 +7,7 @@
 use yii\helpers\Url;
 
 $modalViewUrl = Url::to(['/rental/modal-view']);
+$payUpdateUrl = Url::to(['/rental/update-payment-status']);
 ?>
 <div class="modal fade" id="rentalViewModal" tabindex="-1" aria-labelledby="rentalViewModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
@@ -121,6 +122,17 @@ $modalViewUrl = Url::to(['/rental/modal-view']);
     background: #198754 !important;
 }
 
+#rentalViewModal .rental-modal-view .nav-tabs .nav-link[id$="-pago-tab"],
+#rentalViewModal .rental-modal-view .nav-tabs .nav-link[id$="-pago-tab"].active {
+    background: #ffc107 !important;
+    color: #212529 !important;
+}
+
+#rentalViewModal .rental-modal-view .nav-tabs .nav-link[id$="-pago-tab"] .material-symbols-outlined,
+#rentalViewModal .rental-modal-view .nav-tabs .nav-link[id$="-pago-tab"].active .material-symbols-outlined {
+    color: #212529 !important;
+}
+
 #rentalViewModal .rental-modal-view .nav-tabs .nav-link[id$="-acciones-tab"],
 #rentalViewModal .rental-modal-view .nav-tabs .nav-link[id$="-acciones-tab"].active {
     background: #fd7e14 !important;
@@ -148,9 +160,13 @@ $modalViewUrl = Url::to(['/rental/modal-view']);
     }
 
     var MODAL_VIEW_URL = <?= json_encode($modalViewUrl) ?>;
+    var PAY_UPDATE_URL = <?= json_encode($payUpdateUrl) ?>;
+    var CSRF_PARAM = <?= json_encode(Yii::$app->request->csrfParam) ?>;
+    var CSRF_TOKEN = <?= json_encode(Yii::$app->request->csrfToken) ?>;
     var navList = [];
     var navIndex = -1;
     var currentRentalId = null;
+    var currentRentalCode = null;
 
     function collectRentalNavList() {
         var items = [];
@@ -290,6 +306,7 @@ $modalViewUrl = Url::to(['/rental/modal-view']);
         }
 
         currentRentalId = rentalId;
+        currentRentalCode = rentalCode || ('R' + rentalId);
         updateNavUi();
 
         var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
@@ -297,6 +314,113 @@ $modalViewUrl = Url::to(['/rental/modal-view']);
         loadRentalHtml(rentalId, rentalCode);
 
         return false;
+    };
+
+    window.rmvTogglePayAbonos = function (uid) {
+        var sel = document.getElementById(uid + '-pago-new');
+        var box = document.getElementById(uid + '-pago-abonos');
+        if (!sel || !box) return;
+        box.style.display = sel.value === 'reservado' ? 'block' : 'none';
+    };
+
+    window.rmvSavePaymentStatus = function (uid) {
+        var form = document.getElementById(uid + '-pago-form');
+        var err = document.getElementById(uid + '-pago-error');
+        var ok = document.getElementById(uid + '-pago-ok');
+        var btn = document.getElementById(uid + '-pago-save');
+        var sel = document.getElementById(uid + '-pago-new');
+        if (!form || !sel) return;
+
+        if (err) {
+            err.classList.add('d-none');
+            err.textContent = '';
+        }
+        if (ok) {
+            ok.classList.add('d-none');
+            ok.textContent = '';
+        }
+
+        if (!sel.value) {
+            if (err) {
+                err.textContent = 'Seleccione un nuevo estado de pago.';
+                err.classList.remove('d-none');
+            }
+            return;
+        }
+
+        var fileInput = document.getElementById(uid + '-pago-file');
+        if (fileInput && fileInput.files && fileInput.files[0] && fileInput.files[0].size > 10 * 1024 * 1024) {
+            if (err) {
+                err.textContent = 'El archivo es demasiado grande (máx. 10MB).';
+                err.classList.remove('d-none');
+            }
+            return;
+        }
+
+        var fd = new FormData(form);
+        if (CSRF_PARAM && CSRF_TOKEN) {
+            fd.set(CSRF_PARAM, CSRF_TOKEN);
+        }
+
+        var orig = btn ? btn.innerHTML : '';
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Guardando…';
+        }
+
+        fetch(PAY_UPDATE_URL, {
+            method: 'POST',
+            body: fd,
+            headers: {
+                'X-CSRF-Token': CSRF_TOKEN || '',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            credentials: 'same-origin'
+        })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (data && data.success) {
+                    if (ok) {
+                        ok.textContent = data.message || 'Estado de pago actualizado correctamente.';
+                        ok.classList.remove('d-none');
+                    }
+                    var code = form.getAttribute('data-rental-code') || currentRentalCode;
+                    var rid = parseInt(form.getAttribute('data-rental-id'), 10) || currentRentalId;
+                    loadRentalHtml(rid, code).then(function () {
+                        var tabBtn = document.getElementById('rmv' + rid + '-pago-tab');
+                        if (!tabBtn) return;
+                        if (typeof bootstrap !== 'undefined' && bootstrap.Tab) {
+                            var tab = bootstrap.Tab.getInstance(tabBtn);
+                            if (!tab) tab = new bootstrap.Tab(tabBtn);
+                            tab.show();
+                        } else {
+                            tabBtn.click();
+                        }
+                        var okNew = document.getElementById('rmv' + rid + '-pago-ok');
+                        if (okNew) {
+                            okNew.textContent = (data && data.message) ? data.message : 'Estado de pago actualizado correctamente.';
+                            okNew.classList.remove('d-none');
+                        }
+                    });
+                } else {
+                    if (err) {
+                        err.textContent = (data && data.message) ? data.message : 'No se pudo actualizar el estado.';
+                        err.classList.remove('d-none');
+                    }
+                }
+            })
+            .catch(function (e) {
+                if (err) {
+                    err.textContent = 'Error de red: ' + (e && e.message ? e.message : 'desconocido');
+                    err.classList.remove('d-none');
+                }
+            })
+            .finally(function () {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = orig;
+                }
+            });
     };
 
     document.addEventListener('DOMContentLoaded', function () {

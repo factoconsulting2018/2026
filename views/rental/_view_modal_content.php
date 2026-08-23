@@ -60,6 +60,7 @@ if ($esMismoDia && $medioDiaActivo) {
 }
 
 $estado = $model->estado_pago ?? 'pendiente';
+$uid = 'rmv' . (int) $model->id;
 $estadoBadges = [
     'pendiente' => '<span class="badge bg-warning text-dark">Pendiente</span>',
     'pagado' => '<span class="badge bg-success">Pagado</span>',
@@ -68,6 +69,9 @@ $estadoBadges = [
     'cancelado' => '<span class="badge bg-danger">Cancelado</span>',
 ];
 $estadoHtml = $estadoBadges[$estado] ?? ('<span class="badge bg-secondary">' . Html::encode($estado) . '</span>');
+$estadoHtml = '<button type="button" class="border-0 p-0 bg-transparent" title="Ir a tab Pago"'
+    . ' onclick="var t=document.getElementById(\'' . $uid . '-pago-tab\'); if(t){ if(window.bootstrap&&bootstrap.Tab){var i=bootstrap.Tab.getInstance(t)||new bootstrap.Tab(t); i.show();} else {t.click();} }">'
+    . $estadoHtml . '</button>';
 
 $horaInicio = !empty($model->hora_inicio) ? \app\helpers\TimeHelper::convertTo12Hour($model->hora_inicio) : 'N/A';
 $horaFinal = !empty($model->hora_final) ? \app\helpers\TimeHelper::convertTo12Hour($model->hora_final) : 'N/A';
@@ -121,7 +125,6 @@ $rowsExtra = [
     ['Choferes Autorizados', $model->choferes_autorizados ? nl2br(Html::encode($model->choferes_autorizados)) : '—'],
 ];
 
-$uid = 'rmv' . (int) $model->id;
 $historialCount = count($clientHistory);
 ?>
 <div class="rental-modal-view" data-rental-id="<?= (int) $model->id ?>">
@@ -146,6 +149,13 @@ $historialCount = count($clientHistory);
                     data-bs-target="#<?= $uid ?>-extra" type="button" role="tab">
                 <span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;">notes</span>
                 Extra
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="<?= $uid ?>-pago-tab" data-bs-toggle="tab"
+                    data-bs-target="#<?= $uid ?>-pago" type="button" role="tab">
+                <span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;">payments</span>
+                Pago
             </button>
         </li>
         <li class="nav-item" role="presentation">
@@ -243,6 +253,121 @@ $historialCount = count($clientHistory);
                     </tbody>
                 </table>
             </div>
+        </div>
+
+        <div class="tab-pane fade" id="<?= $uid ?>-pago" role="tabpanel">
+            <?php
+            $estadoLabelMap = [
+                'pendiente' => 'Pendiente',
+                'pagado' => 'Pagado',
+                'reservado' => 'Reservado',
+                'finalizado' => 'Finalizado',
+                'cancelado' => 'Cancelado',
+            ];
+            $estadoLabel = $estadoLabelMap[$estado] ?? ucfirst((string) $estado);
+            $defaultNewStatus = ($estado === 'pendiente') ? 'pagado' : $estado;
+            $abonosVisible = ($defaultNewStatus === 'reservado');
+            ?>
+            <form id="<?= $uid ?>-pago-form" class="rmv-pago-form" enctype="multipart/form-data"
+                  data-rental-id="<?= (int) $model->id ?>"
+                  data-rental-code="<?= Html::encode($rentalCode) ?>"
+                  onsubmit="return false;">
+                <input type="hidden" name="rentalId" value="<?= (int) $model->id ?>">
+
+                <div class="row mb-3">
+                    <div class="col-md-6 mb-2 mb-md-0">
+                        <label class="form-label" for="<?= $uid ?>-pago-code">ID Alquiler</label>
+                        <input type="text" class="form-control" id="<?= $uid ?>-pago-code"
+                               value="<?= Html::encode($rentalCode) ?>" readonly>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="<?= $uid ?>-pago-current">Estado actual</label>
+                        <input type="text" class="form-control" id="<?= $uid ?>-pago-current"
+                               value="<?= Html::encode($estadoLabel) ?>" readonly>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label" for="<?= $uid ?>-pago-new">Nuevo estado de pago</label>
+                    <select class="form-select" id="<?= $uid ?>-pago-new" name="newStatus" required
+                            onchange="rmvTogglePayAbonos('<?= $uid ?>')">
+                        <option value="">Seleccione un estado</option>
+                        <option value="pagado"<?= $defaultNewStatus === 'pagado' ? ' selected' : '' ?>>Pagado</option>
+                        <option value="reservado"<?= $defaultNewStatus === 'reservado' ? ' selected' : '' ?>>Reservado</option>
+                        <option value="pendiente"<?= $defaultNewStatus === 'pendiente' ? ' selected' : '' ?>>Pendiente</option>
+                        <option value="finalizado"<?= $defaultNewStatus === 'finalizado' ? ' selected' : '' ?>>Finalizado</option>
+                        <option value="cancelado"<?= $defaultNewStatus === 'cancelado' ? ' selected' : '' ?>>Cancelado</option>
+                    </select>
+                </div>
+
+                <div id="<?= $uid ?>-pago-abonos" class="mb-3" style="display:<?= $abonosVisible ? 'block' : 'none' ?>;">
+                    <div class="card">
+                        <div class="card-header bg-info text-white py-2">
+                            <strong>
+                                <span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;">payments</span>
+                                Abonos
+                            </strong>
+                        </div>
+                        <div class="card-body">
+                            <?php for ($i = 1; $i <= 5; $i++): ?>
+                                <?php
+                                $abonoDesc = $model->{"abono{$i}_descripcion"} ?? '';
+                                $abonoMonto = $model->{"abono{$i}_monto"} ?? '';
+                                ?>
+                                <div class="row mb-2">
+                                    <div class="col-md-8 mb-1 mb-md-0">
+                                        <input type="text" class="form-control form-control-sm"
+                                               name="abono<?= $i ?>_descripcion"
+                                               value="<?= Html::encode((string) $abonoDesc) ?>"
+                                               placeholder="Abono <?= $i ?> descripción">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <input type="number" class="form-control form-control-sm"
+                                               name="abono<?= $i ?>_monto" step="0.01"
+                                               value="<?= $abonoMonto !== null && $abonoMonto !== '' ? Html::encode((string) $abonoMonto) : '' ?>"
+                                               placeholder="Monto ₡">
+                                    </div>
+                                </div>
+                            <?php endfor; ?>
+                        </div>
+                    </div>
+                </div>
+
+                <?php if (!empty($model->comprobante_pago)): ?>
+                    <div class="mb-3">
+                        <label class="form-label">Comprobante actual</label>
+                        <div>
+                            <a href="<?= Html::encode(Yii::getAlias('@web') . '/' . ltrim((string) $model->comprobante_pago, '/')) ?>"
+                               target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary">
+                                <span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;">attach_file</span>
+                                Ver comprobante
+                            </a>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
+                <div class="mb-3">
+                    <label class="form-label" for="<?= $uid ?>-pago-file">Comprobante de pago</label>
+                    <input type="file" class="form-control" id="<?= $uid ?>-pago-file" name="comprobanteFile"
+                           accept=".jpg,.jpeg,.png,.pdf,.doc,.docx">
+                    <div class="form-text">JPG, PNG, PDF, DOC, DOCX (máx. 10MB)</div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label" for="<?= $uid ?>-pago-obs">Observaciones (opcional)</label>
+                    <textarea class="form-control" id="<?= $uid ?>-pago-obs" name="observaciones" rows="2"
+                              placeholder="Detalle del pago, referencia Sinpe, etc."></textarea>
+                </div>
+
+                <div id="<?= $uid ?>-pago-error" class="alert alert-danger d-none mb-3"></div>
+                <div id="<?= $uid ?>-pago-ok" class="alert alert-success d-none mb-3"></div>
+
+                <button type="button" class="btn btn-primary" id="<?= $uid ?>-pago-save"
+                        onclick="rmvSavePaymentStatus('<?= $uid ?>')">
+                    <span class="material-symbols-outlined" style="font-size:18px;vertical-align:middle;margin-right:4px;">save</span>
+                    Guardar estado de pago
+                </button>
+            </form>
         </div>
 
         <div class="tab-pane fade" id="<?= $uid ?>-acciones" role="tabpanel">
