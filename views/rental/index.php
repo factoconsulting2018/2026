@@ -1213,6 +1213,8 @@ $this->registerCss('
                                         <a href="<?= Url::to(['view', 'id' => $model->id]) ?>"
                                            class="action-btn view-btn"
                                            title="Ver Detalles"
+                                           data-nav-rental-id="<?= (int) $model->id ?>"
+                                           data-nav-rental-code="<?= Html::encode($rentalId) ?>"
                                            onclick="return openRentalViewModal(<?= (int) $model->id ?>, <?= Html::encode(json_encode($rentalId)) ?>);">
                                             <span class="material-symbols-outlined">visibility</span>
                                         </a>
@@ -1478,6 +1480,8 @@ $this->registerCss('
                                 <a href="<?= $viewUrl ?>"
                                    class="action-btn view-btn"
                                    title="Ver Detalles"
+                                   data-nav-rental-id="<?= (int) $model->id ?>"
+                                   data-nav-rental-code="<?= Html::encode(!empty($model->rental_id) ? $model->rental_id : ('R' . $model->id)) ?>"
                                    onclick="return openRentalViewModal(<?= (int) $model->id ?>, <?= Html::encode(json_encode(!empty($model->rental_id) ? $model->rental_id : ('R' . $model->id))) ?>);">
                                     <span class="material-symbols-outlined">visibility</span>
                                 </a>

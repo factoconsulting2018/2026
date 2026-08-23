@@ -18,6 +18,7 @@ $jsFiltro = json_encode(date('Y-m-d'));
 $jsMonthUrl = json_encode($calendarMonthUrl);
 $jsDayUrl = json_encode($calendarDayUrl);
 $jsDispUrl = json_encode($calendarDispUrl);
+$jsPayUpdateUrl = json_encode(Url::to(['/rental/update-payment-status']));
 ?>
 
 <div class="site-index">
@@ -179,6 +180,85 @@ $jsDispUrl = json_encode($calendarDispUrl);
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: reportar pago / cambiar estado (desde badge Pendiente) -->
+    <div class="modal fade" id="rcPaymentModal" tabindex="-1" aria-labelledby="rcPaymentModalLabel" aria-hidden="true" style="z-index: 1065;">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header" style="background: linear-gradient(135deg, #22487a 0%, #0d001e 100%); color: #fff;">
+                    <h5 class="modal-title" id="rcPaymentModalLabel" style="color:#fff;">
+                        <span class="material-symbols-outlined" style="font-size:20px;vertical-align:middle;margin-right:6px;">payments</span>
+                        Reportar pago / cambiar estado
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="rcPaymentForm" enctype="multipart/form-data">
+                        <input type="hidden" id="rcPayRentalId" name="rentalId">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label" for="rcPayRentalCode">ID Alquiler</label>
+                                <input type="text" class="form-control" id="rcPayRentalCode" readonly>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="rcPayCurrentStatus">Estado actual</label>
+                                <input type="text" class="form-control" id="rcPayCurrentStatus" readonly>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="rcPayNewStatus">Nuevo estado de pago</label>
+                            <select class="form-select" id="rcPayNewStatus" name="newStatus" required onchange="rcTogglePayAbonos()">
+                                <option value="">Seleccione un estado</option>
+                                <option value="pagado" selected>Pagado</option>
+                                <option value="reservado">Reservado</option>
+                                <option value="pendiente">Pendiente</option>
+                                <option value="finalizado">Finalizado</option>
+                                <option value="cancelado">Cancelado</option>
+                            </select>
+                        </div>
+                        <div id="rcPayAbonosFields" class="mb-3" style="display:none;">
+                            <div class="card">
+                                <div class="card-header bg-info text-white py-2">
+                                    <strong>Abonos</strong>
+                                </div>
+                                <div class="card-body">
+                                    <?php for ($i = 1; $i <= 3; $i++): ?>
+                                    <div class="row mb-2">
+                                        <div class="col-md-8">
+                                            <input type="text" class="form-control form-control-sm" name="abono<?= $i ?>_descripcion" placeholder="Abono <?= $i ?> descripción">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <input type="number" class="form-control form-control-sm" name="abono<?= $i ?>_monto" step="0.01" placeholder="Monto ₡">
+                                        </div>
+                                    </div>
+                                    <?php endfor; ?>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="rcPayComprobante">Comprobante de pago</label>
+                            <input type="file" class="form-control" id="rcPayComprobante" name="comprobanteFile"
+                                   accept=".jpg,.jpeg,.png,.pdf,.doc,.docx">
+                            <div class="form-text">JPG, PNG, PDF, DOC, DOCX (máx. 10MB)</div>
+                        </div>
+                        <div class="mb-0">
+                            <label class="form-label" for="rcPayObs">Observaciones (opcional)</label>
+                            <textarea class="form-control" id="rcPayObs" name="observaciones" rows="2"
+                                      placeholder="Detalle del pago, referencia Sinpe, etc."></textarea>
+                        </div>
+                    </form>
+                    <div id="rcPayError" class="alert alert-danger mt-3 d-none mb-0"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="rcPaySaveBtn" onclick="rcSavePaymentStatus()">
+                        <span class="material-symbols-outlined" style="font-size:18px;vertical-align:middle;margin-right:4px;">save</span>
+                        Guardar
+                    </button>
                 </div>
             </div>
         </div>
@@ -835,6 +915,20 @@ body {
     font-weight: 600;
 }
 
+#rcDayModal .rc-estado-clickable {
+    font-size: inherit;
+    line-height: inherit;
+    padding: 0.35em 0.65em;
+}
+#rcDayModal .rc-estado-clickable:hover {
+    box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.55);
+    filter: brightness(0.97);
+}
+
+#rcPaymentModal {
+    z-index: 1065;
+}
+
 .rc-day-accordion .accordion-item {
     border-radius: 8px;
     overflow: hidden;
@@ -897,6 +991,7 @@ body {
     var RC_MONTH_URL = <?= $jsMonthUrl ?>;
     var RC_DAY_URL = <?= $jsDayUrl ?>;
     var RC_DISP_URL = <?= $jsDispUrl ?>;
+    var RC_PAY_URL = <?= $jsPayUpdateUrl ?>;
     var RC_TODAY = <?= $jsToday ?>;
     var RC_FROM = <?= $jsFiltro ?>;
 
@@ -1027,7 +1122,7 @@ body {
         });
     }
 
-    function estadoBadge(estado) {
+    function estadoBadge(estado, it) {
         var map = {
             'pagado':     ['success', '✅ Pagado'],
             'pendiente':  ['warning', '🟡 Pendiente'],
@@ -1035,7 +1130,15 @@ body {
             'finalizado': ['secondary', '🏁 Finalizado'],
             'cancelado':  ['danger', '❌ Cancelado']
         };
-        var m = map[estado] || ['secondary', estado];
+        var m = map[estado] || ['secondary', estado || '—'];
+        if (estado === 'pendiente' && it && it.id) {
+            var code = JSON.stringify(it.rental_id || ('R' + it.id));
+            return '<button type="button" class="badge bg-warning text-dark border-0 rc-estado-clickable"'
+                + ' style="cursor:pointer;" title="Clic para reportar pago / cambiar estado"'
+                + ' onclick="event.preventDefault(); event.stopPropagation(); rcOpenPaymentModal('
+                + parseInt(it.id, 10) + ', ' + code + ', \'pendiente\');">'
+                + m[1] + '</button>';
+        }
         return '<span class="badge bg-' + m[0] + '">' + m[1] + '</span>';
     }
 
@@ -1181,15 +1284,15 @@ body {
 
                 rows += '<tr>'
                     + '<td><strong>' + it.rental_id + '</strong></td>'
-                    + '<td>' + (it.client_name || '—') + '</td>'
                     + '<td><span class="material-symbols-outlined align-middle" style="font-size:16px;color:#3fa9f5;">directions_car</span> '
                         + (it.car_name || '—')
                         + (it.car_placa ? ' <span class="badge bg-secondary ms-1">' + it.car_placa + '</span>' : '')
                     + '</td>'
+                    + '<td>' + (it.client_name || '—') + '</td>'
                     + '<td class="small text-muted">' + dRange
                         + (correa ? '<div class="mt-1">' + correa + '</div>' : '')
                     + '</td>'
-                    + '<td>' + estadoBadge(it.estado_pago) + '</td>'
+                    + '<td>' + estadoBadge(it.estado_pago, it) + '</td>'
                     + '<td class="text-end">₡ ' + total + '</td>'
                     + '<td class="text-end text-nowrap">'
                         + '<a href="' + it.view_url + '" class="btn btn-sm btn-outline-primary" title="Ver"><span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;">visibility</span></a> '
@@ -1201,7 +1304,7 @@ body {
             var deskTable = '<div class="rc-day-table-wrap d-none d-md-block">'
                 + '<table class="table table-sm table-hover align-middle mb-2 rc-day-table">'
                 + '<thead class="table-light"><tr>'
-                + '<th>Orden</th><th>Cliente</th><th>Vehículo</th><th>Periodo</th><th>Estado</th><th class="text-end">Total</th><th></th>'
+                + '<th>Orden</th><th>Vehículo</th><th>Cliente</th><th>Periodo</th><th>Estado</th><th class="text-end">Total</th><th></th>'
                 + '</tr></thead>'
                 + '<tbody>' + rows + '</tbody>'
                 + '</table>'
@@ -1227,7 +1330,7 @@ body {
                     + '<div class="rc-row-head">'
                     + '<div class="rc-row-top">'
                     + '<span class="rc-row-id">' + it.rental_id + '</span>'
-                    + '<span class="rc-row-state">' + estadoBadge(it.estado_pago) + '</span>'
+                    + '<span class="rc-row-state">' + estadoBadge(it.estado_pago, it) + '</span>'
                     + '</div>'
                     + '<div class="rc-row-client small text-muted">'
                     + '<span class="material-symbols-outlined align-middle" style="font-size:14px;">person</span> '
@@ -1313,6 +1416,8 @@ body {
         if (!currentModalDate || !modalEl) return;
         var open = modalEl.classList.contains('show') || modalEl.style.display === 'block';
         if (!open) return;
+        var payModal = document.getElementById('rcPaymentModal');
+        if (payModal && (payModal.classList.contains('show') || payModal.style.display === 'block')) return;
         if (ev.key === 'ArrowLeft') {
             ev.preventDefault();
             showDay(shiftDay(currentModalDate, -1));
@@ -1325,6 +1430,126 @@ body {
     if (btnPrev) btnPrev.addEventListener('click', function () { loadMonth(shiftMonth(currentMonth, -1)); });
     if (btnNext) btnNext.addEventListener('click', function () { loadMonth(shiftMonth(currentMonth, +1)); });
     if (btnToday) btnToday.addEventListener('click', function () { loadMonth(RC_TODAY.substring(0, 7)); });
+
+    var RC_CSRF_PARAM = <?= json_encode(Yii::$app->request->csrfParam) ?>;
+    var RC_CSRF_TOKEN = <?= json_encode(Yii::$app->request->csrfToken) ?>;
+
+    window.rcTogglePayAbonos = function () {
+        var sel = document.getElementById('rcPayNewStatus');
+        var box = document.getElementById('rcPayAbonosFields');
+        if (!sel || !box) return;
+        box.style.display = sel.value === 'reservado' ? 'block' : 'none';
+    };
+
+    window.rcOpenPaymentModal = function (rentalId, rentalCode, currentStatus) {
+        var form = document.getElementById('rcPaymentForm');
+        var err = document.getElementById('rcPayError');
+        if (err) {
+            err.classList.add('d-none');
+            err.textContent = '';
+        }
+        if (form) form.reset();
+
+        document.getElementById('rcPayRentalId').value = rentalId;
+        document.getElementById('rcPayRentalCode').value = rentalCode || ('R' + rentalId);
+        var st = (currentStatus || 'pendiente');
+        document.getElementById('rcPayCurrentStatus').value = st.charAt(0).toUpperCase() + st.slice(1);
+        document.getElementById('rcPayNewStatus').value = 'pagado';
+        window.rcTogglePayAbonos();
+
+        var el = document.getElementById('rcPaymentModal');
+        if (!el) return;
+        if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+            var inst = bootstrap.Modal.getInstance(el);
+            if (!inst) inst = new bootstrap.Modal(el);
+            inst.show();
+        } else if (typeof $ !== 'undefined') {
+            $('#rcPaymentModal').modal('show');
+        }
+    };
+
+    window.rcSavePaymentStatus = function () {
+        var form = document.getElementById('rcPaymentForm');
+        var err = document.getElementById('rcPayError');
+        var btn = document.getElementById('rcPaySaveBtn');
+        if (!form) return;
+
+        var newStatus = document.getElementById('rcPayNewStatus').value;
+        if (!newStatus) {
+            if (err) {
+                err.textContent = 'Seleccione un nuevo estado de pago.';
+                err.classList.remove('d-none');
+            }
+            return;
+        }
+
+        var fd = new FormData(form);
+        if (RC_CSRF_PARAM && RC_CSRF_TOKEN) {
+            fd.set(RC_CSRF_PARAM, RC_CSRF_TOKEN);
+        }
+
+        var fileInput = document.getElementById('rcPayComprobante');
+        if (fileInput && fileInput.files && fileInput.files[0] && fileInput.files[0].size > 10 * 1024 * 1024) {
+            if (err) {
+                err.textContent = 'El archivo es demasiado grande (máx. 10MB).';
+                err.classList.remove('d-none');
+            }
+            return;
+        }
+
+        var orig = btn ? btn.innerHTML : '';
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Guardando…';
+        }
+        if (err) {
+            err.classList.add('d-none');
+            err.textContent = '';
+        }
+
+        fetch(RC_PAY_URL, {
+            method: 'POST',
+            body: fd,
+            headers: {
+                'X-CSRF-Token': RC_CSRF_TOKEN || '',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            credentials: 'same-origin'
+        })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (data && data.success) {
+                    var el = document.getElementById('rcPaymentModal');
+                    if (el && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                        var inst = bootstrap.Modal.getInstance(el);
+                        if (inst) inst.hide();
+                    } else if (typeof $ !== 'undefined') {
+                        $('#rcPaymentModal').modal('hide');
+                    }
+                    if (currentModalDate) {
+                        showDay(currentModalDate);
+                    }
+                    loadMonth(currentMonth);
+                } else {
+                    if (err) {
+                        err.textContent = (data && data.message) ? data.message : 'No se pudo actualizar el estado.';
+                        err.classList.remove('d-none');
+                    }
+                }
+            })
+            .catch(function (e) {
+                if (err) {
+                    err.textContent = 'Error de red: ' + (e && e.message ? e.message : 'desconocido');
+                    err.classList.remove('d-none');
+                }
+            })
+            .finally(function () {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = orig;
+                }
+            });
+    };
 
     loadMonth(currentMonth);
 })();
