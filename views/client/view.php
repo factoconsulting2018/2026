@@ -40,6 +40,82 @@ $clientLibraryFileCount = (int) ($clientLibraryFileCount ?? 0);
     border-radius: 14px;
 }
 
+/* Toolbar: tabs a la izquierda, acciones arriba a la derecha */
+.client-view-toolbar,
+#clientViewModal .client-view-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px 16px;
+    border-bottom: 2px solid #dee2e6;
+    padding-bottom: 10px;
+}
+
+.client-view-toolbar .client-colored-tabs,
+#clientViewModal .client-view-toolbar .client-colored-tabs {
+    border-bottom: none !important;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.client-view-actions-corner,
+#clientViewModal .client-view-actions-corner {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    margin-left: auto;
+}
+
+.client-view-actions-grid,
+#clientViewModal .client-view-actions-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 36px);
+    gap: 6px;
+    justify-content: end;
+}
+
+.client-act-btn,
+#clientViewModal .client-act-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff !important;
+    text-decoration: none;
+    border: none;
+    box-shadow: 0 1px 4px rgba(0,0,0,.12);
+    transition: transform .15s ease, box-shadow .15s ease;
+}
+
+.client-act-btn:hover,
+#clientViewModal .client-act-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(0,0,0,.18);
+    color: #fff !important;
+}
+
+.client-act-btn .material-symbols-outlined,
+#clientViewModal .client-act-btn .material-symbols-outlined {
+    font-size: 18px;
+    color: #fff !important;
+}
+
+.client-act-edit { background: #0d6efd; }
+.client-act-rent { background: #198754; }
+.client-act-list { background: #0dcaf0; }
+.client-act-delete { background: #dc3545; }
+
+.client-act-volver {
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 4px 8px;
+}
+
 /* Tabs con color y texto blanco (anulan .nav-link del menú lateral) */
 .client-view .client-colored-tabs,
 #clientViewModal .client-colored-tabs {
@@ -110,10 +186,6 @@ $clientLibraryFileCount = (int) ($clientLibraryFileCount ?? 0);
 .client-view .client-colored-tabs .nav-link[id$="-notas-tab"],
 #clientViewModal .client-colored-tabs .nav-link[id$="-notas-tab"] {
     background: #20c997 !important;
-}
-.client-view .client-colored-tabs .nav-link[id$="-acciones-tab"],
-#clientViewModal .client-colored-tabs .nav-link[id$="-acciones-tab"] {
-    background: #fd7e14 !important;
 }
 
 .client-view .client-colored-tabs .nav-link .badge,

@@ -33,10 +33,61 @@ $modalViewUrl = Url::to(['/client/modal-view']);
 </div>
 
 <style>
-#clientViewModal .client-colored-tabs {
+#clientViewModal .client-view-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px 16px;
     border-bottom: 2px solid #dee2e6;
+    padding-bottom: 10px;
+}
+#clientViewModal .client-view-toolbar .client-colored-tabs {
+    border-bottom: none !important;
+    flex: 1 1 auto;
+    min-width: 0;
     gap: 6px;
 }
+#clientViewModal .client-view-actions-corner {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    margin-left: auto;
+}
+#clientViewModal .client-view-actions-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 36px);
+    gap: 6px;
+    justify-content: end;
+}
+#clientViewModal .client-act-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff !important;
+    text-decoration: none;
+    border: none;
+    box-shadow: 0 1px 4px rgba(0,0,0,.12);
+}
+#clientViewModal .client-act-btn .material-symbols-outlined {
+    font-size: 18px;
+    color: #fff !important;
+}
+#clientViewModal .client-act-edit { background: #0d6efd; }
+#clientViewModal .client-act-rent { background: #198754; }
+#clientViewModal .client-act-list { background: #0dcaf0; }
+#clientViewModal .client-act-delete { background: #dc3545; }
+#clientViewModal .client-act-volver {
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 4px 8px;
+}
+
 #clientViewModal .client-colored-tabs .nav-item { margin-bottom: 6px; }
 #clientViewModal .client-colored-tabs .nav-link {
     display: inline-flex !important;
@@ -72,7 +123,6 @@ $modalViewUrl = Url::to(['/client/modal-view']);
 #clientViewModal .client-colored-tabs .nav-link[id$="-archivos-tab"] { background: #198754 !important; }
 #clientViewModal .client-colored-tabs .nav-link[id$="-historial-tab"] { background: #0d6efd !important; }
 #clientViewModal .client-colored-tabs .nav-link[id$="-notas-tab"] { background: #20c997 !important; }
-#clientViewModal .client-colored-tabs .nav-link[id$="-acciones-tab"] { background: #fd7e14 !important; }
 #clientViewModal .client-colored-tabs .nav-link .badge {
     background: rgba(255,255,255,.25) !important;
     color: #fff !important;

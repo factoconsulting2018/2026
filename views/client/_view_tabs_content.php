@@ -78,52 +78,89 @@ $phone = $model->whatsapp ?: ($model->celular ?: ($model->telefono ?? ''));
     </div>
     <?php endif; ?>
 
-    <ul class="nav nav-tabs client-colored-tabs mb-3 flex-wrap" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="<?= $uid ?>-datos-tab" data-bs-toggle="tab"
-                    data-bs-target="#<?= $uid ?>-datos" type="button" role="tab">
-                <span class="material-symbols-outlined">badge</span>
-                Datos
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="<?= $uid ?>-hacienda-tab" data-bs-toggle="tab"
-                    data-bs-target="#<?= $uid ?>-hacienda" type="button" role="tab">
-                <span class="material-symbols-outlined">account_balance</span>
-                Hacienda
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="<?= $uid ?>-archivos-tab" data-bs-toggle="tab"
-                    data-bs-target="#<?= $uid ?>-archivos" type="button" role="tab">
-                <span class="material-symbols-outlined">folder</span>
-                Archivos
-                <span class="badge"><?= $clientLibraryFileCount ?></span>
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="<?= $uid ?>-historial-tab" data-bs-toggle="tab"
-                    data-bs-target="#<?= $uid ?>-historial" type="button" role="tab">
-                <span class="material-symbols-outlined">history</span>
-                Historial
-                <span class="badge"><?= count($rentalHistory) ?></span>
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="<?= $uid ?>-notas-tab" data-bs-toggle="tab"
-                    data-bs-target="#<?= $uid ?>-notas" type="button" role="tab">
-                <span class="material-symbols-outlined">notes</span>
-                Notas
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="<?= $uid ?>-acciones-tab" data-bs-toggle="tab"
-                    data-bs-target="#<?= $uid ?>-acciones" type="button" role="tab">
-                <span class="material-symbols-outlined">settings</span>
-                Acciones
-            </button>
-        </li>
-    </ul>
+    <div class="client-view-toolbar mb-3">
+        <ul class="nav nav-tabs client-colored-tabs flex-wrap mb-0" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="<?= $uid ?>-datos-tab" data-bs-toggle="tab"
+                        data-bs-target="#<?= $uid ?>-datos" type="button" role="tab">
+                    <span class="material-symbols-outlined">badge</span>
+                    Datos
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="<?= $uid ?>-hacienda-tab" data-bs-toggle="tab"
+                        data-bs-target="#<?= $uid ?>-hacienda" type="button" role="tab">
+                    <span class="material-symbols-outlined">account_balance</span>
+                    Hacienda
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="<?= $uid ?>-archivos-tab" data-bs-toggle="tab"
+                        data-bs-target="#<?= $uid ?>-archivos" type="button" role="tab">
+                    <span class="material-symbols-outlined">folder</span>
+                    Archivos
+                    <span class="badge"><?= $clientLibraryFileCount ?></span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="<?= $uid ?>-historial-tab" data-bs-toggle="tab"
+                        data-bs-target="#<?= $uid ?>-historial" type="button" role="tab">
+                    <span class="material-symbols-outlined">history</span>
+                    Historial
+                    <span class="badge"><?= count($rentalHistory) ?></span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="<?= $uid ?>-notas-tab" data-bs-toggle="tab"
+                        data-bs-target="#<?= $uid ?>-notas" type="button" role="tab">
+                    <span class="material-symbols-outlined">notes</span>
+                    Notas
+                </button>
+            </li>
+        </ul>
+
+        <div class="client-view-actions-corner">
+            <div class="client-view-actions-grid" role="group" aria-label="Acciones">
+                <a href="<?= Url::to(['update', 'id' => $model->id]) ?>"
+                   class="client-act-btn client-act-edit" title="Editar">
+                    <span class="material-symbols-outlined">edit</span>
+                </a>
+                <a href="<?= Url::to(['/rental/create', 'client_id' => $model->id]) ?>"
+                   class="client-act-btn client-act-rent" title="Nuevo alquiler">
+                    <span class="material-symbols-outlined">add_circle</span>
+                </a>
+                <a href="<?= Url::to(['/rental/index', 'cliente' => $model->full_name]) ?>"
+                   class="client-act-btn client-act-list" title="Ver alquileres">
+                    <span class="material-symbols-outlined">receipt_long</span>
+                </a>
+                <?= Html::a(
+                    '<span class="material-symbols-outlined">delete</span>',
+                    ['delete', 'id' => $model->id],
+                    [
+                        'class' => 'client-act-btn client-act-delete',
+                        'title' => 'Eliminar',
+                        'data' => [
+                            'confirm' => '¿Estás seguro de eliminar este cliente?',
+                            'method' => 'post',
+                        ],
+                    ]
+                ) ?>
+            </div>
+            <?php if ($embedInModal): ?>
+                <button type="button" class="btn btn-sm btn-outline-secondary client-act-volver w-100"
+                        data-bs-dismiss="modal" title="Volver / Cerrar">
+                    <span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;">arrow_back</span>
+                    Volver
+                </button>
+            <?php else: ?>
+                <a href="<?= Url::to(['index']) ?>"
+                   class="btn btn-sm btn-outline-secondary client-act-volver w-100" title="Volver al listado">
+                    <span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;">arrow_back</span>
+                    Volver
+                </a>
+            <?php endif; ?>
+        </div>
+    </div>
 
     <div class="tab-content">
         <!-- Datos -->
@@ -326,49 +363,6 @@ $phone = $model->whatsapp ?: ($model->celular ?: ($model->telefono ?? ''));
                     <?= nl2br(Html::encode($model->licencias_choferes)) ?>
                 </div>
             <?php endif; ?>
-        </div>
-
-        <!-- Acciones -->
-        <div class="tab-pane fade" id="<?= $uid ?>-acciones" role="tabpanel">
-            <div class="row g-2">
-                <div class="col-6 col-md-4">
-                    <a href="<?= Url::to(['update', 'id' => $model->id]) ?>" class="btn btn-primary w-100">
-                        <span class="material-symbols-outlined" style="font-size:18px;vertical-align:middle;">edit</span>
-                        Editar
-                    </a>
-                </div>
-                <div class="col-6 col-md-4">
-                    <a href="<?= Url::to(['/rental/create', 'client_id' => $model->id]) ?>" class="btn btn-success w-100">
-                        <span class="material-symbols-outlined" style="font-size:18px;vertical-align:middle;">add_circle</span>
-                        Nuevo alquiler
-                    </a>
-                </div>
-                <div class="col-6 col-md-4">
-                    <a href="<?= Url::to(['/rental/index', 'cliente' => $model->full_name]) ?>" class="btn btn-info text-white w-100">
-                        <span class="material-symbols-outlined" style="font-size:18px;vertical-align:middle;">receipt_long</span>
-                        Ver alquileres
-                    </a>
-                </div>
-                <div class="col-6 col-md-4">
-                    <?= Html::a(
-                        '<span class="material-symbols-outlined" style="font-size:18px;vertical-align:middle;">delete</span> Eliminar',
-                        ['delete', 'id' => $model->id],
-                        [
-                            'class' => 'btn btn-danger w-100',
-                            'data' => [
-                                'confirm' => '¿Estás seguro de eliminar este cliente?',
-                                'method' => 'post',
-                            ],
-                        ]
-                    ) ?>
-                </div>
-                <div class="col-6 col-md-4">
-                    <a href="<?= Url::to(['index']) ?>" class="btn btn-outline-secondary w-100">
-                        <span class="material-symbols-outlined" style="font-size:18px;vertical-align:middle;">arrow_back</span>
-                        Volver
-                    </a>
-                </div>
-            </div>
         </div>
     </div>
 </div>
