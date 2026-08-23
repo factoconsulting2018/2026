@@ -35,6 +35,83 @@ $modalViewUrl = Url::to(['/rental/modal-view']);
     </div>
 </div>
 
+<style>
+/* Tabs del modal de detalle: anulan el .nav-link blanco del menú lateral */
+#rentalViewModal .rental-modal-view .nav-tabs {
+    border-bottom: 2px solid #dee2e6;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+#rentalViewModal .rental-modal-view .nav-tabs .nav-item {
+    margin-bottom: 6px;
+}
+
+#rentalViewModal .rental-modal-view .nav-tabs .nav-link {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px !important;
+    min-height: auto !important;
+    border: none !important;
+    border-left: none !important;
+    border-radius: 8px !important;
+    color: #ffffff !important;
+    font-weight: 600;
+    font-size: 0.9rem;
+    line-height: 1.2;
+    background: #6c757d !important;
+    opacity: 0.85;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+#rentalViewModal .rental-modal-view .nav-tabs .nav-link .material-symbols-outlined {
+    color: #ffffff !important;
+    font-size: 16px !important;
+}
+
+#rentalViewModal .rental-modal-view .nav-tabs .nav-link:hover {
+    color: #ffffff !important;
+    opacity: 1;
+    background: #5a6268 !important;
+}
+
+#rentalViewModal .rental-modal-view .nav-tabs .nav-link.active {
+    color: #ffffff !important;
+    opacity: 1;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+/* Colores por pestaña */
+#rentalViewModal .rental-modal-view .nav-tabs .nav-link[id$="-detalles-tab"],
+#rentalViewModal .rental-modal-view .nav-tabs .nav-link[id$="-detalles-tab"].active {
+    background: #22487a !important;
+}
+
+#rentalViewModal .rental-modal-view .nav-tabs .nav-link[id$="-historial-tab"],
+#rentalViewModal .rental-modal-view .nav-tabs .nav-link[id$="-historial-tab"].active {
+    background: #0d6efd !important;
+}
+
+#rentalViewModal .rental-modal-view .nav-tabs .nav-link[id$="-extra-tab"],
+#rentalViewModal .rental-modal-view .nav-tabs .nav-link[id$="-extra-tab"].active {
+    background: #198754 !important;
+}
+
+#rentalViewModal .rental-modal-view .nav-tabs .nav-link[id$="-acciones-tab"],
+#rentalViewModal .rental-modal-view .nav-tabs .nav-link[id$="-acciones-tab"].active {
+    background: #fd7e14 !important;
+}
+
+#rentalViewModal .rental-modal-view .nav-tabs .nav-link .badge {
+    background: rgba(255, 255, 255, 0.25) !important;
+    color: #ffffff !important;
+    font-weight: 700;
+}
+</style>
+
 <script>
 (function () {
     if (window.openRentalViewModal) {
