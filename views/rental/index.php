@@ -937,93 +937,9 @@ $this->registerCss('
         </div>
     </div>
 
-    <!-- Sistema de Tabs -->
-    <ul class="nav nav-tabs mb-4" id="rentalTabs" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="list-tab" data-bs-toggle="tab" data-bs-target="#list-pane" type="button" role="tab" aria-controls="list-pane" aria-selected="true">
-                <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">list</span>
-                Listado de Alquileres
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="recurring-tab" data-bs-toggle="tab" data-bs-target="#recurring-pane" type="button" role="tab" aria-controls="recurring-pane" aria-selected="false">
-                <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">repeat</span>
-                Solicitudes recurrentes
-                <?php if ($recurringCount > 0): ?>
-                <span class="badge rounded-pill bg-warning text-dark ms-1"><?= (int) $recurringCount ?></span>
-                <?php endif; ?>
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="calendar-tab" data-bs-toggle="tab" data-bs-target="#calendar-pane" type="button" role="tab" aria-controls="calendar-pane" aria-selected="false">
-                <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">calendar_month</span>
-                Calendario de Disponibilidad
-            </button>
-        </li>
-    </ul>
-
     <div class="tab-content" id="rentalTabContent">
         <!-- Tab 1: Listado de Alquileres -->
         <div class="tab-pane fade show active" id="list-pane" role="tabpanel" aria-labelledby="list-tab">
-
-
-    <!-- Leyenda móvil: botón + modal -->
-    <div class="d-lg-none mb-3 text-end">
-        <button type="button" class="btn btn-outline-secondary mobile-legend-trigger" data-bs-toggle="modal" data-bs-target="#statusLegendModal">
-            <span class="material-symbols-outlined" style="font-size: 16px; vertical-align: middle; margin-right: 4px;">info</span>
-            Leyenda
-        </button>
-    </div>
-
-    <!-- Resumen de Estados (solo desktop/tablet grande) -->
-    <div class="card mb-4 d-none d-lg-block">
-        <div class="card-header">
-            <h5 class="mb-0">
-                <span class="material-symbols-outlined" style="font-size: 20px; vertical-align: middle; margin-right: 8px;">palette</span>
-                Leyenda de Estados
-            </h5>
-        </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-3 col-sm-6 mb-2">
-                    <div class="d-flex align-items-center">
-                        <div class="status-indicator bg-warning me-2"></div>
-                        <span><strong>Pendiente:</strong> Esperando pago</span>
-                    </div>
-                </div>
-                <div class="col-md-3 col-sm-6 mb-2">
-                    <div class="d-flex align-items-center">
-                        <div class="status-indicator bg-success me-2"></div>
-                        <span><strong>Pagado:</strong> Alquiler activo</span>
-                    </div>
-                </div>
-                <div class="col-md-3 col-sm-6 mb-2">
-                    <div class="d-flex align-items-center">
-                        <div class="status-indicator bg-info me-2"></div>
-                        <span><strong>Reservado:</strong> Reserva confirmada</span>
-                    </div>
-                </div>
-                <div class="col-md-3 col-sm-6 mb-2">
-                    <div class="d-flex align-items-center">
-                        <div class="status-indicator bg-danger me-2"></div>
-                        <span><strong>Cancelado:</strong> Alquiler cancelado</span>
-                    </div>
-                </div>
-            </div>
-            <div class="row mt-2">
-                <div class="col-md-6">
-                    <small class="text-muted">
-                        <span class="text-danger">⚠️</span> <strong>Vencido:</strong> Fecha de entrega pasada
-                    </small>
-                </div>
-                <div class="col-md-6">
-                    <small class="text-muted">
-                        <span class="text-warning">⏰</span> <strong>Por vencer:</strong> Próximo a vencer (2 días o menos)
-                    </small>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <div class="card mb-4">
         <div class="card-body">
@@ -1640,6 +1556,64 @@ $this->registerCss('
         
         <?php Pjax::end(); ?>
         </div>
+
+    <!-- Leyenda debajo del listado -->
+    <div class="d-lg-none mt-4 mb-3 text-end">
+        <button type="button" class="btn btn-outline-secondary mobile-legend-trigger" data-bs-toggle="modal" data-bs-target="#statusLegendModal">
+            <span class="material-symbols-outlined" style="font-size: 16px; vertical-align: middle; margin-right: 4px;">info</span>
+            Leyenda
+        </button>
+    </div>
+
+    <div class="card mt-4 mb-2 d-none d-lg-block">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <span class="material-symbols-outlined" style="font-size: 20px; vertical-align: middle; margin-right: 8px;">palette</span>
+                Leyenda de Estados
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3 col-sm-6 mb-2">
+                    <div class="d-flex align-items-center">
+                        <div class="status-indicator bg-warning me-2"></div>
+                        <span><strong>Pendiente:</strong> Esperando pago</span>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6 mb-2">
+                    <div class="d-flex align-items-center">
+                        <div class="status-indicator bg-success me-2"></div>
+                        <span><strong>Pagado:</strong> Alquiler activo</span>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6 mb-2">
+                    <div class="d-flex align-items-center">
+                        <div class="status-indicator bg-info me-2"></div>
+                        <span><strong>Reservado:</strong> Reserva confirmada</span>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6 mb-2">
+                    <div class="d-flex align-items-center">
+                        <div class="status-indicator bg-danger me-2"></div>
+                        <span><strong>Cancelado:</strong> Alquiler cancelado</span>
+                    </div>
+                </div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-md-6">
+                    <small class="text-muted">
+                        <span class="text-danger">⚠️</span> <strong>Vencido:</strong> Fecha de entrega pasada
+                    </small>
+                </div>
+                <div class="col-md-6">
+                    <small class="text-muted">
+                        <span class="text-warning">⏰</span> <strong>Por vencer:</strong> Próximo a vencer (2 días o menos)
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
         </div>
         <!-- Fin Tab 1: Listado de Alquileres -->
 
@@ -1844,6 +1818,31 @@ $this->registerCss('
         </div>
         <!-- Fin Tab 2: Calendario de Disponibilidad -->
     </div>
+
+    <!-- Tabs debajo del listado / contenido -->
+    <ul class="nav nav-tabs mt-4 mb-2" id="rentalTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="list-tab" data-bs-toggle="tab" data-bs-target="#list-pane" type="button" role="tab" aria-controls="list-pane" aria-selected="true">
+                <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">list</span>
+                Listado de Alquileres
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="recurring-tab" data-bs-toggle="tab" data-bs-target="#recurring-pane" type="button" role="tab" aria-controls="recurring-pane" aria-selected="false">
+                <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">repeat</span>
+                Solicitudes recurrentes
+                <?php if ($recurringCount > 0): ?>
+                <span class="badge rounded-pill bg-warning text-dark ms-1"><?= (int) $recurringCount ?></span>
+                <?php endif; ?>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="calendar-tab" data-bs-toggle="tab" data-bs-target="#calendar-pane" type="button" role="tab" aria-controls="calendar-pane" aria-selected="false">
+                <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">calendar_month</span>
+                Calendario de Disponibilidad
+            </button>
+        </li>
+    </ul>
     <!-- Fin Sistema de Tabs -->
 </div>
 
