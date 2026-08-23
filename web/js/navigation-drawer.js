@@ -53,6 +53,17 @@ document.addEventListener('DOMContentLoaded', function() {
     if (window.innerWidth >= 768) {
         openDrawer();
     }
+
+    // Categorías colapsables del menú
+    document.querySelectorAll('.nav-category-toggle').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var cat = btn.closest('.nav-category');
+            if (!cat) return;
+            var willOpen = !cat.classList.contains('open');
+            cat.classList.toggle('open', willOpen);
+            btn.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+        });
+    });
     
     // Cerrar drawer al hacer clic en un enlace en móvil
     const navLinks = document.querySelectorAll('.drawer .nav-link');

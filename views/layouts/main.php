@@ -178,6 +178,82 @@ $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => Yii
             font-size: 16px;
             font-weight: 500;
         }
+
+        /* Categorías del menú */
+        .nav-category {
+            margin: 4px 0 8px;
+        }
+
+        .nav-category-toggle {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            padding: 12px 20px;
+            background: transparent;
+            border: none;
+            border-left: 4px solid transparent;
+            color: #9ec9ff;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            cursor: pointer;
+            text-align: left;
+            gap: 10px;
+        }
+
+        .nav-category-toggle:hover {
+            background-color: rgba(255, 255, 255, 0.06);
+            color: #ffffff;
+        }
+
+        .nav-category-toggle .nav-icon {
+            font-size: 18px;
+            margin-right: 0;
+            color: #3fa9f5;
+        }
+
+        .nav-category-toggle .nav-category-chevron {
+            margin-left: auto;
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.55);
+            transition: transform 0.2s ease;
+        }
+
+        .nav-category.open > .nav-category-toggle {
+            color: #ffffff;
+            border-left-color: #3fa9f5;
+            background: rgba(63, 169, 245, 0.08);
+        }
+
+        .nav-category.open > .nav-category-toggle .nav-category-chevron {
+            transform: rotate(180deg);
+        }
+
+        .nav-category-items {
+            display: none;
+            list-style: none;
+            padding: 0 0 6px;
+            margin: 0;
+        }
+
+        .nav-category.open > .nav-category-items {
+            display: block;
+        }
+
+        .nav-category-items .nav-link {
+            padding: 12px 20px 12px 44px;
+            min-height: 42px;
+            font-size: 15px;
+        }
+
+        .nav-category-items .nav-text {
+            font-size: 14px;
+        }
+
+        .nav-category-items .nav-icon {
+            font-size: 18px;
+        }
         
         /* Main Content */
         .main-content {
@@ -425,122 +501,179 @@ $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => Yii
         <div class="drawer-title">Facto Rent a Car</div>
     </div>
     <div class="drawer-nav">
-        
-        <!-- Navigation Menu -->
+        <?php
+        $ctrl = Yii::$app->controller->id ?? '';
+        $act = Yii::$app->controller->action->id ?? '';
+        $pendingCount = (int) \app\models\Client::find()->where(['approval_status' => 'pending'])->count();
+
+        $isDashboard = ($ctrl === 'site' && $act === 'index');
+        $isDisponibles = ($ctrl === 'car' && $act === 'disponibles');
+        $isVehiculos = ($ctrl === 'car' && $act !== 'disponibles');
+        $isRentas = ($ctrl === 'rental');
+        $isAsync = ($ctrl === 'async-rental');
+        $isIncident = ($ctrl === 'incident');
+        $isMaint = ($ctrl === 'maintenance-order');
+        $isStats = ($ctrl === 'reports' && $act === 'dashboard');
+        $isReports = ($ctrl === 'reports' && $act !== 'dashboard');
+        $isClientList = ($ctrl === 'client' && $act !== 'pending');
+        $isClientPending = ($ctrl === 'client' && $act === 'pending');
+        $isNotes = ($ctrl === 'notes');
+        $isMarketing = ($ctrl === 'marketing');
+        $isConfig = ($ctrl === 'config');
+        $isLogs = ($ctrl === 'site' && $act === 'logs');
+
+        $rentasOpen = $isDisponibles || $isVehiculos || $isRentas || $isAsync || $isIncident || $isMaint || $isStats || $isReports;
+        $clientesOpen = $isClientList || $isClientPending;
+        $configOpen = $isNotes || $isMarketing || $isConfig || $isLogs;
+        ?>
+
         <ul class="nav flex-column">
             <li class="nav-item">
-                <a class="nav-link <?= Yii::$app->controller->id === 'site' && Yii::$app->controller->action->id === 'index' ? 'active' : '' ?>" 
+                <a class="nav-link <?= $isDashboard ? 'active' : '' ?>"
                    href="<?= \yii\helpers\Url::to(['/site/index']) ?>">
                     <span class="nav-icon material-symbols-outlined">dashboard</span>
                     <span class="nav-text">Dashboard</span>
                 </a>
             </li>
-            <li class="nav-item">
-                <a class="nav-link <?= Yii::$app->controller->id === 'car' && Yii::$app->controller->action->id === 'disponibles' ? 'active' : '' ?>" 
-                   href="<?= \yii\helpers\Url::to(['/car/disponibles']) ?>">
-                    <span class="nav-icon material-symbols-outlined">event_available</span>
-                    <span class="nav-text">Disponibles</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link <?= Yii::$app->controller->id === 'rental' ? 'active' : '' ?>" 
-                   href="<?= \yii\helpers\Url::to(['/rental/index']) ?>">
-                    <span class="nav-icon material-symbols-outlined">assignment</span>
-                    <span class="nav-text">Rentas</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link <?= Yii::$app->controller->id === 'async-rental' ? 'active' : '' ?>" 
-                   href="<?= \yii\helpers\Url::to(['/async-rental/index']) ?>">
-                    <span class="nav-icon material-symbols-outlined">history</span>
-                    <span class="nav-text">Rentas Asincrónicas</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link <?= Yii::$app->controller->id === 'client' ? 'active' : '' ?>" 
-                   href="<?= \yii\helpers\Url::to(['/client/index']) ?>">
-                    <span class="nav-icon material-symbols-outlined">group</span>
-                    <span class="nav-text">Clientes</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link <?= Yii::$app->controller->id === 'incident' ? 'active' : '' ?>" 
-                   href="<?= \yii\helpers\Url::to(['/incident/index']) ?>">
-                    <span class="nav-icon material-symbols-outlined">car_crash</span>
-                    <span class="nav-text">Insidentes</span>
-                </a>
-            </li>
-            <?php
-            // Contar clientes pendientes de aprobación
-            $pendingCount = \app\models\Client::find()->where(['approval_status' => 'pending'])->count();
-            if ($pendingCount > 0): ?>
-            <li class="nav-item">
-                <a class="nav-link <?= Yii::$app->controller->id === 'client' && Yii::$app->controller->action->id === 'pending' ? 'active' : '' ?>" 
-                   href="<?= \yii\helpers\Url::to(['/client/pending']) ?>">
-                    <span class="nav-icon material-symbols-outlined">person_add</span>
-                    <span class="nav-text">Nuevos clientes</span>
-                    <span class="badge bg-warning ms-2"><?= $pendingCount ?></span>
-                </a>
-            </li>
-            <?php endif; ?>
-            <li class="nav-item">
-                <a class="nav-link <?= Yii::$app->controller->id === 'car' ? 'active' : '' ?>" 
-                   href="<?= \yii\helpers\Url::to(['/car/index']) ?>">
+
+            <!-- Rentas -->
+            <li class="nav-category <?= $rentasOpen ? 'open' : '' ?>" data-nav-category="rentas">
+                <button type="button" class="nav-category-toggle" aria-expanded="<?= $rentasOpen ? 'true' : 'false' ?>">
                     <span class="nav-icon material-symbols-outlined">directions_car</span>
-                    <span class="nav-text">Vehículos</span>
-                </a>
+                    <span>Rentas</span>
+                    <span class="material-symbols-outlined nav-category-chevron">expand_more</span>
+                </button>
+                <ul class="nav-category-items">
+                    <li class="nav-item">
+                        <a class="nav-link <?= $isDisponibles ? 'active' : '' ?>"
+                           href="<?= \yii\helpers\Url::to(['/car/disponibles']) ?>">
+                            <span class="nav-icon material-symbols-outlined">event_available</span>
+                            <span class="nav-text">Disponibles</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link <?= $isRentas ? 'active' : '' ?>"
+                           href="<?= \yii\helpers\Url::to(['/rental/index']) ?>">
+                            <span class="nav-icon material-symbols-outlined">assignment</span>
+                            <span class="nav-text">Órdenes</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link <?= $isAsync ? 'active' : '' ?>"
+                           href="<?= \yii\helpers\Url::to(['/async-rental/index']) ?>">
+                            <span class="nav-icon material-symbols-outlined">history</span>
+                            <span class="nav-text">Asincrónicas</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link <?= $isVehiculos ? 'active' : '' ?>"
+                           href="<?= \yii\helpers\Url::to(['/car/index']) ?>">
+                            <span class="nav-icon material-symbols-outlined">garage</span>
+                            <span class="nav-text">Vehículos</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link <?= $isMaint ? 'active' : '' ?>"
+                           href="<?= \yii\helpers\Url::to(['/maintenance-order/index']) ?>">
+                            <span class="nav-icon material-symbols-outlined">build</span>
+                            <span class="nav-text">Mantenimiento</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link <?= $isIncident ? 'active' : '' ?>"
+                           href="<?= \yii\helpers\Url::to(['/incident/index']) ?>">
+                            <span class="nav-icon material-symbols-outlined">car_crash</span>
+                            <span class="nav-text">Incidentes</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link <?= $isStats ? 'active' : '' ?>"
+                           href="<?= \yii\helpers\Url::to(['/reports/dashboard']) ?>">
+                            <span class="nav-icon material-symbols-outlined">bar_chart</span>
+                            <span class="nav-text">Estadísticas</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link <?= $isReports ? 'active' : '' ?>"
+                           href="<?= \yii\helpers\Url::to(['/reports/index']) ?>">
+                            <span class="nav-icon material-symbols-outlined">assessment</span>
+                            <span class="nav-text">Reportes</span>
+                        </a>
+                    </li>
+                </ul>
             </li>
-            <li class="nav-item">
-                <a class="nav-link <?= Yii::$app->controller->id === 'maintenance-order' ? 'active' : '' ?>"
-                   href="<?= \yii\helpers\Url::to(['/maintenance-order/index']) ?>">
-                    <span class="nav-icon material-symbols-outlined">build</span>
-                    <span class="nav-text">Mantenimiento</span>
-                </a>
+
+            <!-- Clientes -->
+            <li class="nav-category <?= $clientesOpen ? 'open' : '' ?>" data-nav-category="clientes">
+                <button type="button" class="nav-category-toggle" aria-expanded="<?= $clientesOpen ? 'true' : 'false' ?>">
+                    <span class="nav-icon material-symbols-outlined">group</span>
+                    <span>Clientes</span>
+                    <?php if ($pendingCount > 0): ?>
+                        <span class="badge bg-warning text-dark" style="font-size:10px;"><?= $pendingCount ?></span>
+                    <?php endif; ?>
+                    <span class="material-symbols-outlined nav-category-chevron">expand_more</span>
+                </button>
+                <ul class="nav-category-items">
+                    <li class="nav-item">
+                        <a class="nav-link <?= $isClientList ? 'active' : '' ?>"
+                           href="<?= \yii\helpers\Url::to(['/client/index']) ?>">
+                            <span class="nav-icon material-symbols-outlined">badge</span>
+                            <span class="nav-text">Listado</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link <?= $isClientPending ? 'active' : '' ?>"
+                           href="<?= \yii\helpers\Url::to(['/client/pending']) ?>">
+                            <span class="nav-icon material-symbols-outlined">person_add</span>
+                            <span class="nav-text">Nuevos clientes</span>
+                            <?php if ($pendingCount > 0): ?>
+                                <span class="badge bg-warning text-dark ms-1"><?= $pendingCount ?></span>
+                            <?php endif; ?>
+                        </a>
+                    </li>
+                </ul>
             </li>
-            <li class="nav-item">
-                <a class="nav-link <?= Yii::$app->controller->id === 'reports' && Yii::$app->controller->action->id === 'dashboard' ? 'active' : '' ?>" 
-                   href="<?= \yii\helpers\Url::to(['/reports/dashboard']) ?>">
-                    <span class="nav-icon material-symbols-outlined">bar_chart</span>
-                    <span class="nav-text">Estadísticas</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link <?= Yii::$app->controller->id === 'reports' && Yii::$app->controller->action->id !== 'dashboard' ? 'active' : '' ?>" 
-                   href="<?= \yii\helpers\Url::to(['/reports/index']) ?>">
-                    <span class="nav-icon material-symbols-outlined">assessment</span>
-                    <span class="nav-text">Reportes</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link <?= Yii::$app->controller->id === 'notes' ? 'active' : '' ?>" 
-                   href="<?= \yii\helpers\Url::to(['/notes/index']) ?>">
-                    <span class="nav-icon material-symbols-outlined">sticky_note_2</span>
-                    <span class="nav-text">Notas</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link <?= Yii::$app->controller->id === 'marketing' ? 'active' : '' ?>"
-                   href="<?= \yii\helpers\Url::to(['/marketing/index']) ?>">
-                    <span class="nav-icon material-symbols-outlined">campaign</span>
-                    <span class="nav-text">Marketing</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link <?= Yii::$app->controller->id === 'config' ? 'active' : '' ?>" 
-                   href="<?= \yii\helpers\Url::to(['/config/index']) ?>">
+
+            <!-- Configuración -->
+            <li class="nav-category <?= $configOpen ? 'open' : '' ?>" data-nav-category="configuracion">
+                <button type="button" class="nav-category-toggle" aria-expanded="<?= $configOpen ? 'true' : 'false' ?>">
                     <span class="nav-icon material-symbols-outlined">settings</span>
-                    <span class="nav-text">Configuración</span>
-                </a>
+                    <span>Configuración</span>
+                    <span class="material-symbols-outlined nav-category-chevron">expand_more</span>
+                </button>
+                <ul class="nav-category-items">
+                    <li class="nav-item">
+                        <a class="nav-link <?= $isConfig ? 'active' : '' ?>"
+                           href="<?= \yii\helpers\Url::to(['/config/index']) ?>">
+                            <span class="nav-icon material-symbols-outlined">tune</span>
+                            <span class="nav-text">Ajustes</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link <?= $isNotes ? 'active' : '' ?>"
+                           href="<?= \yii\helpers\Url::to(['/notes/index']) ?>">
+                            <span class="nav-icon material-symbols-outlined">sticky_note_2</span>
+                            <span class="nav-text">Notas</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link <?= $isMarketing ? 'active' : '' ?>"
+                           href="<?= \yii\helpers\Url::to(['/marketing/index']) ?>">
+                            <span class="nav-icon material-symbols-outlined">campaign</span>
+                            <span class="nav-text">Marketing</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link <?= $isLogs ? 'active' : '' ?>"
+                           href="<?= \yii\helpers\Url::to(['/site/logs']) ?>"
+                           target="_blank" rel="noopener">
+                            <span class="nav-icon material-symbols-outlined">description</span>
+                            <span class="nav-text">Logs de Error</span>
+                        </a>
+                    </li>
+                </ul>
             </li>
-            <li>
-                <a class="nav-link" 
-                   href="<?= \yii\helpers\Url::to(['/site/logs']) ?>"
-                   target="_blank">
-                    <span class="nav-icon material-symbols-outlined">description</span>
-                    <span class="nav-text">Logs de Error</span>
-                </a>
-            </li>
-            
+
             <!-- Versión del Sistema -->
             <li style="margin-top: 20px; padding: 15px 20px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
                 <div style="text-align: center; color: #9CA3AF; font-size: 12px;">
@@ -554,8 +687,7 @@ $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => Yii
                 </div>
             </li>
         </ul>
-        
-        
+
         <!-- Logout Section -->
         <div style="margin-top: auto; padding: 0; border-top: 1px solid rgba(255, 255, 255, 0.2);">
             <?= Html::beginForm(['/site/logout'], 'post', ['class' => 'd-inline w-100']) ?>
