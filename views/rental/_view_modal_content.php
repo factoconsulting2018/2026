@@ -137,6 +137,13 @@ $historialCount = count($clientHistory);
             </button>
         </li>
         <li class="nav-item" role="presentation">
+            <button class="nav-link" id="<?= $uid ?>-pago-tab" data-bs-toggle="tab"
+                    data-bs-target="#<?= $uid ?>-pago" type="button" role="tab">
+                <span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;">payments</span>
+                Pago
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
             <button class="nav-link" id="<?= $uid ?>-historial-tab" data-bs-toggle="tab"
                     data-bs-target="#<?= $uid ?>-historial" type="button" role="tab">
                 <span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;">history</span>
@@ -149,13 +156,6 @@ $historialCount = count($clientHistory);
                     data-bs-target="#<?= $uid ?>-extra" type="button" role="tab">
                 <span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;">notes</span>
                 Extra
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="<?= $uid ?>-pago-tab" data-bs-toggle="tab"
-                    data-bs-target="#<?= $uid ?>-pago" type="button" role="tab">
-                <span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;">payments</span>
-                Pago
             </button>
         </li>
         <li class="nav-item" role="presentation">
