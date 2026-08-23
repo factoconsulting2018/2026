@@ -916,13 +916,31 @@ body {
 }
 
 #rcDayModal .rc-estado-clickable {
-    font-size: inherit;
-    line-height: inherit;
-    padding: 0.35em 0.65em;
+    display: inline-block !important;
+    width: auto !important;
+    height: auto !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0.35em 0.65em !important;
+    font-size: 0.75rem !important;
+    font-weight: 700 !important;
+    line-height: 1 !important;
+    vertical-align: baseline;
+    white-space: nowrap;
+    border: 0 !important;
+    border-radius: 0.375rem !important;
+    cursor: pointer;
+    box-sizing: border-box;
+    appearance: none;
+    -webkit-appearance: none;
 }
 #rcDayModal .rc-estado-clickable:hover {
     box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.55);
     filter: brightness(0.97);
+}
+.rc-day-accordion .accordion-button .rc-estado-clickable {
+    font-size: 0.75rem !important;
+    align-self: center;
 }
 
 #rcPaymentModal {
@@ -1133,11 +1151,12 @@ body {
         var m = map[estado] || ['secondary', estado || '—'];
         if (estado === 'pendiente' && it && it.id) {
             var code = JSON.stringify(it.rental_id || ('R' + it.id));
-            return '<button type="button" class="badge bg-warning text-dark border-0 rc-estado-clickable"'
-                + ' style="cursor:pointer;" title="Clic para reportar pago / cambiar estado"'
+            return '<span role="button" tabindex="0" class="badge bg-warning text-dark rc-estado-clickable"'
+                + ' title="Clic para reportar pago / cambiar estado"'
                 + ' onclick="event.preventDefault(); event.stopPropagation(); rcOpenPaymentModal('
-                + parseInt(it.id, 10) + ', ' + code + ', \'pendiente\');">'
-                + m[1] + '</button>';
+                + parseInt(it.id, 10) + ', ' + code + ', \'pendiente\');"'
+                + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();event.stopPropagation();this.click();}">'
+                + m[1] + '</span>';
         }
         return '<span class="badge bg-' + m[0] + '">' + m[1] + '</span>';
     }
